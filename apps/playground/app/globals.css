@@ -1,0 +1,37 @@
+/* The whole design system in one import: Tailwind v4 + @appkit/tokens. */
+@import '@appkit/ui/styles.css';
+
+/* Scan the playground and the appkit UI source for class usage. */
+@source '../app';
+@source '../../../packages/ui/src';
+
+/* The playground has a 56px sticky header; drawers sit beneath it. An app shell
+   sets this to its own header height (default is 0 = full height). */
+:root {
+  --drawer-top: 3.5rem;
+}
+
+/* Entrance reveal — visible BY DEFAULT, animation is pure enhancement. Uses
+   @starting-style so it never depends on requestAnimationFrame (which pauses in
+   background/prerendered tabs) and never strands content at opacity 0. */
+@layer utilities {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity var(--duration-slow) var(--ease-out),
+      transform var(--duration-slow) var(--ease-out);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  @starting-style {
+    .reveal {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      transition: none;
+    }
+  }
+}

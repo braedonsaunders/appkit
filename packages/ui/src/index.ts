@@ -13,3 +13,14 @@ export { Input, type InputProps } from './input'
 export { Badge, badgeVariants, type BadgeProps } from './badge'
 export { Label } from './label'
 export { Spinner, type SpinnerProps } from './spinner'
+export {
+  Drawer,
+  UrlDrawer,
+  DrawerTextProvider,
+  DrawerNavigateContext,
+  type DrawerProps,
+  type UrlDrawerProps,
+  type DrawerSize,
+  type DrawerSide,
+  type DrawerText,
+} from './drawer'

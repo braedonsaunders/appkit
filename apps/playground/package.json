@@ -1,0 +1,30 @@
+{
+  "name": "@appkit/playground",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 4310",
+    "build": "next build",
+    "start": "next start --port 4310",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf .next *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@appkit/tokens": "workspace:*",
+    "@appkit/ui": "workspace:*",
+    "framer-motion": "^12.42.2",
+    "lucide-react": "^1.24.0",
+    "next": "16.2.10",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.16",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4.1.16",
+    "typescript": "^5.9.3"
+  }
+}
