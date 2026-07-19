@@ -119,6 +119,47 @@
   --shadow-lg: 0 12px 32px -8px rgb(0 0 0 / 0.6), 0 4px 8px -4px rgb(0 0 0 / 0.45);
 }
 
+/* System default: honor the OS preference before any JS runs, so there is no
+   flash and no pre-paint script. An explicit `.dark`/`.light` class (set by a
+   theme toggle) always wins. Keep these values in sync with `.dark` above. */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not(.dark) {
+    --ch-bg: 2 6 23;
+    --ch-bg-subtle: 15 23 42;
+    --ch-surface: 15 23 42;
+    --ch-surface-hover: 30 41 59;
+    --ch-elevated: 30 41 59;
+    --ch-overlay: 2 6 23;
+    --ch-fg: 241 245 249;
+    --ch-fg-muted: 148 163 184;
+    --ch-fg-subtle: 100 116 139;
+    --ch-border: 51 65 85;
+    --ch-border-strong: 71 85 105;
+    --ch-border-subtle: 30 41 59;
+    --ch-primary: 20 184 166;
+    --ch-primary-hover: 45 212 191;
+    --ch-primary-active: 94 234 212;
+    --ch-primary-fg: 4 47 46;
+    --ch-primary-subtle: 19 78 74;
+    --ch-danger: 248 113 113;
+    --ch-danger-fg: 69 10 10;
+    --ch-danger-subtle: 60 10 10;
+    --ch-warning: 251 191 36;
+    --ch-warning-fg: 66 32 6;
+    --ch-warning-subtle: 55 28 5;
+    --ch-success: 74 222 128;
+    --ch-success-fg: 5 46 22;
+    --ch-success-subtle: 6 40 20;
+    --ch-info: 96 165 250;
+    --ch-info-fg: 23 37 84;
+    --ch-info-subtle: 20 33 70;
+    --ch-ring: 45 212 191;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+    --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 12px 32px -8px rgb(0 0 0 / 0.6), 0 4px 8px -4px rgb(0 0 0 / 0.45);
+  }
+}
+
 /* ------------------------------------------------------------------------- */
 /* Semantic tokens → Tailwind utilities. `inline` so a utility resolves the    */
 /* channel var at *use* time — that is what makes `.dark` overrides live       */
@@ -223,6 +264,15 @@
   /* Narrow, unobtrusive scrollbars for app-shell scroll regions. */
   .app-scroll {
     scrollbar-gutter: stable;
+  }
+
+  @keyframes appkit-indeterminate {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(350%);
+    }
   }
   .app-scroll::-webkit-scrollbar {
     width: 10px;
