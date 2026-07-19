@@ -7,11 +7,14 @@ import {
   Check,
   CircleAlert,
   Info,
+  MoreHorizontal,
   Moon,
   Palette,
   PanelRightOpen,
+  Pencil,
   Sparkles,
   Sun,
+  Trash2,
   TriangleAlert,
 } from 'lucide-react'
 import {
@@ -25,10 +28,19 @@ import {
   CardHeader,
   CardTitle,
   Checkbox,
+  Dialog,
   Drawer,
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
   Input,
   Label,
+  LineGrid,
+  type LineGridColumn,
   Progress,
+  RecordList,
+  type RecordColumn,
+  Select,
   Separator,
   Skeleton,
   Spinner,
@@ -36,6 +48,7 @@ import {
   Tabs,
   Textarea,
   Tooltip,
+  useToast,
 } from '@appkit/ui'
 
 function useTheme() {
@@ -120,6 +133,54 @@ const SEMANTIC = [
   { label: 'info', className: 'bg-info' },
 ]
 
+type Invoice = { id: string; number: string; customer: string; status: string; amount: number }
+const INVOICES: Invoice[] = [
+  { id: '1', number: 'INV-1042', customer: 'Northwind Traders', status: 'paid', amount: 4820 },
+  { id: '2', number: 'INV-1041', customer: 'Globex Corp', status: 'pending', amount: 12960 },
+  { id: '3', number: 'INV-1040', customer: 'Initech', status: 'overdue', amount: 780 },
+  { id: '4', number: 'INV-1039', customer: 'Umbrella Inc', status: 'paid', amount: 3400 },
+  { id: '5', number: 'INV-1038', customer: 'Acme Co', status: 'draft', amount: 990 },
+]
+const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'destructive' | 'secondary'> = {
+  paid: 'success',
+  pending: 'warning',
+  overdue: 'destructive',
+  draft: 'secondary',
+}
+const usd = (v: unknown) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(v))
+
+const INVOICE_COLUMNS: RecordColumn<Invoice>[] = [
+  { key: 'number', label: 'Invoice', kind: 'reference', sortable: true, href: () => '#' },
+  { key: 'customer', label: 'Customer', sortable: true },
+  { key: 'status', label: 'Status', kind: 'status', statusVariant: (v) => STATUS_VARIANT[v] ?? 'secondary' },
+  { key: 'amount', label: 'Amount', kind: 'amount', sortable: true, format: usd },
+]
+
+type LineRow = { item: string; qty: string; rate: string; account: string }
+const ACCOUNTS = [
+  { value: 'services', label: 'Services income' },
+  { value: 'product', label: 'Product income' },
+  { value: 'consulting', label: 'Consulting' },
+]
+const LINE_COLUMNS: LineGridColumn<LineRow>[] = [
+  { key: 'item', label: 'Item', width: 'minmax(200px,2fr)', type: 'text', placeholder: 'Description', required: true },
+  { key: 'account', label: 'Account', width: '180px', type: 'select', options: ACCOUNTS },
+  { key: 'qty', label: 'Qty', width: '90px', type: 'amount', align: 'right' },
+  { key: 'rate', label: 'Rate', width: '120px', type: 'amount', align: 'right' },
+  {
+    key: 'amount',
+    label: 'Amount',
+    width: '120px',
+    type: 'readonly',
+    align: 'right',
+    render: (r) => {
+      const n = Number(r.qty) * Number(r.rate)
+      return Number.isFinite(n) ? usd(n) : '—'
+    },
+  },
+]
+
 export default function Home() {
   const { dark, toggle } = useTheme()
   const [open, setOpen] = React.useState(false)
@@ -131,6 +192,28 @@ export default function Home() {
     const id = setInterval(() => setProgress((p) => (p >= 96 ? 24 : p + 12)), 1400)
     return () => clearInterval(id)
   }, [])
+
+  const { toast } = useToast()
+  const [dialogOpen, setDialogOpen] = React.useState(false)
+  const [role, setRole] = React.useState('editor')
+  const [search, setSearch] = React.useState('')
+  const [sort, setSort] = React.useState<{ key: string; dir: 'asc' | 'desc' }>({
+    key: 'number',
+    dir: 'desc',
+  })
+  const [lines, setLines] = React.useState<LineRow[]>([
+    { item: 'Design retainer', qty: '1', rate: '2400.00', account: 'services' },
+    { item: 'Hosting (annual)', qty: '1', rate: '360.00', account: 'services' },
+  ])
+
+  const filtered = INVOICES.filter((r) =>
+    search ? `${r.number} ${r.customer}`.toLowerCase().includes(search.toLowerCase()) : true,
+  ).sort((a, b) => {
+    const dir = sort.dir === 'asc' ? 1 : -1
+    const av = a[sort.key as keyof Invoice]
+    const bv = b[sort.key as keyof Invoice]
+    return av < bv ? -dir : av > bv ? dir : 0
+  })
 
   return (
     <div className="mx-auto min-h-screen max-w-5xl">
@@ -336,6 +419,108 @@ export default function Home() {
           </div>
         </Section>
 
+        {/* Menus & selection */}
+        <Section title="Menus & selection" i={6}>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="w-64">
+              <Select
+                value={role}
+                onChange={setRole}
+                options={[
+                  { value: 'viewer', label: 'Viewer' },
+                  { value: 'editor', label: 'Editor' },
+                  { value: 'admin', label: 'Admin' },
+                  { value: 'owner', label: 'Owner' },
+                ]}
+              />
+            </div>
+            <DropdownMenu
+              trigger={
+                <Button variant="outline">
+                  <MoreHorizontal className="size-4" /> Actions
+                </Button>
+              }
+            >
+              <DropdownMenuItem icon={<Pencil size={14} />} onSelect={() => toast({ title: 'Editing', variant: 'info' })}>
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem icon={<Bell size={14} />} onSelect={() => toast({ title: 'Muted' })}>
+                Mute
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                icon={<Trash2 size={14} />}
+                variant="danger"
+                onSelect={() => toast({ title: 'Deleted', variant: 'danger' })}
+              >
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenu>
+          </div>
+        </Section>
+
+        {/* Dialogs & toasts */}
+        <Section title="Dialogs & toasts" i={7}>
+          <div className="flex flex-wrap gap-3">
+            <Button variant="outline" onClick={() => setDialogOpen(true)}>
+              Open dialog
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => toast({ title: 'Saved', description: 'Your changes are live.', variant: 'success' })}
+            >
+              Success toast
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => toast({ title: 'Something went wrong', variant: 'danger' })}
+            >
+              Error toast
+            </Button>
+          </div>
+        </Section>
+
+        {/* Record list */}
+        <Section
+          title="Record list"
+          description="A data-driven list page — search, sortable columns, typed cells (reference, amount, status badge), empty state."
+          i={8}
+        >
+          <RecordList
+            columns={INVOICE_COLUMNS}
+            rows={filtered}
+            getRowId={(r) => r.id}
+            search={{ value: search, onChange: setSearch, placeholder: 'Search invoices…' }}
+            sort={sort}
+            onSortChange={(key) =>
+              setSort((s) => ({ key, dir: s.key === key && s.dir === 'desc' ? 'asc' : 'desc' }))
+            }
+            empty={{ title: 'No invoices', description: 'Try a different search.' }}
+          />
+        </Section>
+
+        {/* Line editor */}
+        <Section
+          title="Line editor"
+          description="A spreadsheet-grade line-item grid. Enter adds a row, Alt+↑/↓ moves, ⌘D duplicates, ⌘⌫ removes."
+          i={9}
+        >
+          <LineGrid
+            columns={LINE_COLUMNS}
+            rows={lines}
+            onRowsChange={setLines}
+            emptyRow={() => ({ item: '', qty: '1', rate: '', account: 'services' })}
+            footer={
+              <div className="text-sm text-fg-muted">
+                Total{' '}
+                <span className="font-semibold text-fg tabular-nums">
+                  {usd(lines.reduce((s, l) => s + (Number(l.qty) * Number(l.rate) || 0), 0))}
+                </span>
+              </div>
+            }
+          />
+        </Section>
+
         {/* Overlay */}
         <Section
           title="Panels"
@@ -352,6 +537,32 @@ export default function Home() {
           Built with appkit — tokenized, animated, themeable.
         </footer>
       </main>
+
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        title="Delete project?"
+        description="This action cannot be undone."
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setDialogOpen(false)
+                toast({ title: 'Project deleted', variant: 'danger' })
+              }}
+            >
+              Delete
+            </Button>
+          </>
+        }
+      >
+        <p className="text-fg-muted">Everything in this project will be permanently removed.</p>
+      </Dialog>
 
       <Drawer
         open={open}
