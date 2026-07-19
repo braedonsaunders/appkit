@@ -30,6 +30,14 @@ app that imports it improves.
   values live.**
 - `packages/ui` — the component library. Tokenized, motion-aware, accessible,
   Server-Component-safe primitives (see the index in `orientation.md`).
+- `packages/db` — the **multi-tenant data layer**: a Postgres RLS engine
+  (`createDb` → tenant-scoped `db` + BYPASSRLS `superDb`, `withTenant` /
+  `withSuperAdmin`), schema helpers, the RLS policy installer, and the canonical
+  identity schema (tenants / users / memberships / roles). An app gets tenant
+  isolation + super-admin out of the box.
+- `packages/tenant` — request context + RBAC on top of `@appkit/db`:
+  `RequestContext`, `can` / `assertCan` (wildcards, read-tiers, per-user
+  grant/deny overrides), `resolveMembershipAccess`, super-admin.
 - `apps/playground` — the **living reference**: a runnable Next 16 app that
   showcases every primitive + an `/admin` area (hub + settings shell). Read it to
   see any primitive in real use; keep it up to date when you add/​change a primitive.

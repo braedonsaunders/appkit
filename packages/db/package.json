@@ -1,0 +1,29 @@
+{
+  "name": "@appkit/db",
+  "version": "0.1.0",
+  "description": "Multi-tenant data layer — Postgres RLS engine, schema helpers, and the canonical identity schema (tenants / users / memberships / roles).",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts",
+    "./package.json": "./package.json"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "files": ["src"],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.2"
+  }
+}

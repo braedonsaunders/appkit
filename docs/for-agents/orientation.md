@@ -106,5 +106,35 @@ header + two-pane rail) + `SettingsNav` / `SettingsSection` / `SettingsRow`.
 TSX source, not built output). Then compose screens from the primitives above —
 every color a token, light + dark for free.
 
+## 5. Multi-tenancy out of the box (`@appkit/db` + `@appkit/tenant`)
+
+An app on appkit is multi-tenant with super-admin from day one — you don't build
+RLS or RBAC yourself.
+
+```ts
+import { createDb, tenantRef, id, installRlsSql, IDENTITY_TENANT_TABLES } from '@appkit/db'
+import * as schema from '@appkit/db/schema'
+
+// One factory: a tenant-scoped `db` (Postgres RLS applied per request) + a
+// BYPASSRLS `superDb` for system/super-admin work.
+export const { db, superDb, withTenant, withTenantContext, withSuperAdmin } =
+  createDb({ url: process.env.DATABASE_URL!, superUrl: process.env.DATABASE_SUPER_URL, schema })
+```
+
+- **Every tenant table** uses `tenantRef()` (a `tenant_id` column) and is listed
+  for RLS. Install policies after migrations: `installRlsSql([...IDENTITY_TENANT_TABLES, 'your_table'])`.
+- **Tenant queries** run scoped: `withTenantContext(tenantId, () => db.select()…)`
+  (pooled) or `withTenant(tenantId, fn)` (one atomic transaction). Unscoped
+  queries match **no rows** (deny-by-default). Cross-tenant/system work uses
+  `withSuperAdmin(sdb => …)`.
+- **RBAC** (`@appkit/tenant`): build a `RequestContext` (resolve the user's
+  permission set via `resolveMembershipAccess`), then gate mutations with
+  `assertCan(ctx, 'module.action')`. `module.*` wildcards and `.read.{all,site,
+  self}` tiers work; super-admins pass everything.
+
+The canonical identity schema (tenants, users, memberships, roles,
+role_assignments, per-user permission overrides) ships in `@appkit/db/schema` —
+extend it, don't reinvent it.
+
 For the rules any app on this foundation must follow, see
 [`building-applications.md`](building-applications.md).
