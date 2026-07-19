@@ -224,6 +224,12 @@ export default function Home() {
           <Badge variant="secondary">v0.1</Badge>
         </div>
         <div className="flex items-center gap-1">
+          <a
+            href="/admin"
+            className="rounded-md px-3 py-1.5 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
+          >
+            Admin
+          </a>
           <Tooltip content={dark ? 'Light mode' : 'Dark mode'}>
             <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
               {dark ? <Sun className="size-5" /> : <Moon className="size-5" />}

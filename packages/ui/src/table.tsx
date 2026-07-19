@@ -1,13 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { motion, useReducedMotion, type HTMLMotionProps } from 'framer-motion'
 import { cn } from './utils'
-
-// TableBody hands each descendant TableRow a monotonic index so rows can
-// stagger their entrance; the delay clamps so long tables don't pause forever.
-type RowIndexContextValue = { next: () => number }
-const RowIndexContext = React.createContext<RowIndexContextValue | null>(null)
 
 export const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
   ({ className, ...props }, ref) => (
@@ -36,52 +30,31 @@ TableHeader.displayName = 'TableHeader'
 export const TableBody = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, children, ...props }, ref) => {
-  const counterRef = React.useRef(0)
-  counterRef.current = 0
-  const value = React.useMemo<RowIndexContextValue>(
-    () => ({
-      next: () => {
-        const i = counterRef.current
-        counterRef.current += 1
-        return i
-      },
-    }),
-    [],
-  )
-  return (
-    <RowIndexContext.Provider value={value}>
-      <tbody ref={ref} className={cn('[&_tr:last-child]:border-0', className)} {...props}>
-        {children}
-      </tbody>
-    </RowIndexContext.Provider>
-  )
-})
+>(({ className, ...props }, ref) => (
+  <tbody ref={ref} className={cn('[&_tr:last-child]:border-0', className)} {...props} />
+))
 TableBody.displayName = 'TableBody'
 
-export type TableRowProps = HTMLMotionProps<'tr'> & { noAnimate?: boolean }
+export type TableRowProps = React.HTMLAttributes<HTMLTableRowElement> & {
+  /** Disable the staggered entrance (e.g. header rows). */
+  noAnimate?: boolean
+}
 
 export const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(
-  ({ className, noAnimate, ...props }, ref) => {
-    const ctx = React.useContext(RowIndexContext)
-    const reduce = useReducedMotion()
-    const [index] = React.useState(() => (ctx ? ctx.next() : 0))
-    const delay = Math.min(index, 12) * 0.02
-    const skip = noAnimate || reduce || !ctx
-    return (
-      <motion.tr
-        ref={ref}
-        initial={skip ? false : { opacity: 0, y: 4 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.18, delay, ease: [0.22, 0.61, 0.36, 1] }}
-        className={cn(
-          'border-b border-border-subtle transition-colors duration-150 hover:bg-surface-hover data-[state=selected]:bg-bg-subtle',
-          className,
-        )}
-        {...props}
-      />
-    )
-  },
+  ({ className, noAnimate, ...props }, ref) => (
+    // Staggered entrance is pure CSS (`.appkit-row` + nth-child delay in
+    // tokens.css) — no JS index, so it's StrictMode- and hydration-safe, and
+    // visible-by-default (@starting-style) so it never strands in a hidden tab.
+    <tr
+      ref={ref}
+      className={cn(
+        'border-b border-border-subtle transition-colors duration-150 hover:bg-surface-hover data-[state=selected]:bg-bg-subtle',
+        !noAnimate && 'appkit-row',
+        className,
+      )}
+      {...props}
+    />
+  ),
 )
 TableRow.displayName = 'TableRow'
 

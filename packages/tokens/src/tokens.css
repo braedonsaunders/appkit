@@ -274,6 +274,40 @@
       transform: translateX(350%);
     }
   }
+
+  /* Staggered table-row entrance — visible by default; @starting-style supplies
+     the transition origin, so it never depends on requestAnimationFrame (which
+     pauses in background/prerendered tabs) and never strands a row invisible.
+     Stagger is pure CSS via nth-child — no JS index, so it's hydration- and
+     StrictMode-safe. Rows past the 12th animate together. */
+  .appkit-row {
+    transition:
+      opacity var(--duration-base) var(--ease-out),
+      transform var(--duration-base) var(--ease-out);
+  }
+  @starting-style {
+    .appkit-row {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
+  .appkit-row:nth-child(1) { transition-delay: 0ms; }
+  .appkit-row:nth-child(2) { transition-delay: 20ms; }
+  .appkit-row:nth-child(3) { transition-delay: 40ms; }
+  .appkit-row:nth-child(4) { transition-delay: 60ms; }
+  .appkit-row:nth-child(5) { transition-delay: 80ms; }
+  .appkit-row:nth-child(6) { transition-delay: 100ms; }
+  .appkit-row:nth-child(7) { transition-delay: 120ms; }
+  .appkit-row:nth-child(8) { transition-delay: 140ms; }
+  .appkit-row:nth-child(9) { transition-delay: 160ms; }
+  .appkit-row:nth-child(10) { transition-delay: 180ms; }
+  .appkit-row:nth-child(11) { transition-delay: 200ms; }
+  .appkit-row:nth-child(n + 12) { transition-delay: 220ms; }
+  @media (prefers-reduced-motion: reduce) {
+    .appkit-row {
+      transition: none;
+    }
+  }
   .app-scroll::-webkit-scrollbar {
     width: 10px;
     height: 10px;

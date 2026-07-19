@@ -25,6 +25,14 @@ export { Tabs, type TabsProps, type TabItem } from './tabs'
 export { Tooltip, type TooltipProps } from './tooltip'
 export { EmptyState, type EmptyStateProps } from './empty-state'
 export { PageHeader, type PageHeaderProps } from './page-header'
+export {
+  SettingsLayout,
+  SettingsNav,
+  SettingsSection,
+  SettingsRow,
+  type SettingsNavItem,
+  type SettingsNavGroup,
+} from './settings-layout'
 export { Popover } from './popover'
 export {
   DropdownMenu,
@@ -34,7 +42,8 @@ export {
   type DropdownMenuProps,
   type DropdownMenuItemProps,
 } from './dropdown-menu'
-export { Select, type SelectProps, type SelectOption } from './select'
+export { SearchSelect, type SearchSelectProps, type SelectOption } from './search-select'
+export { Select, type SelectProps } from './select'
 export { Dialog, type DialogProps, type DialogSize } from './dialog'
 export {
   ToastProvider,
