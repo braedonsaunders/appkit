@@ -25,6 +25,15 @@ export { Tabs, type TabsProps, type TabItem } from './tabs'
 export { Tooltip, type TooltipProps } from './tooltip'
 export { EmptyState, type EmptyStateProps } from './empty-state'
 export { PageHeader, type PageHeaderProps } from './page-header'
+export { AppShell } from './app-shell'
+export { AppSidebar } from './app-sidebar'
+export {
+  SidebarNav,
+  findActiveNavHref,
+  type SidebarNavItem,
+  type SidebarNavGroup,
+} from './sidebar-nav'
+export { PageContainer, ListPageLayout, DetailPageLayout, WizardLayout } from './page-layout'
 export {
   AdminHub,
   SettingsShell,
