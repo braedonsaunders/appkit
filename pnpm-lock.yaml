@@ -61,6 +61,25 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/api:
+    dependencies:
+      '@appkit/db':
+        specifier: workspace:*
+        version: link:../db
+      '@appkit/tenant':
+        specifier: workspace:*
+        version: link:../tenant
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@types/pg@8.20.0)(pg@8.22.0)
+    devDependencies:
+      '@types/node':
+        specifier: ^22
+        version: 22.20.1
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.1
+
   packages/auth:
     dependencies:
       '@appkit/db':

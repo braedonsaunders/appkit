@@ -13,6 +13,7 @@ export {
   type RoleScope,
 } from './schema/identity'
 export { auditLog, domainEventOutbox, PLATFORM_TENANT_TABLES } from './schema/platform'
+export { apiKeys, apiIdempotencyKeys, API_TENANT_TABLES } from './schema/api'
 export {
   createTenant,
   createUser,
