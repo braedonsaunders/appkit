@@ -13,3 +13,11 @@ export {
   type RoleScope,
 } from './schema/identity'
 export { auditLog, domainEventOutbox, PLATFORM_TENANT_TABLES } from './schema/platform'
+export {
+  createTenant,
+  createUser,
+  addMembership,
+  seedRoles,
+  assignRole,
+  findUserByEmail,
+} from './seed'
