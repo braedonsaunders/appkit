@@ -10,6 +10,8 @@ import {
   keyHasPermission,
   parseBearerToken,
   sanitizeApiPermissions,
+  describeRoute,
+  toOpenApi,
 } from './index'
 
 test('generateApiKey → parse → hash round-trips', () => {
@@ -73,4 +75,19 @@ test('idempotency digest is stable across key order, sensitive to body', () => {
   assert.notEqual(a, c) // body change → different digest
   const d = apiIdempotencyRequestDigest(req('/refund'), { amount: 10, currency: 'USD' })
   assert.notEqual(a, d) // path change → different digest
+})
+
+test('describeRoute + toOpenApi emit a valid-shaped spec', () => {
+  const routes = [
+    describeRoute({ method: 'GET', path: '/v1/invoices', tag: 'Invoices', permission: 'invoices.read', summary: 'List invoices', params: [{ name: 'status', description: 'filter' }], responseExample: { data: [] } }),
+    describeRoute({ method: 'POST', path: '/v1/invoices', tag: 'Invoices', permission: 'invoices.write', requestExample: { amount: 10 } }),
+  ]
+  const spec = toOpenApi(routes, { title: 'Demo', version: '1.0.0' }) as any
+  assert.equal(spec.openapi, '3.1.0')
+  assert.equal(spec.info.title, 'Demo')
+  assert.ok(spec.paths['/v1/invoices'].get)
+  assert.ok(spec.paths['/v1/invoices'].post)
+  assert.equal(spec.paths['/v1/invoices'].get.parameters[0].name, 'status')
+  assert.deepEqual(spec.paths['/v1/invoices'].get.security, [{ apiKey: [] }])
+  assert.ok(spec.components.securitySchemes.apiKey)
 })

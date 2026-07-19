@@ -57,6 +57,7 @@ const NAV: SidebarNavGroup[] = [
     label: 'Manage',
     items: [
       { href: '/admin', label: 'Administration', icon: <Settings /> },
+      { href: '/api-docs', label: 'API reference', icon: <BarChart3 /> },
       { href: '/', label: 'Component gallery', icon: <Sparkles /> },
     ],
   },

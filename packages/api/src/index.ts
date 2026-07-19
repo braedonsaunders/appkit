@@ -14,3 +14,10 @@ export {
   type IdempotentResult,
 } from './idempotency'
 export { createApi } from './handler'
+export {
+  describeRoute,
+  toOpenApi,
+  type ApiRouteDoc,
+  type ApiParam,
+  type HttpMethod,
+} from './docs'

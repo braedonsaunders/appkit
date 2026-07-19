@@ -25,6 +25,14 @@ export { Tabs, type TabsProps, type TabItem } from './tabs'
 export { Tooltip, type TooltipProps } from './tooltip'
 export { EmptyState, type EmptyStateProps } from './empty-state'
 export { PageHeader, type PageHeaderProps } from './page-header'
+export {
+  ApiReference,
+  ApiEndpoint,
+  MethodBadge,
+  CodeBlock,
+  type ApiEndpointDoc,
+  type ApiParamDoc,
+} from './api-reference'
 export { AppShell } from './app-shell'
 export { AppSidebar } from './app-sidebar'
 export {
