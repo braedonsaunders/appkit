@@ -26,12 +26,17 @@ export { Tooltip, type TooltipProps } from './tooltip'
 export { EmptyState, type EmptyStateProps } from './empty-state'
 export { PageHeader, type PageHeaderProps } from './page-header'
 export {
-  SettingsLayout,
+  AdminHub,
+  SettingsShell,
   SettingsNav,
   SettingsSection,
   SettingsRow,
+  type AdminHubCard,
+  type AdminHubGroup,
+  type AdminHubAccent,
   type SettingsNavItem,
   type SettingsNavGroup,
+  type LinkRender,
 } from './settings-layout'
 export { Popover } from './popover'
 export {
