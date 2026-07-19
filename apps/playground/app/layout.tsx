@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { ToastProvider } from '@appkit/ui'
+import { Toaster } from '@appkit/ui'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -11,7 +11,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-bg text-fg antialiased">
-        <ToastProvider>{children}</ToastProvider>
+        {children}
+        <Toaster richColors closeButton />
       </body>
     </html>
   )

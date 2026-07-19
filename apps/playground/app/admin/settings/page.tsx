@@ -22,10 +22,8 @@ import {
   Badge,
   type BadgeProps,
   Button,
+  ContextMenu,
   Dialog,
-  DropdownMenu,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
   Input,
   Label,
   type LinkRender,
@@ -37,7 +35,8 @@ import {
   SettingsShell,
   type SettingsNavGroup,
   Switch,
-  useToast,
+  toast,
+  useContextMenu,
 } from '@appkit/ui'
 
 function useTheme() {
@@ -114,7 +113,6 @@ export default function SettingsPage() {
   const [active, setActive] = React.useState('users')
   const [invite, setInvite] = React.useState(false)
   const [inviteEmail, setInviteEmail] = React.useState('')
-  const { toast } = useToast()
 
   React.useEffect(() => {
     const s = new URLSearchParams(window.location.search).get('s')
@@ -159,7 +157,7 @@ export default function SettingsPage() {
               onClick={() => {
                 setInvite(false)
                 setInviteEmail('')
-                toast({ title: 'Invitation sent', description: inviteEmail || 'user@acme.com', variant: 'success' })
+                toast.success('Invitation sent', { description: inviteEmail || 'user@acme.com' })
               }}
             >
               <Mail className="size-4" /> Send invite
@@ -222,7 +220,8 @@ function GeneralSettings() {
 }
 
 function UsersSettings({ onInvite }: { onInvite: () => void }) {
-  const { toast } = useToast()
+  const menu = useContextMenu()
+  const [menuUser, setMenuUser] = React.useState<User | null>(null)
   const [search, setSearch] = React.useState('')
   const rows = USERS.filter((u) => (search ? `${u.name} ${u.email} ${u.role}`.toLowerCase().includes(search.toLowerCase()) : true))
   const columns: RecordColumn<User>[] = [
@@ -246,24 +245,17 @@ function UsersSettings({ onInvite }: { onInvite: () => void }) {
       label: '',
       kind: 'actions',
       render: (u) => (
-        <DropdownMenu
-          trigger={
-            <Button variant="ghost" size="icon" aria-label={`Actions for ${u.name}`}>
-              <MoreHorizontal className="size-4" />
-            </Button>
-          }
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={`Actions for ${u.name}`}
+          onClick={(e) => {
+            setMenuUser(u)
+            menu.openBelow(e.currentTarget)
+          }}
         >
-          <DropdownMenuItem icon={<Pencil size={14} />} onSelect={() => toast({ title: `Editing ${u.name}`, variant: 'info' })}>
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuItem icon={<UserRound size={14} />} onSelect={() => toast({ title: 'Role changed' })}>
-            Change role
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem icon={<Trash2 size={14} />} variant="danger" onSelect={() => toast({ title: `Removed ${u.name}`, variant: 'danger' })}>
-            Remove
-          </DropdownMenuItem>
-        </DropdownMenu>
+          <MoreHorizontal className="size-4" />
+        </Button>
       ),
     },
   ]
@@ -280,6 +272,24 @@ function UsersSettings({ onInvite }: { onInvite: () => void }) {
         getRowId={(u) => u.id}
         search={{ value: search, onChange: setSearch, placeholder: 'Search people…' }}
         empty={{ title: 'No people found', description: 'Try a different search.' }}
+      />
+      <ContextMenu
+        open={menu.open && menuUser != null}
+        position={menu.position}
+        onClose={() => {
+          menu.close()
+          setMenuUser(null)
+        }}
+        items={
+          menuUser == null
+            ? []
+            : [
+                { key: 'edit', label: 'Edit', icon: Pencil, onSelect: () => toast.info(`Editing ${menuUser.name}`) },
+                { key: 'role', label: 'Change role', icon: UserRound, onSelect: () => toast('Role changed') },
+                { key: 'sep', separator: true },
+                { key: 'rm', label: 'Remove', icon: Trash2, danger: true, onSelect: () => toast.error(`Removed ${menuUser.name}`) },
+              ]
+        }
       />
     </div>
   )

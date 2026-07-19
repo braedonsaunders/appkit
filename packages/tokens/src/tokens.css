@@ -266,6 +266,32 @@
     scrollbar-gutter: stable;
   }
 
+  /* Skeleton shimmer — a left→right sweep. Works server-rendered (pure CSS);
+     reduced-motion users get a static placeholder. */
+  .appkit-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(var(--ch-fg) / 0.06),
+      transparent
+    );
+    animation: appkit-shimmer 1.6s ease-in-out infinite;
+  }
+  @keyframes appkit-shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .appkit-shimmer::after {
+      animation: none;
+    }
+  }
+
   @keyframes appkit-indeterminate {
     0% {
       transform: translateX(-100%);

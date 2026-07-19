@@ -15,7 +15,7 @@
 import * as React from 'react'
 import { ArrowDown, ArrowUp, Copy, GripVertical, Plus, Trash2 } from 'lucide-react'
 import { Button } from './button'
-import { DropdownMenu, DropdownMenuItem, DropdownMenuSeparator } from './dropdown-menu'
+import { ContextMenu, useContextMenu } from './context-menu'
 import { Select, type SelectOption } from './select'
 import { cn } from './utils'
 
@@ -85,6 +85,8 @@ export function LineGrid<Row extends Record<string, unknown>>({
   const labels = { ...DEFAULT_LABELS, ...labelOverrides }
   const containerRef = React.useRef<HTMLDivElement>(null)
   const focusedCol = React.useRef(0)
+  const menu = useContextMenu()
+  const [menuRow, setMenuRow] = React.useState<number | null>(null)
 
   const template = readOnly
     ? columns.map((c) => c.width).join(' ')
@@ -191,38 +193,18 @@ export function LineGrid<Row extends Record<string, unknown>>({
             <React.Fragment key={i}>
               {!readOnly ? (
                 <div className={cn(cellBase, 'justify-center px-0')}>
-                  <DropdownMenu
-                    align="start"
-                    className="w-44"
-                    trigger={
-                      <button
-                        type="button"
-                        aria-label={labels.lineActions(i + 1)}
-                        className="group flex size-7 items-center justify-center rounded text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg-muted"
-                      >
-                        <span className="text-[11px] tabular-nums group-hover:hidden">{i + 1}</span>
-                        <GripVertical size={13} className="hidden group-hover:block" />
-                      </button>
-                    }
+                  <button
+                    type="button"
+                    aria-label={labels.lineActions(i + 1)}
+                    onClick={(e) => {
+                      setMenuRow(i)
+                      menu.openBelow(e.currentTarget)
+                    }}
+                    className="group flex size-7 items-center justify-center rounded text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg-muted"
                   >
-                    <DropdownMenuItem icon={<ArrowUp size={14} />} onSelect={() => insertRow(i)}>
-                      {labels.insertAbove}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem icon={<ArrowDown size={14} />} onSelect={() => insertRow(i + 1)}>
-                      {labels.insertBelow}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem icon={<Copy size={14} />} onSelect={() => duplicateRow(i)}>
-                      {labels.duplicate}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      icon={<Trash2 size={14} />}
-                      variant="danger"
-                      onSelect={() => removeRow(i)}
-                    >
-                      {rows.length > minRows ? labels.removeLine : labels.clearLine}
-                    </DropdownMenuItem>
-                  </DropdownMenu>
+                    <span className="text-[11px] tabular-nums group-hover:hidden">{i + 1}</span>
+                    <GripVertical size={13} className="hidden group-hover:block" />
+                  </button>
                 </div>
               ) : null}
 
@@ -303,6 +285,32 @@ export function LineGrid<Row extends Record<string, unknown>>({
         {footer}
       </div>
       {!readOnly ? <p className="mt-1.5 text-[11px] text-fg-subtle">{labels.keyboardHint}</p> : null}
+
+      <ContextMenu
+        open={menu.open && menuRow != null}
+        position={menu.position}
+        onClose={() => {
+          menu.close()
+          setMenuRow(null)
+        }}
+        items={
+          menuRow == null
+            ? []
+            : [
+                { key: 'above', label: labels.insertAbove, icon: ArrowUp, onSelect: () => insertRow(menuRow) },
+                { key: 'below', label: labels.insertBelow, icon: ArrowDown, onSelect: () => insertRow(menuRow + 1) },
+                { key: 'dup', label: labels.duplicate, icon: Copy, onSelect: () => duplicateRow(menuRow) },
+                { key: 'sep', separator: true },
+                {
+                  key: 'rm',
+                  label: rows.length > minRows ? labels.removeLine : labels.clearLine,
+                  icon: Trash2,
+                  danger: true,
+                  onSelect: () => removeRow(menuRow),
+                },
+              ]
+        }
+      />
     </div>
   )
 }

@@ -19,6 +19,8 @@ import {
 } from 'lucide-react'
 import {
   Alert,
+  AlertDescription,
+  AlertTitle,
   Avatar,
   Badge,
   Button,
@@ -28,11 +30,9 @@ import {
   CardHeader,
   CardTitle,
   Checkbox,
+  ContextMenu,
   Dialog,
   Drawer,
-  DropdownMenu,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
   Input,
   Label,
   LineGrid,
@@ -47,8 +47,9 @@ import {
   Switch,
   Tabs,
   Textarea,
+  toast,
   Tooltip,
-  useToast,
+  useContextMenu,
 } from '@appkit/ui'
 
 function useTheme() {
@@ -133,6 +134,17 @@ const SEMANTIC = [
   { label: 'info', className: 'bg-info' },
 ]
 
+const PEOPLE = [
+  { value: 'ada', label: 'Ada Lovelace', hint: 'Owner', group: 'Engineering' },
+  { value: 'grace', label: 'Grace Hopper', hint: 'Admin', group: 'Engineering' },
+  { value: 'alan', label: 'Alan Turing', group: 'Engineering' },
+  { value: 'katherine', label: 'Katherine Johnson', group: 'Finance' },
+  { value: 'linus', label: 'Linus Pauling', group: 'Finance' },
+  { value: 'marie', label: 'Marie Curie', group: 'Research' },
+  { value: 'rosalind', label: 'Rosalind Franklin', group: 'Research' },
+  { value: 'nikola', label: 'Nikola Tesla', group: 'Research' },
+]
+
 type Invoice = { id: string; number: string; customer: string; status: string; amount: number }
 const INVOICES: Invoice[] = [
   { id: '1', number: 'INV-1042', customer: 'Northwind Traders', status: 'paid', amount: 4820 },
@@ -193,9 +205,10 @@ export default function Home() {
     return () => clearInterval(id)
   }, [])
 
-  const { toast } = useToast()
+  const menu = useContextMenu()
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [role, setRole] = React.useState('editor')
+  const [assignee, setAssignee] = React.useState('')
   const [search, setSearch] = React.useState('')
   const [sort, setSort] = React.useState<{ key: string; dir: 'asc' | 'desc' }>({
     key: 'number',
@@ -376,17 +389,29 @@ export default function Home() {
         {/* Alerts */}
         <Section title="Alerts" i={4}>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Alert variant="info" icon={<Info className="size-4" />} title="Heads up">
-              A tokenized info message.
+            <Alert variant="info">
+              <AlertTitle className="flex items-center gap-2">
+                <Info className="size-4" /> Heads up
+              </AlertTitle>
+              <AlertDescription>A tokenized info message.</AlertDescription>
             </Alert>
-            <Alert variant="success" icon={<Check className="size-4" />} title="Saved">
-              Your changes were saved.
+            <Alert variant="success">
+              <AlertTitle className="flex items-center gap-2">
+                <Check className="size-4" /> Saved
+              </AlertTitle>
+              <AlertDescription>Your changes were saved.</AlertDescription>
             </Alert>
-            <Alert variant="warning" icon={<TriangleAlert className="size-4" />} title="Careful">
-              This action needs review.
+            <Alert variant="warning">
+              <AlertTitle className="flex items-center gap-2">
+                <TriangleAlert className="size-4" /> Careful
+              </AlertTitle>
+              <AlertDescription>This action needs review.</AlertDescription>
             </Alert>
-            <Alert variant="danger" icon={<CircleAlert className="size-4" />} title="Error">
-              Something went wrong.
+            <Alert variant="destructive">
+              <AlertTitle className="flex items-center gap-2">
+                <CircleAlert className="size-4" /> Error
+              </AlertTitle>
+              <AlertDescription>Something went wrong.</AlertDescription>
             </Alert>
           </div>
         </Section>
@@ -426,9 +451,14 @@ export default function Home() {
         </Section>
 
         {/* Menus & selection */}
-        <Section title="Menus & selection" i={6}>
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="w-64">
+        <Section
+          title="Menus & selection"
+          description="A searchable select (typeahead, grouped options, keyboard nav, mobile bottom sheet) and a context menu."
+          i={6}
+        >
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="w-56 space-y-1.5">
+              <Label>Role</Label>
               <Select
                 value={role}
                 onChange={setRole}
@@ -440,48 +470,48 @@ export default function Home() {
                 ]}
               />
             </div>
-            <DropdownMenu
-              trigger={
-                <Button variant="outline">
-                  <MoreHorizontal className="size-4" /> Actions
-                </Button>
-              }
-            >
-              <DropdownMenuItem icon={<Pencil size={14} />} onSelect={() => toast({ title: 'Editing', variant: 'info' })}>
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem icon={<Bell size={14} />} onSelect={() => toast({ title: 'Muted' })}>
-                Mute
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                icon={<Trash2 size={14} />}
-                variant="danger"
-                onSelect={() => toast({ title: 'Deleted', variant: 'danger' })}
-              >
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenu>
+            <div className="w-64 space-y-1.5">
+              <Label>Assignee</Label>
+              <Select
+                value={assignee}
+                onChange={setAssignee}
+                options={PEOPLE}
+                searchable
+                clearable
+                emptyLabel="Unassigned"
+                placeholder="Unassigned"
+                searchPlaceholder="Search people…"
+              />
+            </div>
+            <Button variant="outline" onClick={(e) => menu.openBelow(e.currentTarget)}>
+              <MoreHorizontal className="size-4" /> Actions
+            </Button>
           </div>
         </Section>
 
         {/* Dialogs & toasts */}
-        <Section title="Dialogs & toasts" i={7}>
+        <Section title="Dialogs & toasts" description="A sonner-compatible toast API (toast.success / .error / .promise) and a modal dialog." i={7}>
           <div className="flex flex-wrap gap-3">
             <Button variant="outline" onClick={() => setDialogOpen(true)}>
               Open dialog
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => toast({ title: 'Saved', description: 'Your changes are live.', variant: 'success' })}
-            >
+            <Button variant="outline" onClick={() => toast.success('Saved', { description: 'Your changes are live.' })}>
               Success toast
+            </Button>
+            <Button variant="outline" onClick={() => toast.error('Something went wrong')}>
+              Error toast
             </Button>
             <Button
               variant="outline"
-              onClick={() => toast({ title: 'Something went wrong', variant: 'danger' })}
+              onClick={() =>
+                toast.promise(new Promise((res) => setTimeout(res, 1600)), {
+                  loading: 'Saving…',
+                  success: 'Saved',
+                  error: 'Failed to save',
+                })
+              }
             >
-              Error toast
+              Promise toast
             </Button>
           </div>
         </Section>
@@ -559,7 +589,7 @@ export default function Home() {
               variant="destructive"
               onClick={() => {
                 setDialogOpen(false)
-                toast({ title: 'Project deleted', variant: 'danger' })
+                toast.error('Project deleted')
               }}
             >
               Delete
@@ -569,6 +599,18 @@ export default function Home() {
       >
         <p className="text-fg-muted">Everything in this project will be permanently removed.</p>
       </Dialog>
+
+      <ContextMenu
+        open={menu.open}
+        position={menu.position}
+        onClose={menu.close}
+        items={[
+          { key: 'edit', label: 'Edit', icon: Pencil, onSelect: () => toast.info('Editing') },
+          { key: 'mute', label: 'Mute', icon: Bell, onSelect: () => toast('Muted') },
+          { key: 'sep', separator: true },
+          { key: 'del', label: 'Delete', icon: Trash2, danger: true, onSelect: () => toast.error('Deleted') },
+        ]}
+      />
 
       <Drawer
         open={open}

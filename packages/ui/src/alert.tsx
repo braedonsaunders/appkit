@@ -2,35 +2,34 @@ import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from './utils'
 
-const alertVariants = cva('relative flex gap-3 rounded-lg border px-4 py-3 text-sm', {
+const alertVariants = cva('relative w-full rounded-lg border p-4 text-sm shadow-sm', {
   variants: {
     variant: {
-      neutral: 'border-border bg-surface text-fg',
-      info: 'border-info/25 bg-info-subtle text-info',
-      success: 'border-success/25 bg-success-subtle text-success',
+      default: 'border-border bg-surface text-fg',
+      destructive: 'border-danger/25 bg-danger-subtle text-danger',
       warning: 'border-warning/25 bg-warning-subtle text-warning',
-      danger: 'border-danger/25 bg-danger-subtle text-danger',
+      success: 'border-success/25 bg-success-subtle text-success',
+      info: 'border-info/25 bg-info-subtle text-info',
     },
   },
-  defaultVariants: { variant: 'info' },
+  defaultVariants: { variant: 'default' },
 })
 
-export type AlertProps = React.HTMLAttributes<HTMLDivElement> &
-  VariantProps<typeof alertVariants> & {
-    icon?: React.ReactNode
-    title?: React.ReactNode
-  }
+export type AlertProps = React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof alertVariants>
 
-export function Alert({ className, variant, icon, title, children, ...props }: AlertProps) {
-  return (
-    <div role="alert" className={cn(alertVariants({ variant }), className)} {...props}>
-      {icon ? <span className="mt-0.5 shrink-0">{icon}</span> : null}
-      <div className="min-w-0 space-y-1">
-        {title ? <div className="font-semibold">{title}</div> : null}
-        {children ? <div className={cn(title && 'opacity-90')}>{children}</div> : null}
-      </div>
-    </div>
-  )
-}
+export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
+  ({ className, variant, ...props }, ref) => (
+    <div ref={ref} role="alert" className={cn(alertVariants({ variant }), className)} {...props} />
+  ),
+)
+Alert.displayName = 'Alert'
+
+export const AlertTitle = ({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => (
+  <h5 className={cn('mb-1 font-semibold leading-tight tracking-tight', className)} {...props} />
+)
+
+export const AlertDescription = ({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => (
+  <div className={cn('text-sm leading-relaxed opacity-90 [&_p]:leading-relaxed', className)} {...props} />
+)
 
 export { alertVariants }

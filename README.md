@@ -9,6 +9,10 @@ raised to a flagship standard so a new app can be world-class on day one.
 > build. Every app in the ecosystem imports from here; nothing is re-invented
 > per app.
 
+> **Agents & new engineers:** start at [`AGENTS.md`](AGENTS.md) and
+> [`docs/for-agents/`](docs/for-agents/) — the design-system orientation, the full
+> primitive index, and the generalized rules for building apps on this foundation.
+
 ## Why this exists
 
 openbooks and beaconhs already share a design system so closely that

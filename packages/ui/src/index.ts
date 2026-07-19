@@ -13,7 +13,7 @@ export { Input, type InputProps } from './input'
 export { Textarea, type TextareaProps } from './textarea'
 export { Label } from './label'
 export { Badge, badgeVariants, type BadgeProps } from './badge'
-export { Alert, alertVariants, type AlertProps } from './alert'
+export { Alert, AlertTitle, AlertDescription, alertVariants, type AlertProps } from './alert'
 export { Switch, type SwitchProps } from './switch'
 export { Checkbox, type CheckboxProps } from './checkbox'
 export { Separator, type SeparatorProps } from './separator'
@@ -40,21 +40,22 @@ export {
 } from './settings-layout'
 export { Popover } from './popover'
 export {
-  DropdownMenu,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-  type DropdownMenuProps,
-  type DropdownMenuItemProps,
-} from './dropdown-menu'
+  ContextMenu,
+  useContextMenu,
+  type ContextMenuItem,
+  type ContextMenuEntry,
+  type ContextMenuController,
+} from './context-menu'
 export { SearchSelect, type SearchSelectProps, type SelectOption } from './search-select'
 export { Select, type SelectProps } from './select'
 export { Dialog, type DialogProps, type DialogSize } from './dialog'
 export {
-  ToastProvider,
-  useToast,
-  type ToastInput,
-  type ToastVariant,
+  toast,
+  Toaster,
+  type ToastT,
+  type ExternalToast,
+  type ToastType,
+  type ToasterPosition,
 } from './toast'
 export {
   Table,
