@@ -1,0 +1,9 @@
+/* @appkit/ui styles — pull in the token foundation so an app can get the full
+ * system with a single import:
+ *     @import '@appkit/ui/styles.css';
+ * (which transitively imports Tailwind v4 + @appkit/tokens). */
+@import '@appkit/tokens/tokens.css';
+
+/* Ensure Tailwind scans the primitives for class usage even when the app's own
+ * content globs don't reach into node_modules. */
+@source '../src';
