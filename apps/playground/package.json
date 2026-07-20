@@ -8,16 +8,24 @@
     "build": "next build",
     "start": "next start --port 4310",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf .next *.tsbuildinfo"
+    "clean": "rm -rf .next *.tsbuildinfo",
+    "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
+    "@appkit/api": "workspace:*",
+    "@appkit/auth": "workspace:*",
+    "@appkit/db": "workspace:*",
+    "@appkit/events": "workspace:*",
+    "@appkit/tenant": "workspace:*",
     "@appkit/tokens": "workspace:*",
     "@appkit/ui": "workspace:*",
+    "drizzle-orm": "^0.45.2",
     "framer-motion": "^12.42.2",
     "lucide-react": "^1.24.0",
     "next": "16.2.10",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.16",
@@ -25,6 +33,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tailwindcss": "^4.1.16",
+    "tsx": "^4.19.2",
     "typescript": "^5.9.3"
   }
 }

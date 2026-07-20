@@ -243,6 +243,12 @@ export default function Home() {
           >
             Admin
           </a>
+          <a
+            href="/dashboard"
+            className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-fg transition-colors hover:bg-primary-hover"
+          >
+            Open the app
+          </a>
           <Tooltip content={dark ? 'Light mode' : 'Dark mode'}>
             <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
               {dark ? <Sun className="size-5" /> : <Moon className="size-5" />}

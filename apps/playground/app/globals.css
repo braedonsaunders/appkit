@@ -11,6 +11,33 @@
   --drawer-top: 3.5rem;
 }
 
+/* Brand logo — stroke draw-in (pathLength-normalized), staggered via --ld.
+   Resting state is fully drawn; reduced-motion skips the animation. */
+@keyframes appkit-logo-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+.appkit-logo-draw {
+  stroke-dasharray: 1;
+  animation: appkit-logo-draw 0.8s var(--ease-out) var(--ld, 0ms) backwards;
+}
+@keyframes appkit-word-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}
+.appkit-word-in {
+  animation: appkit-word-in 0.5s var(--ease-out) 0.45s backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .appkit-logo-draw,
+  .appkit-word-in {
+    animation: none;
+  }
+}
+
 /* Entrance reveal — visible BY DEFAULT, animation is pure enhancement. Uses
    @starting-style so it never depends on requestAnimationFrame (which pauses in
    background/prerendered tabs) and never strands content at opacity 0. */

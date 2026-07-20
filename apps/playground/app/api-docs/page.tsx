@@ -25,6 +25,19 @@ function useTheme() {
   return { dark, toggle }
 }
 
+const LIVE_ENDPOINTS: ApiEndpointDoc[] = [
+  {
+    method: 'GET',
+    path: '/team',
+    tag: 'Team',
+    summary: 'List team members',
+    description:
+      'A REAL @appkit/api endpoint: Bearer-key authenticated, permission-checked (team.read), and RLS-scoped to the key’s tenant. Paste the seeded API key above and Send — without it you get the typed 401 envelope.',
+    permission: 'team.read',
+    responseExample: { data: [{ id: '…', name: 'Ada Lovelace', email: 'admin@appkit.dev' }], total: 2 },
+  },
+]
+
 const ENDPOINTS: ApiEndpointDoc[] = [
   {
     method: 'GET',
@@ -74,12 +87,18 @@ export default function ApiDocs() {
           </Button>
         </div>
       </header>
-      <main className="px-6 py-10">
+      <main className="space-y-12 px-6 py-10">
+        <ApiReference
+          endpoints={LIVE_ENDPOINTS}
+          baseUrl="/api/v1"
+          title="Live API (key-authed)"
+          description="Backed by @appkit/api against the real database. Paste the API key printed by the seed to authenticate; sending without it demonstrates the typed 401."
+        />
         <ApiReference
           endpoints={ENDPOINTS}
           baseUrl="/api/demo"
-          title="API reference"
-          description="Self-documenting — generated from route descriptions. Expand an endpoint and hit Send to call the live demo API."
+          title="Demo endpoints"
+          description="Self-documenting — generated from route descriptions. Expand an endpoint and hit Send."
         />
       </main>
     </div>
