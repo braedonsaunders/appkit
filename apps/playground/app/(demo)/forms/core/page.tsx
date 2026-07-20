@@ -2,16 +2,10 @@ import Link from 'next/link'
 import { ArrowRight, Boxes, Braces, CheckCircle2, Workflow, XCircle } from 'lucide-react'
 import {
   FIELD_TYPES,
-  FORM_TEMPLATE_ACTIONS,
-  FORM_TEMPLATE_TRIGGERS,
   formSchemaV1Schema,
   validateResponse,
   type FieldTypeMeta,
 } from '@appkit/forms-core'
-import {
-  actionDataSchema as businessActionDataSchema,
-  triggerDataSchema as businessTriggerDataSchema,
-} from '@appkit/forms-core/business-automation'
 import {
   Badge,
   Button,
@@ -52,13 +46,6 @@ const fieldsByCategory = fieldTypes.reduce<Partial<Record<FieldTypeMeta['categor
 )
 const fieldCategories = Object.entries(fieldsByCategory) as [FieldTypeMeta['category'], FieldTypeMeta[]][]
 
-const businessTriggers = businessTriggerDataSchema.options.map(
-  (option) => option.shape.trigger.value,
-)
-const businessActions = businessActionDataSchema.options.map(
-  (option) => option.shape.action.value,
-)
-
 const schemaResult = formSchemaV1Schema.safeParse(SUPPLIER_QUALIFICATION_SCHEMA)
 const responseSample = {
   company_name: '',
@@ -86,8 +73,8 @@ export default function FormsCorePage() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label="Field types" value={fieldTypes.length} icon={<Boxes />} />
         <Metric label="Field categories" value={fieldCategories.length} icon={<Braces />} />
-        <Metric label="Safety actions" value={FORM_TEMPLATE_ACTIONS.length} icon={<Workflow />} />
-        <Metric label="Business actions" value={businessActions.length} icon={<Workflow />} />
+        <Metric label="Automation models" value={2} icon={<Workflow />} />
+        <Metric label="Shared rule language" value={1} icon={<Workflow />} />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
@@ -141,19 +128,36 @@ export default function FormsCorePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Automation profiles</CardTitle>
-          <CardDescription>Safety forms and business records keep separate lifecycle vocabularies.</CardDescription>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle>Workflow-ready records</CardTitle>
+              <CardDescription>Use the automation model that matches how the record behaves.</CardDescription>
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/workflows">Open workflow studio <ArrowRight size={14} /></Link>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="grid gap-5 lg:grid-cols-2">
-          <Profile
-            title="Safety and operations"
-            triggers={FORM_TEMPLATE_TRIGGERS}
-            actions={FORM_TEMPLATE_ACTIONS}
+          <AutomationModel
+            title="Form workflows"
+            description="For inspections, requests, checklists, assessments, and other submitted forms."
+            capabilities={[
+              'React to submissions, field rules, status changes, schedules, and missed check-ins.',
+              'Notify teams, create follow-up records, update responses, call webhooks, and generate files.',
+              'Route human approvals through the same conditions used by the form designer.',
+            ]}
+            example={['Form submitted', 'Score below threshold', 'Approval', 'Create follow-up and notify']}
           />
-          <Profile
-            title="Business records"
-            triggers={businessTriggers}
-            actions={businessActions}
+          <AutomationModel
+            title="Transactional workflows"
+            description="For records with controlled lifecycle transitions such as orders, invoices, and journals."
+            capabilities={[
+              'React before or after creation, editing, submission, posting, voiding, and status changes.',
+              'Send messages, update fields and statuses, post records, and enforce persistent record locks.',
+              'Pause for approval and resume the correct branch exactly once after a decision.',
+            ]}
+            example={['Record submitted', 'Amount over limit', 'Approval', 'Post and lock record']}
           />
         </CardContent>
       </Card>
@@ -205,23 +209,42 @@ function Metric({ label, value, icon }: { label: string; value: number; icon: Re
   )
 }
 
-function Profile({ title, triggers, actions }: { title: string; triggers: readonly string[]; actions: readonly string[] }) {
+function AutomationModel({
+  title,
+  description,
+  capabilities,
+  example,
+}: {
+  title: string
+  description: string
+  capabilities: readonly string[]
+  example: readonly string[]
+}) {
   return (
-    <section className="space-y-3 rounded-lg border border-border p-4">
-      <h2 className="font-semibold text-fg">{title}</h2>
-      <TokenList label="Triggers" values={triggers} />
-      <TokenList label="Actions" values={actions} />
-    </section>
-  )
-}
-
-function TokenList({ label, values }: { label: string; values: readonly string[] }) {
-  return (
-    <div>
-      <div className="mb-1.5 text-xs font-medium text-fg-muted">{label}</div>
-      <div className="flex flex-wrap gap-1.5">
-        {values.map((value) => <Badge key={value} variant="secondary" className="font-mono text-[10px]">{value}</Badge>)}
+    <section className="flex flex-col rounded-lg border border-border bg-surface p-4">
+      <div>
+        <h2 className="font-semibold text-fg">{title}</h2>
+        <p className="mt-1 text-sm text-fg-muted">{description}</p>
       </div>
-    </div>
+      <ul className="mt-4 space-y-2">
+        {capabilities.map((capability) => (
+          <li key={capability} className="flex gap-2 text-sm text-fg-muted">
+            <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" />
+            <span>{capability}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-5 border-t border-border-subtle pt-4">
+        <div className="mb-2 text-xs font-medium tracking-wide text-fg-muted uppercase">Example</div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {example.map((step, index) => (
+            <div key={step} className="flex items-center gap-1.5">
+              <Badge variant={index === 2 ? 'warning' : 'secondary'}>{step}</Badge>
+              {index < example.length - 1 ? <ArrowRight className="size-3.5 text-fg-subtle" /> : null}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   )
 }
