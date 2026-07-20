@@ -12,6 +12,7 @@
 @source '../../../packages/editor/src';
 @source '../../../packages/forms/src';
 @source '../../../packages/notifications/src';
+@source '../../../packages/reports/src';
 @source '../../../packages/workflows/src';
 
 /* The playground has a 56px sticky header; drawers sit beneath it. An app shell

@@ -6,6 +6,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./react": "./src/react.ts",
     "./package.json": "./package.json"
   },
   "main": "./src/index.ts",
@@ -22,8 +23,22 @@
   "dependencies": {
     "@appkit/analytics": "workspace:*"
   },
+  "peerDependencies": {
+    "@appkit/ui": "^0.1.0",
+    "lucide-react": "^1.24.0",
+    "react": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@appkit/ui": { "optional": true },
+    "lucide-react": { "optional": true },
+    "react": { "optional": true }
+  },
   "devDependencies": {
+    "@appkit/ui": "workspace:*",
     "@types/node": "^22",
+    "@types/react": "^19",
+    "lucide-react": "^1.24.0",
+    "react": "^19",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3"
   },

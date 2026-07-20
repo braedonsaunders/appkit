@@ -2,8 +2,8 @@
 
 import * as React from 'react'
 import {
-  Activity, BarChart3, CircleGauge, Hash, LineChart, Loader2, PieChart, Plus, Rows3,
-  Table2, Trash2,
+  Activity, BarChart3, ChartNoAxesCombined, CircleGauge, Filter, Grid2X2, Grid3X3,
+  Hash, LineChart, Loader2, PieChart, Plus, Rows3, ScatterChart, Table2, Trash2,
 } from 'lucide-react'
 import {
   FILTER_OPERATORS,
@@ -30,8 +30,14 @@ import type { CardPreviewResult, CardStudioResult, InsightCardDraft } from './ty
 const VIZ_ICONS: Record<VisualizationKey, React.ReactNode> = {
   scalar: <Hash />, progress: <Activity />, table: <Table2 />, bar: <BarChart3 />,
   row: <Rows3 />, line: <LineChart />, area: <Activity />, pie: <PieChart />,
-  donut: <PieChart />, gauge: <CircleGauge />,
+  donut: <PieChart />, gauge: <CircleGauge />, pivot: <Grid3X3 />, heatmap: <Grid2X2 />,
+  combo: <ChartNoAxesCombined />, funnel: <Filter />, scatter: <ScatterChart />,
 }
+
+const FLAT_VISUALIZATIONS: VisualizationKey[] = [
+  'scalar', 'progress', 'table', 'bar', 'row', 'line', 'area', 'combo',
+  'pie', 'donut', 'funnel', 'gauge', 'scatter',
+]
 
 const FILTER_LABELS: Record<(typeof FILTER_OPERATORS)[number], string> = {
   eq: 'equals', neq: 'does not equal', in: 'is any of', not_in: 'is not any of', gt: 'greater than',
@@ -128,7 +134,7 @@ export function CardStudio({ initial, catalog, onSave, onRun, onDelete, onPublis
 
       <div className="app-scroll min-h-0 overflow-y-auto bg-bg-subtle p-5">
         <div className="space-y-4">
-          <div className="flex flex-wrap gap-1.5">{(Object.keys(VISUALIZATIONS) as VisualizationKey[]).map((key) => <button key={key} type="button" onClick={() => update((current) => ({ ...current, visualization: key }))} className={cn('flex items-center gap-1.5 rounded-md border px-3 py-2 text-sm transition [&_svg]:size-4', draft.visualization === key ? 'border-primary bg-primary-subtle text-primary' : 'border-border bg-surface text-fg-muted hover:bg-surface-hover hover:text-fg')}>{VIZ_ICONS[key]}{VISUALIZATIONS[key].label}</button>)}</div>
+          <div className="flex flex-wrap gap-1.5">{FLAT_VISUALIZATIONS.map((key) => <button key={key} type="button" onClick={() => update((current) => ({ ...current, visualization: key }))} className={cn('flex items-center gap-1.5 rounded-md border px-3 py-2 text-sm transition [&_svg]:size-4', draft.visualization === key ? 'border-primary bg-primary-subtle text-primary' : 'border-border bg-surface text-fg-muted hover:bg-surface-hover hover:text-fg')}>{VIZ_ICONS[key]}{VISUALIZATIONS[key].label}</button>)}</div>
           <VisualizationSettingsPanel visualization={draft.visualization} settings={draft.visualizationSettings} result={preview} onChange={(visualizationSettings) => update((current) => ({ ...current, visualizationSettings }))} />
           <div className="relative min-h-[420px] rounded-xl border border-border bg-surface p-4 shadow-sm">{running ? <div className="absolute inset-0 z-10 grid place-items-center rounded-xl bg-surface/70 backdrop-blur-sm"><div className="flex items-center gap-2 text-sm text-fg-muted"><Loader2 className="size-4 animate-spin" />Running preview…</div></div> : null}{previewError ? <div role="alert" className="grid min-h-[380px] place-items-center px-8 text-center text-sm text-danger">{previewError}</div> : preview ? <div className="h-[380px]"><InsightResultView result={preview} visualization={draft.visualization} settings={draft.visualizationSettings} /></div> : null}</div>
           {preview ? <div className="flex items-center justify-between text-xs text-fg-subtle"><span>{preview.rowCount} rows · {preview.durationMs}ms</span>{preview.truncated ? <Badge variant="warning">Truncated</Badge> : null}</div> : null}

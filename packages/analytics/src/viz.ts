@@ -18,13 +18,18 @@ export const VISUALIZATIONS: Record<VisualizationKey, VisualizationDefinition> =
   scalar: { key: 'scalar', label: 'Number', iconKey: 'hash', group: 'numbers', minSize: { w: 2, h: 2 }, defaultSize: { w: 3, h: 2 }, sensibleRank: 10, isSensible: (r) => !dimensions(r).length && !!measures(r).length },
   progress: { key: 'progress', label: 'Progress', iconKey: 'gauge', group: 'numbers', minSize: { w: 3, h: 2 }, defaultSize: { w: 4, h: 2 }, sensibleRank: 8, isSensible: (r) => hasType(r, 'number') && r.rows.length === 1 },
   table: { key: 'table', label: 'Table', iconKey: 'table', group: 'tables', minSize: { w: 3, h: 3 }, defaultSize: { w: 8, h: 5 }, sensibleRank: 0, isSensible: () => true },
+  pivot: { key: 'pivot', label: 'Pivot table', iconKey: 'table', group: 'tables', minSize: { w: 4, h: 4 }, defaultSize: { w: 8, h: 6 }, sensibleRank: 0, isSensible: () => false },
+  heatmap: { key: 'heatmap', label: 'Heatmap', iconKey: 'table', group: 'tables', minSize: { w: 4, h: 4 }, defaultSize: { w: 8, h: 6 }, sensibleRank: 0, isSensible: () => false },
   bar: { key: 'bar', label: 'Bar', iconKey: 'chart', group: 'comparison', minSize: { w: 3, h: 3 }, defaultSize: { w: 6, h: 4 }, sensibleRank: 6, isSensible: (r) => !!dimensions(r).length && !!measures(r).length },
   row: { key: 'row', label: 'Row', iconKey: 'chart', group: 'comparison', minSize: { w: 3, h: 3 }, defaultSize: { w: 6, h: 4 }, sensibleRank: 5, isSensible: (r) => !!dimensions(r).length && !!measures(r).length },
   line: { key: 'line', label: 'Line', iconKey: 'activity', group: 'trend', minSize: { w: 3, h: 3 }, defaultSize: { w: 6, h: 4 }, sensibleRank: 9, isSensible: (r) => hasType(r, 'date') && !!measures(r).length },
   area: { key: 'area', label: 'Area', iconKey: 'activity', group: 'trend', minSize: { w: 3, h: 3 }, defaultSize: { w: 6, h: 4 }, sensibleRank: 7, isSensible: (r) => hasType(r, 'date') && !!measures(r).length },
+  combo: { key: 'combo', label: 'Combo', iconKey: 'chart', group: 'comparison', minSize: { w: 4, h: 3 }, defaultSize: { w: 6, h: 4 }, sensibleRank: 4, isSensible: (r) => !!dimensions(r).length && measures(r).length > 1 },
   pie: { key: 'pie', label: 'Pie', iconKey: 'chart', group: 'proportion', minSize: { w: 3, h: 3 }, defaultSize: { w: 5, h: 4 }, sensibleRank: 4, isSensible: (r) => dimensions(r).length === 1 && measures(r).length === 1 && r.rows.length <= 12 },
   donut: { key: 'donut', label: 'Donut', iconKey: 'chart', group: 'proportion', minSize: { w: 3, h: 3 }, defaultSize: { w: 5, h: 4 }, sensibleRank: 3, isSensible: (r) => dimensions(r).length === 1 && measures(r).length === 1 && r.rows.length <= 12 },
   gauge: { key: 'gauge', label: 'Gauge', iconKey: 'gauge', group: 'numbers', minSize: { w: 3, h: 2 }, defaultSize: { w: 4, h: 3 }, sensibleRank: 5, isSensible: (r) => r.rows.length === 1 && !!measures(r).length },
+  funnel: { key: 'funnel', label: 'Funnel', iconKey: 'chart', group: 'proportion', minSize: { w: 3, h: 3 }, defaultSize: { w: 6, h: 4 }, sensibleRank: 2, isSensible: (r) => dimensions(r).length === 1 && measures(r).length === 1 },
+  scatter: { key: 'scatter', label: 'Scatter', iconKey: 'chart', group: 'comparison', minSize: { w: 4, h: 3 }, defaultSize: { w: 6, h: 4 }, sensibleRank: 4, isSensible: (r) => measures(r).length > 1 },
 }
 
 export function suggestVisualization(result: QueryResult): VisualizationKey {

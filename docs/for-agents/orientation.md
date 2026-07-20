@@ -74,8 +74,9 @@ counter) · `Sparkline` (tokenized SVG trend, optional area/min-max dots).
 
 **Dashboards & insights (`@appkit/dashboard/react`)** — `DashboardGrid` (responsive 12-column grid, view/edit
 modes, drag/resize, remove, save/reset, categorized widget/card drawer) ·
-`DashboardMetricCard` · `DashboardPanel` · `InsightCard` · `InsightResultView`
-(scalar/progress/table/bar/row/line/area/pie/donut/gauge) · `CardStudio` (source,
+`DashboardMetricCard` · `DashboardPanel` · `InsightCard` · `InsightResultView` ·
+`AdvancedInsightResultView` (flat results plus typed pivots/heatmaps and fifteen
+visualization contracts) · `CardStudio` (source,
 measures, parsed formulas, dimensions, filters, visualization settings, live
 preview, autosave, publish/delete). These are generalized production
 dashboard system, not gallery mockups. Framework-neutral types remain at
@@ -343,12 +344,15 @@ same feature-owned pattern under `@appkit/notifications/schema`.
 
 ## 10. Reports and documents
 
-`@appkit/reports` currently owns fiscal periods and framework-neutral report
-definition, result, layout, execution, and schedule contracts. It does not yet
-contain the siblings' full built-in report catalogues, compiler/executor,
-document body/CSS, exports, or schedule worker and must not be treated as a
-drop-in replacement. Its current query is the same `InsightQuery` used by
-`@appkit/analytics`; an app supplies its tenant-scoped executor and catalogue.
+`@appkit/reports` owns fiscal periods, nested filter trees, tenant-bound row and
+summary query compilation, fiscal breakouts, grouped result shaping, saved
+definition registries, document layout, execution, and hardened schedule
+contracts. `@appkit/reports/react` exports the production-shaped `ReportStudio`:
+a one-third scrolling build rail and two-thirds live document preview with row,
+summary, filter, page, schedule, run, and save interactions. Applications inject
+the data catalogue, tenant-scoped execution, persistence, and export transport.
+Domain-specific built-in definitions and the claiming/delivery worker remain in
+the consuming application rather than becoming framework defaults.
 
 `@appkit/pdf` provides a pure-JS PDFKit report,
 table, and financial-statement renderer. Bounded template rendering is under

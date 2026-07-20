@@ -1,5 +1,5 @@
 import * as React from 'react'
-import type { QueryResult, VisualizationKey, VisualizationSettings } from '@appkit/analytics'
+import { resolveConditionalStyle, type AnalyticResult, type ConditionalRule, type QueryResult, type VisualizationKey, type VisualizationSettings } from '@appkit/analytics'
 import { cn } from '@appkit/ui'
 
 const SERIES_COLORS = ['var(--color-primary)', 'var(--color-info)', 'var(--color-success)', 'var(--color-warning)', 'var(--color-danger)']
@@ -53,7 +53,21 @@ export function InsightResultView({ result, visualization, settings = {} }: { re
   if (visualization === 'scalar') return <Scalar result={result} column={selected} settings={settings} />
   if (visualization === 'progress' || visualization === 'gauge') return <Gauge result={result} column={selected} settings={settings} compact={visualization === 'progress'} />
   if (visualization === 'pie' || visualization === 'donut') return <Pie result={result} dimension={dimension} measure={selected} donut={visualization === 'donut'} />
+  if (visualization === 'funnel') return <Funnel result={result} dimension={dimension} measure={selected} />
+  if (visualization === 'pivot' || visualization === 'heatmap') return <ResultTable result={result} />
   return <Cartesian result={result} dimension={dimension} measures={measures} kind={visualization} />
+}
+
+export function AdvancedInsightResultView({ result, visualization, settings = {} }: { result: AnalyticResult; visualization: VisualizationKey; settings?: VisualizationSettings }) {
+  if (result.shape === 'pivot') return <PivotResultView result={result} heatmap={visualization === 'heatmap'} settings={settings} />
+  const compatible: QueryResult = {
+    columns: result.columns.map((column) => ({ key: column.key, label: column.label, role: column.role, semanticType: toSimpleSemanticType(column.semanticType) })),
+    rows: result.rows,
+    rowCount: result.rowCount,
+    truncated: result.truncated,
+    durationMs: result.durationMs ?? 0,
+  }
+  return <InsightResultView result={compatible} visualization={visualization} settings={settings} />
 }
 
 function ResultTable({ result }: { result: QueryResult }) {
@@ -78,11 +92,38 @@ function Cartesian({ result, dimension, measures, kind }: { result: QueryResult;
   const rows = result.rows.slice(0, 20); const values = rows.flatMap((row) => measures.map((measure) => Number(row[measure.key]) || 0)); const maximum = Math.max(...values.map(Math.abs), 1)
   if (kind === 'row') return <div className="app-scroll h-full space-y-2 overflow-auto pr-2">{rows.map((row, index) => <div key={index} className="grid grid-cols-[minmax(80px,1fr)_3fr] items-center gap-3"><div className="truncate text-xs text-fg-muted">{formatValue(row[dimension.key], dimension.semanticType)}</div><div className="flex h-6 items-center gap-1">{measures.map((measure, series) => <div key={measure.key} className="h-4 rounded-sm" title={`${measure.label}: ${formatValue(row[measure.key], measure.semanticType)}`} style={{ width: `${Math.abs(Number(row[measure.key]) || 0) / maximum * 100}%`, background: SERIES_COLORS[series % SERIES_COLORS.length] }} />)}</div></div>)}</div>
   const width = 720, height = 260, padding = 28; const plotWidth = width - padding * 2, plotHeight = height - padding * 2
+  if (kind === 'scatter') {
+    const [xMeasure, yMeasure] = measures
+    if (!xMeasure || !yMeasure) return <div className="grid h-full place-items-center text-sm text-fg-subtle">Add two measures to plot a scatter chart.</div>
+    const xValues = rows.map((row) => Number(row[xMeasure.key]) || 0), yValues = rows.map((row) => Number(row[yMeasure.key]) || 0)
+    const xMax = Math.max(...xValues.map(Math.abs), 1), yMax = Math.max(...yValues.map(Math.abs), 1)
+    return <svg viewBox={`0 0 ${width} ${height}`} className="h-full min-h-40 w-full" role="img" aria-label="Scatter chart"><line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="var(--color-border)" /><line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="var(--color-border)" />{rows.map((row, index) => <circle key={index} cx={padding + xValues[index]! / xMax * plotWidth} cy={padding + plotHeight - yValues[index]! / yMax * plotHeight} r="5" fill="var(--color-primary)" opacity="0.8"><title>{`${dimension ? row[dimension.key] : index + 1}: ${xValues[index]}, ${yValues[index]}`}</title></circle>)}</svg>
+  }
   const points = (measure: QueryResult['columns'][number]) => rows.map((row, index) => ({ x: padding + (rows.length === 1 ? plotWidth / 2 : index / (rows.length - 1) * plotWidth), y: padding + plotHeight - (Number(row[measure.key]) || 0) / maximum * plotHeight }))
   return <svg viewBox={`0 0 ${width} ${height}`} className="h-full min-h-40 w-full" role="img" aria-label={`${kind} chart`}><line x1={padding} y1={padding + plotHeight} x2={padding + plotWidth} y2={padding + plotHeight} stroke="var(--color-border)" />
-    {kind === 'bar' ? rows.map((row, index) => measures.map((measure, series) => { const group = plotWidth / Math.max(rows.length, 1), barWidth = Math.max(3, group / measures.length * .72); const value = Math.abs(Number(row[measure.key]) || 0); return <rect key={`${index}-${measure.key}`} x={padding + index * group + series * barWidth + group * .12} y={padding + plotHeight - value / maximum * plotHeight} width={barWidth} height={value / maximum * plotHeight} rx={3} fill={SERIES_COLORS[series % SERIES_COLORS.length]} /> })) : measures.map((measure, series) => { const seriesPoints = points(measure); const path = seriesPoints.map((point, index) => `${index ? 'L' : 'M'} ${point.x} ${point.y}`).join(' '); return <g key={measure.key}>{kind === 'area' ? <path d={`${path} L ${seriesPoints.at(-1)?.x} ${padding + plotHeight} L ${seriesPoints[0]?.x} ${padding + plotHeight} Z`} fill={SERIES_COLORS[series % SERIES_COLORS.length]} opacity="0.16" /> : null}<path d={path} fill="none" stroke={SERIES_COLORS[series % SERIES_COLORS.length]} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />{seriesPoints.map((point, index) => <circle key={index} cx={point.x} cy={point.y} r="3" fill={SERIES_COLORS[series % SERIES_COLORS.length]} />)}</g> })}
+    {kind === 'bar' || kind === 'combo' ? rows.map((row, index) => measures.map((measure, series) => { if (kind === 'combo' && series > 0) return null; const group = plotWidth / Math.max(rows.length, 1), barWidth = Math.max(3, group / Math.max(kind === 'combo' ? 1 : measures.length, 1) * .72); const value = Math.abs(Number(row[measure.key]) || 0); return <rect key={`${index}-${measure.key}`} x={padding + index * group + (kind === 'combo' ? 0 : series * barWidth) + group * .12} y={padding + plotHeight - value / maximum * plotHeight} width={barWidth} height={value / maximum * plotHeight} rx={3} fill={SERIES_COLORS[series % SERIES_COLORS.length]} /> })) : null}{kind !== 'bar' ? measures.map((measure, series) => { if (kind === 'combo' && series === 0) return null; const seriesPoints = points(measure); const path = seriesPoints.map((point, index) => `${index ? 'L' : 'M'} ${point.x} ${point.y}`).join(' '); return <g key={measure.key}>{kind === 'area' ? <path d={`${path} L ${seriesPoints.at(-1)?.x} ${padding + plotHeight} L ${seriesPoints[0]?.x} ${padding + plotHeight} Z`} fill={SERIES_COLORS[series % SERIES_COLORS.length]} opacity="0.16" /> : null}<path d={path} fill="none" stroke={SERIES_COLORS[series % SERIES_COLORS.length]} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />{seriesPoints.map((point, index) => <circle key={index} cx={point.x} cy={point.y} r="3" fill={SERIES_COLORS[series % SERIES_COLORS.length]} />)}</g> }) : null}
     {rows.map((row, index) => <text key={index} x={padding + (index + .5) / rows.length * plotWidth} y={height - 7} textAnchor="middle" fontSize="9" fill="var(--color-fg-subtle)">{String(row[dimension.key] ?? '').slice(0, 12)}</text>)}
   </svg>
+}
+
+function Funnel({ result, dimension, measure }: { result: QueryResult; dimension?: QueryResult['columns'][number]; measure?: QueryResult['columns'][number] }) {
+  if (!dimension || !measure) return <div className="grid h-full place-items-center text-sm text-fg-subtle">Add one dimension and one measure.</div>
+  const rows = result.rows.slice(0, 10), maximum = Math.max(...rows.map((row) => Math.abs(Number(row[measure.key]) || 0)), 1)
+  return <div className="flex h-full flex-col items-center justify-center gap-1.5">{rows.map((row, index) => { const value = Math.abs(Number(row[measure.key]) || 0); return <div key={index} className="flex h-8 items-center justify-center rounded-md bg-primary-subtle px-3 text-xs text-primary" style={{ width: `${Math.max(24, value / maximum * 100)}%` }} title={`${dimension.label}: ${String(row[dimension.key])}`}><span className="truncate">{formatValue(row[dimension.key], dimension.semanticType)} · {formatValue(row[measure.key], measure.semanticType)}</span></div> })}</div>
+}
+
+function PivotResultView({ result, heatmap, settings }: { result: Extract<AnalyticResult, { shape: 'pivot' }>; heatmap: boolean; settings: VisualizationSettings }) {
+  const rules = Array.isArray(settings.conditionalFormats) ? settings.conditionalFormats as ConditionalRule[] : []
+  const showRowTotals = settings.showRowTotals === true
+  return <div className="app-scroll h-full overflow-auto rounded-lg border border-border"><table className="min-w-full border-collapse text-sm"><thead className="sticky top-0 z-10 bg-bg-subtle"><tr><th className="border-b border-r border-border px-3 py-2 text-left text-xs font-semibold text-fg-muted">{result.rowDimensions.map((column) => column.label).join(' · ')}</th>{result.columnKeys.map((key, index) => <th key={index} className="border-b border-border px-3 py-2 text-right text-xs font-semibold text-fg-muted">{key.labels.join(' · ')}</th>)}{showRowTotals ? <th className="border-b border-l border-border px-3 py-2 text-right text-xs font-semibold text-fg-muted">Total</th> : null}</tr></thead><tbody>{result.rowKeys.map((rowKey, rowIndex) => { const values = result.columnKeys.map((_, columnIndex) => Number(result.cells[rowIndex]?.[columnIndex]?.[result.valueMeasures[0]?.key ?? '']) || 0); return <tr key={rowIndex} className="border-b border-border-subtle last:border-0"><th className="border-r border-border px-3 py-2 text-left font-medium text-fg">{rowKey.labels.join(' · ')}</th>{values.map((value, columnIndex) => { const style = heatmap ? resolveConditionalStyle(value, result.valueMeasures[0]?.key ?? '', rules.length ? rules : [{ type: 'scale', column: result.valueMeasures[0]?.key ?? '', min: Math.min(...values), max: Math.max(...values), lowTone: 'info', highTone: 'primary' }]) : {}; return <td key={columnIndex} className={cn('px-3 py-2 text-right tabular-nums text-fg', style.className)} style={style.background ? { background: style.background } : undefined}>{formatNumber(value)}</td> })}{showRowTotals ? <td className="border-l border-border px-3 py-2 text-right font-semibold tabular-nums text-fg">{formatNumber(values.reduce((sum, value) => sum + value, 0))}</td> : null}</tr> })}</tbody></table></div>
+}
+
+function toSimpleSemanticType(type: string): QueryResult['columns'][number]['semanticType'] {
+  if (type === 'currency') return 'currency'
+  if (type === 'measure' || type === 'percentage' || type === 'lat' || type === 'lng') return 'number'
+  if (type === 'temporal') return 'date'
+  if (type === 'category') return 'category'
+  return 'text'
 }
 
 function Pie({ result, dimension, measure, donut }: { result: QueryResult; dimension?: QueryResult['columns'][number]; measure?: QueryResult['columns'][number]; donut: boolean }) {

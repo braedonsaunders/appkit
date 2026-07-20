@@ -115,5 +115,10 @@ export type QueryResult = {
 export type CompiledQuery = { sql: string; params: unknown[]; columns: ResultColumn[]; limit: number }
 
 export type VisualizationKey =
-  | 'scalar' | 'progress' | 'table' | 'bar' | 'row' | 'line' | 'area' | 'pie' | 'donut' | 'gauge'
-export type VisualizationSettings = Record<string, string | number | boolean | string[] | undefined>
+  | 'scalar' | 'progress' | 'table' | 'pivot' | 'heatmap'
+  | 'bar' | 'row' | 'line' | 'area' | 'combo'
+  | 'pie' | 'donut' | 'funnel' | 'gauge' | 'scatter'
+export type VisualizationSettings = Record<
+  string,
+  string | number | boolean | string[] | Record<string, unknown> | unknown[] | undefined
+>

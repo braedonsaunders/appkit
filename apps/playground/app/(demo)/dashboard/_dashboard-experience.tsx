@@ -67,7 +67,7 @@ export async function DashboardExperience({ mode }: { mode: 'view' | 'edit' }) {
     'panel:platform': <DashboardPanel title="Dashboard capabilities" icon={<Activity size={16} />} actions={<Badge variant="success">Live</Badge>}><div className="grid h-full content-center gap-4 sm:grid-cols-2">
       <Feature icon={<Library />} title="Card library" text="Reusable tenant-owned cards can be drafted, published, and dropped onto any dashboard." />
       <Feature icon={<Code2 />} title="Safe query language" text="Approved fields, bound filters, and validated formulas keep reporting queries controlled." />
-      <Feature icon={<Activity />} title="10 visualizations" text="Scalar, progress, table, bars, lines, areas, pies, donuts, rows, and gauges are available." />
+      <Feature icon={<Activity />} title="15 visualizations" text="Numbers, tables, pivots, heatmaps, comparison, trend, proportion, gauge, funnel, and scatter views share one result contract." />
       <Feature icon={<BookOpen />} title="Shared dashboard model" text="Layouts, saved cards, editing tools, and rendering stay consistent." />
     </div></DashboardPanel>,
   }

@@ -23,6 +23,7 @@
   "scripts": {
     "build": "node ../../scripts/build-package.mjs",
     "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts",
     "generate": "drizzle-kit generate",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
@@ -67,6 +68,7 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "tsx": "^4.19.2",
     "drizzle-orm": "^0.45.2",
     "drizzle-kit": "^0.30.6",
     "lucide-react": "^1.24.0",
