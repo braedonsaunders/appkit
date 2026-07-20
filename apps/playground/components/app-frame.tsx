@@ -160,7 +160,7 @@ function AppFrameContent({
               className="hidden w-52 shrink-0 lg:block xl:w-72"
               labels={{
                 placeholder: 'Search people and pages…',
-                ariaLabel: 'Search the appkit demo',
+                ariaLabel: 'Search workspace',
                 clear: 'Clear search',
                 searching: 'Searching…',
                 noMatches: (query) => `No matches for “${query}”`,
@@ -187,21 +187,21 @@ function AppFrameContent({
               <AccountMenu
                 name={userName}
                 email={userEmail}
-                contextLabel={`${tenantName} · public demo`}
+                contextLabel={`${tenantName} · workspace`}
                 roleLabel={isSuperAdmin ? 'Super admin' : 'Member'}
                 status={{ label: 'Authentication disabled', variant: 'success' }}
                 organization={{
                   label: 'Organization',
                   summary: tenantName,
                   value: tenantSlug,
-                  options: [{ value: tenantSlug, label: tenantName, description: 'Public RLS-scoped demo tenant' }],
+                  options: [{ value: tenantSlug, label: tenantName, description: 'Current workspace' }],
                   onChange: () => undefined,
                 }}
                 language={{
                   label: 'Language',
                   summary: 'English',
                   value: 'en',
-                  options: [{ value: 'en', label: 'English', description: 'Demo application language' }],
+                  options: [{ value: 'en', label: 'English', description: 'Workspace language' }],
                   onChange: () => undefined,
                 }}
                 navigation={{
@@ -209,7 +209,7 @@ function AppFrameContent({
                   summary: navigation.mode === 'topbar' ? 'Top bar' : 'Sidebar',
                   value: navigation.mode,
                   options: [
-                    { value: 'topbar', label: 'Top bar', description: 'OpenBooks workspace navigation' },
+                    { value: 'topbar', label: 'Top bar', description: 'Dropdown navigation across the workspace' },
                     { value: 'sidebar', label: 'Sidebar', description: 'Collapsible suite navigation' },
                   ],
                   onChange: (mode) => navigation.setMode(mode === 'sidebar' ? 'sidebar' : 'topbar'),
@@ -233,10 +233,7 @@ function SidebarFooter() {
   return (
     <div className="space-y-2">
       <ThemeToggle />
-      <div className="flex items-center justify-between text-xs text-fg-muted">
-        <span>v0.1.0</span>
-        <Badge variant="secondary" className="font-mono text-[10px]">demo</Badge>
-      </div>
+      <div className="text-xs text-fg-muted">v0.1.0</div>
     </div>
   )
 }

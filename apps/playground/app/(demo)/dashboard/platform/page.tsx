@@ -26,8 +26,7 @@ export const metadata = { title: 'Platform — appkit' }
 const GROUPS: AdminHubGroup[] = [
   {
     label: 'Build the application',
-    description:
-      'The shared visual language, shell, data boundary, permissions, and analytical building blocks every suite application starts with.',
+    description: 'Interface, data, permissions, analytics, forms, and localization.',
     accent: 'teal',
     layout: 'detailed',
     cards: [
@@ -45,7 +44,7 @@ const GROUPS: AdminHubGroup[] = [
       },
       {
         title: '@appkit/ui',
-        description: 'Compose a complete OpenBooks/BeaconHS-compatible product instead of rebuilding common interface behavior.',
+        description: 'Build consistent product screens with shared navigation, data-entry, feedback, and workspace components.',
         icon: <Layers3 />,
         features: [
           'Inputs, feedback, dialogs, drawers, popovers, menus, tables, lists, and line editors',
@@ -55,14 +54,14 @@ const GROUPS: AdminHubGroup[] = [
           'Tokenized light/dark styling, keyboard behavior, focus management, and reduced-motion support',
         ],
         href: '/components',
-        linkLabel: 'Explore interactive primitives',
+        linkLabel: 'View components',
       },
       {
         title: '@appkit/analytics',
-        description: 'Let users build reporting cards without accepting arbitrary SQL or coupling the engine to one product schema.',
+        description: 'Create governed reporting cards from approved data sources, measures, and dimensions.',
         icon: <BarChart3 />,
         features: [
-          'App-authored semantic catalogues and typed visualization metadata',
+          'Application-defined data catalogues and typed visualization metadata',
           'Parsed formula ASTs with a controlled function and field vocabulary',
           'Tenant-bound, parameterized Postgres compilation and result contracts',
           'Scalar, progress, table, bar, row, line, area, pie, donut, and gauge output',
@@ -72,26 +71,26 @@ const GROUPS: AdminHubGroup[] = [
       },
       {
         title: '@appkit/forms-core',
-        description: 'Share one portable form language while preserving source-native automation profiles for different product domains.',
+        description: 'Define forms, validation, scoring, and workflow automation through versioned schemas.',
         icon: <Braces />,
         features: [
-          'OpenBooks string schemas and BeaconHS localized/workflow schemas accepted by one versioned form contract',
+          'Plain and localized content supported by one versioned form contract',
           'Field metadata, conditional logic, formulas, defaults, response validation, scoring, and normalization',
-          'Source-native safety and business automation profiles instead of a lossy invented union',
-          'Finance-native GL account, party, currency, and percentage fields alongside the complete safety vocabulary',
+          'Separate safety and business automation profiles with domain-specific actions',
+          'GL account, party, currency, percentage, inspection, and safety field types',
         ],
         href: '/forms',
-        linkLabel: 'Edit the portable schema',
+        linkLabel: 'Open form schema',
       },
       {
         title: '@appkit/forms',
-        description: 'Give app builders a portable designer and validated fill runtime while product persistence stays behind explicit adapters.',
+        description: 'Design, validate, preview, import, and export forms from one workspace.',
         icon: <ClipboardList />,
         features: [
-          'BeaconHS split designer shell: independently scrolling builder rail and canvas with properties in a drawer',
-          'BeaconHS conditional-logic authoring extracted with injectable labels and semantic tokens',
-          'Built-in form controls plus explicit host adapters for files, signatures, entity pickers, data sources, and specialized capture',
-          'Live preview, full-schema linting, import/export, and browser persistence in the demo workbench',
+          'Independently scrolling field library and canvas with drawer-based properties',
+          'Conditional display rules, field validation, ordering, and section management',
+          'Form controls for files, signatures, entity pickers, data sources, and specialized capture',
+          'Live preview, schema validation, import/export, and draft persistence',
         ],
         href: '/forms',
         linkLabel: 'Open the form builder',
@@ -140,15 +139,14 @@ const GROUPS: AdminHubGroup[] = [
         features: [
           'Scrypt password hashing with timing-safe verification',
           'Stateless HMAC-signed sessions and explicit expiry handling',
-          'Independent package boundary—the demo remains authentication-free in every route',
+          'Optional local authentication that can be enabled only where required',
         ],
       },
     ],
   },
   {
     label: 'Extend the runtime',
-    description:
-      'Production contracts for auditable mutations, public APIs, governed user code, and tenant-aware AI features.',
+    description: 'Audit history, APIs, governed user code, and AI-assisted workflows.',
     accent: 'violet',
     layout: 'detailed',
     cards: [
@@ -188,13 +186,13 @@ const GROUPS: AdminHubGroup[] = [
       },
       {
         title: '@appkit/ai',
-        description: 'Add an agent that uses app-approved tools without baking one model vendor, prompt, or tenant policy into AppKit.',
+        description: 'Connect an agent to approved tools, models, prompts, and tenant policy.',
         icon: <Bot />,
         features: [
           'Provider-neutral, bounded multi-step tool loop with abort and redacted errors',
           'Streaming UI-message protocol, markdown, tool cards, cancellation, and thread composer',
-          'Injected model, persistence transport, system prompt, and RequestContext-bound tools',
-          'No provider credential or fake conversation is shipped by the public demo',
+          'Injected model, persistence transport, system prompt, and request-scoped tools',
+          'Application-controlled provider credentials, model policy, and conversation storage',
         ],
       },
     ],
@@ -221,7 +219,7 @@ const GROUPS: AdminHubGroup[] = [
         description: 'Turn authored workflow email content into safe provider-ready HTML, text, subjects, recipients, and attachments.',
         icon: <Mail />,
         features: [
-          'BeaconHS template AST, interpolation, loops, conditionals, and plain-text rendering preserved at source parity',
+          'Template AST, interpolation, loops, conditionals, and plain-text rendering',
           'Save-time HTML sanitization and escaped untrusted merge values',
           'Strict subject, output, recipient, attachment, and resource ceilings',
           'Provider-neutral delivery normalization shared by web and worker processes',
@@ -251,8 +249,7 @@ const GROUPS: AdminHubGroup[] = [
   },
   {
     label: 'Run outside the request',
-    description:
-      'Lazy infrastructure adapters for queued work and binary objects—production-shaped without making local builds depend on external services.',
+    description: 'Queues, workers, retries, and binary object storage.',
     accent: 'sky',
     layout: 'detailed',
     cards: [
@@ -284,8 +281,8 @@ export default function PlatformPage() {
   return (
     <AdminHub
       title="AppKit platform"
-      description="Everything an app builder gets from the shared foundation—grouped the same way suite applications organize company settings."
-      actions={<Badge variant="success">19 production packages</Badge>}
+      description="Packages and capabilities available to every application."
+      actions={<Badge variant="success">19 packages</Badge>}
       groups={GROUPS}
     />
   )

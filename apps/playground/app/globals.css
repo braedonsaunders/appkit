@@ -1,9 +1,10 @@
 /* The whole design system in one import: Tailwind v4 + @appkit/tokens. */
 @import '@appkit/ui/styles.css';
 
-/* Scan the playground and the appkit UI source for class usage. */
+/* Scan the playground and shared component sources for class usage. */
 @source '../app';
 @source '../../../packages/ui/src';
+@source '../../../packages/forms/src';
 
 /* The playground has a 56px sticky header; drawers sit beneath it. An app shell
    sets this to its own header height (default is 0 = full height). */

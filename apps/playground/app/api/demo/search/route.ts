@@ -7,7 +7,7 @@ const ROUTES = [
   { id: 'dashboard', title: 'Dashboard', subtitle: 'Live tenant overview', href: '/dashboard', iconKey: 'gauge' },
   { id: 'insights', title: 'Insight cards', subtitle: 'Card library and studio', href: '/insights', iconKey: 'library' },
   { id: 'platform', title: 'Platform', subtitle: 'Everything shipped in appkit', href: '/dashboard/platform', iconKey: 'package' },
-  { id: 'components', title: 'Components', subtitle: 'Primitive gallery', href: '/components', iconKey: 'sparkles' },
+  { id: 'components', title: 'Components', subtitle: 'Interface component gallery', href: '/components', iconKey: 'sparkles' },
   { id: 'admin', title: 'Administration', subtitle: 'Organization settings', href: '/admin', iconKey: 'settings' },
   { id: 'api', title: 'API Docs', subtitle: 'Interactive API reference', href: '/api-docs', iconKey: 'code' },
 ] as const

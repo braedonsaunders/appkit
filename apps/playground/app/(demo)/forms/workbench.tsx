@@ -11,13 +11,12 @@ const STORAGE_KEY = 'appkit.forms.workbench.schema.v1'
 const STARTER_SCHEMA: FormSchemaV1 = formSchemaV1Schema.parse({
   schemaVersion: 1,
   title: 'Supplier qualification',
-  description:
-    'A real AppKit schema: edit it, preview it, export it, and bring it into a suite application unchanged.',
+  description: 'Collect the information needed to qualify a new supplier.',
   sections: [
     {
       id: 'company',
       title: 'Company details',
-      description: 'The same schema accepts OpenBooks string copy and BeaconHS localized copy.',
+      description: 'Company, contact, spend, and risk details.',
       layout: { columns: 2, gap: 'md' },
       fields: [
         { id: 'company_name', type: 'text', label: 'Company name', required: true },
@@ -52,7 +51,7 @@ const STARTER_SCHEMA: FormSchemaV1 = formSchemaV1Schema.parse({
           id: 'notes',
           type: 'rich_text',
           label: 'Reviewer notes',
-          helpText: 'Rich text is sanitized by the forms-core boundary before output.',
+          helpText: 'Add supporting details for the qualification decision.',
         },
       ],
     },
@@ -66,7 +65,6 @@ export function FormWorkbench() {
   const [mode, setMode] = React.useState<Mode>('design')
   const [json, setJson] = React.useState(() => JSON.stringify(STARTER_SCHEMA, null, 2))
   const [values, setValues] = React.useState<FormValues>({})
-  const [hydrated, setHydrated] = React.useState(false)
   const fileRef = React.useRef<HTMLInputElement>(null)
 
   React.useEffect(() => {
@@ -82,7 +80,6 @@ export function FormWorkbench() {
         window.localStorage.removeItem(STORAGE_KEY)
       }
     }
-    setHydrated(true)
   }, [])
 
   function updateSchema(next: FormSchemaV1) {
@@ -92,7 +89,7 @@ export function FormWorkbench() {
 
   function save() {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(schema))
-    toast.success('Form schema saved in this browser.')
+    toast.success('Form saved.')
   }
 
   function applyJson() {
@@ -130,7 +127,7 @@ export function FormWorkbench() {
       updateSchema(result.schema)
       toast.success('Form schema imported.')
     } catch {
-      toast.error('The selected file is not a valid AppKit form schema.')
+      toast.error('The selected file is not a valid form schema.')
     }
   }
 
@@ -149,10 +146,9 @@ export function FormWorkbench() {
             <h1 className="truncate text-sm font-semibold text-fg">{titleText(schema.title)}</h1>
             <Badge variant="secondary" className="text-[10px] uppercase">form</Badge>
           </div>
-          <p className="text-xs text-fg-muted">Schema v1 · {schema.sections.length} sections · authentication disabled</p>
+          <p className="text-xs text-fg-muted">Draft · {schema.sections.length} sections</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <Badge variant="success" className="hidden sm:inline-flex">{hydrated ? 'Local persistence ready' : 'Loading…'}</Badge>
           <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()}><Upload size={14} />Import</Button>
           <Button size="sm" variant="outline" onClick={download}><Download size={14} />Export</Button>
           <Button size="sm" onClick={save}><Save size={14} />Save</Button>
@@ -186,7 +182,7 @@ export function FormWorkbench() {
                 values={values}
                 onChange={setValues}
                 onSubmit={async () => {
-                  toast.success('Schema validation passed. The host app can now persist the response.')
+                  toast.success('Response validated.')
                 }}
                 submitLabel="Validate response"
               />
@@ -197,8 +193,8 @@ export function FormWorkbench() {
           <div className="app-scroll h-full overflow-y-auto p-4 sm:p-6">
             <div className="mx-auto max-w-5xl space-y-3 rounded-xl border border-border bg-surface p-4 shadow-sm">
               <div>
-                <h2 className="font-semibold text-fg">Portable JSON contract</h2>
-                <p className="text-sm text-fg-muted">Edit or paste a schema from OpenBooks or BeaconHS. Apply validates the complete structure and its cross-field references.</p>
+                <h2 className="font-semibold text-fg">Form schema</h2>
+                <p className="text-sm text-fg-muted">Review or edit the JSON schema. Changes are validated before they are applied.</p>
               </div>
               <Textarea value={json} onChange={(event) => setJson(event.target.value)} className="min-h-[34rem] font-mono text-xs leading-5" spellCheck={false} />
               <div className="flex justify-end"><Button onClick={applyJson}>Validate and apply</Button></div>

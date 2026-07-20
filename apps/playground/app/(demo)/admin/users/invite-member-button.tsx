@@ -33,7 +33,7 @@ function InviteDrawer({ open, onClose }: { open: boolean; onClose: () => void })
       open={open}
       onClose={onClose}
       title="Invite a user"
-      description="Creates a real user + membership, RBAC-gated and written to the audit log."
+      description="Add someone to this workspace."
       size="sm"
     >
       <form action={action} className="space-y-4">

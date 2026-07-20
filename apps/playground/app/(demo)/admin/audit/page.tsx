@@ -38,7 +38,7 @@ export default async function AuditPage() {
     <PageContainer>
       <PageHeader
         title="Audit log"
-        description="Real tenant-scoped mutation history from @appkit/events and @appkit/db."
+        description="Review changes made across the workspace."
         back={{ href: '/admin', label: 'Administration' }}
       />
       <div className="mt-6 overflow-hidden rounded-xl border border-border bg-surface">
@@ -69,7 +69,7 @@ export default async function AuditPage() {
                   <EmptyState
                     icon={<ScrollText />}
                     title="No audit events yet"
-                    description="Invite a user to write the first real event."
+                    description="Workspace activity will appear here."
                     className="border-0 bg-transparent py-10 shadow-none"
                   />
                 </TableCell>

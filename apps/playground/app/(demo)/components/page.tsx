@@ -2,7 +2,6 @@
 
 import * as React from 'react'
 import {
-  ArrowRight,
   Bell,
   Check,
   CircleAlert,
@@ -199,19 +198,15 @@ export default function ComponentGallery() {
         {/* Hero */}
         <div className="reveal space-y-5">
           <Badge>
-            <Palette className="size-3" /> Design system
+            <Palette className="size-3" /> Component library
           </Badge>
           <h1 className="max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">
-            A polished foundation for building apps.
+            Interface components
           </h1>
           <p className="max-w-xl text-lg text-fg-muted">
-            Fully tokenized, motion-aware components that look right in light and dark out of the
-            box — and rebrand from a single file.
+            Browse controls, feedback, navigation, data display, and layout components.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Button size="lg">
-              Get started <ArrowRight className="size-4" />
-            </Button>
             <Button size="lg" variant="outline" onClick={() => setOpen(true)}>
               <PanelRightOpen className="size-4" /> Open a panel
             </Button>

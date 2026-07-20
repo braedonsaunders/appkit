@@ -1,4 +1,4 @@
-import { ApiReference, type ApiEndpointDoc, Badge, PageContainer, PageHeader } from '@appkit/ui'
+import { ApiReference, type ApiEndpointDoc, PageContainer, PageHeader } from '@appkit/ui'
 
 const LIVE_ENDPOINTS: ApiEndpointDoc[] = [
   {
@@ -6,8 +6,7 @@ const LIVE_ENDPOINTS: ApiEndpointDoc[] = [
     path: '/team',
     tag: 'Team',
     summary: 'List team members',
-    description:
-      'A real database endpoint using the fixed public demo context. Authentication is disabled, while the query remains RLS-scoped to the demo tenant. In a production app, @appkit/api adds API-key auth, permission scopes, rate limiting, and idempotency.',
+    description: 'List the people and roles in the current workspace.',
     permission: 'team.read',
     responseExample: { data: [{ id: '…', name: 'Ada Lovelace', email: 'admin@appkit.dev' }], total: 2 },
   },
@@ -19,7 +18,7 @@ const ENDPOINTS: ApiEndpointDoc[] = [
     path: '/status',
     tag: 'System',
     summary: 'Service status',
-    description: 'Returns the API status and version. No auth required.',
+    description: 'Returns the API status and version.',
     responseExample: { status: 'ok', version: '0.1.0', uptime: '3d 4h' },
   },
   {
@@ -27,7 +26,7 @@ const ENDPOINTS: ApiEndpointDoc[] = [
     path: '/invoices',
     tag: 'Invoices',
     summary: 'List invoices',
-    description: 'Returns example invoices. A production route would resolve the requesting tenant first.',
+    description: 'Returns invoices visible to the current workspace.',
     permission: 'invoices.read',
     params: [
       { name: 'status', type: 'string', description: 'Filter by status (paid, pending, …)' },
@@ -52,23 +51,22 @@ export default function ApiDocs() {
     <PageContainer className="max-w-4xl space-y-10">
       <PageHeader
         title="API reference"
-        description="Interactive documentation generated from the same route descriptions used by @appkit/api."
-        actions={<Badge variant="secondary">@appkit/api</Badge>}
+        description="Browse endpoints, parameters, request examples, and responses."
       />
       <div className="space-y-12">
         <ApiReference
           endpoints={LIVE_ENDPOINTS}
           baseUrl="/api/v1"
           showBearerToken={false}
-          title="Live API (public demo)"
-          description="Backed by the real RLS-scoped database with authentication deliberately disabled. Expand Team and send the request immediately."
+          title="Workspace API"
+          description="Expand an endpoint, send a request, and inspect the response."
         />
         <ApiReference
           endpoints={ENDPOINTS}
           baseUrl="/api/demo"
           showBearerToken={false}
-          title="Demo endpoints"
-          description="Self-documenting — generated from route descriptions. Expand an endpoint and hit Send."
+          title="Invoice endpoints"
+          description="Review request parameters and example responses."
         />
       </div>
     </PageContainer>

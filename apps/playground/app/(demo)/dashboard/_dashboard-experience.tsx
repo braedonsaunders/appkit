@@ -18,10 +18,10 @@ import { DashboardGridController } from './_dashboard-grid-controller'
 const BUILTINS: DashboardLibraryItem[] = [
   { id: 'metric:members', label: 'Team members', description: 'Active workspace memberships', category: 'headlines', defaultSize: { w: 3, h: 2 }, minSize: { w: 2, h: 2 }, maxSize: { h: 2 } },
   { id: 'metric:roles', label: 'Roles', description: 'Configured access roles', category: 'headlines', defaultSize: { w: 3, h: 2 }, minSize: { w: 2, h: 2 }, maxSize: { h: 2 } },
-  { id: 'metric:auth', label: 'Authentication', description: 'Demo authentication state', category: 'headlines', defaultSize: { w: 3, h: 2 }, minSize: { w: 2, h: 2 }, maxSize: { h: 2 } },
+  { id: 'metric:auth', label: 'Authentication', description: 'Current access configuration', category: 'headlines', defaultSize: { w: 3, h: 2 }, minSize: { w: 2, h: 2 }, maxSize: { h: 2 } },
   { id: 'metric:audit', label: 'Audit events', description: 'Append-only platform activity', category: 'headlines', defaultSize: { w: 3, h: 2 }, minSize: { w: 2, h: 2 }, maxSize: { h: 2 } },
-  { id: 'panel:quick-actions', label: 'Quick actions', description: 'Common demo workflows', category: 'workspace', defaultSize: { w: 4, h: 5 }, minSize: { w: 3, h: 4 } },
-  { id: 'panel:platform', label: 'Dashboard building system', description: 'Explore the extracted appkit stack', category: 'workspace', defaultSize: { w: 8, h: 5 }, minSize: { w: 5, h: 4 } },
+  { id: 'panel:quick-actions', label: 'Quick actions', description: 'Common workspace actions', category: 'workspace', defaultSize: { w: 4, h: 5 }, minSize: { w: 3, h: 4 } },
+  { id: 'panel:platform', label: 'Dashboard capabilities', description: 'Cards, queries, layouts, and visualizations', category: 'workspace', defaultSize: { w: 8, h: 5 }, minSize: { w: 5, h: 4 } },
 ]
 
 export async function DashboardExperience({ mode }: { mode: 'view' | 'edit' }) {
@@ -43,21 +43,21 @@ export async function DashboardExperience({ mode }: { mode: 'view' | 'edit' }) {
   if (auditTrend.length === 1) auditTrend.push(auditTrend[0]!)
   const { layout, cards } = await loadDashboardData()
   const nodes: Record<string, React.ReactNode> = {
-    'metric:members': <DashboardMetricCard label="Team members" value={<AnimatedNumber value={members} />} detail="RLS-scoped memberships" icon={<Users size={18} />} tone="primary" />,
-    'metric:roles': <DashboardMetricCard label="Roles" value={<AnimatedNumber value={roleCount} />} detail="RBAC permission bundles" icon={<Shield size={18} />} tone="info" />,
+    'metric:members': <DashboardMetricCard label="Team members" value={<AnimatedNumber value={members} />} detail="Workspace memberships" icon={<Users size={18} />} tone="primary" />,
+    'metric:roles': <DashboardMetricCard label="Roles" value={<AnimatedNumber value={roleCount} />} detail="Permission groups" icon={<Shield size={18} />} tone="info" />,
     'metric:auth': <DashboardMetricCard label="Authentication" value={keys === 0 ? 'Disabled' : 'Enabled'} detail={`${keys} active API credentials`} icon={<LockKeyhole size={18} />} tone="success" />,
     'metric:audit': <DashboardMetricCard label="Audit events" value={<AnimatedNumber value={audits} />} detail="Append-only activity" icon={<ScrollText size={18} />} trend={auditTrend.length >= 2 ? <Sparkline points={auditTrend} stroke="var(--color-warning)" area className="size-full" ariaLabel="Recent audit activity trend" /> : undefined} tone="warning" />,
     'panel:quick-actions': <DashboardPanel title="Quick actions" icon={<Sparkles size={16} />}><div className="grid gap-2">
       <QuickAction href="/insights?new=1" icon={<CreditCard size={16} />} label="Build an insight card" />
       <QuickAction href="/admin/users" icon={<Users size={16} />} label="Manage users" />
       <QuickAction href="/api-docs" icon={<Code2 size={16} />} label="Explore the API" />
-      <QuickAction href="/dashboard/platform" icon={<Boxes size={16} />} label="Browse the full kit" />
+      <QuickAction href="/dashboard/platform" icon={<Boxes size={16} />} label="View platform capabilities" />
     </div></DashboardPanel>,
-    'panel:platform': <DashboardPanel title="Dashboard building system" icon={<Activity size={16} />} actions={<Badge variant="success">Live</Badge>}><div className="grid h-full content-center gap-4 sm:grid-cols-2">
+    'panel:platform': <DashboardPanel title="Dashboard capabilities" icon={<Activity size={16} />} actions={<Badge variant="success">Live</Badge>}><div className="grid h-full content-center gap-4 sm:grid-cols-2">
       <Feature icon={<Library />} title="Card library" text="Reusable tenant-owned cards can be drafted, published, and dropped onto any dashboard." />
-      <Feature icon={<Code2 />} title="Safe query language" text="Fields and sources are app-authored; filters are bound parameters and formulas compile from a parsed AST." />
-      <Feature icon={<Activity />} title="10 visualizations" text="Scalar, progress, table, bars, lines, areas, pies, donuts, rows, and gauges share one renderer contract." />
-      <Feature icon={<BookOpen />} title="Drop-in foundation" text="The grid, studio, persistence schema, and renderer are app-agnostic extractions from OpenBooks and BeaconHS." />
+      <Feature icon={<Code2 />} title="Safe query language" text="Approved fields, bound filters, and validated formulas keep reporting queries controlled." />
+      <Feature icon={<Activity />} title="10 visualizations" text="Scalar, progress, table, bars, lines, areas, pies, donuts, rows, and gauges are available." />
+      <Feature icon={<BookOpen />} title="Shared dashboard model" text="Layouts, saved cards, editing tools, and rendering stay consistent." />
     </div></DashboardPanel>,
   }
 

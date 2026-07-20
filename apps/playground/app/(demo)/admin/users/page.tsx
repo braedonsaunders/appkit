@@ -159,7 +159,7 @@ export default async function UsersPage({
         <>
           <PageHeader
             title="Users"
-            description="Live from Postgres, RLS-scoped to your tenant. Search, filters, sorting, and pagination live in the URL."
+            description="Manage workspace members, roles, and access."
             actions={can(ctx, 'team.manage') ? <InviteMemberButton /> : undefined}
           />
           <div className="flex flex-wrap items-center gap-2">

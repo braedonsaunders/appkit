@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ slug: stri
       total: 2,
     })
   }
-  return Response.json({ error: { code: 'not_found', message: 'Unknown demo endpoint' } }, { status: 404 })
+  return Response.json({ error: { code: 'not_found', message: 'Unknown endpoint' } }, { status: 404 })
 }
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: string[] }> }) {
@@ -27,5 +27,5 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
   if (path === '/invoices') {
     return Response.json({ id: 'INV-1043', status: 'draft', ...body }, { status: 201 })
   }
-  return Response.json({ error: { code: 'not_found', message: 'Unknown demo endpoint' } }, { status: 404 })
+  return Response.json({ error: { code: 'not_found', message: 'Unknown endpoint' } }, { status: 404 })
 }
