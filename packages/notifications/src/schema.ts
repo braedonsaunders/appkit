@@ -1,8 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { boolean, index, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { auditColumns, id, tenantRef } from '../helpers'
-
-export type NotificationChannel = 'in_app' | 'email' | 'push' | 'sms'
+import { auditColumns, id, tenantRef } from '@appkit/db'
+import type { NotificationChannel } from './index'
 
 export const notifications = pgTable('notifications', {
   id: id(),

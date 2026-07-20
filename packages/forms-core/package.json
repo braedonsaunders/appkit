@@ -22,13 +22,11 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@appkit/email-render": "workspace:*",
-    "@appkit/i18n": "workspace:*",
-    "@appkit/tokens": "workspace:*",
     "isomorphic-dompurify": "^3.18.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@appkit/email-render": "workspace:*",
     "@types/node": "^22",
     "tsx": "^4.19.2",
     "vitest": "^3.2.4"

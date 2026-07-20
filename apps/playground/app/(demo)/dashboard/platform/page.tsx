@@ -11,6 +11,7 @@ import {
   KeyRound,
   Languages,
   Layers3,
+  LayoutDashboard,
   LockKeyhole,
   Mail,
   MessageSquare,
@@ -52,9 +53,9 @@ const GROUPS: AdminHubGroup[] = [
         icon: <Layers3 />,
         features: [
           'Inputs, feedback, dialogs, drawers, popovers, menus, tables, lists, and line editors',
-          'Rich-text authoring, direct file upload protocol, signature capture, and translated UI copy injection',
+          'Direct file upload protocol, signature capture, and translated UI copy injection',
           'Topbar/sidebar app shell, account launcher, search, notifications, theme, settings hub, and settings shell',
-          'Dashboard grid, insight renderers, card studio, page layouts, transitions, metrics, and sparklines',
+          'Page layouts, route transitions, metrics, sparklines, and accessible interaction primitives',
           'Tokenized light/dark styling, keyboard behavior, focus management, and reduced-motion support',
         ],
         href: '/components',
@@ -72,6 +73,19 @@ const GROUPS: AdminHubGroup[] = [
         ],
         href: '/insights',
         linkLabel: 'Build an insight card',
+      },
+      {
+        title: '@appkit/dashboard',
+        description: 'Give people configurable dashboards and a governed way to build reusable insight cards.',
+        icon: <LayoutDashboard />,
+        features: [
+          'Responsive 12-column layouts with drag, resize, add, remove, save, and reset controls',
+          'Metric, panel, and analytics-result renderers plus the two-column card studio',
+          'Framework-neutral layout and card contracts available without installing React Grid Layout',
+          'Optional React workspace and Drizzle persistence entry points for applications that need them',
+        ],
+        href: '/dashboard',
+        linkLabel: 'Use the dashboard',
       },
       {
         title: '@appkit/reports',
@@ -113,6 +127,18 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Open the form builder',
       },
       {
+        title: '@appkit/editor',
+        description: 'Add the same bounded rich-text authoring control to forms, notes, and document fields.',
+        icon: <FileText />,
+        features: [
+          'TipTap paragraph, heading, list, emphasis, and link authoring',
+          'Host-provided link normalization and shared translated control labels',
+          'Separate install keeps the base UI primitive package free of editor dependencies',
+        ],
+        href: '/forms',
+        linkLabel: 'Use rich text in a form',
+      },
+      {
         title: '@appkit/workflows',
         description: 'Build and validate event, decision, approval, and action graphs.',
         icon: <Workflow />,
@@ -120,7 +146,7 @@ const GROUPS: AdminHubGroup[] = [
           'Two-pane node library, independently scrolling inspector, and graph canvas',
           'Application-supplied trigger and action registries',
           'Branch handles, node positioning, graph conversion, and cycle detection',
-          'Structural compatibility with both AppKit form automation contracts',
+          'Graph contracts work without React; the optional React entry adds the visual builder',
         ],
         href: '/workflows',
         linkLabel: 'Open workflow builder',
@@ -155,7 +181,7 @@ const GROUPS: AdminHubGroup[] = [
         icon: <Database />,
         features: [
           'Postgres RLS executor with tenant-scoped and BYPASSRLS handles',
-          'Canonical tenants, users, memberships, roles, API keys, dashboards, and card schemas',
+          'Canonical tenants, users, memberships, roles, and API-key schemas',
           'Schema helpers and an installer for repeatable row-level-security policies',
         ],
         href: '/admin/users',
@@ -211,7 +237,7 @@ const GROUPS: AdminHubGroup[] = [
         features: [
           'Tenant-scoped inbox, channel preferences, and web-push subscription schema',
           'Category policy, digests, quiet hours, critical-message handling, and deterministic delivery keys',
-          'Reusable inbox and preference surfaces with app-owned navigation and transports',
+          'Core policy works alone; optional React and Drizzle entries add surfaces and persistence',
         ],
         href: '/notifications',
         linkLabel: 'Open notifications',
@@ -287,6 +313,7 @@ const GROUPS: AdminHubGroup[] = [
           'Bounded multi-artboard document model with application-defined data fields',
           'Letter, A4-style, card, label, and custom physical formats',
           'Safe normalization, catalogue validation, HTML rendering, and print-provider profiles',
+          'Optional Fabric entry adds an interactive canvas only when a builder needs one',
         ],
         href: '/design-studio',
         linkLabel: 'Open design studio',
@@ -298,10 +325,22 @@ const GROUPS: AdminHubGroup[] = [
         features: [
           'Pure-JS PDFKit renderer with manual pagination, repeated headers, and page totals',
           'Formal and modern financial-statement output',
-          'Bounded template language, HTML sanitization, and hardened Chromium printing',
+          'Optional template and Chromium entries keep browser automation out of the core renderer',
         ],
         href: '/reports',
         linkLabel: 'Download a report PDF',
+      },
+      {
+        title: '@appkit/forms-documents',
+        description: 'Turn a form schema into localized document fields, stable print styles, and an authored PDF template.',
+        icon: <FileOutput />,
+        features: [
+          'Companion text, image, photo, and repeating-section fields generated from the form contract',
+          'Localized labels and shared document styling for consistent downstream output',
+          'Generated bounded templates that can be edited before PDF rendering',
+        ],
+        href: '/forms/core',
+        linkLabel: 'Inspect the form contract',
       },
       {
         title: '@appkit/forms-pdf',
@@ -309,8 +348,8 @@ const GROUPS: AdminHubGroup[] = [
         icon: <ClipboardList />,
         features: [
           'Branded key-value summaries with repeating tables and photo grids',
-          'Form values merged through the bounded PDF template engine',
-          'Full-bleed design-studio documents and multi-page print runs',
+          'Optional summary and template entries add PDF rendering only when requested',
+          'Optional design entry prints full-bleed design-studio documents and multi-page runs',
         ],
         href: '/design-studio',
         linkLabel: 'Preview document output',
@@ -372,7 +411,7 @@ export default function PlatformPage() {
     <AdminHub
       title="AppKit platform"
       description="Packages and capabilities available to every application."
-      actions={<Badge variant="success">26 packages</Badge>}
+      actions={<Badge variant="success">29 packages</Badge>}
       groups={GROUPS}
     />
   )

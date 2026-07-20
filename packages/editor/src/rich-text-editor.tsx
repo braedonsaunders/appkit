@@ -12,8 +12,7 @@ import { EditorContent, useEditor, useEditorState, type Editor } from '@tiptap/r
 import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
-import { useUiText } from './text-context'
-import { cn } from './utils'
+import { cn, useUiText } from '@appkit/ui'
 
 export type RichTextEditorProps = {
   /** Controlled HTML content. */

@@ -1,9 +1,9 @@
 # appkit orientation (for agents)
 
 Read this once and you can build a suite-consistent screen. Everything below is
-real and exported from `@appkit/ui` / `@appkit/tokens`. The runnable proof of all
-of it is `apps/playground` — when in doubt, read how the playground uses a
-primitive.
+real and exported from the package named for its responsibility. The runnable
+proof is `apps/playground` — when in doubt, read how the playground composes the
+packages.
 
 ## 1. The design system is tokens
 
@@ -31,7 +31,8 @@ available through the optional `@appkit/ui/page-transition` entry point.
 
 ## 2. Primitive index
 
-Import everything from `@appkit/ui`.
+Import general primitives from `@appkit/ui`; install feature packages only when
+the application uses them.
 
 **Buttons & inputs** — `Button` (variants: default/secondary/outline/subtle/ghost/
 destructive/link; sizes sm/md/lg/icon; `asChild`) · `Input` · `Textarea` ·
@@ -39,13 +40,13 @@ destructive/link; sizes sm/md/lg/icon; `asChild`) · `Input` · `Textarea` ·
 · `SearchSelect` (desktop dropdown + mobile bottom sheet, groups, hints,
 clearable, keyboard nav) · `Checkbox` · `Switch`.
 
-**Authoring & capture** — `RichTextEditor` (TipTap HTML authoring with a
-host-injected link policy) · `FileUploader` (single/multipart direct-upload
+**Authoring & capture** — `FileUploader` (single/multipart direct-upload
 protocol with progress and finalization) · `SignaturePad` (pointer/touch/stylus
 PNG capture) · `TabContent` (foreground tab-panel handoff) · `UiTextProvider`
 (host translation injection for UI primitives). Upload and signature surfaces
 use dedicated semantic document tokens so exported content stays legible in
-both themes.
+both themes. `RichTextEditor` lives in optional `@appkit/editor`, keeping TipTap
+out of applications that do not author rich text.
 
 **Feedback** — `Alert` + `AlertTitle` + `AlertDescription` (variants default/
 destructive/warning/success/info) · `toast` + `Toaster` (**sonner-compatible**:
@@ -68,13 +69,15 @@ columns) · `Badge` · `Avatar` (image + initials fallback) · `EmptyState` · `
 (+ parts) · `Tabs` (animated indicator) · `AnimatedNumber` (token-timed KPI
 counter) · `Sparkline` (tokenized SVG trend, optional area/min-max dots).
 
-**Dashboards & insights** — `DashboardGrid` (responsive 12-column grid, view/edit
+**Dashboards & insights (`@appkit/dashboard/react`)** — `DashboardGrid` (responsive 12-column grid, view/edit
 modes, drag/resize, remove, save/reset, categorized widget/card drawer) ·
 `DashboardMetricCard` · `DashboardPanel` · `InsightCard` · `InsightResultView`
 (scalar/progress/table/bar/row/line/area/pie/donut/gauge) · `CardStudio` (source,
 measures, parsed formulas, dimensions, filters, visualization settings, live
 preview, autosave, publish/delete). These are the generalized OpenBooks/BeaconHS
-dashboard system, not gallery mockups.
+dashboard system, not gallery mockups. Framework-neutral types remain at
+`@appkit/dashboard`; persistence is explicitly installed from
+`@appkit/dashboard/schema`.
 
 **App shell / admin** — `PageHeader` · `AdminHub` (the settings **landing/hub** —
 grouped accent cards, with an optional detailed layout for capability inventories)
@@ -117,7 +120,8 @@ the tenant-scoped query and navigation. `NotificationsBell`, `ThemeProvider` /
 - **Admin** = `AdminHub` (landing grid of category cards) → `SettingsShell` (the
   sidebar area) with content built from `SettingsSection` + `SettingsRow`.
 - **Dashboard pages** load a user/role/default `DashboardLayout`, build a node
-  registry from built-ins plus persisted cards, and pass both to `DashboardGrid`.
+  registry from built-ins plus persisted cards, and pass both to
+  `DashboardGrid` from `@appkit/dashboard/react`.
   The app owns node content; appkit owns responsive layout/editing. Saved insight
   cards use `CardStudio` in a `Drawer`, appear in the library, and become
   `DashboardLibraryItem`s. The working references are `/dashboard`,
@@ -153,7 +157,7 @@ cancellation, and disabled state; the app injects its persistence-backed send
 transport. The playground documents this contract on `/dashboard/platform`
 without inventing a credential, fake conversation, or provider-specific demo.
 
-## 5. Forms and localized authoring (`@appkit/forms-core`, `@appkit/forms`, `@appkit/i18n`)
+## 5. Forms and localized authoring
 
 `@appkit/forms-core` is the framework-neutral form contract shared by OpenBooks
 and BeaconHS. It accepts both legacy plain-string authoring copy and locale-keyed
@@ -162,7 +166,8 @@ products: finance fields (`currency`, `percentage`, `gl_account`, `party`) sit
 beside the full safety/field-operations vocabulary. The package owns parsing,
 cross-reference linting, conditional logic, formula evaluation, defaults,
 response validation, normalization, scoring, participant extraction, document
-styles, and PDF template helpers.
+sanitization, and text extraction. It has no UI, localization, token, or email
+rendering dependency.
 The live `/forms/core` reference executes the schema parser and response
 validator, lists the field registry, and displays both automation vocabularies.
 
@@ -185,6 +190,12 @@ pickers, and specialized capture use explicit `fieldAdapters`, because their
 storage and tenant queries must remain inside the consuming application's RLS
 boundary. The live `/forms` reference supports design, validated fill preview,
 JSON editing, import/export, and browser persistence.
+
+`@appkit/editor` owns the optional TipTap authoring control used by rich-text
+fields. `@appkit/forms-documents` owns localized companion-field generation,
+document styles, and generated bounded PDF templates. These remain separate so
+schema validation can run in services that install neither an editor nor the
+document pipeline.
 
 `@appkit/i18n` resolves supported locales, Accept-Language, tenant defaults,
 per-user overrides, and localized authored content. Plain-string records remain
@@ -248,8 +259,9 @@ contract to `InsightResultView`.
 </html>
 ```
 
-`next.config.ts`: `transpilePackages: ['@appkit/ui', '@appkit/tokens']` (they ship
-TSX source, not built output). For native page handoffs, also set
+Add every AppKit package used by a Next application to `transpilePackages`
+(packages ship TypeScript source, not built output). For native page handoffs,
+also set
 `experimental: { viewTransition: true }`, then wrap the changing `AppShell`
 children with `<PageTransition navigationKey={pathname}>`. This optional entry
 point tracks the current Next/React View Transition API. Then compose screens
@@ -285,10 +297,12 @@ The canonical identity schema (tenants, users, memberships, roles,
 role_assignments, per-user permission overrides) ships in `@appkit/db/schema` —
 extend it, don't reinvent it.
 
-The same schema exports `userDashboardLayouts`, `insightCards`, and
-`DASHBOARD_TENANT_TABLES`. Include the latter in the RLS installer. Layouts are
-personal per tenant/user; cards persist their semantic query, visualization,
-settings, owner, and draft/published state.
+`@appkit/dashboard/schema` exports `userDashboardLayouts`, `insightCards`, and
+`DASHBOARD_TENANT_TABLES`, and ships its own Drizzle migration. Include its table
+list in the RLS installer when the feature is installed. Layouts are personal
+per tenant/user; cards persist their semantic query, visualization, settings,
+owner, and draft/published state. Notification tables and migrations follow the
+same feature-owned pattern under `@appkit/notifications/schema`.
 
 ## 9. Secrets and outbound delivery (`@appkit/crypto`, `@appkit/emails`, `@appkit/sms`)
 
@@ -311,29 +325,38 @@ page layouts, injected execution, and timezone-aware schedules. Its query is the
 same `InsightQuery` used by `@appkit/analytics`; do not create a separate report
 query language. An app supplies its tenant-scoped executor and domain catalogue.
 
-`@appkit/pdf` is the OpenBooks PDF engine: pure-JS paginated tables and financial
-statements, bounded template rendering, HTML sanitization, and a hardened
-Chromium printer. `@appkit/forms-pdf` maps form summaries, repeating sections,
-photos, authored templates, and design documents into that renderer.
+`@appkit/pdf` is the OpenBooks PDF engine. Its root is the pure-JS PDFKit report,
+table, and financial-statement renderer. Bounded template rendering is under
+`@appkit/pdf/template`; HTML sanitization and hardened Chromium printing are
+under `@appkit/pdf/html`, so a report-only service does not install Chromium.
+`@appkit/forms-pdf` provides safe form-summary HTML at its root, then opt-in
+`/summary`, `/template`, and `/design` rendering adapters.
 
-`@appkit/design-studio` owns the bounded multi-artboard print document. Data
+`@appkit/design-studio` owns the bounded multi-artboard print document. Its
+Fabric canvas adapter is isolated at `@appkit/design-studio/fabric`. Data
 field keys and sample values come from an app-supplied catalogue; credentials,
 equipment, projects, and other product entities are not hardcoded in the
 package. The working references are `/reports` and `/design-studio`.
 
 ## 11. Workflows, notifications, and customization
 
-`@appkit/workflows` provides the shared two-pane React Flow authoring shell,
-node registry, graph conversion, branch handles, cycle detection, and linting.
+`@appkit/workflows` provides dependency-free graph conversion, cycle detection,
+and linting. `@appkit/workflows/react` adds the shared two-pane React Flow
+authoring shell, node registry, and branch handles.
 The two source-native automation schemas remain in `@appkit/forms-core`; apps
 adapt either schema structurally and inject the relevant inspector editors.
 
 `@appkit/notifications` applies tenant category policy, per-user channel
 preferences, digest/quiet-hour behavior, critical delivery rules, and stable
-deduplication keys before invoking app-owned delivery adapters. Its server entry
-provides the Drizzle store over `@appkit/db`'s RLS-protected notifications,
-preferences, and web-push subscription tables. Its React entry provides the
-full inbox and preference matrix.
+deduplication keys before invoking app-owned delivery adapters. Its root has no
+dependencies. `@appkit/notifications/schema` owns its feature tables,
+`@appkit/notifications/drizzle` provides the RLS-aware store, and
+`@appkit/notifications/react` provides the inbox and preference matrix.
+
+Package boundaries are executable architecture. `pnpm check:boundaries` rejects
+runtime cycles and forbidden foundation dependencies; `pnpm test:isolation`
+walks each package root's complete source import graph and fails if an optional
+adapter peer leaks into it. Both run as part of `pnpm lint`.
 
 `@appkit/customization` turns an app-supplied record catalogue into consistent
 custom fields, form layouts, list views, filters, defaults, and lint output.

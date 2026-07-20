@@ -57,16 +57,6 @@ Faithful or generalized extractions:
   events while presenting `SearchSelect`. Options-array consumers use
   `SearchSelect` explicitly; AppKit no longer substitutes a different contract
   under the `Select` name.
-- `DashboardGrid`, its customize toolbar, edit overlays, categorized widget
-  drawer, and role/personal/default layout contract are faithful generalized
-  extractions from OpenBooks `web/app/(app)/dashboard` and BeaconHS
-  `apps/web/src/app/(app)/dashboard`.
-- `DashboardMetricCard`, `DashboardPanel`, the card-library list, and the
-  two-column `CardStudio` visual grammar are faithful generalized extractions
-  from OpenBooks dashboard widgets and `web/app/(app)/insights/CardStudio.tsx`.
-- `InsightResultView` and the expanded visualization vocabulary are generalized
-  from both siblings' insights renderers, with BeaconHS providing the richer
-  scalar/progress/row/donut/gauge vocabulary.
 - `AnimatedNumber` is a token-timed extraction of the byte-identical sibling UI
   primitive. `Sparkline` is the shared sibling implementation with i18n replaced
   by labels and every raw chart color replaced by semantic tokens.
@@ -92,6 +82,7 @@ a new sibling source.
 |---|---|---|
 | `@appkit/tokens` | appkit-original abstraction | semantic-token layer built around the siblings' real light/dark palette and UI values |
 | `@appkit/analytics` | generalized extraction | OpenBooks `packages/analytics` catalog/compile/execute/viz contracts plus BeaconHS `packages/analytics` BHQL AST, expression parser, semantic safety, results, and visualization registry; all domain catalogues are injected |
+| `@appkit/dashboard` | faithful generalized extraction | OpenBooks `web/app/(app)/dashboard`, dashboard widgets, and `web/app/(app)/insights/CardStudio.tsx` plus BeaconHS `apps/web/src/app/(app)/dashboard` and its richer insight renderer vocabulary; application queries and widget bodies stay injected, React Grid and Drizzle live behind explicit adapter entries |
 | `@appkit/reports` | generalized extraction | OpenBooks fiscal-calendar and ~50 period-presets are lifted directly with their upstream tests; the remaining result/document/schedule surface is generalized across OpenBooks `packages/reports` and BeaconHS `packages/reports`, with domain entity catalogues and competing SQL compilers replaced by AppKit's existing `InsightQuery` plus an injected tenant-scoped executor |
 | `@appkit/ai` | generalized extraction | BeaconHS `packages/ai/src/agent.ts` multi-step streaming runtime plus OpenBooks `web/components/assistant` thread, message-parts, markdown, and tool-card UI; providers, persistence, prompts, and domain tools are injected |
 | `@appkit/db` | generalized extraction | OpenBooks DB executor/schema conventions plus BeaconHS Postgres RLS engine |
@@ -107,6 +98,8 @@ a new sibling source.
 | `@appkit/sms` | faithful generalized extraction | BeaconHS provider catalogue and transport policy |
 | `@appkit/jobs` | generalized extraction | BeaconHS BullMQ connection and worker patterns |
 | `@appkit/storage` | generalized extraction | BeaconHS S3-compatible storage core |
+| `@appkit/editor` | faithful generalized extraction | BeaconHS `packages/ui/src/rich-text-editor.tsx`; controlled value and host link normalization are additive generalizations, while TipTap behavior and toolbar grammar are preserved |
+| `@appkit/forms-documents` | faithful package-boundary extraction | BeaconHS `packages/forms-core/src/form-companions.ts`, `pdf-template-html.ts`, and `doc-style.ts`, moved intact behind a document-specific package boundary so forms-core remains framework-neutral |
 | `@appkit/workflows` | faithful generalized UI extraction | OpenBooks `web/app/(app)/admin/flows` canvas/inspector split plus BeaconHS template `_flows-canvas.tsx`; graph schemas remain source-native in forms-core and node editors are injected |
 | `@appkit/customization` | generalized extraction | OpenBooks `packages/customization` form-layout, list-view, custom-field, defaulting, and lint contracts; the accounting record registry becomes an app-supplied catalogue |
 | `@appkit/design-studio` | generalized extraction | BeaconHS `packages/design-studio` multi-artboard schema, normalization, lazy Fabric boundary, HTML renderer, and print profiles; hardcoded credential/equipment/person field unions and templates become app-supplied field catalogues and document seeds |
@@ -120,7 +113,7 @@ composition:
 
 | surface | classification | exact boundary |
 |---|---|---|
-| `@appkit/forms-core` form schema/evaluator/validator/scoring helpers | compatible generalized extraction | BeaconHS source behavior plus the OpenBooks field/string compatibility layer; the complete 238-test BeaconHS suite runs in AppKit (one sanitizer expectation is tightened to remove its raw `text-teal-700` class) |
+| `@appkit/forms-core` form schema/evaluator/validator/scoring helpers | compatible generalized extraction | BeaconHS source behavior plus the OpenBooks field/string compatibility layer; 235 core tests remain here and the 3 document-generation tests run in `@appkit/forms-documents` (one sanitizer expectation is tightened to remove its raw `text-teal-700` class) |
 | `@appkit/forms-core/safety-automation` | faithful generalized extraction | BeaconHS automation and flow-subject contracts, verified by the complete 11-test upstream suite |
 | `@appkit/forms-core/business-automation` and `business-flow-subjects` | faithful extraction | OpenBooks `packages/forms-core/src/automation.ts`, `flow-subjects.ts`, and its complete 22-test automation suite; only the local import path changes |
 | `LogicBuilder` | faithful generalized extraction | BeaconHS template-designer `logic-builder.tsx`; condition behavior and array coercion are preserved, generated i18n wrappers become injectable labels, raw colors become semantic tokens, and an additive disabled state supports read-only hosts |
@@ -133,7 +126,8 @@ semantics. A fabricated union would not be drop-in compatible with either
 product. Consumers choose the source-native profile and may build an app-level
 adapter to a future shared orchestration layer.
 
-The `user_dashboard_layouts` and `insight_cards` schema in `@appkit/db` follows
+The `user_dashboard_layouts` and `insight_cards` schema in
+`@appkit/dashboard/schema` follows
 the two siblings' production personal/role layout and persisted insight-card
 models. The playground's `members`/`roles`/`audit` semantic catalogue is demo-app
 composition over real tables, not part of the reusable analytics package.

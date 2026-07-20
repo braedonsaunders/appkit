@@ -2,12 +2,14 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
+import type {
+  DashboardActionResult,
+  DashboardLayout,
+  DashboardLibraryItem,
+} from '@appkit/dashboard'
 import {
   DashboardGrid,
-  type DashboardActionResult,
-  type DashboardLayout,
-  type DashboardLibraryItem,
-} from '@appkit/ui'
+} from '@appkit/dashboard/react'
 
 export function DashboardGridController({ initialLayout, nodes, items, mode, onSave, onReset }: {
   initialLayout: DashboardLayout

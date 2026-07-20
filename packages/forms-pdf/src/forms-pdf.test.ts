@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { compileAuthoredFormPdf, renderFormSummaryHtml } from './index'
+import { renderFormSummaryHtml } from './index'
+import { compileAuthoredFormPdf } from './template'
 
 test('summary renderer preserves sections and escapes record data', () => {
   const html = renderFormSummaryHtml({ tenantName: 'Acme', title: 'Inspection', fields: [{ key: 'hazard', label: 'Hazard', value: '<unsafe>' }], sections: [{ label: 'Items', columns: [{ key: 'name', label: 'Name' }], rows: [{ name: 'Guard' }] }] })

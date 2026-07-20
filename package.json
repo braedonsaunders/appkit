@@ -10,7 +10,9 @@
   "scripts": {
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
-    "lint": "turbo run lint",
+    "lint": "pnpm check:boundaries && pnpm test:isolation && turbo run lint",
+    "check:boundaries": "node scripts/check-package-boundaries.mjs",
+    "test:isolation": "node scripts/check-package-isolation.mjs",
     "dev": "turbo run dev",
     "clean": "turbo run clean && rm -rf node_modules",
     "changeset": "changeset",

@@ -5,7 +5,6 @@
 
 import {
   API_TENANT_TABLES,
-  DASHBOARD_TENANT_TABLES,
   IDENTITY_TENANT_TABLES,
   PLATFORM_TENANT_TABLES,
   addMembership,
@@ -15,15 +14,18 @@ import {
   createTenant,
   createUser,
   findUserByEmail,
-  insightCards,
   installRlsSql,
   memberships,
   schema,
   seedRoles,
   tenants,
   users,
-  userDashboardLayouts,
 } from '@appkit/db'
+import {
+  DASHBOARD_TENANT_TABLES,
+  insightCards,
+  userDashboardLayouts,
+} from '@appkit/dashboard/schema'
 import { and, eq } from 'drizzle-orm'
 
 const APP_URL = process.env.APPKIT_DB_URL

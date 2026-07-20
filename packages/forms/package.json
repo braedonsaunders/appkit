@@ -17,6 +17,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
+    "@appkit/editor": "workspace:*",
     "@appkit/forms-core": "workspace:*",
     "@appkit/i18n": "workspace:*",
     "@appkit/ui": "workspace:*",

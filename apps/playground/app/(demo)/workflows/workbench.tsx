@@ -2,7 +2,8 @@
 
 import * as React from 'react'
 import { Input, Label, Select, Textarea } from '@appkit/ui'
-import { WorkflowBuilder, type WorkflowGraph, type WorkflowNodeDefinition } from '@appkit/workflows'
+import type { WorkflowGraph, WorkflowNodeDefinition } from '@appkit/workflows'
+import { WorkflowBuilder } from '@appkit/workflows/react'
 
 type DemoNode = { kind: 'trigger' | 'condition' | 'gate' | 'action'; label: string; event?: string; expression?: string; assignee?: string; action?: string; message?: string }
 const definitions: WorkflowNodeDefinition<DemoNode>[] = [

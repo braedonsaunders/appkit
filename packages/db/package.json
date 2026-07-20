@@ -1,7 +1,7 @@
 {
   "name": "@appkit/db",
   "version": "0.1.0",
-  "description": "Multi-tenant Postgres RLS engine, schema helpers, identity, dashboard, and insight persistence.",
+  "description": "Multi-tenant Postgres RLS engine, schema helpers, and canonical identity persistence.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {
@@ -22,7 +22,6 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@appkit/analytics": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "pg": "^8.13.1"
   },

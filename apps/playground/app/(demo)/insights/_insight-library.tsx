@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation'
 import { BarChart3, CreditCard, Plus, Search } from 'lucide-react'
 import type { AnalyticsCatalog } from '@appkit/analytics'
 import {
-  Badge, Button, CardStudio, Drawer, EmptyState, ListPageLayout, PageHeader,
+  Badge, Button, Drawer, EmptyState, ListPageLayout, PageHeader,
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-  type InsightCardDraft,
 } from '@appkit/ui'
+import type { InsightCardDraft } from '@appkit/dashboard'
+import { CardStudio } from '@appkit/dashboard/react'
 import {
   deleteInsightCardAction, publishInsightCardAction, runInsightQueryAction,
   saveInsightCardAction,

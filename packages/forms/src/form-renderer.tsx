@@ -18,10 +18,10 @@ import {
   Checkbox,
   Input,
   Label,
-  RichTextEditor,
   Textarea,
   cn,
 } from '@appkit/ui'
+import { RichTextEditor } from '@appkit/editor'
 import { readText } from './text'
 
 export type FormValues = Record<string, unknown>

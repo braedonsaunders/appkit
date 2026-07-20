@@ -1,6 +1,6 @@
 import * as React from 'react'
 import type { QueryResult, VisualizationKey, VisualizationSettings } from '@appkit/analytics'
-import { cn } from './utils'
+import { cn } from '@appkit/ui'
 
 const SERIES_COLORS = ['var(--color-primary)', 'var(--color-info)', 'var(--color-success)', 'var(--color-warning)', 'var(--color-danger)']
 

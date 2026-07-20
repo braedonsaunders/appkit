@@ -1,6 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
-import { notificationPreferences, notifications } from '@appkit/db/schema'
+import { notificationPreferences, notifications } from './schema'
 import type { NotificationChannel, NotificationEvent, NotificationRecord, NotificationRecipient, NotificationStore } from './index'
 
 type Db = NodePgDatabase<Record<string, never>>
@@ -26,3 +26,10 @@ export function createDrizzleNotificationStore(db: Db): NotificationStore {
 }
 
 function toRecord(row: typeof notifications.$inferSelect, event: NotificationEvent): NotificationRecord { return { ...event, id: row.id, userId: row.userId, body: row.body ?? undefined, linkPath: row.linkPath ?? undefined, data: row.data, critical: row.isCritical, occurredAt: row.occurredAt, readAt: row.readAt, snoozedUntil: row.snoozedUntil } }
+
+export {
+  notifications,
+  notificationPreferences,
+  webPushSubscriptions,
+  NOTIFICATION_TENANT_TABLES,
+} from './schema'

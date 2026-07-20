@@ -111,39 +111,10 @@ CREATE TABLE "api_keys" (
 	"updated_by" uuid
 );
 --> statement-breakpoint
-CREATE TABLE "insight_cards" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"tenant_id" uuid NOT NULL,
-	"owner_user_id" uuid NOT NULL,
-	"name" text NOT NULL,
-	"description" text,
-	"query" jsonb NOT NULL,
-	"visualization" text DEFAULT 'table' NOT NULL,
-	"visualization_settings" jsonb DEFAULT '{}'::jsonb NOT NULL,
-	"status" text DEFAULT 'draft' NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "user_dashboard_layouts" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"tenant_id" uuid NOT NULL,
-	"user_id" uuid NOT NULL,
-	"layout" jsonb DEFAULT '{"widgets":[]}'::jsonb NOT NULL,
-	"source_role" text,
-	"is_customized" boolean DEFAULT true NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
 CREATE UNIQUE INDEX "tenant_users_tenant_user_key" ON "tenant_users" USING btree ("tenant_id","user_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "roles_tenant_key_key" ON "roles" USING btree ("tenant_id","key");--> statement-breakpoint
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants" USING btree ("slug");--> statement-breakpoint
 CREATE UNIQUE INDEX "users_email_key" ON "users" USING btree ("email");--> statement-breakpoint
 CREATE UNIQUE INDEX "domain_event_outbox_dedup_key" ON "domain_event_outbox" USING btree ("tenant_id","dedup_key");--> statement-breakpoint
 CREATE UNIQUE INDEX "api_idempotency_key_scope" ON "api_idempotency_keys" USING btree ("api_key_id","idempotency_key");--> statement-breakpoint
-CREATE UNIQUE INDEX "api_keys_key_hash_key" ON "api_keys" USING btree ("key_hash");--> statement-breakpoint
-CREATE INDEX "insight_cards_tenant_owner_idx" ON "insight_cards" USING btree ("tenant_id","owner_user_id");--> statement-breakpoint
-CREATE INDEX "insight_cards_tenant_status_idx" ON "insight_cards" USING btree ("tenant_id","status");--> statement-breakpoint
-CREATE UNIQUE INDEX "user_dashboard_layouts_tenant_user_key" ON "user_dashboard_layouts" USING btree ("tenant_id","user_id");--> statement-breakpoint
-CREATE INDEX "user_dashboard_layouts_tenant_idx" ON "user_dashboard_layouts" USING btree ("tenant_id");
+CREATE UNIQUE INDEX "api_keys_key_hash_key" ON "api_keys" USING btree ("key_hash");

@@ -13,7 +13,7 @@
 // Consumed by the web publish hook / admin "Generate" affordance AND the db
 // seed backfill — keep it dependency-free (pure string building).
 
-import type { FormSchemaV1 } from './schema'
+import type { FormSchemaV1 } from '@appkit/forms-core'
 import { DEFAULT_LOCALE, type AppLocale } from '@appkit/i18n'
 import { color } from '@appkit/tokens'
 import {

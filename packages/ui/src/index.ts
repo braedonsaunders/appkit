@@ -171,25 +171,6 @@ export {
   type DrawerSide,
   type DrawerText,
 } from './drawer'
-export {
-  DashboardGrid,
-  type DashboardWidget,
-  type DashboardLayout,
-  type DashboardLibraryItem,
-  type DashboardActionResult,
-} from './dashboard-grid'
-export {
-  DashboardMetricCard,
-  DashboardPanel,
-  InsightCard,
-  InsightResultView,
-} from './insight-card'
-export {
-  CardStudio,
-  type InsightCardDraft,
-  type CardStudioResult,
-  type CardPreviewResult,
-} from './card-studio'
 export { UiTextProvider, useUiText, type UiTextTranslator } from './text-context'
 export {
   FileUploader,
@@ -207,4 +188,3 @@ export {
   type AttachmentKind,
 } from './upload-limits'
 export { SignaturePad, type SignaturePadProps } from './signature-pad'
-export { RichTextEditor, type RichTextEditorProps } from './rich-text-editor'

@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
   // Workspace packages ship TSX/TS source, not built output.
   transpilePackages: [
     '@appkit/ai',
+    '@appkit/dashboard',
+    '@appkit/editor',
     '@appkit/ui',
     '@appkit/tokens',
     '@appkit/db',
@@ -19,6 +21,7 @@ const nextConfig: NextConfig = {
     '@appkit/sms',
     '@appkit/i18n',
     '@appkit/forms-core',
+    '@appkit/forms-documents',
     '@appkit/forms',
   ],
   // Node-native server deps stay external to the bundle.

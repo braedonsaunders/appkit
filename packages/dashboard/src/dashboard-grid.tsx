@@ -3,23 +3,12 @@
 import * as React from 'react'
 import { LayoutGrid, Loader2, Plus, RotateCcw, Save, Settings2, X } from 'lucide-react'
 import { Responsive, type Layout, type LayoutItem } from 'react-grid-layout'
-import { Button } from './button'
-import { Drawer } from './drawer'
-import { cn } from './utils'
-
-export type DashboardWidget = { id: string; x: number; y: number; w: number; h: number }
-export type DashboardLayout = { widgets: DashboardWidget[] }
-export type DashboardLibraryItem = {
-  id: string
-  label: string
-  description: string
-  category: string
-  defaultSize: { w: number; h: number }
-  minSize: { w: number; h: number }
-  maxSize?: { w?: number; h?: number }
-  kind?: 'widget' | 'card'
-}
-export type DashboardActionResult = { ok: true } | { ok: false; error: string }
+import { Button, Drawer, cn } from '@appkit/ui'
+import type {
+  DashboardActionResult,
+  DashboardLayout,
+  DashboardLibraryItem,
+} from './types'
 
 const COLS = { lg: 12, md: 12, sm: 6, xs: 4, xxs: 2 }
 const BREAKPOINTS = { lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }

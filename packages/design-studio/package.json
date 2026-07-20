@@ -4,11 +4,13 @@
   "description": "Generalized print-design document schema and renderer extracted from BeaconHS.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
-  "exports": { ".": "./src/index.ts", "./package.json": "./package.json" },
+  "exports": { ".": "./src/index.ts", "./fabric": "./src/fabric.ts", "./package.json": "./package.json" },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "files": ["src"],
   "scripts": { "typecheck": "tsc --noEmit", "test": "node --import tsx --test src/*.test.ts", "clean": "rm -rf dist *.tsbuildinfo" },
-  "dependencies": { "@appkit/tokens": "workspace:*", "fabric": "^7.0.0" },
-  "devDependencies": { "@types/node": "^22", "tsx": "^4.19.2", "typescript": "^5.9.3" }
+  "dependencies": { "@appkit/tokens": "workspace:*" },
+  "peerDependencies": { "fabric": "^7.0.0" },
+  "peerDependenciesMeta": { "fabric": { "optional": true } },
+  "devDependencies": { "@types/node": "^22", "fabric": "^7.0.0", "tsx": "^4.19.2", "typescript": "^5.9.3" }
 }

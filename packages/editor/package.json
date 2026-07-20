@@ -1,0 +1,28 @@
+{
+  "name": "@appkit/editor",
+  "version": "0.1.0",
+  "description": "Optional TipTap rich-text authoring for AppKit forms and documents.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./package.json": "./package.json" },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "files": ["src"],
+  "scripts": { "typecheck": "tsc --noEmit", "clean": "rm -rf dist *.tsbuildinfo" },
+  "dependencies": {
+    "@appkit/ui": "workspace:*",
+    "@tiptap/extension-link": "^3.27.4",
+    "@tiptap/extension-placeholder": "^3.27.4",
+    "@tiptap/react": "^3.27.4",
+    "@tiptap/starter-kit": "^3.27.4"
+  },
+  "peerDependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "react": "^19",
+    "react-dom": "^19",
+    "typescript": "^5.9.3"
+  }
+}

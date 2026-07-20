@@ -1,0 +1,52 @@
+{
+  "name": "@appkit/dashboard",
+  "version": "0.1.0",
+  "description": "Optional dashboard layouts, insight cards, visual studio, and feature-owned persistence.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "sideEffects": ["*.css"],
+  "exports": {
+    ".": "./src/index.ts",
+    "./react": "./src/react.ts",
+    "./schema": "./src/schema.ts",
+    "./styles.css": "./src/styles.css",
+    "./package.json": "./package.json"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "files": ["src", "drizzle"],
+  "scripts": { "typecheck": "tsc --noEmit", "generate": "drizzle-kit generate", "clean": "rm -rf dist *.tsbuildinfo" },
+  "dependencies": { "@appkit/analytics": "workspace:*" },
+  "peerDependencies": {
+    "@appkit/db": "^0.1.0",
+    "@appkit/ui": "^0.1.0",
+    "drizzle-orm": "^0.45.2",
+    "lucide-react": "^1.24.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-grid-layout": "^2.2.3"
+  },
+  "peerDependenciesMeta": {
+    "@appkit/db": { "optional": true },
+    "@appkit/ui": { "optional": true },
+    "drizzle-orm": { "optional": true },
+    "lucide-react": { "optional": true },
+    "react": { "optional": true },
+    "react-dom": { "optional": true },
+    "react-grid-layout": { "optional": true }
+  },
+  "devDependencies": {
+    "@appkit/db": "workspace:*",
+    "@appkit/ui": "workspace:*",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "drizzle-orm": "^0.45.2",
+    "drizzle-kit": "^0.30.6",
+    "lucide-react": "^1.24.0",
+    "react": "^19",
+    "react-dom": "^19",
+    "react-grid-layout": "^2.2.3",
+    "typescript": "^5.9.3"
+  }
+}

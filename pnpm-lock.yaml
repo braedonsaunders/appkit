@@ -32,6 +32,9 @@ importers:
       '@appkit/customization':
         specifier: workspace:*
         version: link:../../packages/customization
+      '@appkit/dashboard':
+        specifier: workspace:*
+        version: link:../../packages/dashboard
       '@appkit/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -80,6 +83,9 @@ importers:
       '@appkit/workflows':
         specifier: workspace:*
         version: link:../../packages/workflows
+      '@xyflow/react':
+        specifier: ^12.10.0
+        version: 12.11.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(gel@2.2.0)(pg@8.22.0)
@@ -92,12 +98,18 @@ importers:
       next:
         specifier: 16.2.10
         version: 16.2.10(@opentelemetry/api@1.9.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      puppeteer-core:
+        specifier: ^25.3.0
+        version: 25.3.0
       react:
         specifier: ^19.2.7
         version: 19.2.7
       react-dom:
         specifier: ^19.2.7
         version: 19.2.7(react@19.2.7)
+      react-grid-layout:
+        specifier: ^2.2.3
+        version: 2.2.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       server-only:
         specifier: ^0.0.1
         version: 0.0.1
@@ -232,11 +244,51 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/db:
+  packages/dashboard:
     dependencies:
       '@appkit/analytics':
         specifier: workspace:*
         version: link:../analytics
+    devDependencies:
+      '@appkit/db':
+        specifier: workspace:*
+        version: link:../db
+      '@appkit/ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@types/node':
+        specifier: ^22
+        version: 22.20.1
+      '@types/react':
+        specifier: ^19
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.2.3(@types/react@19.2.17)
+      drizzle-kit:
+        specifier: ^0.30.6
+        version: 0.30.6
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(gel@2.2.0)(pg@8.22.0)
+      lucide-react:
+        specifier: ^1.24.0
+        version: 1.25.0(react@19.2.7)
+      react:
+        specifier: ^19
+        version: 19.2.7
+      react-dom:
+        specifier: ^19
+        version: 19.2.7(react@19.2.7)
+      react-grid-layout:
+        specifier: ^2.2.3
+        version: 2.2.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/db:
+    dependencies:
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(gel@2.2.0)(pg@8.22.0)
@@ -262,16 +314,53 @@ importers:
       '@appkit/tokens':
         specifier: workspace:*
         version: link:../tokens
-      fabric:
-        specifier: ^7.0.0
-        version: 7.4.0
     devDependencies:
       '@types/node':
         specifier: ^22
         version: 22.20.1
+      fabric:
+        specifier: ^7.0.0
+        version: 7.4.0
       tsx:
         specifier: ^4.19.2
         version: 4.23.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/editor:
+    dependencies:
+      '@appkit/ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@tiptap/extension-link':
+        specifier: ^3.27.4
+        version: 3.28.0(@tiptap/core@3.28.0(@tiptap/pm@3.28.0))(@tiptap/pm@3.28.0)
+      '@tiptap/extension-placeholder':
+        specifier: ^3.27.4
+        version: 3.28.0(@tiptap/extensions@3.28.0(@tiptap/core@3.28.0(@tiptap/pm@3.28.0))(@tiptap/pm@3.28.0))
+      '@tiptap/react':
+        specifier: ^3.27.4
+        version: 3.28.0(@floating-ui/dom@1.8.0)(@tiptap/core@3.28.0(@tiptap/pm@3.28.0))(@tiptap/pm@3.28.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@tiptap/starter-kit':
+        specifier: ^3.27.4
+        version: 3.28.0
+    devDependencies:
+      '@types/node':
+        specifier: ^22
+        version: 22.20.1
+      '@types/react':
+        specifier: ^19
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.2.3(@types/react@19.2.17)
+      react:
+        specifier: ^19
+        version: 19.2.7
+      react-dom:
+        specifier: ^19
+        version: 19.2.7(react@19.2.7)
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -336,6 +425,9 @@ importers:
 
   packages/forms:
     dependencies:
+      '@appkit/editor':
+        specifier: workspace:*
+        version: link:../editor
       '@appkit/forms-core':
         specifier: workspace:*
         version: link:../forms-core
@@ -370,15 +462,6 @@ importers:
 
   packages/forms-core:
     dependencies:
-      '@appkit/email-render':
-        specifier: workspace:*
-        version: link:../email-render
-      '@appkit/i18n':
-        specifier: workspace:*
-        version: link:../i18n
-      '@appkit/tokens':
-        specifier: workspace:*
-        version: link:../tokens
       isomorphic-dompurify:
         specifier: ^3.18.0
         version: 3.19.0(canvas@3.2.3)
@@ -386,6 +469,9 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
+      '@appkit/email-render':
+        specifier: workspace:*
+        version: link:../email-render
       '@types/node':
         specifier: ^22
         version: 22.20.1
@@ -396,18 +482,43 @@ importers:
         specifier: ^3.2.4
         version: 3.2.7(@types/debug@4.1.13)(@types/node@22.20.1)(jiti@2.7.0)(jsdom@29.1.1(canvas@3.2.3))(lightningcss@1.32.0)(tsx@4.23.1)
 
+  packages/forms-documents:
+    dependencies:
+      '@appkit/forms-core':
+        specifier: workspace:*
+        version: link:../forms-core
+      '@appkit/i18n':
+        specifier: workspace:*
+        version: link:../i18n
+      '@appkit/tokens':
+        specifier: workspace:*
+        version: link:../tokens
+    devDependencies:
+      '@appkit/email-render':
+        specifier: workspace:*
+        version: link:../email-render
+      '@types/node':
+        specifier: ^22
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@22.20.1)(jiti@2.7.0)(jsdom@29.1.1(canvas@3.2.3))(lightningcss@1.32.0)(tsx@4.23.1)
+
   packages/forms-pdf:
     dependencies:
+      '@appkit/tokens':
+        specifier: workspace:*
+        version: link:../tokens
+    devDependencies:
       '@appkit/design-studio':
         specifier: workspace:*
         version: link:../design-studio
       '@appkit/pdf':
         specifier: workspace:*
         version: link:../pdf
-      '@appkit/tokens':
-        specifier: workspace:*
-        version: link:../tokens
-    devDependencies:
       '@types/node':
         specifier: ^22
         version: 22.20.1
@@ -441,20 +552,13 @@ importers:
         version: 22.20.1
 
   packages/notifications:
-    dependencies:
+    devDependencies:
       '@appkit/db':
         specifier: workspace:*
         version: link:../db
       '@appkit/ui':
         specifier: workspace:*
         version: link:../ui
-      drizzle-orm:
-        specifier: ^0.45.2
-        version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(gel@2.2.0)(pg@8.22.0)
-      lucide-react:
-        specifier: ^1.24.0
-        version: 1.25.0(react@19.2.7)
-    devDependencies:
       '@types/node':
         specifier: ^22
         version: 22.20.1
@@ -464,6 +568,15 @@ importers:
       '@types/react-dom':
         specifier: ^19
         version: 19.2.3(@types/react@19.2.17)
+      drizzle-kit:
+        specifier: ^0.30.6
+        version: 0.30.6
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(gel@2.2.0)(pg@8.22.0)
+      lucide-react:
+        specifier: ^1.24.0
+        version: 1.25.0(react@19.2.7)
       react:
         specifier: ^19
         version: 19.2.7
@@ -482,15 +595,9 @@ importers:
       '@appkit/tokens':
         specifier: workspace:*
         version: link:../tokens
-      isomorphic-dompurify:
-        specifier: ^3.18.0
-        version: 3.19.0(canvas@3.2.3)
       pdfkit:
         specifier: ^0.17.1
         version: 0.17.2
-      puppeteer-core:
-        specifier: ^25.3.0
-        version: 25.3.0
     devDependencies:
       '@types/node':
         specifier: ^22
@@ -498,9 +605,15 @@ importers:
       '@types/pdfkit':
         specifier: ^0.13.9
         version: 0.13.9
+      isomorphic-dompurify:
+        specifier: ^3.18.0
+        version: 3.19.0(canvas@3.2.3)
       pdf-lib:
         specifier: ^1.17.1
         version: 1.17.1
+      puppeteer-core:
+        specifier: ^25.3.0
+        version: 25.3.0
       tsx:
         specifier: ^4.19.2
         version: 4.23.1
@@ -570,24 +683,9 @@ importers:
 
   packages/ui:
     dependencies:
-      '@appkit/analytics':
-        specifier: workspace:*
-        version: link:../analytics
       '@appkit/tokens':
         specifier: workspace:*
         version: link:../tokens
-      '@tiptap/extension-link':
-        specifier: ^3.27.4
-        version: 3.28.0(@tiptap/core@3.28.0(@tiptap/pm@3.28.0))(@tiptap/pm@3.28.0)
-      '@tiptap/extension-placeholder':
-        specifier: ^3.27.4
-        version: 3.28.0(@tiptap/extensions@3.28.0(@tiptap/core@3.28.0(@tiptap/pm@3.28.0))(@tiptap/pm@3.28.0))
-      '@tiptap/react':
-        specifier: ^3.27.4
-        version: 3.28.0(@floating-ui/dom@1.8.0)(@tiptap/core@3.28.0(@tiptap/pm@3.28.0))(@tiptap/pm@3.28.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@tiptap/starter-kit':
-        specifier: ^3.27.4
-        version: 3.28.0
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -600,9 +698,6 @@ importers:
       lucide-react:
         specifier: ^1.24.0
         version: 1.25.0(react@19.2.7)
-      react-grid-layout:
-        specifier: ^2.2.3
-        version: 2.2.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       tailwind-merge:
         specifier: ^3.6.0
         version: 3.6.0
@@ -630,17 +725,10 @@ importers:
         version: 3.2.7(@types/debug@4.1.13)(@types/node@22.20.1)(jiti@2.7.0)(jsdom@29.1.1(canvas@3.2.3))(lightningcss@1.32.0)(tsx@4.23.1)
 
   packages/workflows:
-    dependencies:
+    devDependencies:
       '@appkit/ui':
         specifier: workspace:*
         version: link:../ui
-      '@xyflow/react':
-        specifier: ^12.10.0
-        version: 12.11.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      lucide-react:
-        specifier: ^1.24.0
-        version: 1.25.0(react@19.2.7)
-    devDependencies:
       '@types/node':
         specifier: ^22
         version: 22.20.1
@@ -650,6 +738,12 @@ importers:
       '@types/react-dom':
         specifier: ^19
         version: 19.2.3(@types/react@19.2.17)
+      '@xyflow/react':
+        specifier: ^12.10.0
+        version: 12.11.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      lucide-react:
+        specifier: ^1.24.0
+        version: 1.25.0(react@19.2.7)
       react:
         specifier: ^19
         version: 19.2.7

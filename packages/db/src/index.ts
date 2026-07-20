@@ -15,22 +15,6 @@ export {
 export { auditLog, domainEventOutbox, PLATFORM_TENANT_TABLES } from './schema/platform'
 export { apiKeys, apiIdempotencyKeys, API_TENANT_TABLES } from './schema/api'
 export {
-  userDashboardLayouts,
-  insightCards,
-  DASHBOARD_TENANT_TABLES,
-  type DashboardWidget,
-  type DashboardQuickAction,
-  type DashboardLayout,
-  type InsightCardStatus,
-} from './schema/dashboards'
-export {
-  notifications,
-  notificationPreferences,
-  webPushSubscriptions,
-  NOTIFICATION_TENANT_TABLES,
-  type NotificationChannel,
-} from './schema/notifications'
-export {
   createTenant,
   createUser,
   addMembership,

@@ -42,15 +42,16 @@ imported by every app.
 | Package | Role | Status |
 |---|---|---|
 | `@appkit/tokens` | Semantic color, shape, elevation, and motion tokens; Tailwind v4 utilities. | implemented |
-| `@appkit/ui` | Tokenized primitives, complete shell runtime, native page transitions, page layouts, dashboard grid, card studio, visualization renderers, URL-driven list controls, rich text, upload, and signature capture. | implemented |
+| `@appkit/ui` | Tokenized primitives, complete shell runtime, native page transitions, page layouts, URL-driven list controls, upload, and signature capture. | implemented |
 | `@appkit/ai` | Provider-neutral multi-step tool agent plus streamed assistant thread and tool-use UI. | implemented + tested |
 | `@appkit/analytics` | Semantic catalogues, safe formulas, parameter-bound query compilation, result contracts, and visualization registry. | implemented + tested |
+| `@appkit/dashboard` | Dashboard/card contracts with optional React Grid workspace and feature-owned Drizzle persistence. | implemented + browser-tested |
 | `@appkit/reports` | Saved definitions, grouped report documents, execution adapters, and timezone-aware delivery schedules over the analytics query contract. | implemented + tested |
-| `@appkit/db` | Postgres RLS engine, schema helpers, identity model, dashboard/card persistence, API keys, and idempotency. | implemented + live-tested |
+| `@appkit/db` | Postgres RLS engine, schema helpers, canonical identity model, API keys, and idempotency. | implemented + live-tested |
 | `@appkit/tenant` | Request context and wildcard RBAC over tenant-scoped database handles. | implemented + live-tested |
 | `@appkit/auth` | Scrypt passwords and stateless HMAC sessions. | implemented + live-tested |
 | `@appkit/events` | Audit trail and transactional outbox. | implemented + live-tested |
-| `@appkit/notifications` | Tenant inbox, preferences, quiet-hour/digest policy, multi-channel dispatch, and reusable inbox/settings UI. | implemented + tested |
+| `@appkit/notifications` | Dependency-free delivery policy with optional React inbox and Drizzle persistence entries. | implemented + tested |
 | `@appkit/api` | API-key auth, authorization, idempotent writes, typed errors, and OpenAPI descriptions. | implemented + live-tested |
 | `@appkit/endpoints` | Governed QuickJS sandbox for user-defined endpoint handlers. | implemented |
 | `@appkit/crypto` | AES-256-GCM sealed secrets with an HKDF-derived application key. | implemented |
@@ -59,13 +60,15 @@ imported by every app.
 | `@appkit/jobs` | BullMQ + Redis queue and worker harness. | implemented |
 | `@appkit/storage` | S3-compatible object storage and presigned URLs. | implemented |
 | `@appkit/i18n` | Tenant locale policy, request negotiation, per-user overrides, and localized authoring-copy resolution. | implemented + tested |
-| `@appkit/forms-core` | Versioned form schemas, field registry, formulas, logic, validation, scoring, automation graphs, and document helpers; compatible with OpenBooks and BeaconHS source shapes. | implemented + tested |
+| `@appkit/forms-core` | Versioned form schemas, field registry, formulas, logic, validation, scoring, and automation graphs; compatible with OpenBooks and BeaconHS source shapes. | implemented + tested |
 | `@appkit/forms` | Controlled visual form designer and fill runtime with host adapters for product-specific fields and storage. | implemented + browser-tested |
-| `@appkit/workflows` | Visual graph canvas, node registry, inspector shell, graph conversion, and structural linting. | implemented + browser-tested |
+| `@appkit/editor` | Optional TipTap rich-text authoring control shared by forms and document fields. | implemented + browser-tested |
+| `@appkit/forms-documents` | Localized companion fields, document styles, and generated bounded PDF templates over forms-core. | implemented + tested |
+| `@appkit/workflows` | Dependency-free graph contracts and linting with an optional React Flow builder. | implemented + browser-tested |
 | `@appkit/customization` | App-defined record catalogues, custom fields, form layouts, list views, defaults, and linting. | implemented + tested |
-| `@appkit/design-studio` | Multi-artboard print-design schema, app-defined data fields, validation, HTML rendering, and print profiles. | implemented + browser-tested |
-| `@appkit/pdf` | PDFKit report/statement rendering plus bounded templates and hardened HTML printing. | implemented + tested |
-| `@appkit/forms-pdf` | Form summaries, repeating tables, photos, authored templates, and design-document PDF adapters. | implemented + tested |
+| `@appkit/design-studio` | Multi-artboard print-design schema and HTML renderer with an optional Fabric adapter. | implemented + browser-tested |
+| `@appkit/pdf` | PDFKit report/statement core with optional bounded-template and hardened Chromium entries. | implemented + tested |
+| `@appkit/forms-pdf` | Form-summary HTML with optional PDF, authored-template, and design-document adapters. | implemented + tested |
 | `apps/playground` | The full-stack running reference app and component gallery. | implemented + browser-tested |
 
 ## The running reference
@@ -111,5 +114,6 @@ launcher to switch between topbar (default) and sidebar navigation.
 pnpm install
 pnpm -r typecheck
 pnpm -r test
+pnpm lint
 pnpm build
 ```

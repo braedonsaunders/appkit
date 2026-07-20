@@ -36,6 +36,9 @@ app that imports it improves.
 - `packages/analytics` — the app-agnostic dashboard query core: semantic
   catalogues, safe formula AST/parser, parameter-bound Postgres compiler, result
   contract, and visualization registry. Apps provide domain sources/fields.
+- `packages/dashboard` — the optional dashboard feature: dependency-light
+  layouts/card types at the root, React Grid/Card Studio under `/react`, and
+  feature-owned Drizzle persistence under `/schema`.
 - `packages/ai` — the app-agnostic multi-step tool-agent runtime plus the
   streamed assistant thread/tool-use UI. Apps inject the resolved model,
   system prompt, tenant/RBAC-bound tools, persistence, and HTTP transport.
@@ -47,12 +50,13 @@ app that imports it improves.
 - `packages/tenant` — request context + RBAC on top of `@appkit/db`:
   `RequestContext`, `can` / `assertCan` (wildcards, read-tiers, per-user
   grant/deny overrides), `resolveMembershipAccess`, super-admin.
-- `packages/reports`, `packages/pdf`, `packages/forms-pdf`, and
-  `packages/design-studio` — saved reports and the document/print stack.
-- `packages/workflows` — the shared visual graph authoring shell over the two
-  source-native automation contracts in `forms-core`.
-- `packages/notifications` — inbox/preferences/policy runtime plus the canonical
-  notification schema in `packages/db`.
+- `packages/editor`, `packages/forms-documents`, `packages/reports`,
+  `packages/pdf`, `packages/forms-pdf`, and `packages/design-studio` — optional
+  rich-text and document/print layers over their dependency-light contracts.
+- `packages/workflows` — dependency-free workflow graphs at the root, with the
+  shared React Flow authoring shell under `/react`.
+- `packages/notifications` — dependency-free notification policy at the root,
+  with React, Drizzle store, and feature-owned schema adapter entry points.
 - `packages/customization` — app-supplied record catalogues, custom fields,
   configurable form layouts, and list views.
 - `apps/playground` — the **living reference**: a runnable Next 16 app with the
@@ -92,6 +96,7 @@ publishing to build locally.
 ```bash
 pnpm install
 pnpm -r typecheck     # tsc --noEmit across every workspace
+pnpm lint             # package boundaries + isolated roots + workspace lint
 pnpm build            # turbo build
 ```
 

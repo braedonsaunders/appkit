@@ -1,11 +1,10 @@
 import { sql } from 'drizzle-orm'
 import { boolean, index, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import type { InsightQuery, VisualizationKey, VisualizationSettings } from '@appkit/analytics'
-import { id, tenantRef } from '../helpers'
+import { id, tenantRef } from '@appkit/db'
+import type { DashboardLayout, InsightCardStatus } from './types'
 
-export type DashboardWidget = { id: string; x: number; y: number; w: number; h: number }
-export type DashboardQuickAction = { id: string; label: string; href: string; iconKey: string; tone: string }
-export type DashboardLayout = { widgets: DashboardWidget[]; quickActions?: DashboardQuickAction[] }
+export type { DashboardLayout, DashboardQuickAction, DashboardWidget, InsightCardStatus } from './types'
 
 /** One personal dashboard per user and tenant, with the same role-default lineage contract as BeaconHS. */
 export const userDashboardLayouts = pgTable('user_dashboard_layouts', {
@@ -21,8 +20,6 @@ export const userDashboardLayouts = pgTable('user_dashboard_layouts', {
   uniqueIndex('user_dashboard_layouts_tenant_user_key').on(table.tenantId, table.userId),
   index('user_dashboard_layouts_tenant_idx').on(table.tenantId),
 ])
-
-export type InsightCardStatus = 'draft' | 'published'
 
 /** Saved semantic query + visualization. Cards are library items and dashboard widgets. */
 export const insightCards = pgTable('insight_cards', {

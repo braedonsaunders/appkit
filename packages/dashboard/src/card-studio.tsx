@@ -23,27 +23,9 @@ import {
   type VisualizationKey,
   type VisualizationSettings,
 } from '@appkit/analytics'
-import { Badge } from './badge'
-import { Button } from './button'
-import { Checkbox } from './checkbox'
-import { Input } from './input'
-import { Label } from './label'
-import { SearchSelect } from './search-select'
-import { Textarea } from './textarea'
+import { Badge, Button, Checkbox, Input, Label, SearchSelect, Textarea, cn } from '@appkit/ui'
 import { InsightResultView } from './insight-card'
-import { cn } from './utils'
-
-export type InsightCardDraft = {
-  id?: string
-  name: string
-  description?: string | null
-  query: InsightQuery
-  visualization: VisualizationKey
-  visualizationSettings: VisualizationSettings
-  status: 'draft' | 'published'
-}
-export type CardStudioResult = { ok: true; id?: string } | { ok: false; error: string }
-export type CardPreviewResult = { ok: true; result: QueryResult } | { ok: false; error: string }
+import type { CardPreviewResult, CardStudioResult, InsightCardDraft } from './types'
 
 const VIZ_ICONS: Record<VisualizationKey, React.ReactNode> = {
   scalar: <Hash />, progress: <Activity />, table: <Table2 />, bar: <BarChart3 />,

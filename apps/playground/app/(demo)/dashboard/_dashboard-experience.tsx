@@ -6,9 +6,10 @@ import {
 } from 'lucide-react'
 import { apiKeys, auditLog, memberships, roles } from '@appkit/db'
 import {
-  AnimatedNumber, Badge, Button, DashboardMetricCard, DashboardPanel, InsightCard, Sparkline,
-  type DashboardLibraryItem,
+  AnimatedNumber, Badge, Button, Sparkline,
 } from '@appkit/ui'
+import type { DashboardLibraryItem } from '@appkit/dashboard'
+import { DashboardMetricCard, DashboardPanel, InsightCard } from '@appkit/dashboard/react'
 import { getDemoEnvironment } from '../../../lib/server/demo-context'
 import { executeDemoQuery } from '../../../lib/server/analytics'
 import { loadDashboardData } from '../../../lib/server/dashboard'

@@ -3,7 +3,6 @@
  *     @import '@appkit/ui/styles.css';
  * (which transitively imports Tailwind v4 + @appkit/tokens). */
 @import '@appkit/tokens/tokens.css';
-@import 'react-grid-layout/css/styles.css';
 
 /* Browser-native route handoff. Apps opt in by placing their changing page
    boundary in React's ViewTransition with class `appkit-page-transition`.
@@ -52,16 +51,6 @@
     animation-duration: 0.001ms !important;
     animation-delay: 0ms !important;
   }
-}
-
-.appkit-dashboard-layout .react-grid-placeholder {
-  border-radius: var(--radius-xl);
-  background: color-mix(in oklab, var(--color-primary) 14%, transparent);
-  opacity: 1;
-}
-
-.appkit-dashboard-layout > .react-grid-item > .react-resizable-handle::after {
-  border-color: var(--color-primary);
 }
 
 /* Ensure Tailwind scans the primitives for class usage even when the app's own

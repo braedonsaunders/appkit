@@ -1,0 +1,13 @@
+@import 'react-grid-layout/css/styles.css';
+
+.appkit-dashboard-layout .react-grid-placeholder {
+  border-radius: var(--radius-xl);
+  background: color-mix(in oklab, var(--color-primary) 14%, transparent);
+  opacity: 1;
+}
+
+.appkit-dashboard-layout > .react-grid-item > .react-resizable-handle::after {
+  border-color: var(--color-primary);
+}
+
+@source '../src';
