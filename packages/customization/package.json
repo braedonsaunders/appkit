@@ -1,0 +1,13 @@
+{
+  "name": "@appkit/customization",
+  "version": "0.1.0",
+  "description": "App-supplied record catalogs, custom fields, form layouts, and list views extracted from OpenBooks.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./package.json": "./package.json" },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "files": ["src"],
+  "scripts": { "typecheck": "tsc --noEmit", "test": "node --import tsx --test src/*.test.ts", "clean": "rm -rf dist *.tsbuildinfo" },
+  "devDependencies": { "@types/node": "^22", "tsx": "^4.19.2", "typescript": "^5.9.3" }
+}

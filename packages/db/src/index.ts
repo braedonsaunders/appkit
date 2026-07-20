@@ -24,6 +24,13 @@ export {
   type InsightCardStatus,
 } from './schema/dashboards'
 export {
+  notifications,
+  notificationPreferences,
+  webPushSubscriptions,
+  NOTIFICATION_TENANT_TABLES,
+  type NotificationChannel,
+} from './schema/notifications'
+export {
   createTenant,
   createUser,
   addMembership,

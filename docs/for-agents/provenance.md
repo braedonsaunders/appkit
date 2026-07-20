@@ -92,11 +92,13 @@ a new sibling source.
 |---|---|---|
 | `@appkit/tokens` | appkit-original abstraction | semantic-token layer built around the siblings' real light/dark palette and UI values |
 | `@appkit/analytics` | generalized extraction | OpenBooks `packages/analytics` catalog/compile/execute/viz contracts plus BeaconHS `packages/analytics` BHQL AST, expression parser, semantic safety, results, and visualization registry; all domain catalogues are injected |
+| `@appkit/reports` | generalized extraction | OpenBooks fiscal-calendar and ~50 period-presets are lifted directly with their upstream tests; the remaining result/document/schedule surface is generalized across OpenBooks `packages/reports` and BeaconHS `packages/reports`, with domain entity catalogues and competing SQL compilers replaced by AppKit's existing `InsightQuery` plus an injected tenant-scoped executor |
 | `@appkit/ai` | generalized extraction | BeaconHS `packages/ai/src/agent.ts` multi-step streaming runtime plus OpenBooks `web/components/assistant` thread, message-parts, markdown, and tool-card UI; providers, persistence, prompts, and domain tools are injected |
 | `@appkit/db` | generalized extraction | OpenBooks DB executor/schema conventions plus BeaconHS Postgres RLS engine |
 | `@appkit/tenant` | generalized extraction | BeaconHS request context/RBAC, decoupled from its domain schema |
 | `@appkit/auth` | generalized extraction | OpenBooks password/session implementation |
 | `@appkit/events` | generalized extraction | BeaconHS audit and transactional outbox |
+| `@appkit/notifications` | generalized extraction | BeaconHS notification schema and worker policy plus the siblings' inbox/bell surfaces; product categories, recipient resolution, queue transports, and navigation are injected |
 | `@appkit/api` | generalized extraction | BeaconHS `apps/web/src/lib/api` layer, made framework-neutral; OpenAPI description helpers are appkit-original extensions |
 | `@appkit/endpoints` | generalized extraction | OpenBooks apps runtime / QuickJS endpoint sandbox |
 | `@appkit/crypto` | generalized extraction | BeaconHS sealed-secret package and OpenBooks secret handling |
@@ -105,6 +107,11 @@ a new sibling source.
 | `@appkit/sms` | faithful generalized extraction | BeaconHS provider catalogue and transport policy |
 | `@appkit/jobs` | generalized extraction | BeaconHS BullMQ connection and worker patterns |
 | `@appkit/storage` | generalized extraction | BeaconHS S3-compatible storage core |
+| `@appkit/workflows` | faithful generalized UI extraction | OpenBooks `web/app/(app)/admin/flows` canvas/inspector split plus BeaconHS template `_flows-canvas.tsx`; graph schemas remain source-native in forms-core and node editors are injected |
+| `@appkit/customization` | generalized extraction | OpenBooks `packages/customization` form-layout, list-view, custom-field, defaulting, and lint contracts; the accounting record registry becomes an app-supplied catalogue |
+| `@appkit/design-studio` | generalized extraction | BeaconHS `packages/design-studio` multi-artboard schema, normalization, lazy Fabric boundary, HTML renderer, and print profiles; hardcoded credential/equipment/person field unions and templates become app-supplied field catalogues and document seeds |
+| `@appkit/pdf` | faithful extraction | OpenBooks `packages/pdf` source lifted as the generic PDFKit/table/statement/template/Chromium engine, with AppKit package identity and strict-index fixes only |
+| `@appkit/forms-pdf` | generalized extraction | portable parts of BeaconHS `packages/forms-pdf`: form summaries, repeating sections, photos, authored templates, and design-document printing; BeaconHS-only training credential/wallet templates and app-specific secure-egress wiring remain in BeaconHS |
 
 ## Forms parity boundaries
 

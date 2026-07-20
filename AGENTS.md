@@ -47,6 +47,14 @@ app that imports it improves.
 - `packages/tenant` — request context + RBAC on top of `@appkit/db`:
   `RequestContext`, `can` / `assertCan` (wildcards, read-tiers, per-user
   grant/deny overrides), `resolveMembershipAccess`, super-admin.
+- `packages/reports`, `packages/pdf`, `packages/forms-pdf`, and
+  `packages/design-studio` — saved reports and the document/print stack.
+- `packages/workflows` — the shared visual graph authoring shell over the two
+  source-native automation contracts in `forms-core`.
+- `packages/notifications` — inbox/preferences/policy runtime plus the canonical
+  notification schema in `packages/db`.
+- `packages/customization` — app-supplied record catalogues, custom fields,
+  configurable form layouts, and list views.
 - `apps/playground` — the **living reference**: a runnable Next 16 app with the
   complete dashboard/card-building system, every primitive, and an `/admin`
   area (hub + settings shell). Read it to see any primitive in real use; keep it

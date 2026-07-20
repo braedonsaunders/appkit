@@ -126,6 +126,12 @@ export function color(token: ColorToken, mode: ThemeMode = 'light', alpha = 1): 
   return alpha >= 1 ? `rgb(${r} ${g} ${b})` : `rgb(${r} ${g} ${b} / ${alpha})`
 }
 
+/** Resolve a semantic token to six-digit hex for renderers such as PDFKit
+ * that do not accept modern space-separated CSS rgb() syntax. */
+export function hexColor(token: ColorToken, mode: ThemeMode = 'light'): string {
+  return `#${palette[mode][token].map((channel) => channel.toString(16).padStart(2, '0')).join('')}`
+}
+
 /** Motion tokens — mirror of the CSS `--ease-*` / `--duration-*` values. */
 export const motion = {
   ease: {

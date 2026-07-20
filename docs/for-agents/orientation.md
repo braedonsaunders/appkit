@@ -304,5 +304,41 @@ settings, owner, and draft/published state.
   Vonage, MessageBird, Plivo, and Telnyx; provider errors are bounded, sanitized,
   and stripped of credentials before they reach logs or users.
 
+## 10. Reports and documents
+
+`@appkit/reports` owns saved report definitions, grouped tabular documents,
+page layouts, injected execution, and timezone-aware schedules. Its query is the
+same `InsightQuery` used by `@appkit/analytics`; do not create a separate report
+query language. An app supplies its tenant-scoped executor and domain catalogue.
+
+`@appkit/pdf` is the OpenBooks PDF engine: pure-JS paginated tables and financial
+statements, bounded template rendering, HTML sanitization, and a hardened
+Chromium printer. `@appkit/forms-pdf` maps form summaries, repeating sections,
+photos, authored templates, and design documents into that renderer.
+
+`@appkit/design-studio` owns the bounded multi-artboard print document. Data
+field keys and sample values come from an app-supplied catalogue; credentials,
+equipment, projects, and other product entities are not hardcoded in the
+package. The working references are `/reports` and `/design-studio`.
+
+## 11. Workflows, notifications, and customization
+
+`@appkit/workflows` provides the shared two-pane React Flow authoring shell,
+node registry, graph conversion, branch handles, cycle detection, and linting.
+The two source-native automation schemas remain in `@appkit/forms-core`; apps
+adapt either schema structurally and inject the relevant inspector editors.
+
+`@appkit/notifications` applies tenant category policy, per-user channel
+preferences, digest/quiet-hour behavior, critical delivery rules, and stable
+deduplication keys before invoking app-owned delivery adapters. Its server entry
+provides the Drizzle store over `@appkit/db`'s RLS-protected notifications,
+preferences, and web-push subscription tables. Its React entry provides the
+full inbox and preference matrix.
+
+`@appkit/customization` turns an app-supplied record catalogue into consistent
+custom fields, form layouts, list views, filters, defaults, and lint output.
+Product record types stay in the consuming app. The working references are
+`/workflows`, `/notifications`, and `/customization`.
+
 For the rules any app on this foundation must follow, see
 [`building-applications.md`](building-applications.md).

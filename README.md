@@ -45,10 +45,12 @@ imported by every app.
 | `@appkit/ui` | Tokenized primitives, complete shell runtime, native page transitions, page layouts, dashboard grid, card studio, visualization renderers, URL-driven list controls, rich text, upload, and signature capture. | implemented |
 | `@appkit/ai` | Provider-neutral multi-step tool agent plus streamed assistant thread and tool-use UI. | implemented + tested |
 | `@appkit/analytics` | Semantic catalogues, safe formulas, parameter-bound query compilation, result contracts, and visualization registry. | implemented + tested |
+| `@appkit/reports` | Saved definitions, grouped report documents, execution adapters, and timezone-aware delivery schedules over the analytics query contract. | implemented + tested |
 | `@appkit/db` | Postgres RLS engine, schema helpers, identity model, dashboard/card persistence, API keys, and idempotency. | implemented + live-tested |
 | `@appkit/tenant` | Request context and wildcard RBAC over tenant-scoped database handles. | implemented + live-tested |
 | `@appkit/auth` | Scrypt passwords and stateless HMAC sessions. | implemented + live-tested |
 | `@appkit/events` | Audit trail and transactional outbox. | implemented + live-tested |
+| `@appkit/notifications` | Tenant inbox, preferences, quiet-hour/digest policy, multi-channel dispatch, and reusable inbox/settings UI. | implemented + tested |
 | `@appkit/api` | API-key auth, authorization, idempotent writes, typed errors, and OpenAPI descriptions. | implemented + live-tested |
 | `@appkit/endpoints` | Governed QuickJS sandbox for user-defined endpoint handlers. | implemented |
 | `@appkit/crypto` | AES-256-GCM sealed secrets with an HKDF-derived application key. | implemented |
@@ -59,6 +61,11 @@ imported by every app.
 | `@appkit/i18n` | Tenant locale policy, request negotiation, per-user overrides, and localized authoring-copy resolution. | implemented + tested |
 | `@appkit/forms-core` | Versioned form schemas, field registry, formulas, logic, validation, scoring, automation graphs, and document helpers; compatible with OpenBooks and BeaconHS source shapes. | implemented + tested |
 | `@appkit/forms` | Controlled visual form designer and fill runtime with host adapters for product-specific fields and storage. | implemented + browser-tested |
+| `@appkit/workflows` | Visual graph canvas, node registry, inspector shell, graph conversion, and structural linting. | implemented + browser-tested |
+| `@appkit/customization` | App-defined record catalogues, custom fields, form layouts, list views, defaults, and linting. | implemented + tested |
+| `@appkit/design-studio` | Multi-artboard print-design schema, app-defined data fields, validation, HTML rendering, and print profiles. | implemented + browser-tested |
+| `@appkit/pdf` | PDFKit report/statement rendering plus bounded templates and hardened HTML printing. | implemented + tested |
+| `@appkit/forms-pdf` | Form summaries, repeating tables, photos, authored templates, and design-document PDF adapters. | implemented + tested |
 | `apps/playground` | The full-stack running reference app and component gallery. | implemented + browser-tested |
 
 ## The running reference
@@ -84,8 +91,9 @@ pnpm --filter @appkit/playground dev
 The seed creates the fixed `admin@appkit.dev` demo identity without a password,
 starter insight cards, and a personal dashboard. Open `/dashboard` for the live
 dashboard system, `/insights` for the card studio, `/forms` for the form builder,
-`/forms/core` for schema/validation/automation behavior, or `/dashboard/platform` for
-every package and its app-builder contract; use the account
+`/forms/core` for schema/validation/automation behavior, `/reports`, `/workflows`,
+`/notifications`, `/design-studio`, and `/customization` for the new application
+systems, or `/dashboard/platform` for every package and its app-builder contract; use the account
 launcher to switch between topbar (default) and sidebar navigation.
 
 ## Conventions

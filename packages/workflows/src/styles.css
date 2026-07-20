@@ -1,0 +1,13 @@
+@import '@xyflow/react/dist/style.css';
+@source '../src';
+
+.react-flow__controls-button {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-fg);
+}
+.react-flow__controls-button:hover { background: var(--color-surface-hover); }
+.react-flow__edge-path { stroke: var(--color-border-strong); stroke-width: 1.5; }
+.react-flow__edge.selected .react-flow__edge-path { stroke: var(--color-primary); }
+.react-flow__edge-text { fill: var(--color-fg-muted); font-size: 10px; }
+.react-flow__edge-textbg { fill: var(--color-surface); }

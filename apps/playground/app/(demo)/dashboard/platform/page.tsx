@@ -1,10 +1,13 @@
 import {
   BarChart3,
+  BellRing,
   Bot,
   Braces,
   ClipboardList,
   Cloud,
   Database,
+  FileOutput,
+  FileText,
   KeyRound,
   Languages,
   Layers3,
@@ -12,6 +15,7 @@ import {
   Mail,
   MessageSquare,
   Palette,
+  Paintbrush,
   ScrollText,
   ServerCog,
   ShieldCheck,
@@ -70,6 +74,19 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Build an insight card',
       },
       {
+        title: '@appkit/reports',
+        description: 'Turn governed queries into saved, printable, and scheduled reports.',
+        icon: <FileOutput />,
+        features: [
+          'Saved definitions over the shared analytics query contract',
+          'Grouped result documents, summary values, and page layouts',
+          'Timezone-aware daily, weekly, and monthly delivery schedules',
+          'Injected tenant-scoped execution with CSV, XLSX, and PDF output contracts',
+        ],
+        href: '/reports',
+        linkLabel: 'Open reports',
+      },
+      {
         title: '@appkit/forms-core',
         description: 'Define forms, validation, scoring, and workflow automation through versioned schemas.',
         icon: <Braces />,
@@ -94,6 +111,31 @@ const GROUPS: AdminHubGroup[] = [
         ],
         href: '/forms',
         linkLabel: 'Open the form builder',
+      },
+      {
+        title: '@appkit/workflows',
+        description: 'Build and validate event, decision, approval, and action graphs.',
+        icon: <Workflow />,
+        features: [
+          'Two-pane node library, independently scrolling inspector, and graph canvas',
+          'Application-supplied trigger and action registries',
+          'Branch handles, node positioning, graph conversion, and cycle detection',
+          'Structural compatibility with both AppKit form automation contracts',
+        ],
+        href: '/workflows',
+        linkLabel: 'Open workflow builder',
+      },
+      {
+        title: '@appkit/customization',
+        description: 'Let each application define configurable record screens without hardcoding product entities.',
+        icon: <Paintbrush />,
+        features: [
+          'Application-supplied record, field, column, filter, and action catalogues',
+          'Custom fields that extend forms, lists, filters, reports, and APIs together',
+          'Form-layout and list-view defaults, validation, and linting',
+        ],
+        href: '/customization',
+        linkLabel: 'Configure project screens',
       },
       {
         title: '@appkit/i18n',
@@ -163,6 +205,18 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'View live audit history',
       },
       {
+        title: '@appkit/notifications',
+        description: 'Publish one event to an in-app inbox, email, web push, and critical SMS.',
+        icon: <BellRing />,
+        features: [
+          'Tenant-scoped inbox, channel preferences, and web-push subscription schema',
+          'Category policy, digests, quiet hours, critical-message handling, and deterministic delivery keys',
+          'Reusable inbox and preference surfaces with app-owned navigation and transports',
+        ],
+        href: '/notifications',
+        linkLabel: 'Open notifications',
+      },
+      {
         title: '@appkit/api',
         description: 'Ship consistent external APIs with authorization and documentation built into the route contract.',
         icon: <Braces />,
@@ -226,6 +280,42 @@ const GROUPS: AdminHubGroup[] = [
         ],
       },
       {
+        title: '@appkit/design-studio',
+        description: 'Compose print designs from positioned text, fields, shapes, images, and QR codes.',
+        icon: <Palette />,
+        features: [
+          'Bounded multi-artboard document model with application-defined data fields',
+          'Letter, A4-style, card, label, and custom physical formats',
+          'Safe normalization, catalogue validation, HTML rendering, and print-provider profiles',
+        ],
+        href: '/design-studio',
+        linkLabel: 'Open design studio',
+      },
+      {
+        title: '@appkit/pdf',
+        description: 'Render report documents, tables, statements, and authored templates to PDF.',
+        icon: <FileText />,
+        features: [
+          'Pure-JS PDFKit renderer with manual pagination, repeated headers, and page totals',
+          'Formal and modern financial-statement output',
+          'Bounded template language, HTML sanitization, and hardened Chromium printing',
+        ],
+        href: '/reports',
+        linkLabel: 'Download a report PDF',
+      },
+      {
+        title: '@appkit/forms-pdf',
+        description: 'Print form summaries, repeating sections, photos, authored templates, and design documents.',
+        icon: <ClipboardList />,
+        features: [
+          'Branded key-value summaries with repeating tables and photo grids',
+          'Form values merged through the bounded PDF template engine',
+          'Full-bleed design-studio documents and multi-page print runs',
+        ],
+        href: '/design-studio',
+        linkLabel: 'Preview document output',
+      },
+      {
         title: '@appkit/emails',
         description: 'Change outbound email providers without rewriting product workflows or credential handling.',
         icon: <Mail />,
@@ -282,7 +372,7 @@ export default function PlatformPage() {
     <AdminHub
       title="AppKit platform"
       description="Packages and capabilities available to every application."
-      actions={<Badge variant="success">19 packages</Badge>}
+      actions={<Badge variant="success">26 packages</Badge>}
       groups={GROUPS}
     />
   )

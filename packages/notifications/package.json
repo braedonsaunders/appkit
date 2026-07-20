@@ -1,0 +1,15 @@
+{
+  "name": "@appkit/notifications",
+  "version": "0.1.0",
+  "description": "Multi-channel notification policy, persistence, inbox, and preferences extracted from OpenBooks and BeaconHS.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./server": "./src/server.ts", "./react": "./src/react.ts", "./package.json": "./package.json" },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "files": ["src"],
+  "scripts": { "typecheck": "tsc --noEmit", "test": "node --import tsx --test src/*.test.ts", "clean": "rm -rf dist *.tsbuildinfo" },
+  "dependencies": { "@appkit/db": "workspace:*", "@appkit/ui": "workspace:*", "drizzle-orm": "^0.45.2", "lucide-react": "^1.24.0" },
+  "peerDependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" },
+  "devDependencies": { "@types/node": "^22", "@types/react": "^19", "@types/react-dom": "^19", "react": "^19", "react-dom": "^19", "tsx": "^4.19.2", "typescript": "^5.9.3" }
+}
