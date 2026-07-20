@@ -97,7 +97,11 @@ export function createDb<TSchema extends Record<string, unknown>>(opts: {
   }) as typeof poolDb
 
   function withTenantContext<T>(tenantId: string, fn: () => Promise<T>): Promise<T> {
-    return orgContext.run({ tenantId }, fn)
+    // Await INSIDE the ALS scope: a lazily-executed query (e.g. a drizzle
+    // QueryPromise the caller returns without awaiting) would otherwise run
+    // after run() exits — unscoped, so app.tenant_id would be '' and RLS would
+    // deny every row. Awaiting here keeps the query's execution in-context.
+    return orgContext.run({ tenantId }, async () => await fn())
   }
 
   async function withTenant<T>(tenantId: string, fn: () => Promise<T>): Promise<T> {

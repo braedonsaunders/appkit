@@ -11,7 +11,9 @@
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
-  "files": ["src"],
+  "files": [
+    "src"
+  ],
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test src/*.test.ts",
@@ -24,6 +26,7 @@
   "devDependencies": {
     "@types/node": "^22",
     "@types/pg": "^8.11.10",
+    "drizzle-kit": "^0.30.6",
     "tsx": "^4.19.2"
   }
 }
