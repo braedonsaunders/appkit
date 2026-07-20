@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   },
   // Workspace packages ship TSX/TS source, not built output.
   transpilePackages: [
+    '@appkit/ai',
     '@appkit/ui',
     '@appkit/tokens',
     '@appkit/db',

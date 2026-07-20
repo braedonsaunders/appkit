@@ -4,87 +4,26 @@ import * as React from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
-  ChevronDown,
-  LayoutPanelLeft,
-  Monitor,
-  Moon,
-  Palette,
-  Search,
-  Sun,
-} from 'lucide-react'
-import {
+  AccountMenu,
   AppShell,
-  type AppShellNavigationMode,
-  Avatar,
   Badge,
+  DrawerNavigateContext,
+  GlobalSearch,
   ListNavProvider,
+  NavigationModeProvider,
+  NotificationsBell,
+  ThemeProvider,
+  ThemeToggle,
+  UiLinkProvider,
+  type GlobalSearchResult,
+  type AppShellNavigationMode,
   type LinkRender,
-  Popover,
+  type NotificationItem,
   type SidebarNavGroup,
-  cn,
+  useNavigationMode,
 } from '@appkit/ui'
 import { PageTransition } from '@appkit/ui/page-transition'
 import { AppkitLogo } from './appkit-logo'
-
-type Theme = 'light' | 'system' | 'dark'
-
-function applyTheme(theme: Theme) {
-  const dark = theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
-  document.documentElement.classList.toggle('dark', dark)
-  document.documentElement.classList.toggle('light', !dark)
-}
-
-function useTheme() {
-  const [theme, setThemeState] = React.useState<Theme>('system')
-  const [mounted, setMounted] = React.useState(false)
-
-  React.useEffect(() => {
-    let stored: string | null = null
-    try {
-      stored = localStorage.getItem('theme')
-    } catch {}
-    const initial: Theme = stored === 'light' || stored === 'dark' ? stored : 'system'
-    setThemeState(initial)
-    applyTheme(initial)
-    setMounted(true)
-  }, [])
-
-  React.useEffect(() => {
-    const media = matchMedia('(prefers-color-scheme: dark)')
-    const update = () => {
-      if (theme === 'system') applyTheme('system')
-    }
-    media.addEventListener('change', update)
-    return () => media.removeEventListener('change', update)
-  }, [theme])
-
-  const setTheme = React.useCallback((next: Theme) => {
-    setThemeState(next)
-    applyTheme(next)
-    try {
-      if (next === 'system') localStorage.removeItem('theme')
-      else localStorage.setItem('theme', next)
-    } catch {}
-  }, [])
-
-  return { theme, setTheme, mounted }
-}
-
-function useNavigationMode() {
-  const [mode, setModeState] = React.useState<AppShellNavigationMode>('topbar')
-  React.useEffect(() => {
-    try {
-      if (localStorage.getItem('appkit-navigation-mode') === 'sidebar') setModeState('sidebar')
-    } catch {}
-  }, [])
-  const setMode = React.useCallback((next: AppShellNavigationMode) => {
-    setModeState(next)
-    try {
-      localStorage.setItem('appkit-navigation-mode', next)
-    } catch {}
-  }, [])
-  return { mode, setMode }
-}
 
 const nextLink: LinkRender = ({
   href,
@@ -107,7 +46,6 @@ const nextLink: LinkRender = ({
   </Link>
 )
 
-// The same OpenBooks-compatible workspace registry drives every shell mode.
 const NAV: SidebarNavGroup[] = [
   {
     id: 'foundation',
@@ -116,7 +54,8 @@ const NAV: SidebarNavGroup[] = [
     items: [
       { href: '/dashboard', label: 'Dashboard', iconKey: 'gauge', exact: true, mobile: true },
       { href: '/insights', label: 'Insight cards', iconKey: 'library', mobile: true },
-      { href: '/dashboard/platform', label: 'Platform', iconKey: 'package', mobile: true },
+      { href: '/assistant', label: 'AI assistant', iconKey: 'sparkles', mobile: true },
+      { href: '/dashboard/platform', label: 'Platform', iconKey: 'package' },
       { href: '/components', label: 'Components', iconKey: 'sparkles' },
     ],
   },
@@ -149,247 +88,155 @@ const NAV: SidebarNavGroup[] = [
   },
 ]
 
-export function AppFrame({
-  tenantName,
-  userName,
-  userEmail,
-  children,
-}: {
+export type AppFrameProps = {
   tenantName: string
+  tenantSlug: string
   userName: string
   userEmail: string
+  isSuperAdmin: boolean
+  activity: NotificationItem[]
+  initialNavigationMode: AppShellNavigationMode
   children: React.ReactNode
-}) {
+}
+
+export function AppFrame(props: AppFrameProps) {
+  return (
+    <UiLinkProvider link={Link}>
+      <ThemeProvider>
+        <NavigationModeProvider defaultMode={props.initialNavigationMode}>
+          <AppFrameContent {...props} />
+        </NavigationModeProvider>
+      </ThemeProvider>
+    </UiLinkProvider>
+  )
+}
+
+function AppFrameContent({
+  tenantName,
+  tenantSlug,
+  userName,
+  userEmail,
+  isSuperAdmin,
+  activity,
+  children,
+}: AppFrameProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const router = useRouter()
-  const theme = useTheme()
   const navigation = useNavigationMode()
+  const navigate = React.useCallback((href: string) => router.push(href, { scroll: false }), [router])
   const listNav = React.useMemo(
     () => ({
       pathname,
       search: searchParams.toString(),
       replace: (href: string) => router.replace(href, { scroll: false }),
-      push: (href: string) => router.push(href, { scroll: false }),
+      push: navigate,
     }),
-    [pathname, router, searchParams],
+    [navigate, pathname, router, searchParams],
   )
+  const search = React.useCallback(async (query: string, signal: AbortSignal): Promise<GlobalSearchResult> => {
+    const response = await fetch(`/api/demo/search?q=${encodeURIComponent(query)}`, { signal })
+    if (!response.ok) throw new Error('Search failed')
+    return response.json() as Promise<GlobalSearchResult>
+  }, [])
 
   return (
-    <ListNavProvider value={listNav}>
-      <AppShell
-        groups={NAV}
-        pathname={pathname}
-        brand={
-          <Link href="/dashboard" aria-label="appkit home" className="inline-flex rounded-md focus-visible:ring-2 focus-visible:ring-ring">
-            <AppkitLogo />
-          </Link>
-        }
-        navigationMode={navigation.mode}
-        linkRender={nextLink}
-        headerMiddle={<DemoSearch />}
-        header={
-          <>
-            <Badge variant="success" className="hidden xl:inline-flex">
-              No auth
-            </Badge>
-            <DemoAccountMenu
-              tenantName={tenantName}
-              userName={userName}
-              userEmail={userEmail}
-              navigation={navigation}
-              theme={theme}
+    <DrawerNavigateContext.Provider value={navigate}>
+      <ListNavProvider value={listNav}>
+        <AppShell
+          groups={NAV}
+          pathname={pathname}
+          brand={
+            <Link href="/dashboard" aria-label="appkit home" className="inline-flex rounded-md focus-visible:ring-2 focus-visible:ring-ring">
+              <AppkitLogo />
+            </Link>
+          }
+          navigationMode={navigation.mode}
+          linkRender={nextLink}
+          headerMiddle={
+            <GlobalSearch
+              search={search}
+              onNavigate={(hit) => navigate(hit.href)}
+              className="hidden w-52 shrink-0 lg:block xl:w-72"
+              labels={{
+                placeholder: 'Search people and pages…',
+                ariaLabel: 'Search the appkit demo',
+                clear: 'Clear search',
+                searching: 'Searching…',
+                noMatches: (query) => `No matches for “${query}”`,
+                navigate: 'navigate',
+                open: 'open',
+                close: 'close',
+                resultCount: (count) => `${count} result${count === 1 ? '' : 's'}`,
+              }}
             />
-          </>
-        }
-        sidebarFooter={<SidebarFooter theme={theme} />}
-        sidebarCollapsedFooter={<CollapsedThemeToggle theme={theme} />}
-        mobileFooter={<SidebarFooter theme={theme} />}
-      >
-        <PageTransition navigationKey={pathname}>{children}</PageTransition>
-      </AppShell>
-    </ListNavProvider>
-  )
-}
-
-function DemoSearch() {
-  const router = useRouter()
-  const [query, setQuery] = React.useState('')
-  return (
-    <form
-      className="relative hidden w-52 shrink-0 lg:block xl:w-64"
-      onSubmit={(event) => {
-        event.preventDefault()
-        const q = query.trim()
-        router.push(q ? `/admin/users?q=${encodeURIComponent(q)}` : '/admin/users')
-      }}
-    >
-      <Search
-        size={15}
-        className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-fg-subtle"
-      />
-      <input
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-        placeholder="Search users…"
-        aria-label="Search demo users"
-        className="h-9 w-full rounded-lg border border-border bg-bg-subtle pr-12 pl-9 text-sm text-fg transition-colors placeholder:text-fg-subtle hover:border-border-strong focus:border-primary focus:bg-surface focus:ring-2 focus:ring-ring/20 focus:outline-none"
-      />
-      <kbd className="pointer-events-none absolute top-1/2 right-2.5 hidden -translate-y-1/2 rounded border border-border bg-surface px-1.5 py-0.5 font-sans text-[10px] font-medium text-fg-subtle sm:inline">
-        ↵
-      </kbd>
-    </form>
-  )
-}
-
-function DemoAccountMenu({
-  tenantName,
-  userName,
-  userEmail,
-  navigation,
-  theme,
-}: {
-  tenantName: string
-  userName: string
-  userEmail: string
-  navigation: ReturnType<typeof useNavigationMode>
-  theme: ReturnType<typeof useTheme>
-}) {
-  const [open, setOpen] = React.useState(false)
-  return (
-    <Popover
-      open={open}
-      onOpenChange={setOpen}
-      align="end"
-      className="w-72"
-      trigger={
-        <button
-          type="button"
-          onClick={() => setOpen((current) => !current)}
-          aria-label="Open account menu"
-          aria-expanded={open}
-          aria-haspopup="menu"
-          className="flex shrink-0 items-center gap-2 rounded-md border border-transparent px-1.5 py-1 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
+          }
+          header={
+            <>
+              <Badge variant="success" className="hidden xl:inline-flex">No auth</Badge>
+              <NotificationsBell
+                items={activity}
+                onOpenItem={(item) => item.href && navigate(item.href)}
+                labels={{
+                  ariaLabel: 'Recent activity',
+                  title: 'Recent activity',
+                  markAllRead: 'Mark all read',
+                  empty: 'No audit activity yet.',
+                }}
+              />
+              <AccountMenu
+                name={userName}
+                email={userEmail}
+                contextLabel={`${tenantName} · public demo`}
+                roleLabel={isSuperAdmin ? 'Super admin' : 'Member'}
+                status={{ label: 'Authentication disabled', variant: 'success' }}
+                organization={{
+                  label: 'Organization',
+                  summary: tenantName,
+                  value: tenantSlug,
+                  options: [{ value: tenantSlug, label: tenantName, description: 'Public RLS-scoped demo tenant' }],
+                  onChange: () => undefined,
+                }}
+                language={{
+                  label: 'Language',
+                  summary: 'English',
+                  value: 'en',
+                  options: [{ value: 'en', label: 'English', description: 'Demo application language' }],
+                  onChange: () => undefined,
+                }}
+                navigation={{
+                  label: 'Menu layout',
+                  summary: navigation.mode === 'topbar' ? 'Top bar' : 'Sidebar',
+                  value: navigation.mode,
+                  options: [
+                    { value: 'topbar', label: 'Top bar', description: 'OpenBooks workspace navigation' },
+                    { value: 'sidebar', label: 'Sidebar', description: 'Collapsible suite navigation' },
+                  ],
+                  onChange: (mode) => navigation.setMode(mode === 'sidebar' ? 'sidebar' : 'topbar'),
+                }}
+                elevatedAccess={isSuperAdmin ? { label: 'Administration', href: '/admin' } : undefined}
+              />
+            </>
+          }
+          sidebarFooter={<SidebarFooter />}
+          sidebarCollapsedFooter={<div className="flex justify-center"><ThemeToggle collapsed /></div>}
+          mobileFooter={<SidebarFooter />}
         >
-          <Avatar name={userName} size={28} />
-          <span className="hidden min-w-0 max-w-44 flex-col text-left sm:flex">
-            <span className="truncate text-sm leading-tight">{userName}</span>
-            <span className="truncate text-[11px] leading-tight text-fg-subtle">{tenantName} · public demo</span>
-          </span>
-          <ChevronDown size={14} className="hidden shrink-0 text-fg-subtle sm:inline" />
-        </button>
-      }
-    >
-      <div>
-        <div className="flex items-center gap-3 px-3 py-3">
-          <Avatar name={userName} size={40} />
-          <span className="flex min-w-0 flex-col">
-            <span className="truncate text-sm font-medium text-fg">{userName}</span>
-            <span className="truncate text-xs text-fg-muted">{userEmail}</span>
-            <Badge variant="success" className="mt-1 w-fit text-[10px]">
-              Authentication disabled
-            </Badge>
-          </span>
-        </div>
-        <div className="grid grid-cols-2 gap-2 px-2 pb-2">
-          <button
-            type="button"
-            onClick={() => {
-              theme.setTheme(theme.theme === 'dark' ? 'light' : 'dark')
-              setOpen(false)
-            }}
-            className="group flex flex-col gap-2 rounded-xl border border-border bg-surface p-3 text-left transition-colors hover:border-border-strong hover:bg-surface-hover"
-          >
-            <span className="grid size-9 place-items-center rounded-lg bg-info-subtle text-info">
-              <Palette size={18} />
-            </span>
-            <span>
-              <span className="block text-sm font-medium text-fg">Theme</span>
-              <span className="block text-xs capitalize text-fg-muted">{theme.theme}</span>
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              navigation.setMode(navigation.mode === 'topbar' ? 'sidebar' : 'topbar')
-              setOpen(false)
-            }}
-            className="group flex flex-col gap-2 rounded-xl border border-border bg-surface p-3 text-left transition-colors hover:border-border-strong hover:bg-surface-hover"
-          >
-            <span className="grid size-9 place-items-center rounded-lg bg-warning-subtle text-warning">
-              <LayoutPanelLeft size={18} />
-            </span>
-            <span>
-              <span className="block text-sm font-medium text-fg">Menu layout</span>
-              <span className="block text-xs capitalize text-fg-muted">{navigation.mode}</span>
-            </span>
-          </button>
-        </div>
-      </div>
-    </Popover>
+          <PageTransition navigationKey={pathname}>{children}</PageTransition>
+        </AppShell>
+      </ListNavProvider>
+    </DrawerNavigateContext.Provider>
   )
 }
 
-const THEME_OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
-  { value: 'light', label: 'Light', icon: Sun },
-  { value: 'system', label: 'System', icon: Monitor },
-  { value: 'dark', label: 'Dark', icon: Moon },
-]
-
-function SidebarFooter({ theme }: { theme: ReturnType<typeof useTheme> }) {
+function SidebarFooter() {
   return (
     <div className="space-y-2">
-      <div
-        role="radiogroup"
-        aria-label="Theme"
-        className="flex items-center gap-0.5 rounded-lg border border-border bg-bg-subtle p-0.5"
-      >
-        {THEME_OPTIONS.map((option) => {
-          const Icon = option.icon
-          const selected = theme.mounted && theme.theme === option.value
-          return (
-            <button
-              key={option.value}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              onClick={() => theme.setTheme(option.value)}
-              title={option.label}
-              className={cn(
-                'inline-flex h-7 flex-1 items-center justify-center rounded-md transition-colors',
-                selected ? 'bg-surface text-primary shadow-sm' : 'text-fg-muted hover:text-fg',
-              )}
-            >
-              <Icon size={15} />
-            </button>
-          )
-        })}
-      </div>
+      <ThemeToggle />
       <div className="flex items-center justify-between text-xs text-fg-muted">
         <span>v0.1.0</span>
-        <Badge variant="secondary" className="font-mono text-[10px]">
-          demo
-        </Badge>
+        <Badge variant="secondary" className="font-mono text-[10px]">demo</Badge>
       </div>
-    </div>
-  )
-}
-
-function CollapsedThemeToggle({ theme }: { theme: ReturnType<typeof useTheme> }) {
-  const active = THEME_OPTIONS.find((option) => option.value === theme.theme) ?? THEME_OPTIONS[1]!
-  const Icon = active.icon
-  const next: Theme = theme.theme === 'light' ? 'dark' : theme.theme === 'dark' ? 'system' : 'light'
-  return (
-    <div className="flex justify-center">
-      <button
-        type="button"
-        onClick={() => theme.setTheme(next)}
-        title={`Theme: ${active.label}`}
-        aria-label={`Theme: ${active.label}`}
-        className="grid size-9 place-items-center rounded-md text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
-      >
-        {theme.mounted ? <Icon size={16} /> : <Monitor size={16} className="opacity-0" />}
-      </button>
     </div>
   )
 }

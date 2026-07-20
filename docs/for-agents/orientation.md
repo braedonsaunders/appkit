@@ -57,7 +57,8 @@ reference/amount/status/custom/actions) · URL list kit: `parseListParams` /
 `SortableTh` / `SortTh`, `Pagination` (shareable server-list state) · `LineGrid`
 (the **spreadsheet line editor**: Enter appends, Alt+↑/↓ moves, ⌘D/⌘⌫, data-driven
 columns) · `Badge` · `Avatar` (image + initials fallback) · `EmptyState` · `Card`
-(+ parts) · `Tabs` (animated indicator).
+(+ parts) · `Tabs` (animated indicator) · `AnimatedNumber` (token-timed KPI
+counter) · `Sparkline` (tokenized SVG trend, optional area/min-max dots).
 
 **Dashboards & insights** — `DashboardGrid` (responsive 12-column grid, view/edit
 modes, drag/resize, remove, save/reset, categorized widget/card drawer) ·
@@ -76,6 +77,12 @@ sidebar via `navigationMode="topbar" | "sidebar"`. The registry supports the
 siblings' serializable `iconKey`, `id`, subgroup, exact-match, and mobile-pin
 fields; mobile uses the same data in a drawer and bottom tab bar. `TopNav`,
 `AppSidebar`, `SidebarNav`, and `MobileTabBar` are also exported directly.
+`AccountMenu` is the bounded OpenBooks launcher with app-owned organization,
+language, theme, navigation-mode, elevated-access, and sign-out adapters.
+`GlobalSearch` owns keyboard/debounce/result interaction while the app supplies
+the tenant-scoped query and navigation. `NotificationsBell`, `ThemeProvider` /
+`getThemeScript` / `ThemeToggle`, `NavigationModeProvider`, and `UiLinkProvider` /
+`UiBackLinkProvider` complete the shared shell runtime.
 
 ## 3. Composition patterns
 
@@ -113,8 +120,31 @@ fields; mobile uses the same data in a drawer and bottom tab bar. `TopNav`,
   motion tokens, preserve chart and text sharpness, disable motion for
   `prefers-reduced-motion`, and leave unsupported browsers with normal instant
   navigation.
+- **Shell providers** mount once around `AppShell`: inject the framework link
+  through `UiLinkProvider`, the pre-paint/live theme through a framework script
+  wrapper around `getThemeScript()` + `ThemeProvider`, the cookie-backed
+  topbar/sidebar preference through
+  `NavigationModeProvider`, and the router callback through
+  `DrawerNavigateContext`. Search results, notification data/actions, account
+  preferences, and sign-out remain app-owned adapters.
 
-## 4. Analytics and card queries (`@appkit/analytics`)
+## 4. AI agents (`@appkit/ai`)
+
+`runAgentTurn` is the BeaconHS multi-step tool loop generalized around an
+injected AI SDK `LanguageModel`. The app resolves provider credentials per
+tenant, supplies the system prompt, and includes only tools already closed over
+that request's `RequestContext` and RBAC checks. The runtime raises the SDK's
+one-step default with a bounded `stepCountIs` stop condition, streams the
+UI-message protocol, redacts provider errors, supports aborts, and reports final
+parts/token usage through `onComplete`.
+
+`@appkit/ai/react` exports `AgentPanel`, `ChatMarkdown`, and `AgentToolCard`.
+`AgentPanel` owns the live/reloaded parts renderer, streaming decoder, composer,
+cancellation, and disabled state; the app injects its persistence-backed send
+transport. The playground `/assistant` route intentionally demonstrates the
+production disabled state because the public demo ships no provider credential.
+
+## 5. Analytics and card queries (`@appkit/analytics`)
 
 The analytics package deliberately knows no OpenBooks or BeaconHS domain tables.
 An app provides an `AnalyticsCatalog`: authored source `FROM` clauses, the tenant
@@ -143,7 +173,7 @@ store the AST in the card query, not the original string. Apps execute compiled
 SQL inside `withTenantContext`/`withTenant` and return the shared `QueryResult`
 contract to `InsightResultView`.
 
-## 5. Scaffolding a new app
+## 6. Scaffolding a new app
 
 ```jsonc
 // deps
@@ -173,7 +203,7 @@ children with `<PageTransition navigationKey={pathname}>`. This optional entry
 point tracks the current Next/React View Transition API. Then compose screens
 from the primitives above — every color a token, light + dark for free.
 
-## 6. Multi-tenancy out of the box (`@appkit/db` + `@appkit/tenant`)
+## 7. Multi-tenancy out of the box (`@appkit/db` + `@appkit/tenant`)
 
 An app on appkit is multi-tenant with super-admin from day one — you don't build
 RLS or RBAC yourself.
@@ -208,7 +238,7 @@ The same schema exports `userDashboardLayouts`, `insightCards`, and
 personal per tenant/user; cards persist their semantic query, visualization,
 settings, owner, and draft/published state.
 
-## 7. Secrets and outbound delivery (`@appkit/crypto`, `@appkit/emails`, `@appkit/sms`)
+## 8. Secrets and outbound delivery (`@appkit/crypto`, `@appkit/emails`, `@appkit/sms`)
 
 - Seal tenant provider credentials with `sealSecret` from `@appkit/crypto` before
   persistence and inject `unsealSecret` into email/SMS transport resolution.

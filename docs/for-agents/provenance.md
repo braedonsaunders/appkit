@@ -11,7 +11,7 @@ appkit has three kinds of code. Do not blur them:
   components must not be presented as extracted or sibling-identical.
 
 This inventory was audited against the local OpenBooks and BeaconHS checkouts
-on 2026-07-19.
+on 2026-07-20.
 
 ## Application shell and navigation
 
@@ -23,6 +23,10 @@ on 2026-07-19.
 | `SidebarNav` | compatible superset | OpenBooks workspace/subgroup implementation plus the BeaconHS grouped-list contract |
 | `MobileTabBar` / mobile selection | faithful generalized extraction | both apps' `components/mobile-tab-bar.tsx`; OpenBooks `web/lib/mobile-nav.ts` |
 | mobile drawer inside `AppShell` | generalized production pattern | both apps' `components/mobile-nav-toggle.tsx`, implemented with appkit's extracted `Drawer` |
+| `AccountMenu` | compatible generalized extraction | OpenBooks `web/components/account-menu.tsx` launcher visual grammar; choices/persistence are controlled props so BeaconHS and other apps can supply their policy |
+| `GlobalSearch` | generalized production pattern | both apps' `components/global-search.tsx`; domain querying and route selection are injected |
+| `NotificationsBell` | compatible superset | OpenBooks inbox list plus BeaconHS controlled unread/menu pattern; items and mutations are injected |
+| theme/navigation/link providers | faithful generalized extraction | both apps' `theme-provider.tsx`, `theme-toggle.tsx`, `app-link-provider.tsx`, and `navigation-provider.tsx`; sibling UI `link-context.tsx` was byte-identical |
 
 The flat-link top navigation introduced in appkit commit `21b98ad` was invented
 and was not sibling-compatible. It was removed rather than retained as a second
@@ -55,6 +59,9 @@ Faithful or generalized extractions:
 - `InsightResultView` and the expanded visualization vocabulary are generalized
   from both siblings' insights renderers, with BeaconHS providing the richer
   scalar/progress/row/donut/gauge vocabulary.
+- `AnimatedNumber` is a token-timed extraction of the byte-identical sibling UI
+  primitive. `Sparkline` is the shared sibling implementation with i18n replaced
+  by labels and every raw chart color replaced by semantic tokens.
 
 appkit-original UI with no direct sibling component source:
 
@@ -77,6 +84,7 @@ a new sibling source.
 |---|---|---|
 | `@appkit/tokens` | appkit-original abstraction | semantic-token layer built around the siblings' real light/dark palette and UI values |
 | `@appkit/analytics` | generalized extraction | OpenBooks `packages/analytics` catalog/compile/execute/viz contracts plus BeaconHS `packages/analytics` BHQL AST, expression parser, semantic safety, results, and visualization registry; all domain catalogues are injected |
+| `@appkit/ai` | generalized extraction | BeaconHS `packages/ai/src/agent.ts` multi-step streaming runtime plus OpenBooks `web/components/assistant` thread, message-parts, markdown, and tool-card UI; providers, persistence, prompts, and domain tools are injected |
 | `@appkit/db` | generalized extraction | OpenBooks DB executor/schema conventions plus BeaconHS Postgres RLS engine |
 | `@appkit/tenant` | generalized extraction | BeaconHS request context/RBAC, decoupled from its domain schema |
 | `@appkit/auth` | generalized extraction | OpenBooks password/session implementation |

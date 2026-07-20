@@ -1,12 +1,12 @@
 import Link from 'next/link'
-import { count } from 'drizzle-orm'
+import { count, desc } from 'drizzle-orm'
 import {
   Activity, BookOpen, Boxes, Code2, CreditCard, KeyRound, Library, LockKeyhole,
   ScrollText, Shield, Sparkles, Users,
 } from 'lucide-react'
 import { apiKeys, auditLog, memberships, roles } from '@appkit/db'
 import {
-  Badge, Button, DashboardMetricCard, DashboardPanel, InsightCard,
+  AnimatedNumber, Badge, Button, DashboardMetricCard, DashboardPanel, InsightCard, Sparkline,
   type DashboardLibraryItem,
 } from '@appkit/ui'
 import { getDemoEnvironment } from '../../../lib/server/demo-context'
@@ -26,19 +26,27 @@ const BUILTINS: DashboardLibraryItem[] = [
 
 export async function DashboardExperience({ mode }: { mode: 'view' | 'edit' }) {
   const { ctx } = await getDemoEnvironment()
-  const [members, roleCount, keys, audits] = await ctx.db(async (db) => {
+  const [members, roleCount, keys, audits, recentAudits] = await ctx.db(async (db) => {
     const [memberRows] = await db.select({ n: count() }).from(memberships)
     const [roleRows] = await db.select({ n: count() }).from(roles)
     const [keyRows] = await db.select({ n: count() }).from(apiKeys)
     const [auditRows] = await db.select({ n: count() }).from(auditLog)
-    return [memberRows!.n, roleRows!.n, keyRows!.n, auditRows!.n] as const
+    const recentAuditRows = await db.select({ createdAt: auditLog.createdAt }).from(auditLog).orderBy(desc(auditLog.createdAt)).limit(30)
+    return [memberRows!.n, roleRows!.n, keyRows!.n, auditRows!.n, recentAuditRows] as const
   })
+  const auditByDay = new Map<string, number>()
+  for (const row of recentAudits) {
+    const day = row.createdAt.toISOString().slice(0, 10)
+    auditByDay.set(day, (auditByDay.get(day) ?? 0) + 1)
+  }
+  const auditTrend = [...auditByDay.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([, value]) => value)
+  if (auditTrend.length === 1) auditTrend.push(auditTrend[0]!)
   const { layout, cards } = await loadDashboardData()
   const nodes: Record<string, React.ReactNode> = {
-    'metric:members': <DashboardMetricCard label="Team members" value={members} detail="RLS-scoped memberships" icon={<Users size={18} />} tone="primary" />,
-    'metric:roles': <DashboardMetricCard label="Roles" value={roleCount} detail="RBAC permission bundles" icon={<Shield size={18} />} tone="info" />,
+    'metric:members': <DashboardMetricCard label="Team members" value={<AnimatedNumber value={members} />} detail="RLS-scoped memberships" icon={<Users size={18} />} tone="primary" />,
+    'metric:roles': <DashboardMetricCard label="Roles" value={<AnimatedNumber value={roleCount} />} detail="RBAC permission bundles" icon={<Shield size={18} />} tone="info" />,
     'metric:auth': <DashboardMetricCard label="Authentication" value={keys === 0 ? 'Disabled' : 'Enabled'} detail={`${keys} active API credentials`} icon={<LockKeyhole size={18} />} tone="success" />,
-    'metric:audit': <DashboardMetricCard label="Audit events" value={audits} detail="Append-only activity" icon={<ScrollText size={18} />} tone="warning" />,
+    'metric:audit': <DashboardMetricCard label="Audit events" value={<AnimatedNumber value={audits} />} detail="Append-only activity" icon={<ScrollText size={18} />} trend={auditTrend.length >= 2 ? <Sparkline points={auditTrend} stroke="var(--color-warning)" area className="size-full" ariaLabel="Recent audit activity trend" /> : undefined} tone="warning" />,
     'panel:quick-actions': <DashboardPanel title="Quick actions" icon={<Sparkles size={16} />}><div className="grid gap-2">
       <QuickAction href="/insights?new=1" icon={<CreditCard size={16} />} label="Build an insight card" />
       <QuickAction href="/admin/users" icon={<Users size={16} />} label="Manage users" />

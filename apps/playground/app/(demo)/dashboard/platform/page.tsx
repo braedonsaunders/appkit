@@ -2,6 +2,7 @@ import Link from 'next/link'
 import {
   Braces,
   BarChart3,
+  Bot,
   Cloud,
   Database,
   KeyRound,
@@ -120,6 +121,14 @@ const GROUPS: { label: string; description: string; capabilities: Capability[] }
         proof: 'The package test suite executes real sandbox programs and proves over-budget scripts are stopped.',
         icon: <Workflow />,
       },
+      {
+        name: '@appkit/ai',
+        summary: 'Provider-neutral multi-step agent runtime, streamed UI-message protocol, tool-use cards, cancellation, and an assistant thread UI.',
+        proof: 'The assistant route renders the production disabled state without credentials; consuming apps inject a tenant-resolved model and RBAC-bound tools.',
+        icon: <Bot />,
+        href: '/assistant',
+        linkLabel: 'Open agent surface',
+      },
     ],
   },
   {
@@ -172,7 +181,7 @@ export default function PlatformPage() {
       <PageHeader
         title="Everything in appkit"
         description="Every shipped package is accounted for here—live where safe, interactive where useful, and explicit about infrastructure that needs an external service."
-        actions={<Badge variant="success">14 packages · auth disabled</Badge>}
+        actions={<Badge variant="success">15 packages · auth disabled</Badge>}
       />
 
       {GROUPS.map((group) => (

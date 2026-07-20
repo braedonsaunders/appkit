@@ -21,10 +21,50 @@ export { Progress, type ProgressProps } from './progress'
 export { Skeleton, type SkeletonProps } from './skeleton'
 export { Spinner, type SpinnerProps } from './spinner'
 export { Avatar, type AvatarProps } from './avatar'
+export { AnimatedNumber, formatNumber, type AnimatedNumberProps } from './animated-number'
+export { Sparkline, type SparklineProps, type SparklineTone } from './sparkline'
 export { Tabs, type TabsProps, type TabItem } from './tabs'
 export { Tooltip, type TooltipProps } from './tooltip'
 export { EmptyState, type EmptyStateProps } from './empty-state'
 export { PageHeader, type PageHeaderProps } from './page-header'
+export {
+  UiLinkProvider,
+  UiLink,
+  UiBackLinkProvider,
+  UiBackLink,
+  type UiLinkComponent,
+  type BackLinkProps,
+  type BackLinkComponent,
+} from './link-context'
+export {
+  ThemeProvider,
+  ThemeToggle,
+  useTheme,
+  type Theme,
+  type ResolvedTheme,
+  type ThemeToggleLabels,
+} from './theme'
+export { getThemeScript } from './theme-script'
+export { NavigationModeProvider, useNavigationMode } from './navigation-mode'
+export {
+  AccountMenu,
+  type AccountMenuProps,
+  type AccountMenuChoice,
+  type AccountMenuOption,
+  type AccountMenuLabels,
+} from './account-menu'
+export {
+  GlobalSearch,
+  type GlobalSearchHit,
+  type GlobalSearchGroup,
+  type GlobalSearchResult,
+  type GlobalSearchLabels,
+} from './global-search'
+export {
+  NotificationsBell,
+  type NotificationItem,
+  type NotificationsBellLabels,
+} from './notifications-bell'
 export {
   ApiReference,
   ApiEndpoint,

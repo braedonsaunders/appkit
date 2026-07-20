@@ -1,0 +1,37 @@
+import { eq, ilike, or } from 'drizzle-orm'
+import { memberships, users } from '@appkit/db'
+import { assertCan } from '@appkit/tenant'
+import { getDemoEnvironment } from '../../../../lib/server/demo-context'
+
+const ROUTES = [
+  { id: 'dashboard', title: 'Dashboard', subtitle: 'Live tenant overview', href: '/dashboard', iconKey: 'gauge' },
+  { id: 'insights', title: 'Insight cards', subtitle: 'Card library and studio', href: '/insights', iconKey: 'library' },
+  { id: 'platform', title: 'Platform', subtitle: 'Everything shipped in appkit', href: '/dashboard/platform', iconKey: 'package' },
+  { id: 'components', title: 'Components', subtitle: 'Primitive gallery', href: '/components', iconKey: 'sparkles' },
+  { id: 'assistant', title: 'AI assistant', subtitle: 'Agent runtime and UI', href: '/assistant', iconKey: 'sparkles' },
+  { id: 'admin', title: 'Administration', subtitle: 'Organization settings', href: '/admin', iconKey: 'settings' },
+  { id: 'api', title: 'API Docs', subtitle: 'Interactive API reference', href: '/api-docs', iconKey: 'code' },
+] as const
+
+export async function GET(request: Request): Promise<Response> {
+  const query = new URL(request.url).searchParams.get('q')?.trim().slice(0, 100) ?? ''
+  if (query.length < 2) return Response.json({ groups: [], total: 0 })
+
+  const { ctx } = await getDemoEnvironment()
+  assertCan(ctx, 'team.read')
+  const members = await ctx.db((db) =>
+    db
+      .select({ id: memberships.id, name: memberships.displayName, email: users.email })
+      .from(memberships)
+      .innerJoin(users, eq(users.id, memberships.userId))
+      .where(or(ilike(memberships.displayName, `%${query}%`), ilike(users.email, `%${query}%`)))
+      .limit(8),
+  )
+  const normalized = query.toLocaleLowerCase()
+  const routes = ROUTES.filter((route) => `${route.title} ${route.subtitle}`.toLocaleLowerCase().includes(normalized))
+  const groups = [
+    ...(members.length ? [{ id: 'people', label: 'People', hits: members.map((member) => ({ id: member.id, type: 'person', title: member.name, subtitle: member.email, href: `/admin/users?q=${encodeURIComponent(member.email)}`, iconKey: 'users', badge: 'Member' })) }] : []),
+    ...(routes.length ? [{ id: 'pages', label: 'Pages', hits: routes.map((route) => ({ ...route, type: 'page' })) }] : []),
+  ]
+  return Response.json({ groups, total: members.length + routes.length })
+}

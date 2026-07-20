@@ -36,6 +36,9 @@ app that imports it improves.
 - `packages/analytics` — the app-agnostic dashboard query core: semantic
   catalogues, safe formula AST/parser, parameter-bound Postgres compiler, result
   contract, and visualization registry. Apps provide domain sources/fields.
+- `packages/ai` — the app-agnostic multi-step tool-agent runtime plus the
+  streamed assistant thread/tool-use UI. Apps inject the resolved model,
+  system prompt, tenant/RBAC-bound tools, persistence, and HTTP transport.
 - `packages/db` — the **multi-tenant data layer**: a Postgres RLS engine
   (`createDb` → tenant-scoped `db` + BYPASSRLS `superDb`, `withTenant` /
   `withSuperAdmin`), schema helpers, the RLS policy installer, and the canonical

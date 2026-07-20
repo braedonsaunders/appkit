@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { UiBackLink } from './link-context'
 import { cn } from './utils'
 
 export type PageHeaderProps = {
@@ -17,11 +18,7 @@ export function PageHeader({ title, description, actions, back, className }: Pag
       {back ? (
         back.render ? (
           back.render({ href: back.href, className: backClass, children: <>← {back.label}</> })
-        ) : (
-          <a href={back.href} className={backClass}>
-            ← {back.label}
-          </a>
-        )
+        ) : <UiBackLink href={back.href} label={back.label} className={backClass} />
       ) : null}
       <header className="flex items-center justify-between gap-3 sm:items-end sm:gap-4">
         <div className="min-w-0 space-y-1">

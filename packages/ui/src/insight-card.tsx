@@ -4,11 +4,12 @@ import { cn } from './utils'
 
 const SERIES_COLORS = ['var(--color-primary)', 'var(--color-info)', 'var(--color-success)', 'var(--color-warning)', 'var(--color-danger)']
 
-export function DashboardMetricCard({ label, value, detail, icon, tone = 'primary', className }: {
+export function DashboardMetricCard({ label, value, detail, icon, trend, tone = 'primary', className }: {
   label: string
   value: React.ReactNode
   detail?: React.ReactNode
   icon?: React.ReactNode
+  trend?: React.ReactNode
   tone?: 'primary' | 'info' | 'success' | 'warning' | 'danger'
   className?: string
 }) {
@@ -19,8 +20,9 @@ export function DashboardMetricCard({ label, value, detail, icon, tone = 'primar
     warning: { border: 'border-l-warning', icon: 'bg-warning-subtle text-warning' },
     danger: { border: 'border-l-danger', icon: 'bg-danger-subtle text-danger' },
   }
-  return <div className={cn('h-full overflow-hidden rounded-xl border border-border border-l-4 bg-surface p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md', tones[tone].border, className)}>
+  return <div className={cn('relative h-full overflow-hidden rounded-xl border border-border border-l-4 bg-surface p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md', tones[tone].border, className)}>
     <div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="truncate text-xs font-semibold uppercase tracking-wider text-fg-subtle">{label}</div><div className="mt-3 truncate text-2xl font-semibold tabular-nums text-fg">{value}</div>{detail ? <div className="mt-1 truncate text-xs text-fg-muted">{detail}</div> : null}</div>{icon ? <span className={cn('grid size-9 shrink-0 place-items-center rounded-lg', tones[tone].icon)}>{icon}</span> : null}</div>
+    {trend ? <div className="absolute right-4 bottom-3 h-7 w-20 opacity-80">{trend}</div> : null}
   </div>
 }
 
