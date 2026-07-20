@@ -89,7 +89,7 @@ const DEFAULT_LABELS: DesignStudioEditorLabels = {
   bringToFront: 'Bring to front',
   sendToBack: 'Send to back',
   canvasHint: 'Click an element to edit it. Drag to move, use the handles to resize or rotate, and double-click text to edit inline.',
-  noSelection: 'Select an element on the canvas or from the layer list to edit its properties.',
+  noSelection: 'No element selected',
   elementSettings: 'Element settings',
   printReady: 'Print ready',
   issue: 'issue',
@@ -109,9 +109,9 @@ export type DesignStudioEditorProps = {
 }
 
 /**
- * Complete controlled design-document editor extracted from BeaconHS.
- * Applications own persistence and data catalogues; AppKit owns the Fabric
- * canvas, artboards, insertion, layers, inspector, zoom, and print controls.
+ * Controlled design-document workspace generalized from BeaconHS.
+ * Applications own persistence and data catalogues; AppKit owns this package's
+ * Fabric canvas, artboards, insertion, layers, inspector, zoom, and print UI.
  */
 export function DesignStudioEditor({
   document,
@@ -289,12 +289,12 @@ export function DesignStudioEditor({
     </aside>
 
     <section className="flex min-h-0 min-w-0 flex-col bg-bg-subtle">
-      <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-border bg-surface px-4 py-2">
-        <div className="min-w-0">
+      <div className="grid h-14 shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 overflow-hidden border-b border-border bg-surface px-4">
+        <div className="min-w-0 overflow-hidden">
           <div className="truncate text-sm font-semibold text-fg">{activeArtboard.name}</div>
-          <div className="text-xs text-fg-muted">{selectedElement ? `${selectedElement.name} · ${selectedElement.kind}` : labels.noSelection}</div>
+          <div className="truncate text-xs text-fg-muted">{selectedElement ? `${selectedElement.name} · ${selectedElement.kind}` : labels.noSelection}</div>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {actions}
           <Button type="button" variant="ghost" size="sm" onClick={() => setTab('insert')}><Plus size={14} />{labels.insert}</Button>
           <CanvasZoomControls zoom={zoomState.zoom} fitMode={zoomState.fitMode} fullscreen={zoomState.fullscreen} zoomBy={zoomState.zoomBy} zoomTo={zoomState.zoomTo} fitToWindow={zoomState.fitToWindow} setFullscreen={zoomState.setFullscreen} />
@@ -392,7 +392,7 @@ export function LayersPanel({ artboard, selectedElementId, labels, onSelect, onD
 }
 
 export function InspectorPanel({ artboard, selectedElement, catalog, labels, onPatchArtboard, onPatchElement, onDelete }: { artboard: DesignArtboard; selectedElement: DesignElement | null; catalog: DesignFieldCatalog; labels: DesignStudioEditorLabels; onPatchArtboard: (patch: Partial<DesignArtboard>) => void; onPatchElement: (patch: Partial<DesignElement>) => void; onDelete: () => void }) {
-  if (!selectedElement) return <div className="space-y-3"><RailLabel label="Artboard settings" icon={<Grid3X3 size={14} />} /><p className="rounded-md border border-border bg-bg-subtle p-3 text-xs leading-5 text-fg-muted">{labels.noSelection}</p><Field label="Name"><Input value={artboard.name} onChange={(event) => onPatchArtboard({ name: event.currentTarget.value })} /></Field><ColorField label="Background" value={artboard.background} onChange={(background) => onPatchArtboard({ background })} /></div>
+  if (!selectedElement) return <div className="space-y-3"><div className="flex h-7 items-center justify-between gap-2"><RailLabel label="Artboard settings" icon={<Grid3X3 size={14} />} /><Badge variant="secondary">{labels.noSelection}</Badge></div><Field label="Name"><Input value={artboard.name} onChange={(event) => onPatchArtboard({ name: event.currentTarget.value })} /></Field><ColorField label="Background" value={artboard.background} onChange={(background) => onPatchArtboard({ background })} /></div>
   const fieldOptions = catalog.fields
   const isText = selectedElement.kind === 'text' || selectedElement.kind === 'field'
   return <div className="space-y-4">

@@ -91,7 +91,7 @@ const GROUPS: AdminHubGroup[] = [
       },
       {
         title: '@appkit/reports',
-        description: 'Turn governed queries into saved, printable, and scheduled reports.',
+        description: 'Define governed report queries, grouped results, page layouts, and schedules.',
         icon: <FileOutput />,
         features: [
           'Saved definitions over the shared analytics query contract',
@@ -122,7 +122,7 @@ const GROUPS: AdminHubGroup[] = [
         features: [
           'Independently scrolling field library and canvas with drawer-based properties',
           'Conditional display rules, field validation, ordering, and section management',
-          'Form controls for files, signatures, entity pickers, data sources, and specialized capture',
+          'Host adapter boundary for application-owned files, signatures, entity pickers, data sources, and specialized capture',
           'Live preview, schema validation, import/export, and draft persistence',
         ],
         href: '/forms',
@@ -342,7 +342,7 @@ const GROUPS: AdminHubGroup[] = [
           'Bounded multi-artboard document model with application-defined data fields',
           'Letter, A4-style, card, label, and custom physical formats',
           'Safe normalization, catalogue validation, HTML rendering, and print-provider profiles',
-          'Optional React/Fabric entry adds the complete artboard, layer, inspector, transform, zoom, and print workspace',
+          'Optional React/Fabric entry adds an interactive artboard, layer, transform, zoom, and basic inspector workspace',
         ],
         href: '/design-studio',
         linkLabel: 'Open design studio',

@@ -147,10 +147,10 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 | `@appkit/ui`            | Accessible primitives, topbar/sidebar app shell, account launcher, search, notifications, settings, lists, drawers, uploads, signatures, page layouts, and route transitions. |
 | `@appkit/dashboard`     | Responsive drag/resize dashboards, reusable insight cards, a card library, query studio, visualizations, and optional Drizzle persistence.                                    |
 | `@appkit/forms-core`    | Versioned schemas, field registry, formulas, conditional logic, validation, scoring, and source-compatible business and safety automation contracts.                          |
-| `@appkit/forms`         | Visual form designer and fill runtime with host adapters for files, signatures, entities, and specialized fields.                                                             |
+| `@appkit/forms`         | Composable form authoring and fill UI for the shared schema, with host adapters for application-owned field runtimes.                                                         |
 | `@appkit/editor`        | Optional controlled TipTap rich-text authoring.                                                                                                                               |
-| `@appkit/customization` | App-defined records, custom fields, form layouts, list views, filters, actions, defaults, and linting.                                                                        |
-| `@appkit/design-studio` | Bounded multi-artboard print design, safe HTML output, and the complete optional Fabric editor with layers, inspectors, drag/resize, zoom, and print controls.               |
+| `@appkit/customization` | App-defined record catalogues, custom fields, form layouts, list views, filters, defaults, and linting.                                                                        |
+| `@appkit/design-studio` | Bounded multi-artboard print design, safe HTML output, and an optional interactive Fabric workspace.                                                                          |
 | `@appkit/i18n`          | Tenant locale policy, request negotiation, user overrides, and localized authored content.                                                                                    |
 
 ### Data, access, and extension
@@ -170,7 +170,7 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 | Package                 | What it gives your app                                                                                                                                                |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@appkit/analytics`     | App-owned semantic catalogues, parsed formulas, tenant-bound parameterized SQL, result contracts, and a visualization registry.                                       |
-| `@appkit/reports`       | Saved and grouped reports, page layouts, injected execution, schedules, and CSV/XLSX/PDF output contracts.                                                            |
+| `@appkit/reports`       | Fiscal periods plus framework-neutral report definition, result, layout, execution, and schedule contracts.                                                        |
 | `@appkit/workflows`     | Bounded graphs, visual authoring, durable runs, replay-safe actions, pause/resume approval gates, any/all quorum, HMAC email decisions, and optional Drizzle storage. |
 | `@appkit/sync`          | Connector registry, cursors, record caps, dry runs, crosswalks, fail-closed authoritative snapshots, CSV/transforms, hardened egress, and optional SQL drivers.       |
 | `@appkit/integrations`  | Trigger/destination registry, token mapping, send-once policy, partial retry ledgers, and optional HTTP, Slack/Teams, Sheets, email, SQL, and Drizzle adapters.       |

@@ -183,9 +183,11 @@ things.
 
 `@appkit/forms` is controlled UI over that contract. Its `LogicBuilder` is the
 BeaconHS template-designer implementation with labels and theme values injected.
-Its `FormDesigner` shell preserves BeaconHS's fixed, independently scrolling
-builder rail, flex build surface, and drawer-based properties interaction rather
-than introducing a permanent third column. `FormDesigner` receives a
+Its current `FormDesigner` preserves the source shell's independently scrolling
+builder rail, flex build surface, and drawer-based properties interaction, but
+it is not yet a drop-in replacement for the full BeaconHS designer. It omits
+source formula authoring, type-specific configuration, layout, behavior/list/
+action, assignment, and permission panels. `FormDesigner` receives a
 schema and `onChange`; `FormRenderer` receives the same schema plus controlled or
 uncontrolled response values. Common controls, repeating sections, visibility,
 and submit validation work without host code. Files, signatures, entity/data
@@ -337,10 +339,12 @@ same feature-owned pattern under `@appkit/notifications/schema`.
 
 ## 10. Reports and documents
 
-`@appkit/reports` owns saved report definitions, grouped tabular documents,
-page layouts, injected execution, and timezone-aware schedules. Its query is the
-same `InsightQuery` used by `@appkit/analytics`; do not create a separate report
-query language. An app supplies its tenant-scoped executor and domain catalogue.
+`@appkit/reports` currently owns fiscal periods and framework-neutral report
+definition, result, layout, execution, and schedule contracts. It does not yet
+contain the siblings' full built-in report catalogues, compiler/executor,
+document body/CSS, exports, or schedule worker and must not be treated as a
+drop-in replacement. Its current query is the same `InsightQuery` used by
+`@appkit/analytics`; an app supplies its tenant-scoped executor and catalogue.
 
 `@appkit/pdf` is the OpenBooks PDF engine. Its root is the pure-JS PDFKit report,
 table, and financial-statement renderer. Bounded template rendering is under
@@ -350,10 +354,13 @@ under `@appkit/pdf/html`, so a report-only service does not install Chromium.
 `/summary`, `/template`, and `/design` rendering adapters.
 
 `@appkit/design-studio` owns the bounded multi-artboard print document. Its
-complete controlled BeaconHS editor is isolated at `@appkit/design-studio/react`:
-Fabric selection, drag/resize/rotation, inline text editing, zoom/fullscreen,
-artboards, insertion, layers, z-order, visibility/locking, property inspectors,
-and print-provider settings. `@appkit/design-studio/fabric` remains the lazy
+current controlled editor is isolated at `@appkit/design-studio/react` and
+supports Fabric selection, drag/resize/rotation, inline text editing,
+zoom/fullscreen, artboards, insertion, layers, z-order, visibility/locking,
+basic property inspectors, and print-provider settings. It is not yet source-
+compatible with the full BeaconHS editor: source DTOs, document factories,
+presets/exports, and several inspector controls remain to be ported.
+`@appkit/design-studio/fabric` remains the lazy
 canvas-runtime boundary. Data field keys, sample values, persistence, and output
 actions come from the application; product entities are not hardcoded in the
 package. The working references are `/reports` and `/design-studio`.
