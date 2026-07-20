@@ -84,7 +84,7 @@ pnpm --filter @appkit/playground dev
 The seed creates the fixed `admin@appkit.dev` demo identity without a password,
 starter insight cards, and a personal dashboard. Open `/dashboard` for the live
 dashboard system, `/insights` for the card studio, `/forms` for the form builder,
-or `/dashboard/platform` for
+`/forms/core` for schema/validation/automation behavior, or `/dashboard/platform` for
 every package and its app-builder contract; use the account
 launcher to switch between topbar (default) and sidebar navigation.
 

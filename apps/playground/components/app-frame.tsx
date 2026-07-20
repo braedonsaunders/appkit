@@ -55,6 +55,7 @@ const NAV: SidebarNavGroup[] = [
       { href: '/dashboard', label: 'Dashboard', iconKey: 'gauge', exact: true, mobile: true },
       { href: '/insights', label: 'Insight cards', iconKey: 'library', mobile: true },
       { href: '/forms', label: 'Form builder', iconKey: 'clipboard', mobile: true },
+      { href: '/forms/core', label: 'Form engine', iconKey: 'code' },
       { href: '/dashboard/platform', label: 'Platform', iconKey: 'package', mobile: true },
       { href: '/components', label: 'Components', iconKey: 'sparkles' },
     ],

@@ -79,8 +79,8 @@ const GROUPS: AdminHubGroup[] = [
           'Separate safety and business automation profiles with domain-specific actions',
           'GL account, party, currency, percentage, inspection, and safety field types',
         ],
-        href: '/forms',
-        linkLabel: 'Open form schema',
+        href: '/forms/core',
+        linkLabel: 'Open form engine',
       },
       {
         title: '@appkit/forms',

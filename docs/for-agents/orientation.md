@@ -163,6 +163,8 @@ beside the full safety/field-operations vocabulary. The package owns parsing,
 cross-reference linting, conditional logic, formula evaluation, defaults,
 response validation, normalization, scoring, participant extraction, document
 styles, and PDF template helpers.
+The live `/forms/core` reference executes the schema parser and response
+validator, lists the field registry, and displays both automation vocabularies.
 
 Automation is source-native rather than artificially flattened:
 `@appkit/forms-core/safety-automation` preserves the BeaconHS workflow contract,

@@ -3,60 +3,13 @@
 import * as React from 'react'
 import { Download, Eye, FileJson, LayoutGrid, RotateCcw, Save, Upload } from 'lucide-react'
 import { FormDesigner, FormRenderer, type FormValues } from '@appkit/forms'
-import { formSchemaV1Schema, parseFormSchema, type FormSchemaV1 } from '@appkit/forms-core'
+import { parseFormSchema, type FormSchemaV1 } from '@appkit/forms-core'
 import { Badge, Button, TabContent, Textarea, toast } from '@appkit/ui'
+import { SUPPLIER_QUALIFICATION_SCHEMA } from '../../../lib/forms/example-schema'
 
 const STORAGE_KEY = 'appkit.forms.workbench.schema.v1'
 
-const STARTER_SCHEMA: FormSchemaV1 = formSchemaV1Schema.parse({
-  schemaVersion: 1,
-  title: 'Supplier qualification',
-  description: 'Collect the information needed to qualify a new supplier.',
-  sections: [
-    {
-      id: 'company',
-      title: 'Company details',
-      description: 'Company, contact, spend, and risk details.',
-      layout: { columns: 2, gap: 'md' },
-      fields: [
-        { id: 'company_name', type: 'text', label: 'Company name', required: true },
-        { id: 'contact_email', type: 'email', label: 'Contact email', required: true },
-        {
-          id: 'expected_spend',
-          type: 'currency',
-          label: 'Expected annual spend',
-          config: { min: 0, step: 100 },
-        },
-        {
-          id: 'risk_tier',
-          type: 'select',
-          label: 'Risk tier',
-          required: true,
-          validation: {
-            options: [
-              { value: 'low', label: 'Low risk' },
-              { value: 'medium', label: 'Medium risk' },
-              { value: 'high', label: 'High risk' },
-            ],
-          },
-        },
-      ],
-    },
-    {
-      id: 'review',
-      title: 'Qualification review',
-      fields: [
-        { id: 'result', type: 'pass_fail_na', label: 'Qualification result', required: true },
-        {
-          id: 'notes',
-          type: 'rich_text',
-          label: 'Reviewer notes',
-          helpText: 'Add supporting details for the qualification decision.',
-        },
-      ],
-    },
-  ],
-})
+const STARTER_SCHEMA = SUPPLIER_QUALIFICATION_SCHEMA
 
 type Mode = 'design' | 'preview' | 'schema'
 
