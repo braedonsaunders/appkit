@@ -64,8 +64,8 @@ imported by every app.
 `apps/playground` composes the platform instead of merely displaying components:
 Postgres RLS tenant isolation, RBAC-gated audited mutations, a live public demo
 API, a customizable dashboard, a persisted insight-card library and query
-studio, global search, activity inbox, AI-agent disabled state, URL-driven
-database lists, and a package-by-package platform overview. The
+studio, global search, activity inbox, URL-driven database lists, and a detailed
+package-by-package platform overview. The
 demo intentionally disables authentication everywhere and uses one fixed seeded
 identity solely to exercise tenant context and permissions. `@appkit/auth` remains
 available to consuming applications.
@@ -80,8 +80,8 @@ pnpm --filter @appkit/playground dev
 
 The seed creates the fixed `admin@appkit.dev` demo identity without a password,
 starter insight cards, and a personal dashboard. Open `/dashboard` for the live
-dashboard system, `/insights` for the card studio, `/assistant` for the extracted
-agent surface, or `/dashboard/platform` for every package; use the account
+dashboard system, `/insights` for the card studio, or `/dashboard/platform` for
+every package and its app-builder contract; use the account
 launcher to switch between topbar (default) and sidebar navigation.
 
 ## Conventions

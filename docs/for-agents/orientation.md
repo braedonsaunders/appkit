@@ -69,8 +69,9 @@ preview, autosave, publish/delete). These are the generalized OpenBooks/BeaconHS
 dashboard system, not gallery mockups.
 
 **App shell / admin** — `PageHeader` · `AdminHub` (the settings **landing/hub** —
-grouped accent cards) · `SettingsShell` (the **sidebar settings area** — fixed
-header + two-pane rail) + `SettingsNav` / `SettingsSection` / `SettingsRow`.
+grouped accent cards, with an optional detailed layout for capability inventories)
+· `SettingsShell` (the **sidebar settings area** — fixed header + two-pane rail)
++ `SettingsNav` / `SettingsSection` / `SettingsRow`.
 `AppShell` renders the same OpenBooks/BeaconHS-compatible navigation registry as
 the OpenBooks workspace-dropdown topbar (default) or the shared collapsible
 sidebar via `navigationMode="topbar" | "sidebar"`. The registry supports the
@@ -141,8 +142,8 @@ parts/token usage through `onComplete`.
 `@appkit/ai/react` exports `AgentPanel`, `ChatMarkdown`, and `AgentToolCard`.
 `AgentPanel` owns the live/reloaded parts renderer, streaming decoder, composer,
 cancellation, and disabled state; the app injects its persistence-backed send
-transport. The playground `/assistant` route intentionally demonstrates the
-production disabled state because the public demo ships no provider credential.
+transport. The playground documents this contract on `/dashboard/platform`
+without inventing a credential, fake conversation, or provider-specific demo.
 
 ## 5. Analytics and card queries (`@appkit/analytics`)
 

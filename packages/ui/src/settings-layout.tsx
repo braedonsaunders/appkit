@@ -1,7 +1,8 @@
 'use client'
 
 import * as React from 'react'
-import { ArrowUpRight } from 'lucide-react'
+import { ArrowRight, ArrowUpRight, Check } from 'lucide-react'
+import { UiLink } from './link-context'
 import { PageHeader } from './page-header'
 import { cn } from './utils'
 
@@ -24,7 +25,7 @@ const defaultLink: LinkRender = ({
   role,
   dataWalkthrough,
 }) => (
-  <a
+  <UiLink
     href={href}
     className={className}
     title={title}
@@ -33,7 +34,7 @@ const defaultLink: LinkRender = ({
     data-walkthrough={dataWalkthrough}
   >
     {children}
-  </a>
+  </UiLink>
 )
 
 // ---------------------------------------------------------------------------
@@ -68,17 +69,33 @@ const ACCENTS: Record<AdminHubAccent, { chip: string; border: string; link: stri
   },
 }
 
-export type AdminHubCard = { href: string; title: string; description?: string; icon?: React.ReactNode }
-export type AdminHubGroup = { label?: string; accent?: AdminHubAccent; cards: AdminHubCard[] }
+export type AdminHubCard = {
+  href?: string
+  title: string
+  description?: string
+  icon?: React.ReactNode
+  badge?: React.ReactNode
+  features?: string[]
+  linkLabel?: string
+}
+export type AdminHubGroup = {
+  label?: string
+  description?: string
+  accent?: AdminHubAccent
+  layout?: 'compact' | 'detailed'
+  cards: AdminHubCard[]
+}
 
 export function AdminHub({
   title,
   description,
+  actions,
   groups,
   linkRender = defaultLink,
 }: {
   title?: string
   description?: string
+  actions?: React.ReactNode
   groups: AdminHubGroup[]
   linkRender?: LinkRender
 }) {
@@ -86,7 +103,7 @@ export function AdminHub({
     <div className="flex h-full min-h-0 flex-col">
       {title || description ? (
         <div className="shrink-0 border-b border-border bg-surface px-3 py-3 sm:px-6">
-          <PageHeader title={title ?? ''} description={description} />
+          <PageHeader title={title ?? ''} description={description} actions={actions} />
         </div>
       ) : null}
       <div className="app-scroll min-h-0 flex-1 overflow-y-auto bg-bg-subtle">
@@ -95,32 +112,97 @@ export function AdminHub({
             const accent = ACCENTS[group.accent ?? 'teal']
             return (
               <section key={gi} className="space-y-3">
-                {group.label ? (
-                  <h2 className="px-0.5 text-xs font-semibold tracking-wider text-fg-subtle uppercase">
-                    {group.label}
-                  </h2>
+                {group.label || group.description ? (
+                  <div className="space-y-1 px-0.5">
+                    {group.label ? (
+                      <h2 className="text-xs font-semibold tracking-wider text-fg-subtle uppercase">
+                        {group.label}
+                      </h2>
+                    ) : null}
+                    {group.description ? (
+                      <p className="max-w-3xl text-sm text-fg-muted">{group.description}</p>
+                    ) : null}
+                  </div>
                 ) : null}
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                  {group.cards.map((card, ci) => (
-                    <React.Fragment key={ci}>
-                      {linkRender({
-                      href: card.href,
-                      title: card.description,
-                      className: cn(
-                        'group flex items-center gap-3 rounded-xl border border-border bg-surface p-3.5 shadow-sm transition-all hover:shadow-md',
-                        accent.border,
-                      ),
-                      children: (
-                        <>
-                          <span className={cn('grid size-10 shrink-0 place-items-center rounded-lg ring-1', accent.chip)}>
+                <div
+                  className={cn(
+                    'grid grid-cols-1 gap-3 sm:grid-cols-2',
+                    group.layout === 'detailed' ? '2xl:grid-cols-3' : 'lg:grid-cols-3 2xl:grid-cols-4',
+                  )}
+                >
+                  {group.cards.map((card, ci) => {
+                    const detailed = group.layout === 'detailed'
+                    const content = detailed ? (
+                      <>
+                        <div className="flex items-start gap-3">
+                          <span
+                            className={cn(
+                              'grid size-10 shrink-0 place-items-center rounded-lg ring-1 [&_svg]:size-[18px]',
+                              accent.chip,
+                            )}
+                          >
                             {card.icon}
                           </span>
-                          <div className="min-w-0 flex-1">
-                            <h3 className="truncate text-sm font-semibold text-fg">{card.title}</h3>
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="font-mono text-sm font-semibold text-fg">{card.title}</h3>
+                              {card.badge}
+                            </div>
                             {card.description ? (
-                              <p className="truncate text-xs text-fg-muted">{card.description}</p>
+                              <p className="text-sm leading-relaxed text-fg-muted">
+                                {card.description}
+                              </p>
                             ) : null}
                           </div>
+                        </div>
+                        {card.features?.length ? (
+                          <ul className="mt-4 space-y-2 border-t border-border-subtle pt-4">
+                            {card.features.map((feature) => (
+                              <li
+                                key={feature}
+                                className="flex gap-2 text-xs leading-relaxed text-fg-muted"
+                              >
+                                <Check
+                                  className="mt-0.5 size-3.5 shrink-0 text-primary"
+                                  aria-hidden
+                                />
+                                <span>{feature}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                        {card.href && card.linkLabel ? (
+                          <span
+                            className={cn(
+                              'mt-auto flex items-center gap-1.5 pt-4 text-xs font-semibold text-fg-muted',
+                              accent.link,
+                            )}
+                          >
+                            {card.linkLabel}
+                            <ArrowRight
+                              className="size-3.5 transition-transform group-hover:translate-x-0.5"
+                              aria-hidden
+                            />
+                          </span>
+                        ) : null}
+                      </>
+                    ) : (
+                      <>
+                        <span
+                          className={cn(
+                            'grid size-10 shrink-0 place-items-center rounded-lg ring-1',
+                            accent.chip,
+                          )}
+                        >
+                          {card.icon}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="truncate text-sm font-semibold text-fg">{card.title}</h3>
+                          {card.description ? (
+                            <p className="truncate text-xs text-fg-muted">{card.description}</p>
+                          ) : null}
+                        </div>
+                        {card.href ? (
                           <ArrowUpRight
                             size={15}
                             aria-hidden
@@ -129,11 +211,31 @@ export function AdminHub({
                               accent.link,
                             )}
                           />
-                        </>
-                      ),
-                      })}
-                    </React.Fragment>
-                  ))}
+                        ) : null}
+                      </>
+                    )
+                    const className = cn(
+                      'group rounded-xl border border-border bg-surface shadow-sm transition-all',
+                      detailed ? 'flex h-full flex-col p-4' : 'flex items-center gap-3 p-3.5',
+                      card.href && 'hover:shadow-md',
+                      card.href && accent.border,
+                    )
+
+                    return card.href ? (
+                      <React.Fragment key={ci}>
+                        {linkRender({
+                          href: card.href,
+                          title: card.description,
+                          className,
+                          children: content,
+                        })}
+                      </React.Fragment>
+                    ) : (
+                      <article key={ci} className={className}>
+                        {content}
+                      </article>
+                    )
+                  })}
                 </div>
               </section>
             )

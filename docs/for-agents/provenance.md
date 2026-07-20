@@ -44,7 +44,10 @@ Faithful or generalized extractions:
   `components/page-layout.tsx`.
 - `LineGrid` comes from `openbooks/web/components/line-grid.tsx`.
 - `AdminHub`, `SettingsShell`, `SettingsNav`, `SettingsSection`, and
-  `SettingsRow` come from the OpenBooks admin hub and setup shell.
+  `SettingsRow` come from the OpenBooks admin hub and setup shell. `AdminHub`'s
+  detailed capability-card layout is a generalized extension of that same card
+  grammar for package inventories; the compact settings layout remains the
+  faithful default.
 - `RecordList` and URL-driven search/filter/sort/pagination are generalized from
   OpenBooks production list pages and navigation helpers.
 - `Select` is an appkit convenience adapter over the extracted `SearchSelect`;

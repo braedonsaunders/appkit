@@ -1,8 +1,7 @@
-import Link from 'next/link'
 import {
-  Braces,
   BarChart3,
   Bot,
+  Braces,
   Cloud,
   Database,
   KeyRound,
@@ -16,160 +15,214 @@ import {
   ShieldCheck,
   Workflow,
 } from 'lucide-react'
-import { EMAIL_PROVIDER_SPECS } from '@appkit/emails'
-import { SMS_PROVIDER_SPECS } from '@appkit/sms'
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  PageContainer,
-  PageHeader,
-} from '@appkit/ui'
+import { EMAIL_PROVIDER_SPECS } from '@appkit/emails/providers'
+import { SMS_PROVIDER_SPECS } from '@appkit/sms/providers'
+import { AdminHub, Badge, type AdminHubGroup } from '@appkit/ui'
 
-export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Platform — appkit' }
 
-type Capability = {
-  name: string
-  summary: string
-  proof: string
-  icon: React.ReactNode
-  href?: string
-  linkLabel?: string
-}
-
-const GROUPS: { label: string; description: string; capabilities: Capability[] }[] = [
+const GROUPS: AdminHubGroup[] = [
   {
-    label: 'Foundation',
-    description: 'The shared visual, data, tenant, and identity substrate every app starts with.',
-    capabilities: [
+    label: 'Build the application',
+    description:
+      'The shared visual language, shell, data boundary, permissions, and analytical building blocks every suite application starts with.',
+    accent: 'teal',
+    layout: 'detailed',
+    cards: [
       {
-        name: '@appkit/tokens',
-        summary: 'Semantic color, shape, elevation, and motion tokens with Tailwind v4 utilities and one-class dark mode.',
-        proof: 'The entire demo—including this page—uses these tokens in both themes.',
+        title: '@appkit/tokens',
+        description: 'Rebrand an entire application without hunting through component code.',
         icon: <Palette />,
+        features: [
+          'Semantic color, typography, radius, elevation, and motion values',
+          'Tailwind v4 utilities generated from the same CSS variables',
+          'Light and dark themes, reduced motion, and one-file brand overrides',
+        ],
         href: '/components',
-        linkLabel: 'See token gallery',
+        linkLabel: 'See the token system',
       },
       {
-        name: '@appkit/ui',
-        summary: 'Accessible primitives, dashboard grid and studio, app shells, admin layouts, URL lists, and feedback patterns.',
-        proof: 'The component gallery plus the dashboard and insight library exercise the interactive primitive set.',
+        title: '@appkit/ui',
+        description: 'Compose a complete OpenBooks/BeaconHS-compatible product instead of rebuilding common interface behavior.',
         icon: <Layers3 />,
+        features: [
+          'Inputs, feedback, dialogs, drawers, popovers, menus, tables, lists, and line editors',
+          'Topbar/sidebar app shell, account launcher, search, notifications, theme, settings hub, and settings shell',
+          'Dashboard grid, insight renderers, card studio, page layouts, transitions, metrics, and sparklines',
+          'Tokenized light/dark styling, keyboard behavior, focus management, and reduced-motion support',
+        ],
         href: '/components',
-        linkLabel: 'Open components',
+        linkLabel: 'Explore interactive primitives',
       },
       {
-        name: '@appkit/analytics',
-        summary: 'Semantic catalogues, parsed formula ASTs, tenant-bound query compilation, results, and visualization metadata.',
-        proof: 'The insight studio runs parameter-bound Postgres previews and renders ten visualization types from one contract.',
+        title: '@appkit/analytics',
+        description: 'Let users build reporting cards without accepting arbitrary SQL or coupling the engine to one product schema.',
         icon: <BarChart3 />,
+        features: [
+          'App-authored semantic catalogues and typed visualization metadata',
+          'Parsed formula ASTs with a controlled function and field vocabulary',
+          'Tenant-bound, parameterized Postgres compilation and result contracts',
+          'Scalar, progress, table, bar, row, line, area, pie, donut, and gauge output',
+        ],
         href: '/insights',
-        linkLabel: 'Open card studio',
+        linkLabel: 'Build an insight card',
       },
       {
-        name: '@appkit/db',
-        summary: 'Drizzle schema conventions, canonical identity tables, API tables, and a Postgres row-level-security executor.',
-        proof: 'Dashboard counts and Admin users are live Postgres queries constrained by RLS.',
+        title: '@appkit/db',
+        description: 'Start with tenant isolation and identity persistence already shaped for production.',
         icon: <Database />,
+        features: [
+          'Postgres RLS executor with tenant-scoped and BYPASSRLS handles',
+          'Canonical tenants, users, memberships, roles, API keys, dashboards, and card schemas',
+          'Schema helpers and an installer for repeatable row-level-security policies',
+        ],
         href: '/admin/users',
-        linkLabel: 'See live data',
+        linkLabel: 'See an RLS-scoped list',
       },
       {
-        name: '@appkit/tenant',
-        summary: 'RequestContext, wildcard RBAC, visibility scopes, permission overrides, and super-admin behavior.',
-        proof: 'The fixed demo identity resolves real permissions; user mutations still call assertCan.',
+        title: '@appkit/tenant',
+        description: 'Carry one resolved request context through database access, authorization, and auditing.',
         icon: <ShieldCheck />,
+        features: [
+          'Wildcard RBAC, read tiers, visibility scopes, and per-user grant/deny overrides',
+          'Membership resolution, permission assertions, and super-admin behavior',
+          'One trust boundary shared by routes, actions, agent tools, and background work',
+        ],
         href: '/admin/users',
-        linkLabel: 'See RBAC flow',
+        linkLabel: 'Inspect the RBAC flow',
       },
       {
-        name: '@appkit/auth',
-        summary: 'Scrypt password hashing plus stateless, HMAC-signed sessions for apps that choose local credentials.',
-        proof: 'Available to consuming apps, deliberately disabled throughout this public demo—no cookies, passwords, or login route.',
+        title: '@appkit/auth',
+        description: 'Add local credentials when a product needs them without forcing authentication into public or externally managed apps.',
         icon: <LockKeyhole />,
+        badge: <Badge variant="secondary">Optional</Badge>,
+        features: [
+          'Scrypt password hashing with timing-safe verification',
+          'Stateless HMAC-signed sessions and explicit expiry handling',
+          'Independent package boundary—the demo remains authentication-free in every route',
+        ],
       },
     ],
   },
   {
-    label: 'Application runtime',
-    description: 'Auditable mutations, public APIs, and governed user-defined behavior.',
-    capabilities: [
+    label: 'Extend the runtime',
+    description:
+      'Production contracts for auditable mutations, public APIs, governed user code, and tenant-aware AI features.',
+    accent: 'violet',
+    layout: 'detailed',
+    cards: [
       {
-        name: '@appkit/events',
-        summary: 'Audit records, JSON diffs, and a transactional outbox with stable deduplication keys.',
-        proof: 'Inviting a user writes a real audit row in the same tenant context.',
+        title: '@appkit/events',
+        description: 'Make material application changes traceable and reliably hand work to asynchronous consumers.',
         icon: <ScrollText />,
-        href: '/admin/users',
-        linkLabel: 'Create an audit event',
+        features: [
+          'Structured audit records and JSON before/after diffs',
+          'Transactional outbox writes alongside the business mutation',
+          'Stable deduplication keys for safe downstream delivery',
+        ],
+        href: '/admin/audit',
+        linkLabel: 'View live audit history',
       },
       {
-        name: '@appkit/api',
-        summary: 'API-key parsing, scoped authorization, typed errors, idempotent mutations, route descriptions, and OpenAPI output.',
-        proof: 'The interactive API reference is generated from route-shaped docs; its live demo endpoint is public here by design.',
+        title: '@appkit/api',
+        description: 'Ship consistent external APIs with authorization and documentation built into the route contract.',
         icon: <Braces />,
+        features: [
+          'API-key parsing, scoped authorization, and typed public errors',
+          'Idempotent mutation helpers that safely replay prior results',
+          'Route-shaped descriptions and generated OpenAPI documents',
+        ],
         href: '/api-docs',
-        linkLabel: 'Send a request',
+        linkLabel: 'Use the API reference',
       },
       {
-        name: '@appkit/endpoints',
-        summary: 'QuickJS sandbox for user-defined handlers with memory, time, unit-budget, storage, record, and host-call governance.',
-        proof: 'The package test suite executes real sandbox programs and proves over-budget scripts are stopped.',
+        title: '@appkit/endpoints',
+        description: 'Offer user-defined handlers while keeping host access and resource consumption under application control.',
         icon: <Workflow />,
+        features: [
+          'QuickJS isolation with memory, execution-time, and unit budgets',
+          'Governed storage, record, and host-call capabilities',
+          'Deterministic limits that stop over-budget programs',
+        ],
       },
       {
-        name: '@appkit/ai',
-        summary: 'Provider-neutral multi-step agent runtime, streamed UI-message protocol, tool-use cards, cancellation, and an assistant thread UI.',
-        proof: 'The assistant route renders the production disabled state without credentials; consuming apps inject a tenant-resolved model and RBAC-bound tools.',
+        title: '@appkit/ai',
+        description: 'Add an agent that uses app-approved tools without baking one model vendor, prompt, or tenant policy into AppKit.',
         icon: <Bot />,
-        href: '/assistant',
-        linkLabel: 'Open agent surface',
+        features: [
+          'Provider-neutral, bounded multi-step tool loop with abort and redacted errors',
+          'Streaming UI-message protocol, markdown, tool cards, cancellation, and thread composer',
+          'Injected model, persistence transport, system prompt, and RequestContext-bound tools',
+          'No provider credential or fake conversation is shipped by the public demo',
+        ],
       },
     ],
   },
   {
-    label: 'Secrets and delivery',
-    description: 'One encrypted credential path feeding provider-neutral outbound delivery.',
-    capabilities: [
+    label: 'Protect and deliver',
+    description:
+      'One encrypted credential path feeding provider-neutral email and SMS delivery, without leaking secrets through application errors.',
+    accent: 'amber',
+    layout: 'detailed',
+    cards: [
       {
-        name: '@appkit/crypto',
-        summary: 'AES-256-GCM sealed secrets using an HKDF-derived application key and a fresh nonce for every write.',
-        proof: 'Email and SMS provider credentials use the same sealed-secret contract, with tamper rejection covered by the package test suite.',
+        title: '@appkit/crypto',
+        description: 'Store provider and integration credentials through one authenticated-encryption contract.',
         icon: <KeyRound />,
+        features: [
+          'AES-256-GCM sealed secrets with a fresh nonce for every write',
+          'HKDF-derived application keys and authenticated tamper rejection',
+          'Shared ciphertext contract for every package that persists credentials',
+        ],
       },
       {
-        name: '@appkit/emails',
-        summary: 'Resend, SendGrid, Mailgun, Postmark, and secure SMTP behind one tenant/platform policy.',
-        proof: `${EMAIL_PROVIDER_SPECS.length} provider specifications drive settings and transport construction from one catalogue.`,
+        title: '@appkit/emails',
+        description: 'Change outbound email providers without rewriting product workflows or credential handling.',
         icon: <Mail />,
+        features: [
+          `${EMAIL_PROVIDER_SPECS.length} provider specifications: Resend, SendGrid, Mailgun, Postmark, and secure SMTP`,
+          'Tenant/platform policy resolution from one provider catalogue',
+          'Credential-safe validation, transport construction, and failure reporting',
+        ],
       },
       {
-        name: '@appkit/sms',
-        summary: 'Twilio, Vonage, MessageBird, Plivo, and Telnyx with strict E.164 validation and credential-safe errors.',
-        proof: `${SMS_PROVIDER_SPECS.length} fetch-based provider contracts share the same fail-closed tenant policy as email.`,
+        title: '@appkit/sms',
+        description: 'Send transactional messages through a stable application contract across common SMS vendors.',
         icon: <MessageSquare />,
+        features: [
+          `${SMS_PROVIDER_SPECS.length} providers: Twilio, Vonage, MessageBird, Plivo, and Telnyx`,
+          'Strict E.164 address validation and fetch-based transports',
+          'The same fail-closed tenant policy and sealed-secret path as email',
+        ],
       },
     ],
   },
   {
-    label: 'Infrastructure',
-    description: 'Lazy, production-shaped adapters for work that leaves the request lifecycle.',
-    capabilities: [
+    label: 'Run outside the request',
+    description:
+      'Lazy infrastructure adapters for queued work and binary objects—production-shaped without making local builds depend on external services.',
+    accent: 'sky',
+    layout: 'detailed',
+    cards: [
       {
-        name: '@appkit/jobs',
-        summary: 'BullMQ + Redis queue and worker factory with bounded producer retries and resilient blocking consumers.',
-        proof: 'Connections are lazy, so importing or building an app never requires Redis to be online.',
+        title: '@appkit/jobs',
+        description: 'Move expensive or retryable work into queues through a reusable producer and worker contract.',
         icon: <ServerCog />,
+        features: [
+          'BullMQ and Redis queue/worker factories with lazy connections',
+          'Bounded producer retries and resilient blocking consumers',
+          'Import- and build-safe behavior when Redis is not running',
+        ],
       },
       {
-        name: '@appkit/storage',
-        summary: 'S3-compatible put, get, delete, head, and presigned upload/download operations for R2, MinIO, or AWS.',
-        proof: 'One injected configuration changes providers without changing application code.',
+        title: '@appkit/storage',
+        description: 'Keep file workflows provider-portable across AWS, R2, MinIO, and other S3-compatible services.',
         icon: <Cloud />,
+        features: [
+          'Put, get, delete, and head operations behind one injected configuration',
+          'Presigned upload and download URLs for direct client transfers',
+          'Provider changes without changes to application feature code',
+        ],
       },
     ],
   },
@@ -177,47 +230,11 @@ const GROUPS: { label: string; description: string; capabilities: Capability[] }
 
 export default function PlatformPage() {
   return (
-    <PageContainer className="space-y-8">
-      <PageHeader
-        title="Everything in appkit"
-        description="Every shipped package is accounted for here—live where safe, interactive where useful, and explicit about infrastructure that needs an external service."
-        actions={<Badge variant="success">15 packages · auth disabled</Badge>}
-      />
-
-      {GROUPS.map((group) => (
-        <section key={group.label} className="space-y-3">
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight text-fg">{group.label}</h2>
-            <p className="text-sm text-fg-muted">{group.description}</p>
-          </div>
-          <div className="grid gap-4 lg:grid-cols-2">
-            {group.capabilities.map((capability) => (
-              <Card key={capability.name} className="flex h-full flex-col">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary-subtle text-primary [&_svg]:size-4">
-                      {capability.icon}
-                    </span>
-                    <CardTitle className="font-mono text-base">{capability.name}</CardTitle>
-                  </div>
-                  <CardDescription className="pt-2 leading-relaxed">{capability.summary}</CardDescription>
-                </CardHeader>
-                <CardContent className="mt-auto space-y-4">
-                  <p className="text-sm leading-relaxed text-fg-muted">
-                    <span className="font-medium text-fg">Proof: </span>
-                    {capability.proof}
-                  </p>
-                  {capability.href ? (
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={capability.href}>{capability.linkLabel}</Link>
-                    </Button>
-                  ) : null}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-      ))}
-    </PageContainer>
+    <AdminHub
+      title="AppKit platform"
+      description="Everything an app builder gets from the shared foundation—grouped the same way suite applications organize company settings."
+      actions={<Badge variant="success">15 production packages</Badge>}
+      groups={GROUPS}
+    />
   )
 }
