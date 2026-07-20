@@ -24,6 +24,7 @@ export { Avatar, type AvatarProps } from './avatar'
 export { AnimatedNumber, formatNumber, type AnimatedNumberProps } from './animated-number'
 export { Sparkline, type SparklineProps, type SparklineTone } from './sparkline'
 export { Tabs, type TabsProps, type TabItem } from './tabs'
+export { TabContent } from './tab-content'
 export { Tooltip, type TooltipProps } from './tooltip'
 export { EmptyState, type EmptyStateProps } from './empty-state'
 export { PageHeader, type PageHeaderProps } from './page-header'
@@ -189,3 +190,21 @@ export {
   type CardStudioResult,
   type CardPreviewResult,
 } from './card-studio'
+export { UiTextProvider, useUiText, type UiTextTranslator } from './text-context'
+export {
+  FileUploader,
+  uploadReservedFile,
+  type FileUploaderProps,
+  type UploadRequestResult,
+  type FinalizeUploadInput,
+  type RequestUploadAction,
+  type FinalizeUploadAction,
+  type UploadedFile,
+} from './file-uploader'
+export {
+  defaultMaxUploadBytes,
+  formatUploadSizeLimit,
+  type AttachmentKind,
+} from './upload-limits'
+export { SignaturePad, type SignaturePadProps } from './signature-pad'
+export { RichTextEditor, type RichTextEditorProps } from './rich-text-editor'

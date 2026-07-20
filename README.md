@@ -42,7 +42,7 @@ imported by every app.
 | Package | Role | Status |
 |---|---|---|
 | `@appkit/tokens` | Semantic color, shape, elevation, and motion tokens; Tailwind v4 utilities. | implemented |
-| `@appkit/ui` | Tokenized primitives, complete shell runtime, native page transitions, page layouts, dashboard grid, card studio, visualization renderers, URL-driven list controls, and API reference. | implemented |
+| `@appkit/ui` | Tokenized primitives, complete shell runtime, native page transitions, page layouts, dashboard grid, card studio, visualization renderers, URL-driven list controls, rich text, upload, and signature capture. | implemented |
 | `@appkit/ai` | Provider-neutral multi-step tool agent plus streamed assistant thread and tool-use UI. | implemented + tested |
 | `@appkit/analytics` | Semantic catalogues, safe formulas, parameter-bound query compilation, result contracts, and visualization registry. | implemented + tested |
 | `@appkit/db` | Postgres RLS engine, schema helpers, identity model, dashboard/card persistence, API keys, and idempotency. | implemented + live-tested |
@@ -56,7 +56,9 @@ imported by every app.
 | `@appkit/sms` | Twilio, Vonage, MessageBird, Plivo, and Telnyx delivery with tenant policy. | implemented |
 | `@appkit/jobs` | BullMQ + Redis queue and worker harness. | implemented |
 | `@appkit/storage` | S3-compatible object storage and presigned URLs. | implemented |
-| `@appkit/forms-core` | The form/Builder engine. | planned |
+| `@appkit/i18n` | Tenant locale policy, request negotiation, per-user overrides, and localized authoring-copy resolution. | implemented + tested |
+| `@appkit/forms-core` | Versioned form schemas, field registry, formulas, logic, validation, scoring, automation graphs, and document helpers; compatible with OpenBooks and BeaconHS source shapes. | implemented + tested |
+| `@appkit/forms` | Controlled visual form designer and fill runtime with host adapters for product-specific fields and storage. | implemented + browser-tested |
 | `apps/playground` | The full-stack running reference app and component gallery. | implemented + browser-tested |
 
 ## The running reference
@@ -64,7 +66,8 @@ imported by every app.
 `apps/playground` composes the platform instead of merely displaying components:
 Postgres RLS tenant isolation, RBAC-gated audited mutations, a live public demo
 API, a customizable dashboard, a persisted insight-card library and query
-studio, global search, activity inbox, URL-driven database lists, and a detailed
+studio, a locally persistent form designer/fill workbench, global search,
+activity inbox, URL-driven database lists, and a detailed
 package-by-package platform overview. The
 demo intentionally disables authentication everywhere and uses one fixed seeded
 identity solely to exercise tenant context and permissions. `@appkit/auth` remains
@@ -80,7 +83,8 @@ pnpm --filter @appkit/playground dev
 
 The seed creates the fixed `admin@appkit.dev` demo identity without a password,
 starter insight cards, and a personal dashboard. Open `/dashboard` for the live
-dashboard system, `/insights` for the card studio, or `/dashboard/platform` for
+dashboard system, `/insights` for the card studio, `/forms` for the form builder,
+or `/dashboard/platform` for
 every package and its app-builder contract; use the account
 launcher to switch between topbar (default) and sidebar navigation.
 

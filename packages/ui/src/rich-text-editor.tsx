@@ -1,0 +1,336 @@
+'use client'
+
+// TipTap-based rich text editor.
+//
+// Outputs HTML via `onChange(html)`. Stable enough to use in forms with a
+// hidden input (set `name` and `defaultValue`) — the latest HTML mirrors
+// into the hidden input on every edit so a `formData.get(name)` server
+// action call gets the current content.
+
+import { useEffect, useState } from 'react'
+import { EditorContent, useEditor, useEditorState, type Editor } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import Link from '@tiptap/extension-link'
+import Placeholder from '@tiptap/extension-placeholder'
+import { useUiText } from './text-context'
+import { cn } from './utils'
+
+export type RichTextEditorProps = {
+  /** Controlled HTML content. */
+  value?: string
+  /** Initial HTML content. */
+  defaultValue?: string
+  /** Called on every edit with the latest HTML. */
+  onChange?: (html: string) => void
+  /** Optional hidden input name so the editor works inside a <form>. */
+  name?: string
+  /** Placeholder text shown when empty. */
+  placeholder?: string
+  /** Disabled / read-only flag. */
+  disabled?: boolean
+  /** Extra classes on the outer wrapper. */
+  className?: string
+  /** Min editor height (default '160px'). */
+  minHeight?: string
+  /** Canonical application policy for links inserted from the toolbar. */
+  normalizeLink: (value: string) => string | null
+  /** Called when the entered link is rejected by normalizeLink. */
+  onInvalidLink?: () => void
+}
+
+export function RichTextEditor({
+  value,
+  defaultValue = '',
+  onChange,
+  name,
+  placeholder,
+  disabled = false,
+  className,
+  minHeight = '160px',
+  normalizeLink,
+  onInvalidLink,
+}: RichTextEditorProps) {
+  const t = useUiText()
+  // TipTap v3 does not re-render the host component on transactions
+  // (`shouldRerenderOnTransaction` defaults to false), so the latest HTML is
+  // mirrored into React state from `onUpdate` to keep the hidden form input
+  // current. Toolbar state is driven by `useEditorState` (see Toolbar below).
+  const initialValue = value ?? defaultValue
+  const [html, setHtml] = useState(initialValue)
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+        link: false,
+      }),
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: { class: 'text-primary underline underline-offset-2' },
+      }),
+      Placeholder.configure({ placeholder: t(placeholder ?? 'Start typing…') }),
+    ],
+    content: initialValue,
+    editable: !disabled,
+    immediatelyRender: false,
+    editorProps: {
+      attributes: {
+        class: cn(
+          'prose prose-sm max-w-none text-fg focus:outline-none',
+          'min-h-[var(--rt-min-h)] px-4 py-3',
+        ),
+        style: `--rt-min-h: ${minHeight}`,
+      },
+    },
+    onUpdate({ editor }) {
+      const next = editor.getHTML()
+      setHtml(next)
+      onChange?.(next)
+    },
+  })
+
+  // Keep editor in sync if `disabled` toggles after mount.
+  useEffect(() => {
+    if (editor && editor.isEditable !== !disabled) {
+      editor.setEditable(!disabled)
+    }
+  }, [editor, disabled])
+
+  // Controlled consumers (including FormRenderer) can reset/import values
+  // without remounting the editor. Avoid re-emitting the same transaction.
+  useEffect(() => {
+    if (!editor || value === undefined || editor.getHTML() === value) return
+    editor.commands.setContent(value, { emitUpdate: false })
+    setHtml(value)
+  }, [editor, value])
+
+  if (!editor) {
+    return (
+      <div
+        className={cn(
+          'rounded-md border border-border-strong bg-surface shadow-sm',
+          className,
+        )}
+        style={{ minHeight }}
+      />
+    )
+  }
+
+  return (
+    <div
+      className={cn(
+        'rounded-md border border-border-strong bg-surface shadow-sm transition-shadow',
+        'focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/40',
+        disabled && 'opacity-60',
+        className,
+      )}
+    >
+      <Toolbar
+        editor={editor}
+        disabled={disabled}
+        normalizeLink={normalizeLink}
+        onInvalidLink={onInvalidLink}
+      />
+      <EditorContent editor={editor} />
+      {name ? <input type="hidden" name={name} value={html} readOnly /> : null}
+    </div>
+  )
+}
+
+// ---- Toolbar ---------------------------------------------------------------
+
+function Toolbar({
+  editor,
+  disabled,
+  normalizeLink,
+  onInvalidLink,
+}: {
+  editor: Editor
+  disabled: boolean
+  normalizeLink: (value: string) => string | null
+  onInvalidLink?: () => void
+}) {
+  const t = useUiText()
+  // TipTap v3 doesn't re-render on transactions, so subscribe to the slices of
+  // editor state the toolbar needs (active marks/nodes + undo/redo ability).
+  const state = useEditorState({
+    editor,
+    selector: ({ editor: e }) => ({
+      bold: e.isActive('bold'),
+      italic: e.isActive('italic'),
+      strike: e.isActive('strike'),
+      h1: e.isActive('heading', { level: 1 }),
+      h2: e.isActive('heading', { level: 2 }),
+      h3: e.isActive('heading', { level: 3 }),
+      bulletList: e.isActive('bulletList'),
+      orderedList: e.isActive('orderedList'),
+      blockquote: e.isActive('blockquote'),
+      codeBlock: e.isActive('codeBlock'),
+      link: e.isActive('link'),
+      canUndo: e.can().undo(),
+      canRedo: e.can().redo(),
+    }),
+  })
+  return (
+    <div className="flex flex-wrap items-center gap-0.5 border-b border-border bg-bg-subtle/50 px-2 py-1 ">
+      <Btn
+        active={state.bold}
+        disabled={disabled}
+        onClick={() => editor.chain().focus().toggleBold().run()}
+        label={t('Bold')}
+      >
+        <b aria-hidden="true">B</b>
+      </Btn>
+      <Btn
+        active={state.italic}
+        disabled={disabled}
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+        label={t('Italic')}
+      >
+        <i aria-hidden="true">I</i>
+      </Btn>
+      <Btn
+        active={state.strike}
+        disabled={disabled}
+        onClick={() => editor.chain().focus().toggleStrike().run()}
+        label={t('Strikethrough')}
+      >
+        <s aria-hidden="true">S</s>
+      </Btn>
+      <Sep />
+      <Btn
+        active={state.h1}
+        disabled={disabled}
+        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+        label={t('Heading 1')}
+      >
+        <span aria-hidden="true">H1</span>
+      </Btn>
+      <Btn
+        active={state.h2}
+        disabled={disabled}
+        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+        label={t('Heading 2')}
+      >
+        <span aria-hidden="true">H2</span>
+      </Btn>
+      <Btn
+        active={state.h3}
+        disabled={disabled}
+        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+        label={t('Heading 3')}
+      >
+        <span aria-hidden="true">H3</span>
+      </Btn>
+      <Sep />
+      <Btn
+        active={state.bulletList}
+        disabled={disabled}
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+        label={t('Bullet list')}
+      >
+        •
+      </Btn>
+      <Btn
+        active={state.orderedList}
+        disabled={disabled}
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        label={t('Numbered list')}
+      >
+        1.
+      </Btn>
+      <Btn
+        active={state.blockquote}
+        disabled={disabled}
+        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+        label={t('Quote')}
+      >
+        “”
+      </Btn>
+      <Btn
+        active={state.codeBlock}
+        disabled={disabled}
+        onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+        label={t('Code')}
+      >
+        {'</>'}
+      </Btn>
+      <Sep />
+      <Btn
+        active={state.link}
+        disabled={disabled}
+        onClick={() => {
+          const existing = editor.getAttributes('link').href as string | undefined
+          const url = window.prompt(t('Link URL'), existing ?? 'https://')
+          if (url === null) return
+          if (url === '') {
+            editor.chain().focus().extendMarkRange('link').unsetLink().run()
+            return
+          }
+          const normalized = normalizeLink(url)
+          if (!normalized) {
+            onInvalidLink?.()
+            return
+          }
+          editor.chain().focus().extendMarkRange('link').setLink({ href: normalized }).run()
+        }}
+        label={t('Link')}
+      >
+        🔗
+      </Btn>
+      <div className="ml-auto flex items-center gap-0.5">
+        <Btn
+          disabled={disabled || !state.canUndo}
+          onClick={() => editor.chain().focus().undo().run()}
+          label={t('Undo')}
+        >
+          ↶
+        </Btn>
+        <Btn
+          disabled={disabled || !state.canRedo}
+          onClick={() => editor.chain().focus().redo().run()}
+          label={t('Redo')}
+        >
+          ↷
+        </Btn>
+      </div>
+    </div>
+  )
+}
+
+function Btn({
+  children,
+  active = false,
+  disabled = false,
+  onClick,
+  label,
+}: {
+  children: React.ReactNode
+  active?: boolean
+  disabled?: boolean
+  onClick: () => void
+  label: string
+}) {
+  const t = useUiText()
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={t(label)}
+      aria-label={t(label)}
+      className={cn(
+        'inline-flex h-7 min-w-[28px] items-center justify-center rounded px-2 text-xs font-medium transition-colors',
+        active
+          ? 'bg-primary-subtle text-primary'
+          : 'text-fg-muted hover:bg-surface hover:text-fg',
+        disabled && 'cursor-not-allowed opacity-40 hover:bg-transparent',
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+
+function Sep() {
+  return <div className="mx-1 h-5 w-px bg-border" />
+}

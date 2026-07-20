@@ -27,6 +27,8 @@ export type ColorToken =
   | 'primary-active'
   | 'primary-fg'
   | 'primary-subtle'
+  | 'signature-surface'
+  | 'signature-ink'
   | 'danger'
   | 'danger-fg'
   | 'danger-subtle'
@@ -62,6 +64,8 @@ const light: Record<ColorToken, Channels> = {
   'primary-active': [19, 78, 74],
   'primary-fg': [255, 255, 255],
   'primary-subtle': [240, 253, 250],
+  'signature-surface': [255, 255, 255],
+  'signature-ink': [15, 23, 42],
   danger: [220, 38, 38],
   'danger-fg': [255, 255, 255],
   'danger-subtle': [254, 242, 242],

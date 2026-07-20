@@ -2,9 +2,11 @@ import {
   BarChart3,
   Bot,
   Braces,
+  ClipboardList,
   Cloud,
   Database,
   KeyRound,
+  Languages,
   Layers3,
   LockKeyhole,
   Mail,
@@ -47,6 +49,7 @@ const GROUPS: AdminHubGroup[] = [
         icon: <Layers3 />,
         features: [
           'Inputs, feedback, dialogs, drawers, popovers, menus, tables, lists, and line editors',
+          'Rich-text authoring, direct file upload protocol, signature capture, and translated UI copy injection',
           'Topbar/sidebar app shell, account launcher, search, notifications, theme, settings hub, and settings shell',
           'Dashboard grid, insight renderers, card studio, page layouts, transitions, metrics, and sparklines',
           'Tokenized light/dark styling, keyboard behavior, focus management, and reduced-motion support',
@@ -66,6 +69,44 @@ const GROUPS: AdminHubGroup[] = [
         ],
         href: '/insights',
         linkLabel: 'Build an insight card',
+      },
+      {
+        title: '@appkit/forms-core',
+        description: 'Share one portable form and workflow language across finance, safety, field operations, and future products.',
+        icon: <Braces />,
+        features: [
+          'OpenBooks string schemas and BeaconHS localized/workflow schemas accepted by one versioned contract',
+          'Field metadata, conditional logic, formulas, defaults, response validation, scoring, and normalization',
+          'Automation graphs, worker-safety linting, participants, document styling, and PDF template helpers',
+          'Finance-native GL account, party, currency, and percentage fields alongside the complete safety vocabulary',
+        ],
+        href: '/forms',
+        linkLabel: 'Edit the portable schema',
+      },
+      {
+        title: '@appkit/forms',
+        description: 'Give app builders a production visual designer and validated fill runtime without coupling persistence to one product.',
+        icon: <ClipboardList />,
+        features: [
+          'Searchable field library, section canvas, property inspector, ordering, options, and required-state authoring',
+          'Controlled designer and renderer APIs that drop into OpenBooks, BeaconHS, or BidWright',
+          'Built-in form controls plus explicit host adapters for files, signatures, entity pickers, data sources, and specialized capture',
+          'Live preview, full-schema linting, import/export, and browser persistence in the demo workbench',
+        ],
+        href: '/forms',
+        linkLabel: 'Open the form builder',
+      },
+      {
+        title: '@appkit/i18n',
+        description: 'Apply one tenant-aware locale policy to application copy and user-authored multilingual content.',
+        icon: <Languages />,
+        features: [
+          'Supported-locale parsing, Accept-Language negotiation, and stable policy normalization',
+          'Tenant default and per-user override resolution with disabled-locale rejection',
+          'Localized authoring-copy fallback that preserves older English and plain-string records',
+        ],
+        href: '/forms',
+        linkLabel: 'See localized schemas',
       },
       {
         title: '@appkit/db',
@@ -233,7 +274,7 @@ export default function PlatformPage() {
     <AdminHub
       title="AppKit platform"
       description="Everything an app builder gets from the shared foundation—grouped the same way suite applications organize company settings."
-      actions={<Badge variant="success">15 production packages</Badge>}
+      actions={<Badge variant="success">18 production packages</Badge>}
       groups={GROUPS}
     />
   )

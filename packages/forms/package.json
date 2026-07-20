@@ -1,14 +1,11 @@
 {
-  "name": "@appkit/ui",
+  "name": "@appkit/forms",
   "version": "0.1.0",
-  "description": "Tokenized, animated UI primitives — the feel of the ecosystem.",
+  "description": "Reusable form designer and runtime renderer for AppKit applications.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
-  "sideEffects": ["*.css"],
   "exports": {
     ".": "./src/index.ts",
-    "./page-transition": "./src/page-transition.tsx",
-    "./styles.css": "./src/styles.css",
     "./package.json": "./package.json"
   },
   "main": "./src/index.ts",
@@ -20,18 +17,10 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@appkit/analytics": "workspace:*",
-    "@appkit/tokens": "workspace:*",
-    "@tiptap/extension-link": "^3.27.4",
-    "@tiptap/extension-placeholder": "^3.27.4",
-    "@tiptap/react": "^3.27.4",
-    "@tiptap/starter-kit": "^3.27.4",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "framer-motion": "^12.42.2",
-    "lucide-react": "^1.24.0",
-    "react-grid-layout": "^2.2.3",
-    "tailwind-merge": "^3.6.0"
+    "@appkit/forms-core": "workspace:*",
+    "@appkit/i18n": "workspace:*",
+    "@appkit/ui": "workspace:*",
+    "lucide-react": "^1.24.0"
   },
   "peerDependencies": {
     "react": "^19.0.0",

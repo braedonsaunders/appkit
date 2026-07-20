@@ -1,0 +1,24 @@
+{
+  "name": "@appkit/i18n",
+  "version": "0.1.0",
+  "description": "Tenant-aware locale policy and localized-content resolution for AppKit applications.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./key": "./src/system-key.ts",
+    "./package.json": "./package.json"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "files": ["src"],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsx": "^4.19.2"
+  }
+}

@@ -39,6 +39,14 @@ destructive/link; sizes sm/md/lg/icon; `asChild`) · `Input` · `Textarea` ·
 · `SearchSelect` (desktop dropdown + mobile bottom sheet, groups, hints,
 clearable, keyboard nav) · `Checkbox` · `Switch`.
 
+**Authoring & capture** — `RichTextEditor` (TipTap HTML authoring with a
+host-injected link policy) · `FileUploader` (single/multipart direct-upload
+protocol with progress and finalization) · `SignaturePad` (pointer/touch/stylus
+PNG capture) · `TabContent` (foreground tab-panel handoff) · `UiTextProvider`
+(host translation injection for UI primitives). Upload and signature surfaces
+use dedicated semantic document tokens so exported content stays legible in
+both themes.
+
 **Feedback** — `Alert` + `AlertTitle` + `AlertDescription` (variants default/
 destructive/warning/success/info) · `toast` + `Toaster` (**sonner-compatible**:
 `toast.success/error/warning/info/loading/message/promise/custom/dismiss`) ·
@@ -145,7 +153,31 @@ cancellation, and disabled state; the app injects its persistence-backed send
 transport. The playground documents this contract on `/dashboard/platform`
 without inventing a credential, fake conversation, or provider-specific demo.
 
-## 5. Analytics and card queries (`@appkit/analytics`)
+## 5. Forms and localized authoring (`@appkit/forms-core`, `@appkit/forms`, `@appkit/i18n`)
+
+`@appkit/forms-core` is the framework-neutral contract shared by OpenBooks and
+BeaconHS. It accepts both legacy plain-string authoring copy and locale-keyed
+copy, with or without a workflow. Its field registry is the union of the source
+products: finance fields (`currency`, `percentage`, `gl_account`, `party`) sit
+beside the full safety/field-operations vocabulary. The package owns parsing,
+cross-reference linting, conditional logic, formula evaluation, defaults,
+response validation, normalization, scoring, automation graphs, participant
+extraction, document styles, and PDF template helpers.
+
+`@appkit/forms` is controlled UI over that contract. `FormDesigner` receives a
+schema and `onChange`; `FormRenderer` receives the same schema plus controlled or
+uncontrolled response values. Common controls, repeating sections, visibility,
+and submit validation work without host code. Files, signatures, entity/data
+pickers, and specialized capture use explicit `fieldAdapters`, because their
+storage and tenant queries must remain inside the consuming application's RLS
+boundary. The live `/forms` reference supports design, validated fill preview,
+JSON editing, import/export, and browser persistence.
+
+`@appkit/i18n` resolves supported locales, Accept-Language, tenant defaults,
+per-user overrides, and localized authored content. Plain-string records remain
+valid during progressive adoption.
+
+## 6. Analytics and card queries (`@appkit/analytics`)
 
 The analytics package deliberately knows no OpenBooks or BeaconHS domain tables.
 An app provides an `AnalyticsCatalog`: authored source `FROM` clauses, the tenant
@@ -174,7 +206,7 @@ store the AST in the card query, not the original string. Apps execute compiled
 SQL inside `withTenantContext`/`withTenant` and return the shared `QueryResult`
 contract to `InsightResultView`.
 
-## 6. Scaffolding a new app
+## 7. Scaffolding a new app
 
 ```jsonc
 // deps
@@ -204,7 +236,7 @@ children with `<PageTransition navigationKey={pathname}>`. This optional entry
 point tracks the current Next/React View Transition API. Then compose screens
 from the primitives above — every color a token, light + dark for free.
 
-## 7. Multi-tenancy out of the box (`@appkit/db` + `@appkit/tenant`)
+## 8. Multi-tenancy out of the box (`@appkit/db` + `@appkit/tenant`)
 
 An app on appkit is multi-tenant with super-admin from day one — you don't build
 RLS or RBAC yourself.
@@ -239,7 +271,7 @@ The same schema exports `userDashboardLayouts`, `insightCards`, and
 personal per tenant/user; cards persist their semantic query, visualization,
 settings, owner, and draft/published state.
 
-## 8. Secrets and outbound delivery (`@appkit/crypto`, `@appkit/emails`, `@appkit/sms`)
+## 9. Secrets and outbound delivery (`@appkit/crypto`, `@appkit/emails`, `@appkit/sms`)
 
 - Seal tenant provider credentials with `sealSecret` from `@appkit/crypto` before
   persistence and inject `unsealSecret` into email/SMS transport resolution.

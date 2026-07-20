@@ -42,6 +42,8 @@
   --ch-primary-active: 19 78 74;
   --ch-primary-fg: 255 255 255; /* text/icon on a primary fill */
   --ch-primary-subtle: 240 253 250; /* tinted background */
+  --ch-signature-surface: 255 255 255; /* exported document paper */
+  --ch-signature-ink: 15 23 42; /* stable printed ink */
 
   /* Semantic — each: solid / on-solid text / tinted background */
   --ch-danger: 220 38 38;
@@ -98,6 +100,8 @@
   --ch-primary-active: 94 234 212;
   --ch-primary-fg: 4 47 46;
   --ch-primary-subtle: 19 78 74;
+  --ch-signature-surface: 255 255 255;
+  --ch-signature-ink: 15 23 42;
 
   --ch-danger: 248 113 113;
   --ch-danger-fg: 69 10 10;
@@ -141,6 +145,8 @@
     --ch-primary-active: 94 234 212;
     --ch-primary-fg: 4 47 46;
     --ch-primary-subtle: 19 78 74;
+    --ch-signature-surface: 255 255 255;
+    --ch-signature-ink: 15 23 42;
     --ch-danger: 248 113 113;
     --ch-danger-fg: 69 10 10;
     --ch-danger-subtle: 60 10 10;
@@ -186,6 +192,8 @@
   --color-primary-active: rgb(var(--ch-primary-active));
   --color-primary-fg: rgb(var(--ch-primary-fg));
   --color-primary-subtle: rgb(var(--ch-primary-subtle));
+  --color-signature-surface: rgb(var(--ch-signature-surface));
+  --color-signature-ink: rgb(var(--ch-signature-ink));
 
   --color-danger: rgb(var(--ch-danger));
   --color-danger-fg: rgb(var(--ch-danger-fg));

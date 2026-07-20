@@ -17,6 +17,9 @@ const nextConfig: NextConfig = {
     '@appkit/crypto',
     '@appkit/emails',
     '@appkit/sms',
+    '@appkit/i18n',
+    '@appkit/forms-core',
+    '@appkit/forms',
   ],
   // Node-native server deps stay external to the bundle.
   serverExternalPackages: ['pg'],
