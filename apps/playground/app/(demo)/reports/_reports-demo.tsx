@@ -36,7 +36,7 @@ export function ReportsDemo() {
   React.useEffect(() => {
     try { const stored = window.localStorage.getItem('appkit-demo:report-studio:v1'); if (stored) { const parsed = JSON.parse(stored) as ReportStudioValue; setValue(parsed); setResult(execute(parsed.definition.query)) } } catch { /* browser persistence is optional */ }
   }, [])
-  return <div className="flex min-h-[720px] flex-1 overflow-hidden rounded-xl border border-border bg-surface shadow-sm"><ReportStudio value={value} catalog={catalog} result={result} onChange={setValue} onPreview={async (next) => { const output = execute(next.definition.query); setResult(output); return output }} onSave={async (next) => { try { window.localStorage.setItem('appkit-demo:report-studio:v1', JSON.stringify(next)); setValue(next); return { ok: true } } catch { return { ok: false, error: 'The browser could not save this report.' } } }} /></div>
+  return <div className="flex min-h-0 flex-1 overflow-hidden rounded-xl border border-border bg-surface shadow-sm"><ReportStudio value={value} catalog={catalog} result={result} onChange={setValue} onPreview={async (next) => { const output = execute(next.definition.query); setResult(output); return output }} onSave={async (next) => { try { window.localStorage.setItem('appkit-demo:report-studio:v1', JSON.stringify(next)); setValue(next); return { ok: true } } catch { return { ok: false, error: 'The browser could not save this report.' } } }} /></div>
 }
 
 function execute(query: CustomReportQuery): ReportRunResult {

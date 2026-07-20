@@ -44,8 +44,8 @@ export function ReportStudio({ value, catalog, result, onChange, onPreview, onSa
     finally { setSaving(false) }
   }
 
-  return <div className={cn('grid min-h-0 flex-1 lg:grid-cols-[minmax(20rem,1fr)_minmax(0,2fr)]', className)}>
-    <aside className="app-scroll min-h-0 space-y-5 overflow-y-auto border-r border-border bg-surface p-4 lg:p-5">
+  return <div className={cn('app-scroll grid h-full min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(20rem,1fr)_minmax(0,2fr)] lg:overflow-hidden', className)}>
+    <aside className="app-scroll min-h-0 space-y-5 border-b border-border bg-surface p-4 lg:overflow-y-auto lg:border-b-0 lg:border-r lg:p-5">
       <section className="grid gap-3">
         <Field label="Name"><Input value={definition.name} onChange={(event) => updateDefinition({ name: event.target.value, slug: slug(event.target.value) })} /></Field>
         <Field label="Source"><SearchSelect value={query.entity} onChange={(entityKey) => { const next = reportEntity(catalog, entityKey); if (next) updateQuery({ entity: next.key, mode: 'rows', columns: next.defaultColumns, filters: null, groupBy: null, sorts: next.defaultSort ? [next.defaultSort] : [] }) }} options={catalog.entities.map((item) => ({ value: item.key, label: item.label, hint: item.description }))} /></Field>
