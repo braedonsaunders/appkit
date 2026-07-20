@@ -21,6 +21,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
+    "@appkit/crypto": "workspace:*",
     "nodemailer": "^6.9.16"
   },
   "devDependencies": {

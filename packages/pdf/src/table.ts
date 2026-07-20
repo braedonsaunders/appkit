@@ -66,11 +66,6 @@ export function computeColumnWidths(
   return widths.map((w) => Math.round(Math.max(w, MIN_COL_W)))
 }
 
-function cellText(v: string | number | null | undefined): string {
-  if (v === null || v === undefined) return ''
-  return String(v)
-}
-
 /**
  * Render a table group's body (header + rows) starting at `startY`. Handles
  * its own page breaks and re-draws the header on continuation pages. Returns

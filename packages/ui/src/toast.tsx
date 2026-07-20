@@ -225,24 +225,41 @@ function ToastRow({
   isTop: boolean
 }) {
   const d = t.duration ?? (t.type === 'loading' ? Infinity : defaultDuration)
-  const paused = React.useRef(false)
+  const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const startedAt = React.useRef(0)
+  const remaining = React.useRef(d)
+
+  const clearTimer = React.useCallback(() => {
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = null
+  }, [])
+
+  const runTimer = React.useCallback(() => {
+    if (!Number.isFinite(remaining.current)) return
+    clearTimer()
+    startedAt.current = Date.now()
+    timer.current = setTimeout(() => {
+      t.onAutoClose?.(t.id)
+      ToastState.dismiss(t.id)
+    }, remaining.current)
+  }, [clearTimer, t])
 
   React.useEffect(() => {
-    if (!Number.isFinite(d)) return
-    let start = Date.now()
-    let remaining = d
-    let timer: ReturnType<typeof setTimeout>
-    const run = () => {
-      start = Date.now()
-      timer = setTimeout(() => {
-        t.onAutoClose?.(t.id)
-        ToastState.dismiss(t.id)
-      }, remaining)
-    }
-    run()
-    return () => clearTimeout(timer)
+    remaining.current = d
+    runTimer()
+    return clearTimer
     // Re-arm whenever the toast content/duration changes (e.g. promise resolve).
-  }, [d, t])
+  }, [clearTimer, d, runTimer])
+
+  function pauseTimer() {
+    if (!timer.current) return
+    remaining.current = Math.max(0, remaining.current - (Date.now() - startedAt.current))
+    clearTimer()
+  }
+
+  function resumeTimer() {
+    if (!timer.current) runTimer()
+  }
 
   function close() {
     t.onDismiss?.(t.id)
@@ -268,8 +285,8 @@ function ToastRow({
     <motion.div
       layout
       role="status"
-      onMouseEnter={() => (paused.current = true)}
-      onMouseLeave={() => (paused.current = false)}
+      onMouseEnter={pauseTimer}
+      onMouseLeave={resumeTimer}
       initial={{ opacity: 0, y: isTop ? -16 : 16, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.15 } }}

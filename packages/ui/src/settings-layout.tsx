@@ -40,32 +40,32 @@ const defaultLink: LinkRender = ({
 // ---------------------------------------------------------------------------
 // AdminHub — the settings LANDING page: grouped cards, each an accent-colored
 // icon chip + title/description + a hover arrow, linking to a sub-area.
-// Faithful to openbooks admin/page.tsx. Accent hues are decorative categories
-// (like chart colors), kept as complete literal classes for Tailwind's scanner.
+// Expressed through semantic tokens so a
+// consuming application's brand and dark theme remain authoritative.
 // ---------------------------------------------------------------------------
 
 export type AdminHubAccent = 'teal' | 'violet' | 'amber' | 'sky'
 
 const ACCENTS: Record<AdminHubAccent, { chip: string; border: string; link: string }> = {
   teal: {
-    chip: 'bg-teal-50 text-teal-700 ring-teal-100 dark:bg-teal-950/50 dark:text-teal-300',
-    border: 'hover:border-teal-300 dark:hover:border-teal-700',
-    link: 'group-hover:text-teal-600 dark:group-hover:text-teal-300',
+    chip: 'bg-primary-subtle text-primary ring-primary/15',
+    border: 'hover:border-primary/40',
+    link: 'group-hover:text-primary',
   },
   violet: {
-    chip: 'bg-violet-50 text-violet-700 ring-violet-100 dark:bg-violet-950/50 dark:text-violet-300',
-    border: 'hover:border-violet-300 dark:hover:border-violet-700',
-    link: 'group-hover:text-violet-600 dark:group-hover:text-violet-300',
+    chip: 'bg-info-subtle text-info ring-info/15',
+    border: 'hover:border-info/40',
+    link: 'group-hover:text-info',
   },
   amber: {
-    chip: 'bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-950/50 dark:text-amber-300',
-    border: 'hover:border-amber-300 dark:hover:border-amber-700',
-    link: 'group-hover:text-amber-600 dark:group-hover:text-amber-300',
+    chip: 'bg-warning-subtle text-warning ring-warning/15',
+    border: 'hover:border-warning/40',
+    link: 'group-hover:text-warning',
   },
   sky: {
-    chip: 'bg-sky-50 text-sky-700 ring-sky-100 dark:bg-sky-950/50 dark:text-sky-300',
-    border: 'hover:border-sky-300 dark:hover:border-sky-700',
-    link: 'group-hover:text-sky-600 dark:group-hover:text-sky-300',
+    chip: 'bg-success-subtle text-success ring-success/15',
+    border: 'hover:border-success/40',
+    link: 'group-hover:text-success',
   },
 }
 
@@ -249,7 +249,7 @@ export function AdminHub({
 // ---------------------------------------------------------------------------
 // SettingsShell — the SIDEBAR settings area: a fixed header (with a back link
 // to the hub), and a two-pane body — a grouped nav rail beside the active
-// content, each pane scrolling independently. Faithful to openbooks
+// content, each pane scrolling independently. The
 // setup/layout.tsx + SetupNav.tsx.
 // ---------------------------------------------------------------------------
 

@@ -1,5 +1,6 @@
 import { connectDb, type DbConn, type DbKind } from '@appkit/sync/db-drivers'
 import { resolveValue } from './resolve'
+import { SQL_DESTINATION_SUMMARY } from './sql-catalog'
 import type {
   DeliverContext,
   DeliverRef,
@@ -62,13 +63,7 @@ async function insert(
 }
 
 export const sqlDestination: DestinationDef = {
-  key: 'sql',
-  name: 'External SQL database',
-  description:
-    'Insert mapped rows into PostgreSQL, MySQL, MariaDB, or SQL Server over a verified TLS connection.',
-  iconKey: 'database',
-  mappingKind: 'sql',
-  reversible: true,
+  ...SQL_DESTINATION_SUMMARY,
   configFields: [
     {
       key: 'dbKind',
@@ -112,7 +107,10 @@ export const sqlDestination: DestinationDef = {
         error: error instanceof Error ? error.message : String(error),
       }
     } finally {
-      await connection?.close().catch(() => {})
+      // A failed close can leave a pooled connection or transaction in an
+      // unknown state, so surface it to the caller instead of reporting a
+      // successful test while silently leaking the resource.
+      await connection?.close()
     }
   },
   async deliver(context: DeliverContext): Promise<DeliverResult> {
@@ -182,7 +180,9 @@ export const sqlDestination: DestinationDef = {
         refs,
       }
     } finally {
-      await connection?.close().catch(() => {})
+      // Delivery is not safely complete if its database resource cannot be
+      // released. The dispatcher converts this rejection into a failed run.
+      await connection?.close()
     }
   },
 }

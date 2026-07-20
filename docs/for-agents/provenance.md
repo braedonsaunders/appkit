@@ -10,8 +10,9 @@ appkit has three kinds of code. Do not blur them:
 - **appkit-original** — no matching production implementation existed. These
   components must not be presented as extracted or sibling-identical.
 
-This inventory was audited against the local OpenBooks and BeaconHS checkouts
-on 2026-07-20.
+This inventory was audited against reference application A commit
+`680b153f84550025a55149bc6deaaaf83b16f41f` and reference application B commit
+`2bc3d36ae435b6bb7072a9c990b835bbce47fd0e` on 2026-07-20.
 
 The `create-appkit` scaffold and package build/release toolchain are
 **appkit-original infrastructure**. They compose and distribute the audited
@@ -21,15 +22,15 @@ surfaces below; they are not presented as extracted product features.
 
 | appkit surface | classification | production source |
 |---|---|---|
-| `AppShell` | faithful generalized extraction | `openbooks/web/components/app-shell.tsx`; `beaconhs-platform/apps/web/src/components/app-shell.tsx` |
-| `TopNav` | faithful generalized extraction | `openbooks/web/components/top-nav.tsx` and `web/lib/top-nav-overflow.ts` |
+| `AppShell` | faithful generalized extraction | reference A `web/components/app-shell.tsx`; reference B `apps/web/src/components/app-shell.tsx` |
+| `TopNav` | faithful generalized extraction | reference A `web/components/top-nav.tsx` and `web/lib/top-nav-overflow.ts` |
 | `AppSidebar` | faithful generalized extraction | both apps' `components/app-sidebar.tsx` |
-| `SidebarNav` | compatible superset | OpenBooks workspace/subgroup implementation plus the BeaconHS grouped-list contract |
-| `MobileTabBar` / mobile selection | faithful generalized extraction | both apps' `components/mobile-tab-bar.tsx`; OpenBooks `web/lib/mobile-nav.ts` |
+| `SidebarNav` | compatible superset | reference A workspace/subgroup implementation plus the reference B grouped-list contract |
+| `MobileTabBar` / mobile selection | faithful generalized extraction | both apps' `components/mobile-tab-bar.tsx`; reference A `web/lib/mobile-nav.ts` |
 | mobile drawer inside `AppShell` | generalized production pattern | both apps' `components/mobile-nav-toggle.tsx`, implemented with appkit's extracted `Drawer` |
-| `AccountMenu` | compatible generalized extraction | OpenBooks `web/components/account-menu.tsx` launcher visual grammar; choices/persistence are controlled props so BeaconHS and other apps can supply their policy |
+| `AccountMenu` | compatible generalized extraction | reference A `web/components/account-menu.tsx` launcher visual grammar; choices/persistence are controlled props so any app can supply its policy |
 | `GlobalSearch` | generalized production pattern | both apps' `components/global-search.tsx`; domain querying and route selection are injected |
-| `NotificationsBell` | compatible superset | OpenBooks inbox list plus BeaconHS controlled unread/menu pattern; items and mutations are injected |
+| `NotificationsBell` | compatible superset | reference A inbox list plus the reference B controlled unread/menu pattern; items and mutations are injected |
 | theme/navigation/link providers | faithful generalized extraction | both apps' `theme-provider.tsx`, `theme-toggle.tsx`, `app-link-provider.tsx`, and `navigation-provider.tsx`; sibling UI `link-context.tsx` was byte-identical |
 
 The flat-link top navigation introduced in appkit commit `21b98ad` was invented
@@ -41,21 +42,21 @@ navigation system.
 Faithful or generalized extractions:
 
 - Base primitives: `Alert`, `Badge`, `Button`, `Card`, `ContextMenu`, `Drawer`,
-  `EmptyState`, `Input`, `Label`, `PageHeader`, `Popover`, `SearchSelect`,
+  `DocumentTitle`, `DetailHeader`, `EmptyState`, `Input`, `Label`, `PageHeader`, `Popover`, `SearchSelect`,
   `Separator`, `Skeleton`, `Table`, `Textarea`, and utilities come from the
   siblings' `packages/ui/src` implementations and are tokenized here.
 - `PageContainer`, list/detail/wizard layouts come from both apps'
   `components/page-layout.tsx`.
-- `LineGrid` comes from `openbooks/web/components/line-grid.tsx`.
+- `LineGrid` comes from reference A `web/components/line-grid.tsx`.
 - `AdminHub`, `SettingsShell`, `SettingsNav`, `SettingsSection`, and
-  `SettingsRow` come from the OpenBooks admin hub and setup shell. `AdminHub`'s
+  `SettingsRow` come from the reference A admin hub and setup shell. `AdminHub`'s
   detailed capability-card layout is a generalized extension of that same card
   grammar for package inventories; the compact settings layout remains the
   faithful default.
 - `RecordList` and URL-driven search/filter/sort/pagination are generalized from
-  OpenBooks production list pages and navigation helpers.
-- `Select` is the BeaconHS native-`<select>`-API implementation from
-  `beaconhs-platform/packages/ui/src/select.tsx` and `select-options.ts`, copied
+  reference A production list pages and navigation helpers.
+- `Select` is the reference B native-`<select>`-API implementation from
+  `packages/ui/src/select.tsx` and `select-options.ts`, copied
   at source parity with its upstream tests. It preserves `<option>`/
   `<optgroup>`, form submission, required validation, refs, and genuine change
   events while presenting `SearchSelect`. Options-array consumers use
@@ -76,7 +77,7 @@ appkit-original UI with no direct sibling component source:
   neither sibling had a routed-page transition implementation to extract.
 - The standalone component-gallery composition and appkit brand artwork.
 
-These originals may be useful, but they are not evidence of OpenBooks/BeaconHS
+These originals may be useful, but they are not evidence of reference-app
 parity until a consuming app adopts them or they are explicitly reconciled with
 a new sibling source.
 
@@ -85,32 +86,35 @@ a new sibling source.
 | package | classification | production lineage |
 |---|---|---|
 | `@appkit/tokens` | appkit-original abstraction | semantic-token layer built around the siblings' real light/dark palette and UI values |
-| `@appkit/analytics` | partial generalized extraction — not drop-in compatible | AppKit has a safe semantic catalogue/compiler and visualization registry, but does not yet preserve BeaconHS BHQL, discovery, pivot, conditional-formatting, and custom-field APIs |
-| `@appkit/dashboard` | partial generalized extraction — not drop-in compatible | AppKit has the dashboard grid, card library, and a smaller query studio; the full BeaconHS card studio/query vocabulary and source component contracts remain unported |
-| `@appkit/reports` | partial extraction — not drop-in compatible | OpenBooks fiscal periods are source-backed; built-in report definitions, source query compiler/executor surfaces, document generation, exports, and schedule workers remain unported |
-| `@appkit/ai` | targeted extraction — not package-compatible with BeaconHS | AppKit has the BeaconHS-style bounded agent loop and OpenBooks-style thread UI; provider/model policy and the source analysis, extraction, document-chat, vision, writing, and digest helpers remain app-owned or unported |
-| `@appkit/db` | generalized extraction | OpenBooks DB executor/schema conventions plus BeaconHS Postgres RLS engine |
-| `@appkit/tenant` | generalized extraction | BeaconHS request context/RBAC, decoupled from its domain schema |
-| `@appkit/auth` | OpenBooks-specific extraction — not BeaconHS compatible | optional scrypt passwords and stateless HMAC sessions; BeaconHS's authentication/client/invite contract is not represented |
+| `@appkit/ui` | audited mixed extraction | Every exported UI surface is classified in the UI section above; extracted primitives retain source behavior while AppKit-original primitives are named explicitly rather than presented as source parity. |
+| `@appkit/analytics` | partial generalized extraction — not drop-in compatible | AppKit has a safe semantic catalogue/compiler and visualization registry, but does not yet preserve reference B query-language, discovery, pivot, conditional-formatting, and custom-field APIs |
+| `@appkit/dashboard` | partial generalized extraction — not drop-in compatible | AppKit has the dashboard grid, card library, and a smaller query studio; the full reference B card studio/query vocabulary and source component contracts remain unported |
+| `@appkit/reports` | partial extraction — not drop-in compatible | Reference A fiscal periods are source-backed; built-in report definitions, source query compiler/executor surfaces, document generation, exports, and schedule workers remain unported |
+| `@appkit/ai` | targeted extraction — not package-compatible with either reference | AppKit has a bounded agent loop and thread UI; provider/model policy and the source analysis, extraction, document-chat, vision, writing, and digest helpers remain app-owned or unported |
+| `@appkit/db` | generalized extraction | Reference A DB executor/schema conventions plus the reference B Postgres RLS engine |
+| `@appkit/tenant` | substantial generalized extraction — not root drop-in compatible | Reusable reference B scope ordering, impersonation guard, template/payload access helpers, wildcard RBAC, and request context are present. Regulatory and product-owned context fields remain app-owned, and the generalized root is intentionally narrower than its source type. |
+| `@appkit/auth` | reference A extraction — not reference B compatible | optional scrypt passwords and stateless HMAC sessions; the other reference application's authentication/client/invite contract is not represented |
 | `@appkit/events` | partial extraction — not drop-in compatible | structured audit and transactional outbox writes are present; recipient resolution, claiming, delivery workers, and source event APIs remain unported |
 | `@appkit/notifications` | partial generalized extraction — not drop-in compatible | inbox/preferences, policy, React UI, and Drizzle storage are present; production dispatch workers, digest aggregation, and push-subscription lifecycle remain unported |
-| `@appkit/api` | generalized extraction | BeaconHS `apps/web/src/lib/api` layer, made framework-neutral; OpenAPI description helpers are appkit-original extensions |
-| `@appkit/endpoints` | generalized extraction | OpenBooks apps runtime / QuickJS endpoint sandbox |
-| `@appkit/crypto` | generalized extraction | BeaconHS sealed-secret package and OpenBooks secret handling |
-| `@appkit/emails` | generalized extraction | BeaconHS multi-provider email transport plus OpenBooks delivery validation |
-| `@appkit/email-render` | faithful generalized extraction | BeaconHS `packages/email-render` copied file-for-file with all 48 upstream tests; only the package name and inline default brand are generalized |
-| `@appkit/sms` | faithful generalized extraction | BeaconHS provider catalogue and transport policy |
-| `@appkit/jobs` | partial extraction — not drop-in compatible | lazy BullMQ connections and queue/worker factories only; source payload schemas, queue catalogue, enqueue APIs, schedules, rate limits, health, and web-push jobs remain unported |
-| `@appkit/storage` | partial extraction — not drop-in compatible | basic S3 object and presign operations only; source multipart, streaming/ranges, key validation, promotion/lifecycle, and readiness behavior remain unported |
-| `@appkit/editor` | faithful generalized extraction | BeaconHS `packages/ui/src/rich-text-editor.tsx`; controlled value and host link normalization are additive generalizations, while TipTap behavior and toolbar grammar are preserved |
-| `@appkit/forms-documents` | faithful package-boundary extraction | BeaconHS `packages/forms-core/src/form-companions.ts`, `pdf-template-html.ts`, and `doc-style.ts`, moved intact behind a document-specific package boundary so forms-core remains framework-neutral |
+| `@appkit/api` | generalized extraction | Reference B `apps/web/src/lib/api` layer, made framework-neutral; OpenAPI description helpers are appkit-original extensions |
+| `@appkit/endpoints` | generalized extraction | Reference A apps runtime / QuickJS endpoint sandbox |
+| `@appkit/crypto` | generalized application-agnostic runtime | The AppKit root uses `APPKIT_SECRET` and `appkit.secret.v1`; `createSealer(secret, { hkdfInfo })` lets an application own migration compatibility without shipping an application-named entry. |
+| `@appkit/emails` | substantial generalized extraction | The root injects secret unsealing for modular apps. Provider behavior, local loopback SMTP, delivery policy, and hardened validation are retained without application-specific entry points. |
+| `@appkit/email-render` | faithful generalized extraction | Reference B `packages/email-render` copied file-for-file with all 48 upstream tests; only the package name and inline default brand are generalized |
+| `@appkit/sms` | substantial generalized extraction | The root injects secret unsealing for modular apps. The five-provider catalogue, policy, validation, bounded responses, and credential redaction are retained without application-specific entry points. |
+| `@appkit/jobs` | substantial generalized extraction — product queue profiles remain | Lazy BullMQ connections, bounded readiness, source payload guards, atomic Redis rate limits, and hardened Web Push delivery are present. Reference-application queue payload catalogues, schedules, and enqueue APIs still require app-owned adapters. |
+| `@appkit/storage` | reference generalized runtime | Tenant-owned keys, multipart upload, streams/ranges, rich metadata, verified promotion, lifecycle tagging, existence checks, presigning, and private-bucket readiness are present. `@appkit/storage/env` provides a strict portable environment contract. |
+| `@appkit/editor` | faithful generalized extraction | Reference B `packages/ui/src/rich-text-editor.tsx`; controlled value and host link normalization are additive generalizations, while TipTap behavior and toolbar grammar are preserved |
+| `@appkit/forms-documents` | faithful package-boundary extraction | Reference B `packages/forms-core/src/form-companions.ts`, `pdf-template-html.ts`, and `doc-style.ts`, moved intact behind a document-specific package boundary so forms-core remains framework-neutral |
+| `@appkit/forms` | partial extraction under active parity work | The interactive renderer, logic builder, and scrolling designer are functional; the exact missing reference authoring and specialized-field surfaces are listed below and must be ported before cutover. |
+| `@appkit/i18n` | generalized production pattern | Tenant locale policy and localized-value resolution from both products, with application translation catalogues injected rather than bundled. |
 | `@appkit/workflows` | partial generalized extraction — not drop-in compatible | graph validation/runtime, durable gates, approval tokens, and a React Flow shell are present; source node registry, concrete inspector, save/enable flows, execution UI, and run history remain unported |
 | `@appkit/sync` | substantial generalized extraction — compatibility adapters missing | runtime, CSV/transforms, fail-closed snapshots, hardened egress, SQL drivers, and persistence are present; source connector registry and built-in CSV/database/HTTP/Nango/NetSuite connectors remain unported |
 | `@appkit/integrations` | substantial generalized extraction — compatibility adapters missing | dispatch, retry ledger, hardened destinations, and persistence are present; source trigger/destination catalogue and package API contracts are not preserved |
-| `@appkit/customization` | incompatible partial generalization | AppKit currently uses a different catalogue/layout model; OpenBooks schemas, parse helpers, locked/versioned merge behavior, refresh/default logic, and import-compatible contracts remain unported |
-| `@appkit/design-studio` | partial generalized extraction — not drop-in compatible | bounded documents, HTML, Fabric interaction, rails, and basic inspectors are present; BeaconHS DTOs, factories/presets, source exports, and the full property inspector remain unported |
-| `@appkit/pdf` | faithful extraction | OpenBooks `packages/pdf` source lifted as the generic PDFKit/table/statement/template/Chromium engine, with AppKit package identity and strict-index fixes only |
-| `@appkit/forms-pdf` | partial extraction — not drop-in compatible | portable HTML summaries and optional render adapters are present; BeaconHS PNG rendering, hardened resource/browser pipeline, report/record printers, source exports, and template profiles remain unported |
+| `@appkit/customization` | incompatible partial generalization | AppKit currently uses a different catalogue/layout model; reference A schemas, parse helpers, locked/versioned merge behavior, refresh/default logic, and import-compatible contracts remain unported |
+| `@appkit/design-studio` | partial generalized extraction — not drop-in compatible | bounded documents, HTML, Fabric interaction, rails, and basic inspectors are present; reference B DTOs, factories/presets, source exports, and the full property inspector remain unported |
+| `@appkit/pdf` | faithful generalized implementation | The PDFKit/table/statement/template/Chromium engine is retained behind dependency-light root, `/template`, and `/html` entries without an application-named compatibility surface. |
+| `@appkit/forms-pdf` | partial extraction — not drop-in compatible | portable HTML summaries and optional render adapters are present; reference B PNG rendering, hardened resource/browser pipeline, report/record printers, source exports, and template profiles remain unported |
 
 ## Forms parity boundaries
 
@@ -119,12 +123,12 @@ composition:
 
 | surface | classification | exact boundary |
 |---|---|---|
-| `@appkit/forms-core` form schema/evaluator/validator/scoring helpers | compatible generalized extraction | BeaconHS source behavior plus the OpenBooks field/string compatibility layer; 235 core tests remain here and the 3 document-generation tests run in `@appkit/forms-documents` (one sanitizer expectation is tightened to remove its raw `text-teal-700` class) |
-| `@appkit/forms-core/safety-automation` | faithful generalized extraction | BeaconHS automation and flow-subject contracts, verified by the complete 11-test upstream suite |
-| `@appkit/forms-core/business-automation` and `business-flow-subjects` | faithful extraction | OpenBooks `packages/forms-core/src/automation.ts`, `flow-subjects.ts`, and its complete 22-test automation suite; only the local import path changes |
-| `LogicBuilder` | faithful generalized extraction | BeaconHS template-designer `logic-builder.tsx`; condition behavior and array coercion are preserved, generated i18n wrappers become injectable labels, raw colors become semantic tokens, and an additive disabled state supports read-only hosts |
-| `FormDesigner` shell | partial visual extraction — not drop-in compatible | the BeaconHS scrolling shell and drawer interaction are preserved, but most source authoring panels and field-specific configuration are absent |
-| `FormDesigner` field editing / `FormRenderer` | appkit-original partial composition | common fields work, but this is not a replacement for BeaconHS: formulas, type-specific validation/configuration, layout canvas, record behavior/list/actions, assignments/permissions, and many specialized field runtimes remain unported |
+| `@appkit/forms-core` form schema/evaluator/validator/scoring helpers | substantial generalized extraction — root type compatibility differs | Reference B behavior plus the reference A field/string layer and 235 core tests remain, while document helpers move to `@appkit/forms-documents`. The generalized root widens localized strings, makes workflow metadata optional, and adds finance fields, so unmodified reference consumers must not be claimed as compile-compatible. |
+| `@appkit/forms-core/safety-automation` | faithful generalized extraction | Reference B automation and flow-subject contracts, verified by the complete 11-test upstream suite |
+| `@appkit/forms-core/business-automation` and `business-flow-subjects` | faithful extraction | Reference A `packages/forms-core/src/automation.ts`, `flow-subjects.ts`, and its complete 22-test automation suite; only the local import path changes |
+| `LogicBuilder` | faithful generalized extraction | Reference B template-designer `logic-builder.tsx`; condition behavior and array coercion are preserved, generated i18n wrappers become injectable labels, raw colors become semantic tokens, and an additive disabled state supports read-only hosts |
+| `FormDesigner` shell | partial visual extraction — not drop-in compatible | the reference B scrolling shell and drawer interaction are preserved, but most source authoring panels and field-specific configuration are absent |
+| `FormDesigner` field editing / `FormRenderer` | appkit-original partial composition | common fields work, but this is not yet a replacement for the full production runtime: formulas, type-specific validation/configuration, layout canvas, record behavior/list/actions, assignments/permissions, and many specialized field runtimes remain unported |
 
 The safety and business automation vocabularies are separate public subpaths
 because identically named actions have incompatible payloads and lifecycle
@@ -152,7 +156,7 @@ until all of these gates are recorded and green:
    runtime entry from both sibling implementations.
 2. Port the source tests first, then add behavior tests for every generalized
    adapter boundary.
-3. Compile representative unmodified OpenBooks and BeaconHS consumer imports
+3. Compile representative unmodified reference-application consumer imports
    against AppKit compatibility entries.
 4. For UI, compare the real source screen and AppKit screen at the same viewport
    and exercise selection, editing, scrolling, keyboard, empty, error, and dark

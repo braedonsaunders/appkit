@@ -23,7 +23,7 @@ type SortLinkProps = {
 /**
  * The clickable header label: column name + sort caret, linking to the toggled
  * sort URL. Clicking an inactive column sorts ascending; clicking the active
- * column flips direction. Page resets to 1. (Copied from openbooks sortable-th.)
+ * column flips direction. Page resets to 1.
  */
 function SortLink({
   basePath,

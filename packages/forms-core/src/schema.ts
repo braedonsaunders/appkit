@@ -2,13 +2,9 @@ import { z } from 'zod'
 import { isScoringField, storesResponseValue } from './field-types'
 import { entityKindForPicker, getEntityAttrDef } from './entity-attrs'
 
-// Runtime-validated form schema. Keep in lockstep with the TS types in
-// @beaconhs/db/schema/forms.ts — these are the source of truth at runtime.
-
-// OpenBooks historically stored authoring copy as a plain string while
-// BeaconHS stores locale-keyed copy. Accepting both shapes is the clean shared
-// contract: apps can adopt appkit without a data migration and progressively
-// localize authored content later.
+// Runtime-validated form schema. Authoring copy accepts both plain strings and
+// locale-keyed maps so applications can adopt AppKit without a data migration
+// and progressively localize authored content later.
 export const i18nStringSchema = z.union([z.string(), z.record(z.string(), z.string())])
 
 // Re-export the inferred string-map type so callers can reference it directly.
@@ -1880,7 +1876,7 @@ export const formSchemaV1 = formSchemaV1Base.superRefine((schema, ctx) => {
 
 export type FormSchemaV1 = z.infer<typeof formSchemaV1>
 
-/** OpenBooks-compatible name retained as the canonical schema alias. */
+/** Canonical schema alias retained for import compatibility. */
 export const formSchemaV1Schema = formSchemaV1
 
 export type ParseFormSchemaResult =

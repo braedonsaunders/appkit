@@ -33,7 +33,7 @@ export type IdempotentResult = { body: Record<string, unknown>; status: number; 
  * Run a write exactly once per Idempotency-Key. Reserves a row (processing →
  * completed), replays the stored response on retry, 409s on key-reuse with a
  * different body, and FAILS CLOSED on unknown 5xx (keeps the reservation, since
- * the write may already have committed). Copied from the beaconhs api idempotency.
+ * the write may already have committed).
  */
 export async function runIdempotentMutation(
   auth: ApiAuth,

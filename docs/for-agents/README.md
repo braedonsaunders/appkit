@@ -8,7 +8,7 @@ immediately. Start at the repo root [`AGENTS.md`](../../AGENTS.md), then:
   suite-consistent screen.
 - **[building-applications.md](building-applications.md)** — the generalized,
   app-agnostic rules for building any application on this foundation (distilled
-  from the openbooks + beaconhs `AGENTS.md`). Apps built on appkit adopt these
+  from the production reference applications). Apps built on appkit adopt these
   and add only their domain-specific rules.
 - **[provenance.md](provenance.md)** — the audited split between faithful
   extractions, generalized production patterns, and appkit-original code.

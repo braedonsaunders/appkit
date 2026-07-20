@@ -6,7 +6,7 @@ import type { DashboardLayout, InsightCardStatus } from './types'
 
 export type { DashboardLayout, DashboardQuickAction, DashboardWidget, InsightCardStatus } from './types'
 
-/** One personal dashboard per user and tenant, with the same role-default lineage contract as BeaconHS. */
+/** One personal dashboard per user and tenant, including role-default lineage. */
 export const userDashboardLayouts = pgTable('user_dashboard_layouts', {
   id: id(),
   tenantId: tenantRef(),

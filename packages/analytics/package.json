@@ -1,7 +1,7 @@
 {
   "name": "@appkit/analytics",
   "version": "0.1.0",
-  "description": "App-agnostic semantic query, formula, result, and visualization contracts extracted from OpenBooks and BeaconHS.",
+  "description": "App-agnostic semantic query compiler, formula evaluator, result contracts, and visualization registry.",
   "license": "AGPL-3.0-or-later",
   "private": true,
   "type": "module",

@@ -53,7 +53,7 @@ export function updateWorkflowNode<TData extends WorkflowNodeData>(graph: Workfl
 
 export type WorkflowGraphLimits = { maxBytes?: number; maxNodes?: number; maxEdges?: number; maxIdLength?: number; requireTrigger?: boolean }
 
-/** Persistence-boundary validation extracted from BeaconHS. */
+/** Persistence-boundary validation for durable workflow definitions. */
 export function validateWorkflowGraph(graph: WorkflowGraph, limits: WorkflowGraphLimits = {}): string[] {
   const maxBytes = limits.maxBytes ?? 1024 * 1024
   const maxNodes = limits.maxNodes ?? 250

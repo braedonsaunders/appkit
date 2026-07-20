@@ -2,8 +2,7 @@ import { Redis } from 'ioredis'
 import { Queue, Worker, type ConnectionOptions, type Processor, type WorkerOptions } from 'bullmq'
 
 /**
- * A BullMQ + Redis harness (connection pattern copied from the beaconhs jobs
- * package, generalized into a factory). Producers and blocking consumers need
+ * A BullMQ + Redis harness generalized behind a factory. Producers and blocking consumers need
  * opposite retry semantics: web/scheduler publishers must fail in bounded time
  * when Redis is down (`maxRetriesPerRequest: 1`); workers must keep their
  * blocking connection alive so BullMQ resumes after an outage
@@ -71,3 +70,6 @@ export function createJobs(opts: { redisUrl: string }): Jobs {
 }
 
 export { Queue, Worker, type ConnectionOptions, type Processor, type WorkerOptions } from 'bullmq'
+export * from './health'
+export * from './rate-limit'
+export * from './validation'

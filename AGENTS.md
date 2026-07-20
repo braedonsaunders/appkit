@@ -1,9 +1,8 @@
 # AGENTS.md — appkit
 
 You are working in **appkit**, the shared design + platform foundation for the
-ecosystem (openbooks, beaconhs, and apps built on top of them). Everything an app
-needs to *look, feel, and work* like the rest of the suite lives here, so it is
-never re-invented per app.
+application ecosystem. Everything an app needs to *look, feel, and work* like
+the rest of the suite lives here, so it is never re-invented per app.
 
 **Read this first, then skim [`docs/for-agents/`](docs/for-agents/):**
 - [`orientation.md`](docs/for-agents/orientation.md) — the design system, the full
@@ -11,8 +10,8 @@ never re-invented per app.
   suite-consistent screen immediately.
 - [`building-applications.md`](docs/for-agents/building-applications.md) — the
   **generalized, app-agnostic rules** for building any application on this
-  foundation (distilled from the openbooks + beaconhs AGENTS.md). Apps built on
-  appkit should adopt these verbatim.
+  foundation (distilled from the production reference applications). Apps built
+  on appkit should adopt these verbatim.
 - [`provenance.md`](docs/for-agents/provenance.md) — the audited distinction
   between faithful extraction, generalized production pattern, and
   appkit-original code. Never claim parity without a named sibling source.
@@ -20,10 +19,10 @@ never re-invented per app.
 ## Mission
 
 appkit is a pre-launch, production-bound foundation, not a prototype. Leave it
-more coherent than you found it. The two sibling apps (openbooks, beaconhs)
-already share this DNA so closely that primitives were byte-identical between
-them — appkit ends that duplication. When you improve a primitive here, every
-app that imports it improves.
+more coherent than you found it. The production reference applications already
+share this DNA so closely that primitives were byte-identical between them —
+appkit ends that duplication. When you improve a primitive here, every app that
+imports it improves.
 
 ## Repo map
 
@@ -75,9 +74,8 @@ dependencies, styles, migrations, README, and license for npm publication.
 ## Working in appkit
 
 - **Extract, don't invent.** These primitives are extracted from the real
-  openbooks/beaconhs source and tokenized. When adding one, find the real source
-  in `~/Documents/openbooks/packages/ui` or
-  `~/Documents/Code/beaconhs-platform/packages/ui` and port it faithfully
+  production reference sources and tokenized. When adding one, locate the real
+  source in the adjacent reference repositories and port it faithfully
   (decouple app coupling — i18n, app-specific offsets — into props). Do **not**
   approximate from memory. If no source exists, say so and build it to the same
   quality bar.

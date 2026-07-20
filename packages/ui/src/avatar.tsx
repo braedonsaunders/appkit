@@ -32,7 +32,6 @@ export function Avatar({ src, name, size = 40, className }: AvatarProps) {
       role="img"
     >
       {showImage ? (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={src}
           alt={name ?? ''}

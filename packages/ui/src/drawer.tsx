@@ -34,8 +34,8 @@ const SIZE_CLASS: Record<DrawerSize, string> = {
 // --- Injectable labels ------------------------------------------------------
 // appkit is i18n-agnostic. Apps wrap their tree in <DrawerTextProvider> to map
 // these to next-intl / their own dictionary; standalone use gets English.
-// `translate` preserves beaconhs's "pass a message key as title" behavior while
-// staying a pass-through for openbooks's raw ReactNode titles.
+// `translate` supports message-key titles while remaining a pass-through for
+// raw ReactNode titles.
 export type DrawerText = {
   close: string
   fullscreen: string

@@ -27,7 +27,13 @@ export { Tabs, type TabsProps, type TabItem } from './tabs'
 export { TabContent } from './tab-content'
 export { Tooltip, type TooltipProps } from './tooltip'
 export { EmptyState, type EmptyStateProps } from './empty-state'
-export { PageHeader, type PageHeaderProps } from './page-header'
+export {
+  PageHeader,
+  DetailHeader,
+  type PageHeaderProps,
+  type DetailHeaderProps,
+} from './page-header'
+export { DocumentTitle } from './document-title'
 export {
   UiLinkProvider,
   UiLink,
@@ -35,6 +41,7 @@ export {
   UiBackLink,
   type UiLinkComponent,
   type BackLinkProps,
+  type BackLinkLike,
   type BackLinkComponent,
 } from './link-context'
 export {

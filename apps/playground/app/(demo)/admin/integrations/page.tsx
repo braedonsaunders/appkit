@@ -7,24 +7,31 @@ import {
   ArrowDownToLine,
   ArrowUpFromLine,
   History,
-  Cable,
   Database,
   FileSpreadsheet,
   Globe,
   Mail,
   MessageSquare,
+  Play,
 } from 'lucide-react'
 import {
+  createMemoryIntegrationStore,
+  dispatchIntegration,
+  type IntegrationDefinition,
+} from '@appkit/integrations'
+import {
   createIntegrationRegistry,
-  type DestinationDefinition,
 } from '@appkit/integrations/catalog'
+import { createEmailDestination, type IntegrationEmail } from '@appkit/integrations/email'
+import { INTEGRATION_DESTINATION_CATALOG } from '@appkit/integrations/destination-catalog'
 import {
   createConnectorRegistry,
   type SyncConnector,
 } from '@appkit/sync/catalog'
+import { createMemorySyncRunStore, parseCsv, runSync, type SyncRecord } from '@appkit/sync'
 import {
   Badge,
-  EmptyState,
+  Button,
   SettingsRow,
   SettingsSection,
   SettingsShell,
@@ -37,94 +44,30 @@ const nextLink: LinkRender = ({ href, children, className }) => (
     {children}
   </Link>
 )
-const connector = (
-  key: string,
-  name: string,
-  description: string,
-  entities: string[],
-): SyncConnector => ({
-  key,
-  name,
-  description,
-  entities,
+const SAMPLE_CSV = `project_id,name,status
+P-1048,North Tower,active
+P-1053,Civic Library,bidding`
+
+const csvDemoConnector: SyncConnector = {
+  key: 'csv-projects',
+  name: 'CSV project import',
+  description: 'Parse a delimited source into the connector-neutral record envelope.',
+  entities: ['project'],
   kind: 'native',
-  async pull() {
-    return []
+  async pull(context) {
+    const parsed = parseCsv(String(context.config.csv ?? ''))
+    const records: SyncRecord[] = parsed.rows.map((row) => ({
+      entity: 'project',
+      externalId: row.project_id ?? '',
+      data: { name: row.name ?? '', status: row.status ?? '' },
+    }))
+    context.log('info', `Parsed ${records.length} project records`, { headers: parsed.headers })
+    return { records, mode: 'full', authoritativeEntities: ['project'] }
   },
-})
-const CONNECTORS = createConnectorRegistry([
-  connector(
-    'csv',
-    'CSV import',
-    'Map a delimited file into application records.',
-    ['app-defined'],
-  ),
-  connector(
-    'database',
-    'SQL database',
-    'Read from PostgreSQL, MySQL, MariaDB, or SQL Server over verified TLS.',
-    ['app-defined'],
-  ),
-  connector(
-    'provider',
-    'Provider connector',
-    'Register an OAuth or API-backed source through the same cursor and crosswalk contract.',
-    ['app-defined'],
-  ),
-]).summaries()
-const destination = (
-  key: string,
-  name: string,
-  description: string,
-  mappingKind: string,
-  reversible = false,
-): DestinationDefinition => ({
-  key,
-  name,
-  description,
-  mappingKind,
-  reversible,
-  configFields: [],
-  secretFields: [],
-  async deliver() {
-    return { ok: true }
-  },
-})
-const DESTINATIONS = createIntegrationRegistry({
-  destinations: [
-    destination(
-      'http',
-      'HTTP / REST',
-      'Token-templated POST, PUT, or PATCH to a public HTTPS endpoint.',
-      'http',
-    ),
-    destination(
-      'chat',
-      'Slack / Teams',
-      'Incoming-webhook messages with resumable multi-item delivery.',
-      'chat',
-    ),
-    destination(
-      'sheets',
-      'Google Sheets',
-      'Append mapped rows through a service-account credential.',
-      'sheets',
-    ),
-    destination(
-      'email',
-      'Email',
-      'Bounded, sanitized email through the application email transport.',
-      'email',
-    ),
-    destination(
-      'sql',
-      'External SQL',
-      'Reversible inserts over verified TLS with an identity-column ledger.',
-      'sql',
-      true,
-    ),
-  ],
-}).destinations()
+}
+
+const CONNECTORS = createConnectorRegistry([csvDemoConnector]).summaries()
+const DESTINATIONS = INTEGRATION_DESTINATION_CATALOG
 
 const NAV: SettingsNavGroup[] = [
   {
@@ -142,7 +85,7 @@ const NAV: SettingsNavGroup[] = [
 ]
 const DESTINATION_ICONS: Record<string, React.ReactNode> = {
   http: <Globe />,
-  chat: <MessageSquare />,
+  slack: <MessageSquare />,
   sheets: <FileSpreadsheet />,
   email: <Mail />,
   sql: <Database />,
@@ -178,11 +121,39 @@ export default function IntegrationsPage() {
 }
 
 function Inbound() {
+  const [result, setResult] = React.useState<{ status: string; pulled: number; applied: number; records: SyncRecord[] } | null>(null)
+  const [running, setRunning] = React.useState(false)
+
+  async function runCsvDemo() {
+    setRunning(true)
+    const records: SyncRecord[] = []
+    const store = createMemorySyncRunStore()
+    try {
+      const run = await runSync({
+        tenantId: 'demo',
+        connectionId: 'csv-projects',
+        connector: csvDemoConnector,
+        connectorContext: { config: { csv: SAMPLE_CSV }, secrets: {}, log: () => undefined },
+        target: {
+          async apply(record) {
+            records.push(record)
+            return { targetId: record.externalId, changed: true }
+          },
+        },
+        store,
+      })
+      setResult({ status: run.status, pulled: run.pulled, applied: run.applied, records })
+    } finally {
+      setRunning(false)
+    }
+  }
+
   return (
     <>
       <SettingsSection
         title="Data sources"
-        description="Each connector emits the same record envelope; your app controls how those records map into its own models."
+        description="Run the CSV connector through the real sync orchestrator and an in-memory application target."
+        footer={<Button size="sm" onClick={() => void runCsvDemo()} disabled={running}><Play className="size-4" />{running ? 'Running…' : 'Run CSV sync'}</Button>}
       >
         {CONNECTORS.map((item) => (
           <SettingsRow
@@ -198,6 +169,14 @@ function Inbound() {
             <Badge variant="secondary">Connector</Badge>
           </SettingsRow>
         ))}
+        {result ? (
+          <SettingsRow
+            title={`${result.applied} records applied`}
+            description={result.records.map((record) => `${record.externalId}: ${String(record.data.name)}`).join(' · ')}
+          >
+            <Badge variant={result.status === 'completed' ? 'success' : 'warning'}>{result.status}</Badge>
+          </SettingsRow>
+        ) : null}
       </SettingsSection>
       <SettingsSection title="Sync guarantees">
         <SettingsRow
@@ -253,6 +232,37 @@ function Outbound() {
   )
 }
 function Runs() {
+  const [result, setResult] = React.useState<{ first: string; second: string; email: IntegrationEmail; ledgerRows: number } | null>(null)
+  const [running, setRunning] = React.useState(false)
+
+  async function runDeliveryDemo() {
+    setRunning(true)
+    const sent: IntegrationEmail[] = []
+    const destination = createEmailDestination(async (message) => { sent.push(message) })
+    const registry = createIntegrationRegistry({ destinations: [destination] })
+    const definition: IntegrationDefinition = {
+      id: 'project-email', tenantId: 'demo', name: 'Project update', enabled: true,
+      triggerKey: 'project.updated', destinationKey: 'email', oncePerRecord: true,
+      config: {
+        to: 'operations@example.com',
+        subject: 'Project {{project}} updated',
+        mapping: { body: '<p><strong>{{project}}</strong> is now {{status}}.</p>' },
+      },
+    }
+    const store = createMemoryIntegrationStore([definition])
+    const event = { type: 'project.updated', tenantId: 'demo', subjectId: 'P-1048', items: [{ project: 'North Tower', status: 'active' }] }
+    try {
+      const first = await dispatchIntegration({ integrationId: definition.id, event, registry, store })
+      const second = await dispatchIntegration({ integrationId: definition.id, event, registry, store })
+      const email = sent[0]
+      if (!first.ok || !second.ok || !email) throw new Error(first.error ?? second.error ?? 'The delivery did not produce an email.')
+      const ledgerRows = [...store.ledger.values()].reduce((count, rows) => count + rows.length, 0)
+      setResult({ first: first.summary ?? 'Delivered', second: second.summary ?? 'Suppressed', email, ledgerRows })
+    } finally {
+      setRunning(false)
+    }
+  }
+
   return (
     <>
       <SettingsSection title="Delivery policy">
@@ -275,13 +285,12 @@ function Runs() {
           <Badge variant="success">Injected</Badge>
         </SettingsRow>
       </SettingsSection>
-      <div className="rounded-lg border border-border bg-surface">
-        <EmptyState
-          icon={<Cable />}
-          title="No demo deliveries"
-          description="Delivery history appears here after an application connects the Drizzle store and emits an event."
-        />
-      </div>
+      <SettingsSection title="Live delivery ledger" description="Executes the real dispatcher, sanitized email destination, memory store, and send-once suppression without external credentials." footer={<Button size="sm" onClick={() => void runDeliveryDemo()} disabled={running}><Play className="size-4" />{running ? 'Delivering…' : 'Run delivery'}</Button>}>
+        {result ? <>
+          <SettingsRow title={result.email.subject} description={`${result.email.to.join(', ')} · ${result.first}`}><Badge variant="success">{result.ledgerRows} ledger ref</Badge></SettingsRow>
+          <SettingsRow title="Replay attempt" description={result.second}><Badge variant="secondary">Suppressed</Badge></SettingsRow>
+        </> : <SettingsRow title="No delivery run yet" description="Run the credential-free email delivery to populate the in-memory ledger."><Badge variant="secondary">Ready</Badge></SettingsRow>}
+      </SettingsSection>
     </>
   )
 }

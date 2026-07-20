@@ -5,8 +5,7 @@
 // the tenant yet), reject revoked/expired keys, optionally rate-limit, stamp
 // last_used_at, then build a tenant-scoped RequestContext so every downstream
 // query is RLS-bound to the key's tenant exactly like a UI session.
-// (Copied from the beaconhs api/auth, generalized: rate limiting is injected and
-// the permission catalogue is the app's.)
+// Rate limiting and the permission catalogue are injected by the application.
 
 import { and, eq, isNull, lt, or } from 'drizzle-orm'
 import type { AppkitDb } from '@appkit/db'

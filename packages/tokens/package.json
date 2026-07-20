@@ -20,10 +20,15 @@
   "scripts": {
     "build": "node ../../scripts/build-package.mjs",
     "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
     "tailwindcss": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsx": "^4.19.2"
   },
   "author": "Braedon Saunders",
   "repository": {

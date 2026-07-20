@@ -2,7 +2,7 @@ import { lookup } from 'node:dns/promises'
 import net from 'node:net'
 
 // SSRF guard for external SMTP: resolve the host and refuse private / loopback /
-// link-local targets (generalized from the beaconhs sync egress module).
+// link-local targets.
 
 export type ResolvedHost = {
   address: string

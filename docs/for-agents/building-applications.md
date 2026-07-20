@@ -1,7 +1,7 @@
 # Building applications on appkit — generalized rules
 
 The portable, **app-agnostic** engineering + product rules for any application
-built on the appkit foundation, distilled from the openbooks and beaconhs
+built on the appkit foundation, distilled from the production reference
 `AGENTS.md`. An app's own `AGENTS.md` should adopt these and add only its
 domain-specific rules (its ledger/kernel invariants, its regulatory model, its
 per-tenant config surfaces). Nothing here names a specific product.

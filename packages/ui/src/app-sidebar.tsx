@@ -43,7 +43,9 @@ export function AppSidebar({
       const next = !c
       try {
         document.cookie = `${COOKIE}=${next ? '1' : '0'};path=/;max-age=31536000;samesite=lax`
-      } catch {}
+      } catch {
+        // Cookie persistence can be unavailable; local interaction still works.
+      }
       return next
     })
   }, [])

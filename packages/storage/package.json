@@ -1,11 +1,12 @@
 {
   "name": "@appkit/storage",
   "version": "0.1.0",
-  "description": "S3-compatible object storage (Cloudflare R2 / MinIO / AWS): put/get/delete/head + presigned URLs.",
+  "description": "Tenant-safe S3-compatible storage with multipart upload, streaming, ranges, promotion, lifecycle policy, and presigned access.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./env": "./src/env.ts",
     "./package.json": "./package.json"
   },
   "main": "./src/index.ts",
@@ -16,6 +17,7 @@
   "scripts": {
     "build": "node ../../scripts/build-package.mjs",
     "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
@@ -23,7 +25,8 @@
     "@aws-sdk/s3-request-presigner": "^3.700.0"
   },
   "devDependencies": {
-    "@types/node": "^22"
+    "@types/node": "^22",
+    "tsx": "^4.19.2"
   },
   "author": "Braedon Saunders",
   "repository": {

@@ -1,4 +1,4 @@
-// Flows — the pure automation-graph core for openbooks approvals & workflow.
+// Flows — the pure automation-graph core for business approvals and workflow.
 //
 // One graph per flow (stored in the `flows` table, one flow per subject kind).
 // It is the single canvas that models BOTH:
@@ -17,9 +17,8 @@
 // and one LogicBuilder UI everywhere. `set_field` reuses
 // `DefaultValueExpression` (resolved by `resolveDefaultValue`).
 //
-// Ported from beaconhs-platform's forms-core automation module; the trigger /
-// action vocabulary is adapted to the openbooks ERP document lifecycle (see
-// docs/flows-design.md).
+// The trigger/action vocabulary models an ERP document lifecycle while keeping
+// persistence and application adapters outside this package.
 
 import { z } from 'zod'
 import {

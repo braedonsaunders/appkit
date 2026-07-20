@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { count, desc } from 'drizzle-orm'
 import {
-  Activity, BookOpen, Boxes, Code2, CreditCard, KeyRound, Library, LockKeyhole,
+  Activity, BookOpen, Boxes, Code2, CreditCard, Library, LockKeyhole,
   ScrollText, Shield, Sparkles, Users,
 } from 'lucide-react'
 import { apiKeys, auditLog, memberships, roles } from '@appkit/db'

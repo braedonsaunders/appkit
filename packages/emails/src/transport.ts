@@ -7,9 +7,8 @@
 // `sendVia` performs the network send, switching on provider. HTTP providers go
 // through `fetch` (no SDKs); SMTP uses nodemailer (dynamically imported).
 //
-// Copied faithfully from the beaconhs emails transport, generalized: the
-// beaconhs `unsealSecret` dependency is now an injected function, and its
-// `resolvePublicHost` SSRF guard is inlined in ./egress.
+// The `unsealSecret` dependency is injected, and the `resolvePublicHost` SSRF
+// guard is isolated in ./egress.
 
 import { resolvePublicHost } from './egress'
 import { isEmailProvider, type EmailProvider } from './providers'
@@ -152,11 +151,21 @@ export type EmailTransport =
   | { provider: 'postmark'; serverToken: string; from: string; replyTo?: string }
   | {
       provider: 'smtp'
+      mode: 'database'
       host: string
       port: number
       secure: boolean
       username?: string
       password?: string
+      from: string
+      replyTo?: string
+    }
+  | {
+      provider: 'smtp'
+      mode: 'local-dev'
+      host: string
+      port: number
+      secure: false
       from: string
       replyTo?: string
     }
@@ -201,6 +210,7 @@ export function buildTransport(c: PlainEmailConfig): EmailTransport | null {
       const secure = c.smtpSecure === true
       return {
         provider: 'smtp',
+        mode: 'database',
         host: c.smtpHost.trim(),
         port: c.smtpPort ?? (secure ? 465 : 587),
         secure,
@@ -518,30 +528,51 @@ async function sendSmtp(
   from: string,
   replyTo?: string,
 ): Promise<{ id: string }> {
-  if (Boolean(t.username) !== Boolean(t.password)) {
+  if (t.mode === 'database' && Boolean(t.username) !== Boolean(t.password)) {
     throw new Error('SMTP: username and password must both be provided, or both omitted for an unauthenticated relay')
   }
-  const redactions = [t.password ?? '', t.username ?? ''].filter(Boolean)
-  let resolved
-  try {
-    resolved = await resolvePublicHost(t.host, { timeoutMs: TRANSPORT_TIMEOUT_MS })
-    if (resolved.ipLiteral) {
-      throw new Error('External SMTP host must be a DNS name so its TLS identity can be verified.')
+  const redactions = t.mode === 'database' ? [t.password ?? '', t.username ?? ''].filter(Boolean) : []
+  let connectionOptions: Record<string, unknown>
+  if (t.mode === 'local-dev') {
+    if (process.env.NODE_ENV !== 'development') throw new Error('SMTP: local-dev transport is forbidden outside development mode')
+    const host = t.host.trim().toLowerCase()
+    const address = host === 'localhost' || host === 'localhost.localdomain' || host === '127.0.0.1'
+      ? '127.0.0.1'
+      : host === '::1' || host === '[::1]'
+        ? '::1'
+        : null
+    if (!address) throw new Error('SMTP: local-dev transport requires a loopback host')
+    const runtime = t as typeof t & { username?: unknown; password?: unknown }
+    if (runtime.username || runtime.password) throw new Error('SMTP: local-dev transport does not permit authentication')
+    connectionOptions = {
+      host: address,
+      port: t.port,
+      secure: false,
+      ignoreTLS: true,
+      connectionTimeout: TRANSPORT_TIMEOUT_MS,
+      greetingTimeout: TRANSPORT_TIMEOUT_MS,
+      socketTimeout: TRANSPORT_TIMEOUT_MS,
     }
-  } catch (error) {
-    throw providerOperationError('SMTP', error, redactions)
-  }
-  const connectionOptions: Record<string, unknown> = {
-    host: resolved.address,
-    family: resolved.family,
-    port: t.port,
-    secure: t.secure,
-    requireTLS: !t.secure,
-    auth: t.username ? { user: t.username, pass: t.password! } : undefined,
-    tls: { rejectUnauthorized: true, servername: resolved.hostname },
-    connectionTimeout: TRANSPORT_TIMEOUT_MS,
-    greetingTimeout: TRANSPORT_TIMEOUT_MS,
-    socketTimeout: TRANSPORT_TIMEOUT_MS,
+  } else {
+    let resolved
+    try {
+      resolved = await resolvePublicHost(t.host, { timeoutMs: TRANSPORT_TIMEOUT_MS })
+      if (resolved.ipLiteral) throw new Error('External SMTP host must be a DNS name so its TLS identity can be verified.')
+    } catch (error) {
+      throw providerOperationError('SMTP', error, redactions)
+    }
+    connectionOptions = {
+      host: resolved.address,
+      family: resolved.family,
+      port: t.port,
+      secure: t.secure,
+      requireTLS: !t.secure,
+      auth: t.username ? { user: t.username, pass: t.password! } : undefined,
+      tls: { rejectUnauthorized: true, servername: resolved.hostname },
+      connectionTimeout: TRANSPORT_TIMEOUT_MS,
+      greetingTimeout: TRANSPORT_TIMEOUT_MS,
+      socketTimeout: TRANSPORT_TIMEOUT_MS,
+    }
   }
   // Dynamic import keeps nodemailer out of the load path unless SMTP is used.
   const nodemailer = (await import('nodemailer')).default

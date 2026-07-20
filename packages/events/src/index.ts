@@ -5,7 +5,7 @@ import { auditLog, domainEventOutbox } from '@appkit/db'
 
 type Db = NodePgDatabase<Record<string, never>>
 
-// --- Audit trail (copied from the beaconhs audit package) ------------------
+// --- Audit trail -----------------------------------------------------------
 
 export type AuditAction =
   | 'create'
@@ -79,7 +79,7 @@ export function diff<T extends Record<string, unknown>>(
   return { added, removed, changed }
 }
 
-// --- Transactional outbox (generalized from the beaconhs events outbox) ----
+// --- Transactional outbox -------------------------------------------------
 
 export type RecordDomainEventInput = {
   tenantId: string

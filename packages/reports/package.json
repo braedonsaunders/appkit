@@ -1,7 +1,7 @@
 {
   "name": "@appkit/reports",
   "version": "0.1.0",
-  "description": "Saved report, document, scheduling, and execution contracts extracted from OpenBooks and BeaconHS.",
+  "description": "Composable saved-report, scheduling, execution, and document-rendering contracts.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {

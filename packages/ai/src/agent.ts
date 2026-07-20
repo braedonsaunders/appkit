@@ -67,7 +67,9 @@ export function runAgentTurn(args: RunAgentTurnArgs): Response {
       try {
         const total = await result.totalUsage
         usage = { inputTokens: total.inputTokens ?? 0, outputTokens: total.outputTokens ?? 0 }
-      } catch {}
+      } catch {
+        // Provider usage metadata is optional; completion content still lands.
+      }
       await args.onComplete({
         parts: responseMessage.parts,
         aborted: isAborted,

@@ -1,7 +1,7 @@
 {
   "name": "@appkit/pdf",
   "version": "0.1.0",
-  "description": "Pure-JS documents, statements, templates, and hardened HTML-to-PDF rendering extracted from OpenBooks.",
+  "description": "Pure-JS documents, statements, templates, and hardened HTML-to-PDF rendering.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {

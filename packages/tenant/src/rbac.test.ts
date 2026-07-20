@@ -1,6 +1,17 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { assertCan, can, ForbiddenError, widestScope, canSeeSite, type AccessCtx } from './rbac'
+import {
+  assertCan,
+  assertNotImpersonating,
+  can,
+  canAccessTemplate,
+  canEditResponsePayload,
+  ForbiddenError,
+  ImpersonationBlockedError,
+  widestScope,
+  canSeeSite,
+  type AccessCtx,
+} from './rbac'
 
 function ctx(perms: string[], opts?: Partial<AccessCtx>): AccessCtx {
   return { isSuperAdmin: false, permissions: new Set(perms), scopes: [{ type: 'tenant' }], ...opts }
@@ -45,9 +56,26 @@ test('widestScope picks tenant over sites over self', () => {
   assert.equal(widestScope(ctx([], { scopes: [] })).type, 'self')
 })
 
+test('widestScope preserves the complete source scope ordering', () => {
+  assert.equal(widestScope(ctx([], { scopes: [{ type: 'people', personIds: ['p'] }, { type: 'team', departmentIds: ['d'], groupIds: [] }] })).type, 'team')
+  assert.equal(widestScope(ctx([], { scopes: [{ type: 'crews', crewIds: ['c'] }, { type: 'sites', siteIds: ['s'] }] })).type, 'sites')
+})
+
 test('canSeeSite honors tenant + site scopes', () => {
   assert.equal(canSeeSite(ctx([], { scopes: [{ type: 'tenant' }] }), 'site1'), true)
   assert.equal(canSeeSite(ctx([], { scopes: [{ type: 'sites', siteIds: ['site1'] }] }), 'site1'), true)
   assert.equal(canSeeSite(ctx([], { scopes: [{ type: 'sites', siteIds: ['other'] }] }), 'site1'), false)
   assert.equal(canSeeSite(ctx([], { scopes: [{ type: 'self' }], isSuperAdmin: true }), 'site1'), true)
+})
+
+test('impersonation guard and form access helpers preserve source behavior', () => {
+  assert.throws(
+    () => assertNotImpersonating({ impersonation: { actor: 'admin' } }, 'rotate key'),
+    (error) => error instanceof ImpersonationBlockedError && error.action === 'rotate key',
+  )
+  const builder = ctx(['forms.template.create'])
+  assert.equal(canAccessTemplate(builder, { status: 'draft', allowedRoles: null }, new Set(), 'builder-edit'), true)
+  assert.equal(canAccessTemplate(ctx([]), { status: 'published', allowedRoles: ['operator'] }, new Set(['operator']), 'operate'), true)
+  assert.equal(canEditResponsePayload({ ...ctx(['forms.response.update.own']), membership: { id: 'm1' } }, { status: 'draft', locked: false, submittedBy: 'm1' }), true)
+  assert.equal(canEditResponsePayload({ ...ctx(['forms.response.update.own']), membership: { id: 'm1' } }, { status: 'draft', locked: true, submittedBy: 'm1' }), false)
 })

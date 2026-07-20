@@ -115,7 +115,9 @@ export function ApiEndpoint({
       let body = text
       try {
         body = json(JSON.parse(text))
-      } catch {}
+      } catch {
+        // Preserve non-JSON response bodies verbatim.
+      }
       setResult({ status: res.status, body })
     } catch (e) {
       setResult({ status: 0, body: String(e) })

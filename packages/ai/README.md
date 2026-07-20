@@ -1,7 +1,6 @@
 # @appkit/ai
 
-The shared multi-step agent layer extracted from BeaconHS and the OpenBooks
-assistant surface.
+The shared multi-step agent layer for bounded, tenant-aware assistant surfaces.
 
 The server entry point accepts an AI SDK `LanguageModel`, system prompt, prior
 model messages, and a tenant-bound `ToolSet`. It deliberately imports no app

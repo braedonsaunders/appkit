@@ -64,9 +64,9 @@ than a component gallery but do not want a rigid all-or-nothing framework.
   supplies record catalogues, analytics sources, workflow actions, connectors,
   authorization context, and persistence policy. Product concepts never leak
   into reusable packages.
-- **Extracted from serious products.** The foundation generalizes production
-  patterns shared by OpenBooks and BeaconHS, preserving source behavior where
-  it is reusable and moving product-specific coupling behind injected adapters.
+- **Proven in production.** The foundation generalizes production application
+  patterns, preserves reusable behavior, and keeps domain coupling behind
+  injected adapters.
 
 ## Start small or take the whole stack
 
@@ -181,14 +181,14 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 | Package                   | What it gives your app                                                                                                             |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | `@appkit/email-render`    | Bounded templates, loops, conditions, sanitization, escaped merge values, subjects, recipients, attachments, HTML, and plain text. |
-| `@appkit/emails`          | Resend, SendGrid, Mailgun, Postmark, and secure SMTP behind one tenant-aware contract.                                             |
+| `@appkit/emails`          | Resend, SendGrid, Mailgun, Postmark, secure SMTP, and development-only loopback SMTP behind one tenant-aware contract.            |
 | `@appkit/sms`             | Twilio, Vonage, MessageBird, Plivo, and Telnyx with strict addressing and credential-safe failures.                                |
-| `@appkit/pdf`             | Pure-JS PDFKit reports/statements plus optional authored-template and hardened Chromium entries.                                   |
+| `@appkit/pdf`             | Pure-JS PDFKit reports/statements plus optional authored-template and hardened Chromium rendering entries.                         |
 | `@appkit/forms-documents` | Localized form companion fields, print styles, and bounded authored PDF templates.                                                 |
 | `@appkit/forms-pdf`       | Form summaries, repeating tables, photos, authored templates, and full-bleed design documents.                                     |
-| `@appkit/crypto`          | AES-256-GCM sealed secrets with HKDF-derived application keys.                                                                     |
-| `@appkit/jobs`            | BullMQ/Redis producers, queues, workers, retries, and lazy connections.                                                            |
-| `@appkit/storage`         | S3-compatible objects and presigned direct upload/download URLs.                                                                   |
+| `@appkit/crypto`          | AES-256-GCM sealed secrets with configurable HKDF-derived application keys.                                                        |
+| `@appkit/jobs`            | BullMQ/Redis producers and workers, lazy connections, bounded readiness, payload guards, rate limits, and hardened Web Push.      |
+| `@appkit/storage`         | Tenant-owned S3 objects, multipart upload, streams/ranges, verified promotion, lifecycle/readiness, and strict environment config. |
 
 ## Modular by construction
 

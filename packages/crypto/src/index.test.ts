@@ -64,3 +64,12 @@ test('the env-backed sealer rejects missing and weak production secrets', () => 
     else process.env.APPKIT_SECRET = originalSecret
   }
 })
+
+test('custom HKDF contexts isolate independently configured applications', () => {
+  const sourceSecret = 'portable-application-secret-with-enough-entropy'
+  const first = createSealer(sourceSecret, { hkdfInfo: 'application.one.v1' })
+  const second = createSealer(sourceSecret, { hkdfInfo: 'application.two.v1' })
+  const sealed = first.sealSecret('existing-provider-key')
+  assert.equal(first.unsealSecret(sealed), 'existing-provider-key')
+  assert.equal(second.unsealSecret(sealed), null)
+})

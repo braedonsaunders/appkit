@@ -13,7 +13,7 @@ import {
 } from './index'
 
 describe('cross-sibling compatibility', () => {
-test('accepts an OpenBooks-style string schema without workflow', () => {
+test('accepts a plain-string schema without workflow metadata', () => {
   const result = parseFormSchema({
     schemaVersion: 1,
     title: 'Vendor onboarding',
@@ -34,7 +34,7 @@ test('accepts an OpenBooks-style string schema without workflow', () => {
   expect(FIELD_TYPES.party.optionsSource).toBe('parties')
 })
 
-test('accepts a BeaconHS-style localized schema with workflow', () => {
+test('accepts a localized schema with workflow metadata', () => {
   const schema = formSchemaV1Schema.parse({
     schemaVersion: 1,
     title: { en: 'Inspection', fr: 'Inspection' },

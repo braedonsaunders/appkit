@@ -5,8 +5,7 @@ import { hexColor } from '@appkit/tokens'
 // renderer: callers (the web report adapters, the view export path)
 // shape their own result types into this generic input.
 //
-// The visual vocabulary is ported from the beaconhs report document renderer
-// (@beaconhs/reports/document.ts): a cover header with org branding, a key-
+// The visual vocabulary supports a cover header with organization branding, a key-
 // figures summary band, and one section per group of rows — re-implemented on
 // top of pdfkit (pure JS, no Chromium) instead of HTML + Puppeteer.
 
@@ -71,7 +70,7 @@ export type PdfBranding = {
   logoUrl?: string | null
   /** Preloaded logo image (PNG/JPEG Buffer). Wins over `logoUrl`. */
   logoBuffer?: Buffer | null
-  /** Brand accent colour (hex). Defaults to the openbooks teal. */
+  /** Brand accent colour (hex). Defaults to the AppKit accent. */
   primaryColor?: string | null
 }
 

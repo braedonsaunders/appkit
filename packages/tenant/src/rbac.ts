@@ -16,6 +16,24 @@ export class ForbiddenError extends Error {
   }
 }
 
+export class ImpersonationBlockedError extends Error {
+  override readonly name = 'ImpersonationBlockedError'
+  constructor(public readonly action?: string) {
+    super(
+      action
+        ? `This action is blocked while impersonating: ${action}`
+        : 'This action is blocked while impersonating another user',
+    )
+  }
+}
+
+export function assertNotImpersonating(
+  ctx: { impersonation?: unknown | null },
+  action?: string,
+): void {
+  if (ctx.impersonation) throw new ImpersonationBlockedError(action)
+}
+
 /** Does this context hold `perm`? Super-admin holds everything; `module.*`
  *  wildcards grant any `module.x`; `.read.{all,site,self}` tiers cascade. */
 export function can(ctx: AccessCtx, perm: string): boolean {
@@ -131,10 +149,62 @@ export function canSeeSite(ctx: AccessCtx, siteId: string | null): boolean {
 /** The single widest scope the context holds. */
 export function widestScope(ctx: AccessCtx): RoleScope {
   if (ctx.isSuperAdmin) return { type: 'tenant' }
-  const order = { tenant: 3, sites: 2, self: 1 } as const
+  const order = { tenant: 6, sites: 5, team: 4, crews: 3, people: 2, self: 1 } as const
   let widest: RoleScope | null = null
   for (const s of ctx.scopes) {
     if (!widest || order[s.type] > order[widest.type]) widest = s
   }
   return widest ?? { type: 'self' }
+}
+
+/** Concise alias retained for compatible application adapters. */
+export const selfOnlyFilter = widestScope
+
+export type TemplateAccessDescriptor = {
+  status: 'draft' | 'published' | 'archived'
+  allowedRoles: string[] | null | undefined
+  deletedAt?: Date | null
+}
+export type TemplateAccessMode = 'operate' | 'browse-records' | 'builder-edit'
+export type ResponsePayloadAccessDescriptor = {
+  status: string
+  locked: boolean
+  submittedBy: string | null
+}
+
+export function isTemplateBuilder(ctx: AccessCtx): boolean {
+  return ctx.isSuperAdmin || can(ctx, 'forms.template.create')
+}
+
+export function canAccessTemplate(
+  ctx: AccessCtx,
+  template: TemplateAccessDescriptor,
+  effectiveRoleKeys: ReadonlySet<string>,
+  mode: TemplateAccessMode,
+): boolean {
+  if (template.deletedAt) return false
+  const builder = isTemplateBuilder(ctx)
+  if (mode === 'builder-edit') return builder
+  if (mode === 'browse-records' && builder) return true
+  if (template.status !== 'published') return false
+  const allowed = template.allowedRoles
+  return builder || !allowed || allowed.length === 0 || allowed.some((role) => effectiveRoleKeys.has(role))
+}
+
+export function canEditResponsePayload(
+  ctx: AccessCtx & { membership: { id: string } | null },
+  response: ResponsePayloadAccessDescriptor,
+): boolean {
+  if (response.locked) return false
+  const isDraft = response.status === 'draft' || response.status === 'in_progress'
+  const membershipId = ctx.membership?.id ?? null
+  const isOwner = response.submittedBy !== null && response.submittedBy === membershipId
+  const canWorkDraft = isDraft && can(ctx, 'forms.response.create')
+  return (
+    ctx.isSuperAdmin ||
+    ctx.permissions.has('*') ||
+    can(ctx, 'forms.response.read.all') ||
+    (isOwner && (can(ctx, 'forms.response.update.own') || canWorkDraft)) ||
+    (response.submittedBy === null && canWorkDraft)
+  )
 }

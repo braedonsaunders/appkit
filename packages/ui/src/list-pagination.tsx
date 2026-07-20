@@ -34,7 +34,7 @@ const DEFAULT_LABELS: PaginationLabels = {
 /**
  * URL-driven pagination row: showing X–Y of N + prev/next. When the current
  * page is past the end (a filter shrank the list), offers a jump to the last
- * page. (Copied from the openbooks Pagination; i18n → labels prop.)
+ * page. Localized copy is supplied through the labels prop.
  */
 export function Pagination({
   basePath,

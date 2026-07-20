@@ -92,17 +92,55 @@ export default function SettingsPage() {
 }
 
 function GeneralSettings() {
+  const [name, setName] = React.useState('Acme Inc')
+  const [timezone, setTimezone] = React.useState('America/Toronto')
+  const [currency, setCurrency] = React.useState('USD')
+  const [saved, setSaved] = React.useState(false)
+
+  React.useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem('appkit-demo:company-settings:v1')
+      if (!stored) return
+      const parsed = JSON.parse(stored) as { name?: unknown; timezone?: unknown; currency?: unknown }
+      if (typeof parsed.name === 'string') setName(parsed.name)
+      if (typeof parsed.timezone === 'string') setTimezone(parsed.timezone)
+      if (typeof parsed.currency === 'string') setCurrency(parsed.currency)
+    } catch {
+      // The defaults remain usable when browser storage is unavailable.
+    }
+  }, [])
+
+  function save() {
+    try {
+      window.localStorage.setItem('appkit-demo:company-settings:v1', JSON.stringify({ name, timezone, currency }))
+      setSaved(true)
+    } catch {
+      setSaved(false)
+    }
+  }
+
+  function reset() {
+    try {
+      window.localStorage.removeItem('appkit-demo:company-settings:v1')
+    } finally {
+      setName('Acme Inc')
+      setTimezone('America/Toronto')
+      setCurrency('USD')
+      setSaved(false)
+    }
+  }
+
   return (
     <>
-      <SettingsSection title="Organization" description="Basic details for your workspace.">
+      <SettingsSection title="Organization" description="Basic details for your workspace." footer={<Button size="sm" onClick={save}>{saved ? 'Saved' : 'Save changes'}</Button>}>
         <SettingsRow title="Name" description="Shown across the app and on documents." stacked>
-          <Input defaultValue="Acme Inc" />
+          <Input value={name} onChange={(event) => { setName(event.target.value); setSaved(false) }} />
         </SettingsRow>
         <SettingsRow title="Time zone">
           <div className="w-56">
             <SearchSelect
-              value="America/Toronto"
-              onChange={() => {}}
+              value={timezone}
+              onChange={(value) => { setTimezone(value); setSaved(false) }}
               options={[
                 { value: 'America/Toronto', label: 'Eastern (Toronto)' },
                 { value: 'America/Chicago', label: 'Central (Chicago)' },
@@ -115,8 +153,8 @@ function GeneralSettings() {
         <SettingsRow title="Default currency">
           <div className="w-40">
             <SearchSelect
-              value="USD"
-              onChange={() => {}}
+              value={currency}
+              onChange={(value) => { setCurrency(value); setSaved(false) }}
               options={[
                 { value: 'USD', label: 'USD $' },
                 { value: 'CAD', label: 'CAD $' },
@@ -127,9 +165,9 @@ function GeneralSettings() {
           </div>
         </SettingsRow>
       </SettingsSection>
-      <SettingsSection title="Danger zone">
-        <SettingsRow title="Delete workspace" description="Permanently remove this workspace and all its data.">
-          <Button variant="destructive">Delete</Button>
+      <SettingsSection title="Reset">
+        <SettingsRow title="Reset company settings" description="Restore the browser demo defaults.">
+          <Button variant="destructive" onClick={reset}>Reset</Button>
         </SettingsRow>
       </SettingsSection>
     </>
@@ -185,16 +223,17 @@ function NavigationSettings() {
 }
 
 function NotificationSettings() {
+  const [channels, setChannels] = React.useState({ email: true, push: false, weekly: true })
   return (
     <SettingsSection title="Notifications" description="How you'd like to be notified.">
       <SettingsRow title="Email notifications" description="Product updates and account activity.">
-        <Switch defaultChecked />
+        <Switch checked={channels.email} onChange={(event) => setChannels((current) => ({ ...current, email: event.target.checked }))} />
       </SettingsRow>
       <SettingsRow title="Push notifications" description="Real-time alerts in your browser.">
-        <Switch />
+        <Switch checked={channels.push} onChange={(event) => setChannels((current) => ({ ...current, push: event.target.checked }))} />
       </SettingsRow>
       <SettingsRow title="Weekly summary" description="A digest every Monday morning.">
-        <Switch defaultChecked />
+        <Switch checked={channels.weekly} onChange={(event) => setChannels((current) => ({ ...current, weekly: event.target.checked }))} />
       </SettingsRow>
     </SettingsSection>
   )

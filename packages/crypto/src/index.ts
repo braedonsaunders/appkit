@@ -5,9 +5,8 @@
 // The key is derived from APPKIT_SECRET via HKDF — no extra env var, no
 // plaintext secrets in the DB. Because the derivation is fixed, a secret sealed
 // by a web admin action unseals in the worker (and vice-versa) as long as both
-// share the same APPKIT_SECRET. (Copied from the beaconhs crypto package,
-// generalized: env var renamed, plus a `createSealer` factory for explicit-key
-// use.)
+// share the same APPKIT_SECRET. A `createSealer` factory supports explicit-key
+// application profiles without coupling the package to a host application's env.
 
 import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from 'node:crypto'
 
@@ -22,9 +21,18 @@ export type Sealer = {
 }
 
 /** Build a sealer from an explicit source secret (HKDF-derived AES-256 key). */
-export function createSealer(sourceSecret: string): Sealer {
+export function createSealer(
+  sourceSecret: string,
+  options: { hkdfInfo?: string } = {},
+): Sealer {
   const key = Buffer.from(
-    hkdfSync('sha256', Buffer.from(sourceSecret), Buffer.alloc(0), Buffer.from(HKDF_INFO), 32),
+    hkdfSync(
+      'sha256',
+      Buffer.from(sourceSecret),
+      Buffer.alloc(0),
+      Buffer.from(options.hkdfInfo ?? HKDF_INFO),
+      32,
+    ),
   )
 
   function sealSecret(plain: string): SealedSecret {

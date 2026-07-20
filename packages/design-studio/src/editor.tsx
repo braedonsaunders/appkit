@@ -109,7 +109,7 @@ export type DesignStudioEditorProps = {
 }
 
 /**
- * Controlled design-document workspace generalized from BeaconHS.
+ * Controlled, application-agnostic design-document workspace.
  * Applications own persistence and data catalogues; AppKit owns this package's
  * Fabric canvas, artboards, insertion, layers, inspector, zoom, and print UI.
  */

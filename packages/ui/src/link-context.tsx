@@ -28,16 +28,17 @@ export function UiLink({
 }
 
 export type BackLinkProps = { href: string; label: string; className?: string }
-export type BackLinkComponent = React.ComponentType<BackLinkProps>
+export type BackLinkLike = React.ComponentType<BackLinkProps>
+export type BackLinkComponent = BackLinkLike
 
-const UiBackLinkContext = React.createContext<BackLinkComponent | null>(null)
+const UiBackLinkContext = React.createContext<BackLinkLike | null>(null)
 
 /** Inject an app-aware history resolver for every PageHeader back link. */
 export function UiBackLinkProvider({
   backLink,
   children,
 }: {
-  backLink: BackLinkComponent
+  backLink: BackLinkLike
   children: React.ReactNode
 }) {
   return <UiBackLinkContext.Provider value={backLink}>{children}</UiBackLinkContext.Provider>

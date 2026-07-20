@@ -1,7 +1,7 @@
 {
   "name": "@appkit/ai",
   "version": "0.1.0",
-  "description": "App-agnostic multi-step agent runtime and assistant interface extracted from BeaconHS and OpenBooks.",
+  "description": "App-agnostic bounded agent loop and streaming assistant interface, with provider policy supplied by the host app.",
   "license": "AGPL-3.0-or-later",
   "private": true,
   "type": "module",

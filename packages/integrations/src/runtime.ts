@@ -149,21 +149,37 @@ export async function dispatchIntegration(options: {
       }
     }
   }
-  await options.store.recordStatus(definition.id, result).catch(() => {})
+  try {
+    await options.store.recordStatus(definition.id, result)
+  } catch (error) {
+    result = {
+      ...result,
+      ok: false,
+      error: [
+        result.error,
+        `Integration status could not be recorded: ${error instanceof Error ? error.message : String(error)}`,
+      ].filter(Boolean).join(' '),
+    }
+  }
   return result
 }
 
 export function createMemoryIntegrationStore(
   definitions: readonly IntegrationDefinition[],
-): IntegrationStore & { ledger: Map<string, DeliveryLedgerEntry[]> } {
+): IntegrationStore & {
+  ledger: Map<string, DeliveryLedgerEntry[]>
+  statuses: Map<string, Array<{ ok: boolean; error?: string }>>
+} {
   const map = new Map(
     definitions.map((definition) => [definition.id, definition]),
   )
   const ledger = new Map<string, DeliveryLedgerEntry[]>()
+  const statuses = new Map<string, Array<{ ok: boolean; error?: string }>>()
   const key = (id: string, trigger: string, subject: string) =>
     `${id}:${trigger}:${subject}`
   return {
     ledger,
+    statuses,
     async getDefinition(tenant, id) {
       const definition = map.get(id)
       return definition?.tenantId === tenant ? definition : null
@@ -177,6 +193,11 @@ export function createMemoryIntegrationStore(
         refs.map((ref) => ({ ...ref, status })),
       )
     },
-    async recordStatus() {},
+    async recordStatus(id, result) {
+      statuses.set(id, [
+        ...(statuses.get(id) ?? []),
+        { ok: result.ok, ...(result.error ? { error: result.error } : {}) },
+      ])
+    },
   }
 }

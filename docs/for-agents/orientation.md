@@ -77,7 +77,7 @@ modes, drag/resize, remove, save/reset, categorized widget/card drawer) ·
 `DashboardMetricCard` · `DashboardPanel` · `InsightCard` · `InsightResultView`
 (scalar/progress/table/bar/row/line/area/pie/donut/gauge) · `CardStudio` (source,
 measures, parsed formulas, dimensions, filters, visualization settings, live
-preview, autosave, publish/delete). These are the generalized OpenBooks/BeaconHS
+preview, autosave, publish/delete). These are generalized production
 dashboard system, not gallery mockups. Framework-neutral types remain at
 `@appkit/dashboard`; persistence is explicitly installed from
 `@appkit/dashboard/schema`.
@@ -86,13 +86,13 @@ dashboard system, not gallery mockups. Framework-neutral types remain at
 grouped accent cards, with an optional detailed layout for capability inventories)
 · `SettingsShell` (the **sidebar settings area** — fixed header + two-pane rail)
 + `SettingsNav` / `SettingsSection` / `SettingsRow`.
-`AppShell` renders the same OpenBooks/BeaconHS-compatible navigation registry as
-the OpenBooks workspace-dropdown topbar (default) or the shared collapsible
+`AppShell` renders the same production-compatible navigation registry as the
+workspace-dropdown topbar (default) or shared collapsible
 sidebar via `navigationMode="topbar" | "sidebar"`. The registry supports the
 siblings' serializable `iconKey`, `id`, subgroup, exact-match, and mobile-pin
 fields; mobile uses the same data in a drawer and bottom tab bar. `TopNav`,
 `AppSidebar`, `SidebarNav`, and `MobileTabBar` are also exported directly.
-`AccountMenu` is the bounded OpenBooks launcher with app-owned organization,
+`AccountMenu` is a bounded launcher with app-owned organization,
 language, theme, navigation-mode, elevated-access, and sign-out adapters.
 `GlobalSearch` owns keyboard/debounce/result interaction while the app supplies
 the tenant-scoped query and navigation. `NotificationsBell`, `ThemeProvider` /
@@ -146,7 +146,7 @@ the tenant-scoped query and navigation. `NotificationsBell`, `ThemeProvider` /
 
 ## 4. AI agents (`@appkit/ai`)
 
-`runAgentTurn` is the BeaconHS multi-step tool loop generalized around an
+`runAgentTurn` is the production multi-step tool loop generalized around an
 injected AI SDK `LanguageModel`. The app resolves provider credentials per
 tenant, supplies the system prompt, and includes only tools already closed over
 that request's `RequestContext` and RBAC checks. The runtime raises the SDK's
@@ -162,8 +162,8 @@ without inventing a credential, fake conversation, or provider-specific demo.
 
 ## 5. Forms and localized authoring
 
-`@appkit/forms-core` is the framework-neutral form contract shared by OpenBooks
-and BeaconHS. It accepts both legacy plain-string authoring copy and locale-keyed
+`@appkit/forms-core` is the framework-neutral form contract shared by the
+production reference applications. It accepts both plain-string authoring copy and locale-keyed
 copy, with or without a workflow. Its field registry is the union of the source
 products: finance fields (`currency`, `percentage`, `gl_account`, `party`) sit
 beside the full safety/field-operations vocabulary. The package owns parsing,
@@ -175,17 +175,17 @@ The live `/forms/core` reference executes the schema parser and response
 validator, lists the field registry, and displays both automation vocabularies.
 
 Automation is source-native rather than artificially flattened:
-`@appkit/forms-core/safety-automation` preserves the BeaconHS workflow contract,
-while `@appkit/forms-core/business-automation` preserves the OpenBooks ERP
+`@appkit/forms-core/safety-automation` preserves the safety workflow contract,
+while `@appkit/forms-core/business-automation` preserves the ERP
 lifecycle contract. Both retain their complete upstream automation tests. The
 payloads intentionally remain separate where same-named actions mean different
 things.
 
 `@appkit/forms` is controlled UI over that contract. Its `LogicBuilder` is the
-BeaconHS template-designer implementation with labels and theme values injected.
+production template-designer implementation with labels and theme values injected.
 Its current `FormDesigner` preserves the source shell's independently scrolling
 builder rail, flex build surface, and drawer-based properties interaction, but
-it is not yet a drop-in replacement for the full BeaconHS designer. It omits
+it is not yet a drop-in replacement for the full production designer. It omits
 source formula authoring, type-specific configuration, layout, behavior/list/
 action, assignment, and permission panels. `FormDesigner` receives a
 schema and `onChange`; `FormRenderer` receives the same schema plus controlled or
@@ -206,7 +206,7 @@ document pipeline.
 per-user overrides, and localized authored content. Plain-string records remain
 valid during progressive adoption.
 
-`@appkit/email-render` is the extracted BeaconHS rendering keystone used before
+`@appkit/email-render` is the extracted production rendering keystone used before
 `@appkit/emails` transport. It compiles inline, saved-template, and design modes;
 escapes merge values; supports bounded loops and conditionals; produces HTML and
 plain text; sanitizes authored markup; and validates provider-neutral delivery
@@ -214,7 +214,7 @@ inputs without allocating decoded attachments.
 
 ## 6. Analytics and card queries (`@appkit/analytics`)
 
-The analytics package deliberately knows no OpenBooks or BeaconHS domain tables.
+The analytics package deliberately knows no host-application domain tables.
 An app provides an `AnalyticsCatalog`: authored source `FROM` clauses, the tenant
 column, and a whitelist of fields with authored SQL expressions and semantic
 types. User input can only select these keys. `compileQuery` always adds the
@@ -330,6 +330,10 @@ same feature-owned pattern under `@appkit/notifications/schema`.
   Production requires the same 32+ character `APPKIT_SECRET` in every service
   that seals or consumes credentials; local development has an explicit insecure
   fallback.
+- Existing applications can reproduce their current ciphertext profile with
+  `createSealer(secret, { hkdfInfo })`; email and SMS accept its `unsealSecret`
+  function explicitly. AppKit does not ship application-named crypto or
+  transport entry points.
 - Email and SMS resolve the same platform policy: `disabled` suppresses delivery,
   `global_only` uses the platform provider, and `tenant_optional` prefers a valid
   tenant provider. A corrupt explicitly enabled tenant override fails closed.
@@ -346,7 +350,7 @@ document body/CSS, exports, or schedule worker and must not be treated as a
 drop-in replacement. Its current query is the same `InsightQuery` used by
 `@appkit/analytics`; an app supplies its tenant-scoped executor and catalogue.
 
-`@appkit/pdf` is the OpenBooks PDF engine. Its root is the pure-JS PDFKit report,
+`@appkit/pdf` provides a pure-JS PDFKit report,
 table, and financial-statement renderer. Bounded template rendering is under
 `@appkit/pdf/template`; HTML sanitization and hardened Chromium printing are
 under `@appkit/pdf/html`, so a report-only service does not install Chromium.
@@ -358,7 +362,7 @@ current controlled editor is isolated at `@appkit/design-studio/react` and
 supports Fabric selection, drag/resize/rotation, inline text editing,
 zoom/fullscreen, artboards, insertion, layers, z-order, visibility/locking,
 basic property inspectors, and print-provider settings. It is not yet source-
-compatible with the full BeaconHS editor: source DTOs, document factories,
+compatible with the full production editor: source DTOs, document factories,
 presets/exports, and several inspector controls remain to be ported.
 `@appkit/design-studio/fabric` remains the lazy
 canvas-runtime boundary. Data field keys, sample values, persistence, and output
@@ -367,12 +371,23 @@ package. The working references are `/reports` and `/design-studio`.
 Applications that render the editor import `@appkit/design-studio/styles.css`
 in their Tailwind entry alongside `@appkit/ui/styles.css`.
 
+`@appkit/storage` is the generalized S3/R2/MinIO runtime: tenant-owned object
+keys, automatic multipart writes, client multipart completion/abort, byte
+ranges, streaming reads, rich metadata, verified ETag promotion, lifecycle
+tags, and existence-safe presigning live behind one injected configuration.
+`@appkit/storage/env` exposes a strict, portable `APPKIT_STORAGE_*` environment
+contract. Applications with another configuration system use `createStorage`.
+`@appkit/jobs` supplies lazy BullMQ producer/worker connections, bounded Redis
+readiness, source payload validators, and an atomic fixed-window rate limiter.
+Its `/web-push` entry includes subscription validation, public-DNS
+checks, bounded encrypted payloads, and terminal provider status handling.
+
 ## 11. Workflows, sync, integrations, notifications, and customization
 
 `@appkit/workflows` provides dependency-free graph conversion, persistence
 limits, cycle detection, linting, durable runs, replay-safe action claims, and
-approval gates. Its `any`/`all` quorum behavior is the OpenBooks decision model;
-the persistence limits and pause/resume seam come from BeaconHS. Gate rows retain
+approval gates. Its `any`/`all` quorum behavior and pause/resume seam come from
+the production reference implementations. Gate rows retain
 their branch plans so a worker can resume after a process restart.
 `@appkit/workflows/react` adds the shared two-pane React Flow authoring shell,
 node registry, and branch handles. `/approval-tokens` signs one-click decisions;
@@ -384,7 +399,7 @@ adapt either schema through `WorkflowPlanner` and inject their action handlers.
 generic `{entity, externalId, data}` envelope into an injected target adapter.
 The runtime owns cursors, record caps, dry runs, error accounting, and
 authoritative snapshots that refuse to archive when a pull is empty or any row
-failed. `/egress` is BeaconHS's DNS-pinned SSRF-safe HTTPS implementation;
+failed. `/egress` is the DNS-pinned SSRF-safe HTTPS implementation;
 `/db-drivers` adds TLS-only PostgreSQL, MySQL, MariaDB, and SQL Server; `/schema`
 and `/drizzle` own connections, runs, cursor state, and the crosswalk.
 

@@ -5,6 +5,7 @@ import {
   renderTemplate,
   sanitizeTokenizedEmailFragment,
 } from '@appkit/email-render'
+import { EMAIL_DESTINATION_SUMMARY } from './destination-catalog'
 import type {
   DeliverContext,
   DeliverResult,
@@ -128,13 +129,7 @@ export function createEmailDestination(
         }
   }
   return {
-    key: 'email',
-    name: 'Email',
-    description:
-      'Send a bounded, sanitized, token-templated email through an app-provided transport.',
-    iconKey: 'mail',
-    mappingKind: 'email',
-    reversible: false,
+    ...EMAIL_DESTINATION_SUMMARY,
     configFields: [
       {
         key: 'to',

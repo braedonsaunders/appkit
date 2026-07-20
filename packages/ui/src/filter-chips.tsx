@@ -13,7 +13,7 @@ export type FilterOption = { value: string; label: string; count?: number }
  * Single-select filter rendered as a compact dropdown button. Collapses a whole
  * row of chips into one pill showing the active selection inline, so several
  * filters + the search box fit one toolbar row. Selecting an option navigates —
- * the param lives in the URL. (Copied from the openbooks FilterChips; tokenized,
+ * the param lives in the URL. Tokenized,
  * next Link → soft-nav anchors, i18n → props.)
  */
 export function FilterChips({

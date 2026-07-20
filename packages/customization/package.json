@@ -1,7 +1,7 @@
 {
   "name": "@appkit/customization",
   "version": "0.1.0",
-  "description": "App-supplied record catalogs, custom fields, form layouts, and list views extracted from OpenBooks.",
+  "description": "App-supplied record catalogues, custom fields, form layouts, and list-view composition.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {

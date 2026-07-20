@@ -1,7 +1,7 @@
 // Parse common list query params (?q=&sort=&dir=&page=&perPage=) from the
 // `searchParams` an App-Router page receives. The query string is the canonical
 // state for list filters: refreshes and shared links work, and the list shell
-// needs no client state. (Copied from the openbooks list-params module.)
+// needs no client state.
 
 export type ListParams<S extends string = string> = {
   q: string | undefined

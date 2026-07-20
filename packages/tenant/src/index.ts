@@ -1,16 +1,26 @@
 export {
   type RequestContext,
   type SuperAdminContext,
+  type ImpersonationInfo,
   makeTenantContext,
   makeSuperAdminContext,
 } from './context'
 export {
   type AccessCtx,
   ForbiddenError,
+  ImpersonationBlockedError,
   can,
   assertCan,
+  assertNotImpersonating,
   effectiveRoleAssignments,
   resolveMembershipAccess,
   canSeeSite,
   widestScope,
+  selfOnlyFilter,
+  isTemplateBuilder,
+  canAccessTemplate,
+  canEditResponsePayload,
+  type TemplateAccessDescriptor,
+  type TemplateAccessMode,
+  type ResponsePayloadAccessDescriptor,
 } from './rbac'

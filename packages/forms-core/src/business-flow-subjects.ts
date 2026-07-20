@@ -10,8 +10,8 @@
 // at author time. Server-side behaviour lives in the matching subject adapter
 // (engine/src/flows/registry.ts).
 //
-// Ported from beaconhs-platform's flow-subjects module, adapted to the
-// openbooks document vocabulary (see docs/flows-design.md).
+// This business-document vocabulary is isolated from the safety automation
+// profile so applications opt into only the domain semantics they need.
 
 import type { TriggerKind, ActionKind } from './business-automation'
 

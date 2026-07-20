@@ -13,8 +13,8 @@ import { cn } from './utils'
 export type AppShellNavigationMode = 'topbar' | 'sidebar'
 
 /**
- * Generalized OpenBooks/BeaconHS application shell. One serialized navigation
- * registry drives the OpenBooks dropdown topbar, the shared collapsible rail,
+ * Generalized application shell. One serialized navigation registry drives the
+ * dropdown topbar, shared collapsible rail,
  * the mobile drawer, and the native-style mobile tab bar.
  */
 export function AppShell({
@@ -44,7 +44,7 @@ export function AppShell({
   sidebarFooter?: React.ReactNode
   sidebarCollapsedFooter?: React.ReactNode
   mobileFooter?: React.ReactNode
-  /** OpenBooks' GlobalSearch / BeaconHS tenant+role controls slot. */
+  /** Search, tenant, role, or other application-owned middle controls. */
   headerMiddle?: React.ReactNode
   /** Right-side utility actions and account menu. */
   header?: React.ReactNode

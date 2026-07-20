@@ -8,7 +8,7 @@ import { useListNav } from './list-nav'
 /**
  * URL-driven search box: debounced 250ms, writes `?q=` (configurable) and
  * resets the page param. Keeps focus by replacing (not pushing) through the
- * wired ListNav router. (Copied from the openbooks SearchInput; i18n → props.)
+ * wired ListNav router. Localized copy is supplied through props.
  */
 export function SearchInput({
   placeholder = 'Search…',

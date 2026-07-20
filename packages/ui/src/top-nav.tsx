@@ -1,6 +1,6 @@
 'use client'
 
-// Faithful generalized extraction of OpenBooks' NetSuite-style top menu bar.
+// NetSuite-style top menu bar generalized around a serialized navigation tree.
 // The same registry drives the sidebar, mobile drawer, and mobile tabs.
 
 import * as React from 'react'

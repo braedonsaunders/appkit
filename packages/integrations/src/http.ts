@@ -6,6 +6,7 @@
 import { secureFetch } from '@appkit/sync/egress'
 import { resolveText } from './resolve'
 import { deliveryRef } from './idempotency'
+import { HTTP_DESTINATION_SUMMARY } from './destination-catalog'
 import type {
   DeliverContext,
   DeliverRef,
@@ -212,13 +213,7 @@ async function deliver(ctx: DeliverContext): Promise<DeliverResult> {
 }
 
 export const httpDestination: DestinationDef = {
-  key: 'http',
-  name: 'HTTP / REST request',
-  description:
-    'POST, PUT or PATCH a token-templated body to a public HTTPS URL with custom headers and an optional bearer/API-key. Use for REST APIs, webhooks and automation hooks.',
-  iconKey: 'webhook',
-  mappingKind: 'http',
-  reversible: false,
+  ...HTTP_DESTINATION_SUMMARY,
   configFields: [
     {
       key: 'method',

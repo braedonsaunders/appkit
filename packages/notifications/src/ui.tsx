@@ -1,6 +1,5 @@
 'use client'
 
-import * as React from 'react'
 import { Bell, CheckCheck } from 'lucide-react'
 import { Badge, Button, Checkbox, EmptyState, cn } from '@appkit/ui'
 import { NOTIFICATION_CHANNELS, type NotificationCatalog, type NotificationChannel, type NotificationPreference, type NotificationRecord } from './index'

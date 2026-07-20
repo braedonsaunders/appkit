@@ -1,5 +1,5 @@
-// The delivery input shared by every provider (generalized from beaconhs
-// email-render/delivery-input).
+// The delivery input shared by every provider without coupling transports to a
+// particular rendering package.
 
 export type EmailAttachmentPayload = {
   filename: string

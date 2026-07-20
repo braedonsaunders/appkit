@@ -23,7 +23,7 @@ const tabClass = (active: boolean) =>
     active ? 'text-primary' : 'text-fg-muted hover:text-fg',
   )
 
-/** Native-style mobile bottom bar extracted from OpenBooks and BeaconHS. */
+/** Native-style mobile bottom bar driven by the shared navigation registry. */
 export function MobileTabBar({
   groups,
   pathname,

@@ -139,7 +139,7 @@ export function FormDesigner({
   return (
     <div className={cn('flex h-full min-h-0 flex-col overflow-hidden bg-bg', className)}>
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
-        {/* Source-faithful BeaconHS split: fixed, independently scrolling builder rail. */}
+        {/* Fixed, independently scrolling builder rail. */}
         <aside className="flex h-56 w-full shrink-0 flex-col border-b border-border bg-surface lg:h-auto lg:w-72 lg:border-r lg:border-b-0">
           <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2.5">
           <div>
@@ -182,7 +182,7 @@ export function FormDesigner({
           </div>
         </aside>
 
-        {/* Source-faithful BeaconHS split: the build surface owns the remaining space. */}
+        {/* The build surface owns the remaining space. */}
         <div className="flex min-w-0 flex-1 flex-col bg-bg-subtle">
           <div className="flex shrink-0 items-center gap-2 border-b border-border bg-surface px-3 py-2">
             <span className="text-xs font-semibold text-fg">Build</span>
@@ -279,7 +279,7 @@ export function FormDesigner({
         </div>
       </div>
 
-      {/* BeaconHS properties are a flyout, not a permanent third column. */}
+      {/* Properties use a flyout rather than a permanent third column. */}
       <Drawer
         open={propertiesOpen}
         onClose={() => setPropertiesOpen(false)}

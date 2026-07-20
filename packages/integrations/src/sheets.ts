@@ -7,6 +7,7 @@
 import { createSign } from 'node:crypto'
 import { secureFetch } from '@appkit/sync/egress'
 import { resolveValue } from './resolve'
+import { SHEETS_DESTINATION_SUMMARY } from './destination-catalog'
 import type {
   DeliverContext,
   DeliverResult,
@@ -191,13 +192,7 @@ async function deliver(ctx: DeliverContext): Promise<DeliverResult> {
 }
 
 export const sheetsDestination: DestinationDef = {
-  key: 'sheets',
-  name: 'Google Sheets',
-  description:
-    'Append a row per item to a Google Sheet. Authenticates with a service-account key (no interactive sign-in) — share the sheet with the service account as an Editor.',
-  iconKey: 'sheet',
-  mappingKind: 'sheets',
-  reversible: false,
+  ...SHEETS_DESTINATION_SUMMARY,
   configFields: [
     {
       key: 'spreadsheetId',

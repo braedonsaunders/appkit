@@ -7,8 +7,7 @@
 // performs the network send, switching on provider. Every provider goes through
 // `fetch` (no SDKs), so the package stays dependency-free.
 //
-// Copied faithfully from the beaconhs sms transport, generalized: `unsealSecret`
-// is injected, and its `secureFetch` egress helper is inlined as a bounded fetch
+// `unsealSecret` is injected, and the egress helper is a bounded fetch
 // (timeout, no redirects, response-size cap).
 
 import { isSmsProvider, type SmsProvider } from './providers'

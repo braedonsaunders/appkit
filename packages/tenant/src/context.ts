@@ -16,8 +16,18 @@ export type RequestContext = {
   scopes: RoleScope[]
   /** The single role a multi-role user switched into (narrows perms/scopes). */
   activeRoleId?: string | null
+  /** Present only while a privileged actor is viewing the app as another user. */
+  impersonation?: ImpersonationInfo | null
+  /** Present for public requests authenticated by an application API key. */
+  apiKey?: { id: string; name: string } | null
   /** Tenant-bound DB helper — runs `fn` inside this tenant's RLS scope. */
   db: <T>(fn: (db: NodePgDatabase<Record<string, never>>) => Promise<T>) => Promise<T>
+}
+
+export type ImpersonationInfo = {
+  actor: { userId: string; name: string; email: string }
+  tenantId: string
+  expiresAt: Date
 }
 
 export type SuperAdminContext = {

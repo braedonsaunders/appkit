@@ -1,6 +1,6 @@
 # @appkit/analytics
 
-App-agnostic dashboard analytics extracted from OpenBooks and BeaconHS:
+App-agnostic dashboard analytics built from production query and visualization patterns:
 
 - application-authored semantic source and field catalogues;
 - parsed formula ASTs with a strict function whitelist;

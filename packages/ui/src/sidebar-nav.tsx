@@ -62,7 +62,7 @@ import { Popover } from './popover'
 import type { LinkRender } from './settings-layout'
 import { cn } from './utils'
 
-// This is the union of the production OpenBooks and BeaconHS icon registries.
+// This is the union of the production navigation icon registries.
 // String keys remain serializable across an RSC boundary; `icon` keeps the
 // primitive compatible with callers that already pass a React node.
 const ICONS: Record<string, LucideIcon> = {
@@ -136,7 +136,7 @@ export type SidebarNavItem = {
 }
 
 export type SidebarNavGroup = {
-  /** OpenBooks workspace id. Optional for the BeaconHS grouped-list contract. */
+  /** Optional workspace id; omit it for a simple grouped-list contract. */
   id?: string
   label: string
   labelKey?: string
@@ -196,10 +196,9 @@ const defaultLink: LinkRender = ({
 )
 
 /**
- * The shared OpenBooks/BeaconHS navigation registry rendered as a desktop
- * sidebar. OpenBooks workspace metadata (`id` + group icon) enables its
- * collapsible workspace treatment; the simpler BeaconHS registry retains its
- * labeled sections. Both use the same active-path, icon, and link contracts.
+ * The shared navigation registry rendered as a desktop sidebar. Workspace
+ * metadata (`id` + group icon) enables collapsible treatment; simpler groups
+ * retain labeled sections. Both use the same active-path, icon, and link contracts.
  */
 export function SidebarNav({
   groups,
@@ -647,7 +646,7 @@ export function NavIcon({
   return <Icon size={size} className={className} />
 }
 
-/** OpenBooks mobile shortcut selection: tenant-pinned entries, then registry order. */
+/** Mobile shortcut selection: explicitly pinned entries, then registry order. */
 export function selectMobileTabs(groups: SidebarNavGroup[], count = 4): SidebarNavItem[] {
   const unique = groups
     .flatMap((group) => group.items)

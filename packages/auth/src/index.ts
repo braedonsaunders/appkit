@@ -6,8 +6,8 @@ import { users } from '@appkit/db'
 /**
  * Passwords: scrypt, stored `salt:hash` hex.
  * Sessions: HMAC-signed stateless cookie `uid.expiresEpoch.sig` — no session
- * table; revocation is `users.is_active = false`. (Copied from the openbooks
- * auth, generalized: secret is injected, cookie is left to the app.)
+ * table; revocation is `users.is_active = false`. The secret is injected and
+ * cookie policy is left to the application.
  */
 
 // --- Passwords (no config needed) ------------------------------------------

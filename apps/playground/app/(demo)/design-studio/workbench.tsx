@@ -76,7 +76,7 @@ export function DesignWorkbench() {
       const stored = window.localStorage.getItem(STORAGE_KEY)
       if (stored) setDocument(normalizeDesignDocument(JSON.parse(stored), fallback))
     } catch {
-      // The complete editor still works when browser storage is unavailable.
+      // The current editor remains usable when browser storage is unavailable.
     }
   }, [fallback])
 

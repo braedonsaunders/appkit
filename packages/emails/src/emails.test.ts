@@ -1,5 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { createSealer } from '@appkit/crypto'
 import {
   EMAIL_PROVIDER_SPECS,
   buildTransport,
@@ -7,6 +8,8 @@ import {
   isValidEmailAddress,
   normalizeEmailDeliveryInput,
   resolveEffectiveTransport,
+  resolveEmailTransport,
+  sendVia,
   type Unseal,
 } from './index'
 
@@ -72,6 +75,24 @@ test('resolveEffectiveTransport — a broken tenant override fails closed', () =
   assert.equal(r.kind, 'unconfigured')
 })
 
+test('transport resolution accepts an application-owned secret profile', () => {
+  const sealer = createSealer('application-email-secret-with-enough-entropy', {
+    hkdfInfo: 'application.email.v1',
+  })
+  const secret = sealer.sealSecret('resend-api-key')
+  const transport = resolveEmailTransport(
+    {
+      enabled: true,
+      provider: 'resend',
+      fromEmail: 'notifications@example.com',
+      keyCiphertext: secret.ciphertext,
+      keyNonce: secret.nonce,
+    },
+    sealer.unsealSecret,
+  )
+  assert.equal(transport?.provider, 'resend')
+})
+
 test('normalizeEmailDeliveryInput validates recipients + body', () => {
   assert.throws(() => normalizeEmailDeliveryInput({ to: 'nope', subject: 's', text: 'b' }))
   assert.throws(() => normalizeEmailDeliveryInput({ to: 'a@b.com', subject: '', text: 'b' }))
@@ -81,4 +102,12 @@ test('normalizeEmailDeliveryInput validates recipients + body', () => {
   assert.deepEqual(ok.to, ['a@b.com'])
   assert.equal(isValidEmailAddress('a@b.com'), true)
   assert.equal(isValidEmailAddress('nope'), false)
+})
+
+test('local SMTP is source-compatible and cannot escape development loopback', async () => {
+  const input = { to: 'person@example.com', subject: 'Test', text: 'Hello' }
+  await assert.rejects(
+    sendVia({ provider: 'smtp', mode: 'local-dev', host: 'mail.example.com', port: 1025, secure: false, from: 'test@example.com' }, input),
+    /forbidden outside development|requires a loopback host/,
+  )
 })

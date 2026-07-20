@@ -24,7 +24,7 @@ export type DesignZoom = {
   fitToWindow: () => void
 }
 
-/** Fabric zoom and viewport behavior extracted from BeaconHS's shared editor. */
+/** Fabric zoom and viewport behavior shared by the design-document editor. */
 export function useDesignZoom({
   artboard,
   reattachKey,
@@ -122,7 +122,7 @@ export type ArtboardCanvasProps = {
   onModify: (id: string, patch: Partial<DesignElement>) => void
 }
 
-/** Interactive Fabric canvas extracted from BeaconHS's design-document editor. */
+/** Interactive Fabric canvas for the design-document editor. */
 export function ArtboardCanvas({
   artboard,
   zoom,

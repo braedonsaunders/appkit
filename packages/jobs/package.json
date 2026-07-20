@@ -1,11 +1,14 @@
 {
   "name": "@appkit/jobs",
   "version": "0.1.0",
-  "description": "Background jobs — a BullMQ + Redis harness (lazy connections, queue + worker factory).",
+  "description": "Production BullMQ runtime with lazy producer/worker connections, readiness, validation, and atomic Redis rate limits.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./health": "./src/health.ts",
+    "./rate-limit": "./src/rate-limit.ts",
+    "./web-push": "./src/web-push.ts",
     "./package.json": "./package.json"
   },
   "main": "./src/index.ts",
@@ -16,14 +19,19 @@
   "scripts": {
     "build": "node ../../scripts/build-package.mjs",
     "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
+    "@appkit/sync": "workspace:*",
     "bullmq": "^5.34.0",
-    "ioredis": "^5.4.2"
+    "ioredis": "^5.4.2",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
-    "@types/node": "^22"
+    "@types/node": "^22",
+    "@types/web-push": "^3.6.4",
+    "tsx": "^4.19.2"
   },
   "author": "Braedon Saunders",
   "repository": {

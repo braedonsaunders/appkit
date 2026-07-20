@@ -4,9 +4,8 @@ import { newAsyncContext } from 'quickjs-emscripten'
  * Programmable endpoints runtime. User-defined endpoint scripts run in a QuickJS
  * WASM sandbox (no Node, no filesystem, no network, no DB) with a governed host
  * API and a unit budget: every host call costs units, and a script over budget
- * is stopped. (Extracted from the openbooks apps-runtime, generalized: the host
- * global name is configurable, and the app-specific `journal` adapter is
- * replaced by generic injectable host functions.)
+ * is stopped. The host global name is configurable and application capabilities
+ * are supplied as generic injectable host functions.
  *
  * Isolation via dependency injection: the runtime NEVER touches the database.
  * The caller passes `adapters` — a KV `storage` store, optional `records` reads,

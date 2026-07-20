@@ -1,5 +1,6 @@
 import { afterEach, test } from 'node:test'
 import assert from 'node:assert/strict'
+import { createSealer } from '@appkit/crypto'
 import {
   SMS_PROVIDER_SPECS,
   buildSmsTransport,
@@ -105,6 +106,25 @@ test('resolveSmsTransport unseals a stored credential', () => {
     ),
     { provider: 'messagebird', accessKey: 'plain-secret', from: 'Appkit' },
   )
+})
+
+test('transport resolution accepts an application-owned secret profile', () => {
+  const sealer = createSealer('application-sms-secret-with-enough-entropy', {
+    hkdfInfo: 'application.sms.v1',
+  })
+  const secret = sealer.sealSecret('twilio-auth-token')
+  const transport = resolveSmsTransport(
+    {
+      enabled: true,
+      provider: 'twilio',
+      fromNumber: '+15550001111',
+      twilioAccountSid: 'AC123',
+      keyCiphertext: secret.ciphertext,
+      keyNonce: secret.nonce,
+    },
+    sealer.unsealSecret,
+  )
+  assert.equal(transport?.provider, 'twilio')
 })
 
 const INPUT = { to: '+15551234567', body: 'Hello from appkit' }

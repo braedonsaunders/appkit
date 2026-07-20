@@ -6,6 +6,7 @@
 import { secureFetch } from '@appkit/sync/egress'
 import { resolveText } from './resolve'
 import { deliveryRef } from './idempotency'
+import { CHAT_DESTINATION_SUMMARY } from './destination-catalog'
 import type {
   DeliverContext,
   DeliverResult,
@@ -120,13 +121,7 @@ async function deliver(ctx: DeliverContext): Promise<DeliverResult> {
 }
 
 export const slackDestination: DestinationDef = {
-  key: 'slack',
-  name: 'Slack / Teams message',
-  description:
-    'Post a formatted message to a Slack or Microsoft Teams channel via a public HTTPS incoming-webhook URL. Combine a multi-item trigger into one message or send one each.',
-  iconKey: 'message-square',
-  mappingKind: 'slack',
-  reversible: false,
+  ...CHAT_DESTINATION_SUMMARY,
   configFields: [
     {
       key: 'platform',

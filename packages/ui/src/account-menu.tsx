@@ -72,7 +72,7 @@ export type AccountMenuProps = {
 }
 
 /**
- * OpenBooks' bounded account launcher generalized into controlled choices.
+ * Bounded account launcher generalized into controlled choices.
  * Organization, language, layout persistence and sign-out stay app-owned.
  */
 export function AccountMenu({

@@ -1,7 +1,7 @@
 /**
  * Return the number of leading top-navigation groups that fit before the
  * overflow menu. All measurements are CSS pixels from the rendered controls.
- * Extracted from OpenBooks' production top navigation.
+ * Shared by the production top-navigation implementation.
  */
 export function visibleTopNavGroupCount({
   availableWidth,

@@ -53,7 +53,7 @@ export function InsightResultView({ result, visualization, settings = {} }: { re
   if (visualization === 'scalar') return <Scalar result={result} column={selected} settings={settings} />
   if (visualization === 'progress' || visualization === 'gauge') return <Gauge result={result} column={selected} settings={settings} compact={visualization === 'progress'} />
   if (visualization === 'pie' || visualization === 'donut') return <Pie result={result} dimension={dimension} measure={selected} donut={visualization === 'donut'} />
-  return <Cartesian result={result} dimension={dimension} measures={measures} kind={visualization} settings={settings} />
+  return <Cartesian result={result} dimension={dimension} measures={measures} kind={visualization} />
 }
 
 function ResultTable({ result }: { result: QueryResult }) {
@@ -73,7 +73,7 @@ function Gauge({ result, column, settings, compact }: { result: QueryResult; col
   return <div className="grid h-full min-h-36 place-items-center"><div className="relative grid size-36 place-items-center rounded-full" style={{ background: `conic-gradient(var(--color-primary) ${percentage}%, var(--color-bg-subtle) 0)` }}><div className="grid size-28 place-items-center rounded-full bg-surface text-center"><div><div className="text-2xl font-semibold tabular-nums">{formatNumber(value)}</div><div className="text-xs text-fg-muted">{Math.round(percentage)}%</div></div></div></div></div>
 }
 
-function Cartesian({ result, dimension, measures, kind, settings }: { result: QueryResult; dimension?: QueryResult['columns'][number]; measures: QueryResult['columns']; kind: VisualizationKey; settings: VisualizationSettings }) {
+function Cartesian({ result, dimension, measures, kind }: { result: QueryResult; dimension?: QueryResult['columns'][number]; measures: QueryResult['columns']; kind: VisualizationKey }) {
   if (!dimension || !measures.length) return <div className="grid h-full place-items-center text-sm text-fg-subtle">Add a dimension and measure to chart.</div>
   const rows = result.rows.slice(0, 20); const values = rows.flatMap((row) => measures.map((measure) => Number(row[measure.key]) || 0)); const maximum = Math.max(...values.map(Math.abs), 1)
   if (kind === 'row') return <div className="app-scroll h-full space-y-2 overflow-auto pr-2">{rows.map((row, index) => <div key={index} className="grid grid-cols-[minmax(80px,1fr)_3fr] items-center gap-3"><div className="truncate text-xs text-fg-muted">{formatValue(row[dimension.key], dimension.semanticType)}</div><div className="flex h-6 items-center gap-1">{measures.map((measure, series) => <div key={measure.key} className="h-4 rounded-sm" title={`${measure.label}: ${formatValue(row[measure.key], measure.semanticType)}`} style={{ width: `${Math.abs(Number(row[measure.key]) || 0) / maximum * 100}%`, background: SERIES_COLORS[series % SERIES_COLORS.length] }} />)}</div></div>)}</div>

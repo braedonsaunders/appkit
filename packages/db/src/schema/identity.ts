@@ -11,6 +11,9 @@ export type RoleScope =
   | { type: 'tenant' }
   | { type: 'self' }
   | { type: 'sites'; siteIds: string[] }
+  | { type: 'team'; departmentIds: string[]; groupIds: string[] }
+  | { type: 'people'; personIds: string[] }
+  | { type: 'crews'; crewIds: string[] }
 
 // --- Global ----------------------------------------------------------------
 
