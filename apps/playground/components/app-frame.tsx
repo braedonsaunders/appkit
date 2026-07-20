@@ -90,6 +90,12 @@ const NAV: SidebarNavGroup[] = [
         iconKey: 'code',
         subgroup: 'Extend',
       },
+      {
+        href: '/admin/integrations',
+        label: 'Integrations',
+        iconKey: 'workflow',
+        subgroup: 'Extend',
+      },
     ],
   },
 ]

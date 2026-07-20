@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import {
   Bell,
+  Cable,
   PanelLeft,
   ScrollText,
   Settings,
@@ -40,6 +41,7 @@ const HUB_GROUPS: AdminHubGroup[] = [
     accent: 'sky',
     cards: [
       { href: '/admin/audit', title: 'Audit log', description: 'Activity history', icon: <ScrollText size={18} /> },
+      { href: '/admin/integrations', title: 'Integrations', description: 'Data connections and automations', icon: <Cable size={18} /> },
     ],
   },
 ]

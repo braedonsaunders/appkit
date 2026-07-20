@@ -1,19 +1,22 @@
 {
   "name": "@appkit/workflows",
   "version": "0.1.0",
-  "description": "Dependency-free workflow graphs with an optional source-faithful React Flow builder.",
+  "description": "Durable workflow graphs, replay-safe actions, approval gates, and optional React and Drizzle adapters.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "sideEffects": ["*.css"],
   "exports": {
     ".": "./src/index.ts",
+    "./approval-tokens": "./src/approval-tokens.ts",
+    "./schema": "./src/schema.ts",
+    "./drizzle": "./src/drizzle.ts",
     "./react": "./src/react.ts",
     "./styles.css": "./src/styles.css",
     "./package.json": "./package.json"
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
-  "files": ["src"],
+  "files": ["src", "drizzle"],
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test src/*.test.ts",
@@ -21,6 +24,8 @@
   },
   "peerDependencies": {
     "@appkit/ui": "^0.1.0",
+    "@appkit/db": "^0.1.0",
+    "drizzle-orm": "^0.45.2",
     "@xyflow/react": "^12.10.0",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
@@ -28,6 +33,8 @@
   },
   "peerDependenciesMeta": {
     "@appkit/ui": { "optional": true },
+    "@appkit/db": { "optional": true },
+    "drizzle-orm": { "optional": true },
     "@xyflow/react": { "optional": true },
     "lucide-react": { "optional": true },
     "react": { "optional": true },
@@ -35,6 +42,8 @@
   },
   "devDependencies": {
     "@appkit/ui": "workspace:*",
+    "@appkit/db": "workspace:*",
+    "drizzle-orm": "^0.45.2",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

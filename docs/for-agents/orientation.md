@@ -338,13 +338,35 @@ field keys and sample values come from an app-supplied catalogue; credentials,
 equipment, projects, and other product entities are not hardcoded in the
 package. The working references are `/reports` and `/design-studio`.
 
-## 11. Workflows, notifications, and customization
+## 11. Workflows, sync, integrations, notifications, and customization
 
-`@appkit/workflows` provides dependency-free graph conversion, cycle detection,
-and linting. `@appkit/workflows/react` adds the shared two-pane React Flow
-authoring shell, node registry, and branch handles.
+`@appkit/workflows` provides dependency-free graph conversion, persistence
+limits, cycle detection, linting, durable runs, replay-safe action claims, and
+approval gates. Its `any`/`all` quorum behavior is the OpenBooks decision model;
+the persistence limits and pause/resume seam come from BeaconHS. Gate rows retain
+their branch plans so a worker can resume after a process restart.
+`@appkit/workflows/react` adds the shared two-pane React Flow authoring shell,
+node registry, and branch handles. `/approval-tokens` signs one-click decisions;
+`/schema` and `/drizzle` own definitions, runs, gates, and action executions.
 The two source-native automation schemas remain in `@appkit/forms-core`; apps
-adapt either schema structurally and inject the relevant inspector editors.
+adapt either schema through `WorkflowPlanner` and inject their action handlers.
+
+`@appkit/sync` is the inbound connector spine: app-defined connectors emit a
+generic `{entity, externalId, data}` envelope into an injected target adapter.
+The runtime owns cursors, record caps, dry runs, error accounting, and
+authoritative snapshots that refuse to archive when a pull is empty or any row
+failed. `/egress` is BeaconHS's DNS-pinned SSRF-safe HTTPS implementation;
+`/db-drivers` adds TLS-only PostgreSQL, MySQL, MariaDB, and SQL Server; `/schema`
+and `/drizzle` own connections, runs, cursor state, and the crosswalk.
+
+`@appkit/integrations` is the outbound trigger-to-destination spine. Product
+modules emit already-authorized item namespaces; the dispatcher maps tokens,
+unseals through an app adapter, consults the delivery ledger, and records refs.
+A failed multi-item delivery resumes known successes, while send-once suppresses
+only a completely pushed delivery. HTTP, Slack/Teams, Google Sheets, email, and
+SQL are optional entries. Email receives the app's transport, SQL requires an
+identity column for reversible retries, and HTTP/chat/Sheets use sync's hardened
+egress entry. The working settings-shell reference is `/admin/integrations`.
 
 `@appkit/notifications` applies tenant category policy, per-user channel
 preferences, digest/quiet-hour behavior, critical delivery rules, and stable
@@ -361,7 +383,7 @@ adapter peer leaks into it. Both run as part of `pnpm lint`.
 `@appkit/customization` turns an app-supplied record catalogue into consistent
 custom fields, form layouts, list views, filters, defaults, and lint output.
 Product record types stay in the consuming app. The working references are
-`/workflows`, `/notifications`, and `/customization`.
+`/workflows`, `/admin/integrations`, `/notifications`, and `/customization`.
 
 For the rules any app on this foundation must follow, see
 [`building-applications.md`](building-applications.md).

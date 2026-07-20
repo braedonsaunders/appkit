@@ -50,3 +50,32 @@ export function hasCycle(graph: WorkflowGraph): boolean {
 export function removeWorkflowNode<TData extends WorkflowNodeData>(graph: WorkflowGraph<TData>, id: string): WorkflowGraph<TData> { return { ...graph, nodes: graph.nodes.filter((node) => node.id !== id), edges: graph.edges.filter((edge) => edge.source !== id && edge.target !== id) } }
 
 export function updateWorkflowNode<TData extends WorkflowNodeData>(graph: WorkflowGraph<TData>, id: string, data: TData): WorkflowGraph<TData> { return { ...graph, nodes: graph.nodes.map((node) => node.id === id ? { ...node, data } : node) } }
+
+export type WorkflowGraphLimits = { maxBytes?: number; maxNodes?: number; maxEdges?: number; maxIdLength?: number; requireTrigger?: boolean }
+
+/** Persistence-boundary validation extracted from BeaconHS. */
+export function validateWorkflowGraph(graph: WorkflowGraph, limits: WorkflowGraphLimits = {}): string[] {
+  const maxBytes = limits.maxBytes ?? 1024 * 1024
+  const maxNodes = limits.maxNodes ?? 250
+  const maxEdges = limits.maxEdges ?? 500
+  const maxIdLength = limits.maxIdLength ?? 128
+  const errors: string[] = []
+  let bytes = Number.POSITIVE_INFINITY
+  try { bytes = new TextEncoder().encode(JSON.stringify(graph)).byteLength } catch { errors.push('Workflow graph is not serializable') }
+  if (bytes > maxBytes) errors.push(`Workflow graph exceeds the ${maxBytes} byte storage limit`)
+  if (graph.nodes.length > maxNodes) errors.push(`Workflow graph cannot contain more than ${maxNodes} nodes`)
+  if (graph.edges.length > maxEdges) errors.push(`Workflow graph cannot contain more than ${maxEdges} edges`)
+  const nodeIds = new Set<string>()
+  for (const node of graph.nodes) {
+    if (!node.id || node.id.length > maxIdLength || nodeIds.has(node.id)) errors.push('Workflow graph contains an invalid or duplicate node id')
+    nodeIds.add(node.id)
+  }
+  if ((limits.requireTrigger ?? true) && graph.nodes.length > 0 && !graph.nodes.some((node) => node.data.kind === 'trigger')) errors.push('Workflow graph must contain a trigger')
+  const edgeIds = new Set<string>()
+  for (const edge of graph.edges) {
+    if (!edge.id || edge.id.length > maxIdLength || edgeIds.has(edge.id)) errors.push('Workflow graph contains an invalid or duplicate edge id')
+    if (!nodeIds.has(edge.source) || !nodeIds.has(edge.target)) errors.push('Workflow graph contains an edge to a missing node')
+    edgeIds.add(edge.id)
+  }
+  return [...new Set(errors)]
+}

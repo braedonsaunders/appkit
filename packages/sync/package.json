@@ -1,0 +1,61 @@
+{
+  "name": "@appkit/sync",
+  "version": "0.1.0",
+  "description": "Connector-neutral data synchronization with fail-closed snapshots and hardened optional network and database adapters.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./catalog": "./src/types.ts",
+    "./egress": "./src/egress.ts",
+    "./db-drivers": "./src/db-drivers.ts",
+    "./schema": "./src/schema.ts",
+    "./drizzle": "./src/drizzle.ts",
+    "./package.json": "./package.json"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "files": [
+    "src",
+    "drizzle"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "peerDependencies": {
+    "@appkit/db": "^0.1.0",
+    "drizzle-orm": "^0.45.2",
+    "mssql": "^11.0.1",
+    "mysql2": "^3.22.6",
+    "postgres": "^3.4.9"
+  },
+  "peerDependenciesMeta": {
+    "@appkit/db": {
+      "optional": true
+    },
+    "drizzle-orm": {
+      "optional": true
+    },
+    "mssql": {
+      "optional": true
+    },
+    "mysql2": {
+      "optional": true
+    },
+    "postgres": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@appkit/db": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "@types/node": "^22",
+    "mssql": "^11.0.1",
+    "mysql2": "^3.22.6",
+    "postgres": "^3.4.9",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
+  }
+}

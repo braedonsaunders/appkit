@@ -5,6 +5,7 @@ import {
   Braces,
   ClipboardList,
   Cloud,
+  Cable,
   Database,
   FileOutput,
   FileText,
@@ -20,6 +21,7 @@ import {
   ScrollText,
   ServerCog,
   ShieldCheck,
+  RefreshCw,
   Workflow,
 } from 'lucide-react'
 import { EMAIL_PROVIDER_SPECS } from '@appkit/emails/providers'
@@ -140,16 +142,43 @@ const GROUPS: AdminHubGroup[] = [
       },
       {
         title: '@appkit/workflows',
-        description: 'Build and validate event, decision, approval, and action graphs.',
+        description: 'Run durable event, decision, approval, and action workflows.',
         icon: <Workflow />,
         features: [
           'Two-pane node library, independently scrolling inspector, and graph canvas',
           'Application-supplied trigger and action registries',
-          'Branch handles, node positioning, graph conversion, and cycle detection',
-          'Graph contracts work without React; the optional React entry adds the visual builder',
+          'Bounded graph persistence, branch handles, node positioning, and cycle detection',
+          'Replay-safe action ledger, pause/resume gates, and any/all approval quorums',
+          'HMAC email approvals plus optional Drizzle schema/store and React visual builder',
         ],
         href: '/workflows',
         linkLabel: 'Open workflow builder',
+      },
+      {
+        title: '@appkit/sync',
+        description: 'Bring external records into application-owned models through a safe connector spine.',
+        icon: <RefreshCw />,
+        features: [
+          'App-defined connector registry, canonical record envelope, cursors, dry runs, and record caps',
+          'Crosswalk persistence and injected target adapters keep product entities outside the package',
+          'Authoritative snapshots fail closed on empty pulls or any processing failure',
+          'Optional hardened HTTPS egress and TLS PostgreSQL, MySQL, MariaDB, and SQL Server drivers',
+        ],
+        href: '/admin/integrations',
+        linkLabel: 'Configure data connections',
+      },
+      {
+        title: '@appkit/integrations',
+        description: 'Send application events to external services without coupling product code to vendors.',
+        icon: <Cable />,
+        features: [
+          'Application-defined trigger catalogue and independently installable destination registry',
+          'Token mapping, sealed-secret seam, deterministic delivery references, and send-once policy',
+          'Partial retries resume completed items; reversible SQL exports replace prior rows safely',
+          'Optional HTTP, Slack/Teams, Google Sheets, email, SQL, and Drizzle persistence entries',
+        ],
+        href: '/admin/integrations',
+        linkLabel: 'Open integrations',
       },
       {
         title: '@appkit/customization',
@@ -411,7 +440,7 @@ export default function PlatformPage() {
     <AdminHub
       title="AppKit platform"
       description="Packages and capabilities available to every application."
-      actions={<Badge variant="success">29 packages</Badge>}
+      actions={<Badge variant="success">31 packages</Badge>}
       groups={GROUPS}
     />
   )

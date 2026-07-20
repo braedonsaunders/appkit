@@ -9,9 +9,11 @@ const packageDirectories = [
   'design-studio',
   'forms-core',
   'forms-pdf',
+  'integrations',
   'notifications',
   'pdf',
   'ui',
+  'sync',
   'workflows',
 ]
 const errors = []

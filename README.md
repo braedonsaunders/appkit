@@ -1,114 +1,247 @@
-![appkit](docs/assets/appkit-logo.svg)
+<p align="center">
+  <img src="docs/assets/appkit-hero.svg" alt="AppKit — build the product" width="100%" />
+</p>
 
-The design + platform foundation for the ecosystem. `appkit` is the single source
-of truth for how every app in the suite **looks, feels, and works** — extracted
-from the two sibling apps that already share this DNA (openbooks, beaconhs), then
-raised to a flagship standard so a new app can be world-class on day one.
+<p align="center">
+  <strong>A production application foundation you can adopt one package at a time.</strong><br />
+  Design system, app shell, multi-tenancy, forms, analytics, workflows, integrations, documents, communications, and more—composable without becoming inseparable.
+</p>
 
-> Goal: the most modern, clean, complete, beautiful, animated app starter we can
-> build. Every app in the ecosystem imports from here; nothing is re-invented
-> per app.
+<p align="center">
+  <a href="#start-small-or-take-the-whole-stack">Quick start</a> ·
+  <a href="#what-you-can-build-with">Packages</a> ·
+  <a href="#modular-by-construction">Architecture</a> ·
+  <a href="#running-reference-app">Demo app</a> ·
+  <a href="docs/for-agents/orientation.md">Documentation</a>
+</p>
 
-> **Agents & new engineers:** start at [`AGENTS.md`](AGENTS.md) and
-> [`docs/for-agents/`](docs/for-agents/) — the design-system orientation, the full
-> primitive index, and the generalized rules for building apps on this foundation.
+<p align="center">
+  <a href="LICENSE"><img alt="License: AGPL-3.0" src="https://img.shields.io/badge/License-AGPL--3.0-0d9488" /></a>
+  <img alt="Next.js" src="https://img.shields.io/badge/Next.js-16-000?logo=next.js&logoColor=white" />
+  <img alt="React" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white" />
+  <img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind-4-38BDF8?logo=tailwindcss&logoColor=white" />
+  <img alt="PostgreSQL RLS" src="https://img.shields.io/badge/PostgreSQL-RLS-4169E1?logo=postgresql&logoColor=white" />
+</p>
 
-## Why this exists
+---
 
-openbooks and beaconhs already share a design system so closely that
-`button.tsx` is **byte-identical** between them — kept in sync by hand. beaconhs
-has independently extracted a clean platform layer (`auth`, `db`, `tenant`,
-`events`, `audit`). appkit ends the duplication: one repo, versioned packages,
-imported by every app.
+## Build your app, not its foundation
 
-## Non-negotiable quality bar
+AppKit is the reusable product layer between a framework and your application.
+It gives you the pieces teams usually spend their first year rebuilding: a
+coherent interface, responsive navigation, tenant isolation, permissions,
+auditing, dashboard and report builders, forms, workflows, notifications,
+external data sync, outbound integrations, documents, background work, and
+provider-neutral delivery.
 
-1. **Fully tokenized.** No hardcoded colors in any component — ever. Everything
-   resolves through the semantic token layer (`@appkit/tokens`), so an app
-   rebrands by swapping channel values in one place, and dark mode is free.
-2. **CSS-first Tailwind v4.** No legacy JS color config. Tokens are CSS custom
-   properties surfaced as utilities via `@theme inline`.
-3. **One motion system.** Durations and easings are tokens; every transition and
-   animation references them. Motion is coherent, and `prefers-reduced-motion`
-   is honored everywhere.
-4. **Accessible by construction.** Focus-visible rings, keyboard semantics, ARIA,
-   touch-target sizing, and reduced-motion are built into the primitives, not
-   bolted on.
-5. **Server-Component-safe.** Primitives render in RSC by default; `'use client'`
-   only where interaction demands it.
+Use `@appkit/ui` for a polished shell and component system. Add
+`@appkit/db` and `@appkit/tenant` when you need multi-tenant Postgres with RLS.
+Install forms, analytics, workflows, sync, or PDF only when your product needs
+them. The package boundaries are deliberate: adopting one capability does not
+pull the whole platform into your process or browser bundle.
 
-## Package map
+AppKit is especially useful for SaaS products, internal tools, operations
+platforms, admin consoles, vertical software, and app builders that need more
+than a component gallery but do not want a rigid all-or-nothing framework.
 
-| Package | Role | Status |
-|---|---|---|
-| `@appkit/tokens` | Semantic color, shape, elevation, and motion tokens; Tailwind v4 utilities. | implemented |
-| `@appkit/ui` | Tokenized primitives, complete shell runtime, native page transitions, page layouts, URL-driven list controls, upload, and signature capture. | implemented |
-| `@appkit/ai` | Provider-neutral multi-step tool agent plus streamed assistant thread and tool-use UI. | implemented + tested |
-| `@appkit/analytics` | Semantic catalogues, safe formulas, parameter-bound query compilation, result contracts, and visualization registry. | implemented + tested |
-| `@appkit/dashboard` | Dashboard/card contracts with optional React Grid workspace and feature-owned Drizzle persistence. | implemented + browser-tested |
-| `@appkit/reports` | Saved definitions, grouped report documents, execution adapters, and timezone-aware delivery schedules over the analytics query contract. | implemented + tested |
-| `@appkit/db` | Postgres RLS engine, schema helpers, canonical identity model, API keys, and idempotency. | implemented + live-tested |
-| `@appkit/tenant` | Request context and wildcard RBAC over tenant-scoped database handles. | implemented + live-tested |
-| `@appkit/auth` | Scrypt passwords and stateless HMAC sessions. | implemented + live-tested |
-| `@appkit/events` | Audit trail and transactional outbox. | implemented + live-tested |
-| `@appkit/notifications` | Dependency-free delivery policy with optional React inbox and Drizzle persistence entries. | implemented + tested |
-| `@appkit/api` | API-key auth, authorization, idempotent writes, typed errors, and OpenAPI descriptions. | implemented + live-tested |
-| `@appkit/endpoints` | Governed QuickJS sandbox for user-defined endpoint handlers. | implemented |
-| `@appkit/crypto` | AES-256-GCM sealed secrets with an HKDF-derived application key. | implemented |
-| `@appkit/emails` | Resend, SendGrid, Mailgun, Postmark, and SMTP delivery with tenant policy. | implemented |
-| `@appkit/sms` | Twilio, Vonage, MessageBird, Plivo, and Telnyx delivery with tenant policy. | implemented |
-| `@appkit/jobs` | BullMQ + Redis queue and worker harness. | implemented |
-| `@appkit/storage` | S3-compatible object storage and presigned URLs. | implemented |
-| `@appkit/i18n` | Tenant locale policy, request negotiation, per-user overrides, and localized authoring-copy resolution. | implemented + tested |
-| `@appkit/forms-core` | Versioned form schemas, field registry, formulas, logic, validation, scoring, and automation graphs; compatible with OpenBooks and BeaconHS source shapes. | implemented + tested |
-| `@appkit/forms` | Controlled visual form designer and fill runtime with host adapters for product-specific fields and storage. | implemented + browser-tested |
-| `@appkit/editor` | Optional TipTap rich-text authoring control shared by forms and document fields. | implemented + browser-tested |
-| `@appkit/forms-documents` | Localized companion fields, document styles, and generated bounded PDF templates over forms-core. | implemented + tested |
-| `@appkit/workflows` | Dependency-free graph contracts and linting with an optional React Flow builder. | implemented + browser-tested |
-| `@appkit/customization` | App-defined record catalogues, custom fields, form layouts, list views, defaults, and linting. | implemented + tested |
-| `@appkit/design-studio` | Multi-artboard print-design schema and HTML renderer with an optional Fabric adapter. | implemented + browser-tested |
-| `@appkit/pdf` | PDFKit report/statement core with optional bounded-template and hardened Chromium entries. | implemented + tested |
-| `@appkit/forms-pdf` | Form-summary HTML with optional PDF, authored-template, and design-document adapters. | implemented + tested |
-| `apps/playground` | The full-stack running reference app and component gallery. | implemented + browser-tested |
+## Why AppKit
 
-## The running reference
+- **A real application system.** Navigation, settings, data lists, builders,
+  drawers, dashboards, audit history, jobs, storage, and delivery paths are
+  designed to work together—not presented as disconnected examples.
+- **Modular without integration tax.** Every feature has a dependency-light
+  core and explicit optional adapters for React, Drizzle, providers, browser
+  automation, editors, canvas engines, and database drivers.
+- **Secure defaults.** PostgreSQL RLS, wildcard RBAC, sealed secrets,
+  idempotent mutations, transactional outbox, bounded user code, SSRF-safe
+  egress, and fail-closed sync snapshots are available as first-class packages.
+- **One design language.** Semantic tokens drive light and dark themes,
+  Tailwind v4 utilities, radius, elevation, and motion. Rebrand the entire
+  system by replacing channel values in one CSS file.
+- **Application-owned domains.** AppKit supplies engines and contracts; your app
+  supplies record catalogues, analytics sources, workflow actions, connectors,
+  authorization context, and persistence policy. Product concepts never leak
+  into reusable packages.
+- **Extracted from serious products.** The foundation generalizes production
+  patterns shared by OpenBooks and BeaconHS, preserving source behavior where
+  it is reusable and moving product-specific coupling behind injected adapters.
 
-`apps/playground` composes the platform instead of merely displaying components:
-Postgres RLS tenant isolation, RBAC-gated audited mutations, a live public demo
-API, a customizable dashboard, a persisted insight-card library and query
-studio, a locally persistent form designer/fill workbench, global search,
-activity inbox, URL-driven database lists, and a detailed
-package-by-package platform overview. The
-demo intentionally disables authentication everywhere and uses one fixed seeded
-identity solely to exercise tenant context and permissions. `@appkit/auth` remains
-available to consuming applications.
+## Start small or take the whole stack
+
+Install only the interface foundation:
+
+```bash
+pnpm add @appkit/ui @appkit/tokens
+```
+
+```css
+/* app/globals.css */
+@import "@appkit/ui/styles.css";
+@source '../app';
+```
+
+```tsx
+import { AppShell, Toaster } from "@appkit/ui";
+
+export default function Application({
+  children,
+  pathname,
+}: {
+  children: React.ReactNode;
+  pathname: string;
+}) {
+  return (
+    <>
+      <AppShell groups={navigation} pathname={pathname}>{children}</AppShell>
+      <Toaster richColors closeButton />
+    </>
+  );
+}
+```
+
+Add a tenant-safe backend when you need it:
+
+```bash
+pnpm add @appkit/db @appkit/tenant drizzle-orm postgres
+```
+
+```ts
+import { assertCan } from "@appkit/tenant";
+
+assertCan(requestContext, "projects.write");
+await requestContext.db(async (db) => {
+  await db.insert(projects).values(input);
+});
+```
+
+This repository currently links packages with `workspace:*`, so a local clone
+can run and compose the complete stack without publishing anything first.
+
+## What you can build with
+
+### Interface and product builders
+
+| Package                 | What it gives your app                                                                                                                                                        |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@appkit/tokens`        | Semantic light/dark brand, shape, elevation, and motion tokens surfaced through Tailwind v4.                                                                                  |
+| `@appkit/ui`            | Accessible primitives, topbar/sidebar app shell, account launcher, search, notifications, settings, lists, drawers, uploads, signatures, page layouts, and route transitions. |
+| `@appkit/dashboard`     | Responsive drag/resize dashboards, reusable insight cards, a card library, query studio, visualizations, and optional Drizzle persistence.                                    |
+| `@appkit/forms-core`    | Versioned schemas, field registry, formulas, conditional logic, validation, scoring, and source-compatible business and safety automation contracts.                          |
+| `@appkit/forms`         | Visual form designer and fill runtime with host adapters for files, signatures, entities, and specialized fields.                                                             |
+| `@appkit/editor`        | Optional controlled TipTap rich-text authoring.                                                                                                                               |
+| `@appkit/customization` | App-defined records, custom fields, form layouts, list views, filters, actions, defaults, and linting.                                                                        |
+| `@appkit/design-studio` | Bounded multi-artboard print design with safe HTML output and an optional Fabric canvas.                                                                                      |
+| `@appkit/i18n`          | Tenant locale policy, request negotiation, user overrides, and localized authored content.                                                                                    |
+
+### Data, access, and extension
+
+| Package             | What it gives your app                                                                                                      |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `@appkit/db`        | Tenant-scoped Postgres execution, BYPASSRLS system access, identity schema, API keys, schema helpers, and RLS installation. |
+| `@appkit/tenant`    | Request context, wildcard RBAC, read tiers, visibility scopes, grant/deny overrides, and super-admin behavior.              |
+| `@appkit/auth`      | Optional scrypt passwords and stateless HMAC sessions.                                                                      |
+| `@appkit/events`    | Structured audit records, before/after diffs, and a transactional outbox.                                                   |
+| `@appkit/api`       | API-key authorization, idempotent writes, typed public errors, and OpenAPI descriptions.                                    |
+| `@appkit/endpoints` | Resource-bounded QuickJS handlers with app-governed capabilities.                                                           |
+| `@appkit/ai`        | Provider-neutral, bounded multi-step agents with streaming React UI and request-scoped tools.                               |
+
+### Analytics, workflows, and connectivity
+
+| Package                 | What it gives your app                                                                                                                                                |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@appkit/analytics`     | App-owned semantic catalogues, parsed formulas, tenant-bound parameterized SQL, result contracts, and a visualization registry.                                       |
+| `@appkit/reports`       | Saved and grouped reports, page layouts, injected execution, schedules, and CSV/XLSX/PDF output contracts.                                                            |
+| `@appkit/workflows`     | Bounded graphs, visual authoring, durable runs, replay-safe actions, pause/resume approval gates, any/all quorum, HMAC email decisions, and optional Drizzle storage. |
+| `@appkit/sync`          | Connector registry, cursors, record caps, dry runs, crosswalks, fail-closed authoritative snapshots, CSV/transforms, hardened egress, and optional SQL drivers.       |
+| `@appkit/integrations`  | Trigger/destination registry, token mapping, send-once policy, partial retry ledgers, and optional HTTP, Slack/Teams, Sheets, email, SQL, and Drizzle adapters.       |
+| `@appkit/notifications` | Inbox records, preferences, digest/quiet-hour policy, channel planning, stable delivery keys, and optional React/Drizzle entries.                                     |
+
+### Documents, communications, and infrastructure
+
+| Package                   | What it gives your app                                                                                                             |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `@appkit/email-render`    | Bounded templates, loops, conditions, sanitization, escaped merge values, subjects, recipients, attachments, HTML, and plain text. |
+| `@appkit/emails`          | Resend, SendGrid, Mailgun, Postmark, and secure SMTP behind one tenant-aware contract.                                             |
+| `@appkit/sms`             | Twilio, Vonage, MessageBird, Plivo, and Telnyx with strict addressing and credential-safe failures.                                |
+| `@appkit/pdf`             | Pure-JS PDFKit reports/statements plus optional authored-template and hardened Chromium entries.                                   |
+| `@appkit/forms-documents` | Localized form companion fields, print styles, and bounded authored PDF templates.                                                 |
+| `@appkit/forms-pdf`       | Form summaries, repeating tables, photos, authored templates, and full-bleed design documents.                                     |
+| `@appkit/crypto`          | AES-256-GCM sealed secrets with HKDF-derived application keys.                                                                     |
+| `@appkit/jobs`            | BullMQ/Redis producers, queues, workers, retries, and lazy connections.                                                            |
+| `@appkit/storage`         | S3-compatible objects and presigned direct upload/download URLs.                                                                   |
+
+## Modular by construction
+
+The core of each feature remains usable without its heaviest dependencies:
+
+```text
+@appkit/workflows          graph + durable runtime
+  ├─ /react                React Flow authoring
+  ├─ /approval-tokens      Node HMAC email actions
+  ├─ /schema               feature-owned Drizzle tables
+  └─ /drizzle              durable Postgres store
+
+@appkit/sync               connector + orchestration contracts
+  ├─ /egress               DNS-pinned, SSRF-safe HTTPS
+  ├─ /db-drivers           optional PostgreSQL/MySQL/MSSQL clients
+  ├─ /schema               connections, runs, crosswalk
+  └─ /drizzle              run and cursor persistence
+
+@appkit/integrations       dispatch + delivery ledger
+  ├─ /http /chat /sheets   hardened outbound adapters
+  ├─ /email /sql           optional render and database adapters
+  ├─ /schema               definitions and delivery ledger
+  └─ /drizzle              tenant-scoped persistence
+```
+
+The repository enforces this architecture. Boundary checks reject runtime
+cycles, forbidden foundation dependencies, missing feature migrations, and an
+optional peer imported by a package root. Server-only adapters cannot silently
+inflate a client bundle.
+
+## Running reference app
+
+`apps/playground` is a real Next.js 16 application, not a static component
+catalogue. Authentication is intentionally disabled throughout the public demo;
+one seeded identity exercises tenant context and permissions without a login.
+
+It includes the topbar/sidebar shell, admin hub and settings shell, configurable
+dashboard, insight-card studio, form designer and runtime, workflow canvas,
+reports, notifications, design studio, customization, integrations, API
+reference, searchable/paginated tenant data, activity inbox, and the complete
+package inventory.
 
 ```bash
 pnpm install
 cp apps/playground/.env.example apps/playground/.env.local
-# Point APPKIT_SUPER_URL at an existing Postgres database owner/superuser.
+# Set APPKIT_SUPER_URL to a PostgreSQL owner/superuser connection.
 pnpm --filter @appkit/playground seed
 pnpm --filter @appkit/playground dev
 ```
 
-The seed creates the fixed `admin@appkit.dev` demo identity without a password,
-starter insight cards, and a personal dashboard. Open `/dashboard` for the live
-dashboard system, `/insights` for the card studio, `/forms` for the form builder,
-`/forms/core` for schema/validation/automation behavior, `/reports`, `/workflows`,
-`/notifications`, `/design-studio`, and `/customization` for the new application
-systems, or `/dashboard/platform` for every package and its app-builder contract; use the account
-launcher to switch between topbar (default) and sidebar navigation.
+Open `http://localhost:4310/dashboard`. Use the account launcher to switch
+between the topbar (default) and sidebar navigation.
 
-## Conventions
+## Quality guarantees
 
-- **pnpm + Turborepo.** Internal packages link via `workspace:*`; nothing needs
-  publishing to build locally.
-- **Public scope `@appkit/*`** (placeholder — set your owned npm scope in
-  `.changeset/config.json` before first publish).
-- **License:** AGPL-3.0, matching the ecosystem. (Add the full license text to
-  `LICENSE` before publishing.)
+- Every color in reusable UI resolves through a semantic token; light and dark
+  themes are part of the same contract.
+- Entrance content is visible by default. CSS starting styles provide motion
+  without hiding server-rendered content, and reduced-motion is honored.
+- React is optional unless a surface is interactive; framework-neutral cores
+  remain safe to use in services and workers.
+- Persistence-owning packages ship their own schema and SQL migrations.
+- External network access validates HTTPS, DNS answers, redirects, request
+  metadata, response sizes, timeouts, and public IP ranges.
+- Package tests, monorepo typecheck, architecture checks, build, and browser
+  verification are required before changes land.
 
-## Getting started
+## Develop AppKit
+
+Agents and contributors should start with [`AGENTS.md`](AGENTS.md), then read
+the [design and package orientation](docs/for-agents/orientation.md) and
+[application-building rules](docs/for-agents/building-applications.md).
 
 ```bash
 pnpm install
@@ -117,3 +250,6 @@ pnpm -r test
 pnpm lint
 pnpm build
 ```
+
+AppKit is AGPL-3.0-or-later. The package scope is pre-release; set the owned npm
+scope in `.changeset/config.json` before the first public publish.

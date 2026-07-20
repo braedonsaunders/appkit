@@ -8,11 +8,13 @@ const adapterOnlyPeerPackages = new Set([
   '@appkit/dashboard',
   '@appkit/design-studio',
   '@appkit/forms-pdf',
+  '@appkit/integrations',
   '@appkit/notifications',
   '@appkit/pdf',
   '@appkit/workflows',
+  '@appkit/sync',
 ])
-const featureMigrationPackages = new Set(['@appkit/dashboard', '@appkit/notifications'])
+const featureMigrationPackages = new Set(['@appkit/dashboard', '@appkit/integrations', '@appkit/notifications', '@appkit/sync', '@appkit/workflows'])
 
 const packages = new Map(
   readdirSync(packagesRoot, { withFileTypes: true })
@@ -33,6 +35,8 @@ const appkitRuntimeAllowlists = {
   '@appkit/dashboard': ['@appkit/analytics'],
   '@appkit/notifications': [],
   '@appkit/workflows': [],
+  '@appkit/sync': [],
+  '@appkit/integrations': [],
   '@appkit/design-studio': ['@appkit/tokens'],
   '@appkit/pdf': ['@appkit/tokens'],
   '@appkit/forms-pdf': ['@appkit/tokens'],

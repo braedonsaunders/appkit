@@ -1,0 +1,59 @@
+{
+  "name": "@appkit/integrations",
+  "version": "0.1.0",
+  "description": "Trigger-to-destination automation with durable delivery ledgers and optional HTTP, chat, Sheets, email, and SQL adapters.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./catalog": "./src/types.ts",
+    "./http": "./src/http.ts",
+    "./chat": "./src/chat.ts",
+    "./sheets": "./src/sheets.ts",
+    "./email": "./src/email.ts",
+    "./sql": "./src/sql.ts",
+    "./schema": "./src/schema.ts",
+    "./drizzle": "./src/drizzle.ts",
+    "./package.json": "./package.json"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "files": [
+    "src",
+    "drizzle"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "peerDependencies": {
+    "@appkit/email-render": "^0.1.0",
+    "@appkit/db": "^0.1.0",
+    "@appkit/sync": "^0.1.0",
+    "drizzle-orm": "^0.45.2"
+  },
+  "peerDependenciesMeta": {
+    "@appkit/email-render": {
+      "optional": true
+    },
+    "@appkit/db": {
+      "optional": true
+    },
+    "@appkit/sync": {
+      "optional": true
+    },
+    "drizzle-orm": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@appkit/email-render": "workspace:*",
+    "@appkit/db": "workspace:*",
+    "@appkit/sync": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "@types/node": "^22",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
+  }
+}

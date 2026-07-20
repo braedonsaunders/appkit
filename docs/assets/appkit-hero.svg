@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 250" width="1200" height="250" role="img" aria-labelledby="title desc">
+  <title id="title">AppKit</title>
+  <desc id="desc">The AppKit mark and wordmark assemble between connected application modules.</desc>
+  <style>
+    :root { --ink:#0f172a; --muted:#64748b; --line:#cbd5e1; --surface:#f8fafc; --brand:#0d9488; --soft:#ccfbf1 }
+    @media (prefers-color-scheme:dark) { :root { --ink:#f8fafc; --muted:#94a3b8; --line:#334155; --surface:#0f172a; --brand:#2dd4bf; --soft:#134e4a } }
+    @keyframes pulse { 0%,100% { opacity:.35 } 50% { opacity:1 } }
+    @keyframes cycle { 0% { stroke-dashoffset:0; opacity:1 } 2% { opacity:0 } 2.05% { stroke-dashoffset:1; opacity:1 } 8% { stroke-dashoffset:0 } 100% { stroke-dashoffset:0 } }
+    @keyframes wordCycle { 0%,2% { opacity:1 } 2.05%,7% { opacity:0 } 11%,100% { opacity:1 } }
+    .draw { stroke-dasharray:1; animation:cycle 12s linear calc(var(--delay,0s) + 2s) infinite }
+    .module { animation:wordCycle 12s linear calc(var(--delay,0s) + 2s) infinite }
+    .word { animation:wordCycle 12s linear 2.8s infinite }
+    .dot { animation:pulse 2.8s ease-in-out var(--delay,0s) infinite }
+    @media (prefers-reduced-motion:reduce) { .draw,.module,.word,.dot { animation:none } }
+  </style>
+  <rect x=".5" y=".5" width="1199" height="249" rx="20" fill="var(--surface)" stroke="var(--line)"/>
+  <g fill="none" stroke="var(--line)" stroke-width="2">
+    <path class="draw" style="--delay:.08s" pathLength="1" d="M88 82H280C330 82 343 125 400 125h54"/>
+    <path class="draw" style="--delay:.14s" pathLength="1" d="M88 168h192c50 0 63-43 120-43h54"/>
+    <path class="draw" style="--delay:.2s" pathLength="1" d="M746 125h54c57 0 70-43 120-43h192"/>
+    <path class="draw" style="--delay:.26s" pathLength="1" d="M746 125h54c57 0 70 43 120 43h192"/>
+  </g>
+  <g font-family="ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif" font-size="13" font-weight="650">
+    <g class="module" style="--delay:.15s"><rect x="34" y="60" width="116" height="44" rx="11" fill="var(--surface)" stroke="var(--line)"/><circle class="dot" style="--delay:.1s" cx="55" cy="82" r="5" fill="var(--brand)"/><text x="70" y="87" fill="var(--ink)">UI</text></g>
+    <g class="module" style="--delay:.25s"><rect x="34" y="146" width="144" height="44" rx="11" fill="var(--surface)" stroke="var(--line)"/><circle class="dot" style="--delay:.4s" cx="55" cy="168" r="5" fill="var(--brand)"/><text x="70" y="173" fill="var(--ink)">Data + RBAC</text></g>
+    <g class="module" style="--delay:.35s"><rect x="1040" y="60" width="126" height="44" rx="11" fill="var(--surface)" stroke="var(--line)"/><circle class="dot" style="--delay:.7s" cx="1061" cy="82" r="5" fill="var(--brand)"/><text x="1076" y="87" fill="var(--ink)">Workflows</text></g>
+    <g class="module" style="--delay:.45s"><rect x="1012" y="146" width="154" height="44" rx="11" fill="var(--surface)" stroke="var(--line)"/><circle class="dot" style="--delay:1s" cx="1033" cy="168" r="5" fill="var(--brand)"/><text x="1048" y="173" fill="var(--ink)">Integrations</text></g>
+  </g>
+  <g transform="translate(466 57)">
+    <rect width="268" height="136" rx="24" fill="var(--soft)" opacity=".36"/>
+    <g transform="translate(28 35)" fill="none" stroke="var(--brand)" stroke-linecap="round" stroke-linejoin="round">
+      <path class="draw" style="--delay:.35s" pathLength="1" d="M6 22v28a8 8 0 0 0 8 8h38a8 8 0 0 0 8-8V22" stroke-width="6"/>
+      <path class="draw" style="--delay:.55s" pathLength="1" d="M38 2 23 31h12l-5 20 16-28H34L38 2Z" stroke-width="5"/>
+    </g>
+    <g class="word" font-family="ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif">
+      <text x="106" y="82" font-size="46" font-weight="720" letter-spacing="-2" fill="var(--ink)">app<tspan fill="var(--brand)">kit</tspan></text>
+      <text x="108" y="106" font-size="13" font-weight="600" letter-spacing=".25" fill="var(--muted)">BUILD THE PRODUCT</text>
+    </g>
+  </g>
+</svg>
