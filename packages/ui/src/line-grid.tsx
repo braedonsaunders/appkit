@@ -16,7 +16,7 @@ import * as React from 'react'
 import { ArrowDown, ArrowUp, Copy, GripVertical, Plus, Trash2 } from 'lucide-react'
 import { Button } from './button'
 import { ContextMenu, useContextMenu } from './context-menu'
-import { Select, type SelectOption } from './select'
+import { SearchSelect, type SelectOption } from './search-select'
 import { cn } from './utils'
 
 export type LineGridColumn<Row extends Record<string, unknown>> = {
@@ -234,7 +234,7 @@ export function LineGrid<Row extends Record<string, unknown>>({
                     onKeyDown={(e) => handleKeyDown(e, i, colIndex)}
                   >
                     {c.type === 'select' ? (
-                      <Select
+                      <SearchSelect
                         value={(value as string) ?? ''}
                         onChange={(v) => setCell(i, c.key, v)}
                         options={c.options ?? []}

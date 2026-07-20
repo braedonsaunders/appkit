@@ -155,16 +155,25 @@ without inventing a credential, fake conversation, or provider-specific demo.
 
 ## 5. Forms and localized authoring (`@appkit/forms-core`, `@appkit/forms`, `@appkit/i18n`)
 
-`@appkit/forms-core` is the framework-neutral contract shared by OpenBooks and
-BeaconHS. It accepts both legacy plain-string authoring copy and locale-keyed
+`@appkit/forms-core` is the framework-neutral form contract shared by OpenBooks
+and BeaconHS. It accepts both legacy plain-string authoring copy and locale-keyed
 copy, with or without a workflow. Its field registry is the union of the source
 products: finance fields (`currency`, `percentage`, `gl_account`, `party`) sit
 beside the full safety/field-operations vocabulary. The package owns parsing,
 cross-reference linting, conditional logic, formula evaluation, defaults,
-response validation, normalization, scoring, automation graphs, participant
-extraction, document styles, and PDF template helpers.
+response validation, normalization, scoring, participant extraction, document
+styles, and PDF template helpers.
 
-`@appkit/forms` is controlled UI over that contract. `FormDesigner` receives a
+Automation is source-native rather than artificially flattened:
+`@appkit/forms-core/safety-automation` preserves the BeaconHS workflow contract,
+while `@appkit/forms-core/business-automation` preserves the OpenBooks ERP
+lifecycle contract. Both retain their complete upstream automation tests. The
+payloads intentionally remain separate where same-named actions mean different
+things.
+
+`@appkit/forms` is controlled UI over that contract. Its `LogicBuilder` is the
+BeaconHS template-designer implementation with labels and theme values injected.
+`FormDesigner` receives a
 schema and `onChange`; `FormRenderer` receives the same schema plus controlled or
 uncontrolled response values. Common controls, repeating sections, visibility,
 and submit validation work without host code. Files, signatures, entity/data
@@ -176,6 +185,12 @@ JSON editing, import/export, and browser persistence.
 `@appkit/i18n` resolves supported locales, Accept-Language, tenant defaults,
 per-user overrides, and localized authored content. Plain-string records remain
 valid during progressive adoption.
+
+`@appkit/email-render` is the extracted BeaconHS rendering keystone used before
+`@appkit/emails` transport. It compiles inline, saved-template, and design modes;
+escapes merge values; supports bounded loops and conditionals; produces HTML and
+plain text; sanitizes authored markup; and validates provider-neutral delivery
+inputs without allocating decoded attachments.
 
 ## 6. Analytics and card queries (`@appkit/analytics`)
 

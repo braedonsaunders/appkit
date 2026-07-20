@@ -8,7 +8,7 @@ import {
   Button,
   Input,
   type LinkRender,
-  Select,
+  SearchSelect,
   SettingsRow,
   SettingsSection,
   SettingsShell,
@@ -100,7 +100,7 @@ function GeneralSettings() {
         </SettingsRow>
         <SettingsRow title="Time zone">
           <div className="w-56">
-            <Select
+            <SearchSelect
               value="America/Toronto"
               onChange={() => {}}
               options={[
@@ -114,7 +114,7 @@ function GeneralSettings() {
         </SettingsRow>
         <SettingsRow title="Default currency">
           <div className="w-40">
-            <Select
+            <SearchSelect
               value="USD"
               onChange={() => {}}
               options={[
@@ -148,7 +148,7 @@ function RolesSettings() {
       <SettingsSection title="Role" description="Choose a role to view and edit its permissions.">
         <SettingsRow title="Editing role">
           <div className="w-48">
-            <Select value={role} onChange={pick} options={ROLES} />
+            <SearchSelect value={role} onChange={pick} options={ROLES} />
           </div>
         </SettingsRow>
       </SettingsSection>

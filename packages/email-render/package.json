@@ -1,0 +1,28 @@
+{
+  "name": "@appkit/email-render",
+  "version": "0.1.0",
+  "description": "Framework-neutral email template rendering, sanitization, delivery input normalization, and subject handling.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "files": ["src"],
+  "exports": {
+    ".": "./src/index.ts",
+    "./delivery-input": "./src/delivery-input.ts",
+    "./subject": "./src/subject.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "isomorphic-dompurify": "^3.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "vitest": "^3.2.4"
+  }
+}

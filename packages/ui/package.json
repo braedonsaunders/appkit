@@ -16,7 +16,7 @@
   "files": ["src"],
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test src/*.test.ts",
+    "test": "node --import tsx --test src/*.test.ts && vitest run src/select.test.tsx",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
@@ -43,6 +43,7 @@
     "@types/react-dom": "^19",
     "react": "^19",
     "react-dom": "^19",
-    "tsx": "^4.19.2"
+    "tsx": "^4.19.2",
+    "vitest": "^3.2.4"
   }
 }

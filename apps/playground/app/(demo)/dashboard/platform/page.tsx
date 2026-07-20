@@ -72,12 +72,12 @@ const GROUPS: AdminHubGroup[] = [
       },
       {
         title: '@appkit/forms-core',
-        description: 'Share one portable form and workflow language across finance, safety, field operations, and future products.',
+        description: 'Share one portable form language while preserving source-native automation profiles for different product domains.',
         icon: <Braces />,
         features: [
-          'OpenBooks string schemas and BeaconHS localized/workflow schemas accepted by one versioned contract',
+          'OpenBooks string schemas and BeaconHS localized/workflow schemas accepted by one versioned form contract',
           'Field metadata, conditional logic, formulas, defaults, response validation, scoring, and normalization',
-          'Automation graphs, worker-safety linting, participants, document styling, and PDF template helpers',
+          'Source-native safety and business automation profiles instead of a lossy invented union',
           'Finance-native GL account, party, currency, and percentage fields alongside the complete safety vocabulary',
         ],
         href: '/forms',
@@ -85,11 +85,11 @@ const GROUPS: AdminHubGroup[] = [
       },
       {
         title: '@appkit/forms',
-        description: 'Give app builders a production visual designer and validated fill runtime without coupling persistence to one product.',
+        description: 'Give app builders a portable designer and validated fill runtime while product persistence stays behind explicit adapters.',
         icon: <ClipboardList />,
         features: [
           'Searchable field library, section canvas, property inspector, ordering, options, and required-state authoring',
-          'Controlled designer and renderer APIs that drop into OpenBooks, BeaconHS, or BidWright',
+          'BeaconHS conditional-logic authoring extracted with injectable labels and semantic tokens',
           'Built-in form controls plus explicit host adapters for files, signatures, entity pickers, data sources, and specialized capture',
           'Live preview, full-schema linting, import/export, and browser persistence in the demo workbench',
         ],
@@ -217,6 +217,17 @@ const GROUPS: AdminHubGroup[] = [
         ],
       },
       {
+        title: '@appkit/email-render',
+        description: 'Turn authored workflow email content into safe provider-ready HTML, text, subjects, recipients, and attachments.',
+        icon: <Mail />,
+        features: [
+          'BeaconHS template AST, interpolation, loops, conditionals, and plain-text rendering preserved at source parity',
+          'Save-time HTML sanitization and escaped untrusted merge values',
+          'Strict subject, output, recipient, attachment, and resource ceilings',
+          'Provider-neutral delivery normalization shared by web and worker processes',
+        ],
+      },
+      {
         title: '@appkit/emails',
         description: 'Change outbound email providers without rewriting product workflows or credential handling.',
         icon: <Mail />,
@@ -274,7 +285,7 @@ export default function PlatformPage() {
     <AdminHub
       title="AppKit platform"
       description="Everything an app builder gets from the shared foundation—grouped the same way suite applications organize company settings."
-      actions={<Badge variant="success">18 production packages</Badge>}
+      actions={<Badge variant="success">19 production packages</Badge>}
       groups={GROUPS}
     />
   )

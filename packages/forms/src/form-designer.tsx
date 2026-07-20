@@ -21,6 +21,7 @@ import {
   cn,
 } from '@appkit/ui'
 import { readText, writeText } from './text'
+import { LogicBuilder } from './logic-builder'
 
 export type FormDesignerProps = {
   value: FormSchemaV1
@@ -235,6 +236,14 @@ export function FormDesigner({
         {field && section ? (
           <FieldInspector
             field={field}
+            availableFields={value.sections.flatMap((itemSection) =>
+              itemSection.fields
+                .filter((itemField) => itemField.id !== field.id)
+                .map((itemField) => ({
+                  id: itemField.id,
+                  label: readText(itemField.label, locale, itemField.id),
+                })),
+            )}
             locale={locale}
             readOnly={readOnly}
             onPatch={(patch) => {
@@ -279,7 +288,7 @@ function SectionInspector({ title, description, readOnly, onTitle, onDescription
   return <div className="space-y-4"><div><h2 className="text-sm font-semibold text-fg">Section settings</h2><p className="text-xs text-fg-muted">Group related fields and layout.</p></div><div><Label>Title</Label><Input className="mt-1" value={title} disabled={readOnly} onChange={(event) => onTitle(event.target.value)} /></div><div><Label>Description</Label><Textarea className="mt-1" value={description} disabled={readOnly} onChange={(event) => onDescription(event.target.value)} /></div>{onDelete ? <Button variant="destructive" size="sm" onClick={onDelete} disabled={readOnly}><Trash2 size={15} />Delete section</Button> : null}</div>
 }
 
-function FieldInspector({ field, locale, readOnly, onPatch, onMove, onDelete, canMoveUp, canMoveDown }: { field: FormField; locale: AppLocale; readOnly: boolean; onPatch: (patch: Partial<FormField>) => void; onMove: (offset: number) => void; onDelete: () => void; canMoveUp: boolean; canMoveDown: boolean }) {
+function FieldInspector({ field, availableFields, locale, readOnly, onPatch, onMove, onDelete, canMoveUp, canMoveDown }: { field: FormField; availableFields: { id: string; label: string }[]; locale: AppLocale; readOnly: boolean; onPatch: (patch: Partial<FormField>) => void; onMove: (offset: number) => void; onDelete: () => void; canMoveUp: boolean; canMoveDown: boolean }) {
   const options = field.validation?.options ?? []
   return (
     <div className="space-y-4">
@@ -291,6 +300,16 @@ function FieldInspector({ field, locale, readOnly, onPatch, onMove, onDelete, ca
       {CHOICE_FIELD_TYPES.has(field.type) ? (
         <div className="space-y-2"><Label>Options</Label>{options.map((option, index) => <div key={`${option.value}-${index}`} className="flex gap-1"><Input value={readText(option.label, locale)} disabled={readOnly} onChange={(event) => { const next = [...options]; next[index] = { ...option, label: writeText(option.label, event.target.value, locale) }; onPatch({ validation: { ...field.validation, options: next } }) }} /><Button type="button" size="icon" variant="ghost" aria-label="Delete option" disabled={readOnly || options.length <= 1} onClick={() => onPatch({ validation: { ...field.validation, options: options.filter((_, itemIndex) => itemIndex !== index) } })}><Trash2 size={15} /></Button></div>)}<Button type="button" size="sm" variant="outline" disabled={readOnly} onClick={() => onPatch({ validation: { ...field.validation, options: [...options, { value: `option_${options.length + 1}`, label: `Option ${options.length + 1}` }] } })}><Plus size={14} />Add option</Button></div>
       ) : null}
+      <div className="space-y-2">
+        <Label>Display rule</Label>
+        <LogicBuilder
+          rule={field.showIf}
+          availableFields={availableFields}
+          onChange={(showIf) => onPatch({ showIf })}
+          labels={{ heading: 'Show field when' }}
+          disabled={readOnly}
+        />
+      </div>
       <div className="flex flex-wrap gap-1"><Button type="button" size="icon" variant="outline" aria-label="Move field up" disabled={readOnly || !canMoveUp} onClick={() => onMove(-1)}><ArrowUp size={15} /></Button><Button type="button" size="icon" variant="outline" aria-label="Move field down" disabled={readOnly || !canMoveDown} onClick={() => onMove(1)}><ArrowDown size={15} /></Button><Button type="button" size="sm" variant="destructive" disabled={readOnly} onClick={onDelete}><Trash2 size={15} />Delete</Button></div>
     </div>
   )

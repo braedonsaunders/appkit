@@ -6,6 +6,11 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./automation": "./src/automation.ts",
+    "./safety-automation": "./src/automation.ts",
+    "./safety-flow-subjects": "./src/flow-subjects.ts",
+    "./business-automation": "./src/business-automation.ts",
+    "./business-flow-subjects": "./src/business-flow-subjects.ts",
     "./package.json": "./package.json"
   },
   "main": "./src/index.ts",
@@ -13,10 +18,11 @@
   "files": ["src"],
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test src/*.test.ts",
+    "test": "vitest run --exclude src/business-automation.test.ts && node --import tsx --test src/business-automation.test.ts",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
+    "@appkit/email-render": "workspace:*",
     "@appkit/i18n": "workspace:*",
     "@appkit/tokens": "workspace:*",
     "isomorphic-dompurify": "^3.18.0",
@@ -24,6 +30,7 @@
   },
   "devDependencies": {
     "@types/node": "^22",
-    "tsx": "^4.19.2"
+    "tsx": "^4.19.2",
+    "vitest": "^3.2.4"
   }
 }

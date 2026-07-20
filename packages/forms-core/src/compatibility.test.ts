@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict'
-import test from 'node:test'
+import { describe, expect, test } from 'vitest'
 
 import {
   FIELD_TYPES,
@@ -13,6 +12,7 @@ import {
   type FlowSubjectProfile,
 } from './index'
 
+describe('cross-sibling compatibility', () => {
 test('accepts an OpenBooks-style string schema without workflow', () => {
   const result = parseFormSchema({
     schemaVersion: 1,
@@ -29,9 +29,9 @@ test('accepts an OpenBooks-style string schema without workflow', () => {
     ],
   })
 
-  assert.equal(result.ok, true)
-  assert.equal(FIELD_TYPES.currency.valueKind, 'number')
-  assert.equal(FIELD_TYPES.party.optionsSource, 'parties')
+  expect(result.ok).toBe(true)
+  expect(FIELD_TYPES.currency.valueKind).toBe('number')
+  expect(FIELD_TYPES.party.optionsSource).toBe('parties')
 })
 
 test('accepts a BeaconHS-style localized schema with workflow', () => {
@@ -64,14 +64,14 @@ test('accepts a BeaconHS-style localized schema with workflow', () => {
     },
   })
 
-  assert.equal(schema.workflow?.steps[0]?.key, 'submit')
-  assert.deepEqual(validateResponse(schema, { result: 'pass' }), [])
+  expect(schema.workflow?.steps[0]?.key).toBe('submit')
+  expect(validateResponse(schema, { result: 'pass' })).toEqual([])
 })
 
 test('compatibility helpers expose safe defaults and subject fields', () => {
-  assert.equal(emptyFormSchema('New form').title, 'New form')
-  assert.equal(recipientTargetSchema.parse({ type: 'submitter' }).type, 'submitter')
-  assert.deepEqual([...scheduledSafeActions()].sort(), ['notify_role', 'send_email'])
+  expect(emptyFormSchema('New form').title).toBe('New form')
+  expect(recipientTargetSchema.parse({ type: 'submitter' }).type).toBe('submitter')
+  expect([...scheduledSafeActions()].sort()).toEqual(['notify_role', 'send_email'])
 
   const profile: FlowSubjectProfile = {
     subjectType: 'module',
@@ -81,5 +81,6 @@ test('compatibility helpers expose safe defaults and subject fields', () => {
     actions: ['send_email'],
     fields: [{ key: 'total', label: 'Total', kind: 'number' }],
   }
-  assert.deepEqual([...profileFieldIds(profile)], ['total'])
+  expect([...profileFieldIds(profile)]).toEqual(['total'])
+})
 })

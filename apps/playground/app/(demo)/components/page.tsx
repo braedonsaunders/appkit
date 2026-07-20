@@ -37,7 +37,7 @@ import {
   Progress,
   RecordList,
   type RecordColumn,
-  Select,
+  SearchSelect,
   Separator,
   Skeleton,
   Spinner,
@@ -403,7 +403,7 @@ export default function ComponentGallery() {
           <div className="flex flex-wrap items-end gap-4">
             <div className="w-56 space-y-1.5">
               <Label>Role</Label>
-              <Select
+              <SearchSelect
                 value={role}
                 onChange={setRole}
                 options={[
@@ -416,7 +416,7 @@ export default function ComponentGallery() {
             </div>
             <div className="w-64 space-y-1.5">
               <Label>Assignee</Label>
-              <Select
+              <SearchSelect
                 value={assignee}
                 onChange={setAssignee}
                 options={PEOPLE}

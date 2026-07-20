@@ -10,3 +10,7 @@ export {
   type FormFieldAdapterProps,
   type FormValues,
 } from './form-renderer'
+export {
+  LogicBuilder,
+  type LogicBuilderLabels,
+} from './logic-builder'
