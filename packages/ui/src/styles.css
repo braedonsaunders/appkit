@@ -5,6 +5,55 @@
 @import '@appkit/tokens/tokens.css';
 @import 'react-grid-layout/css/styles.css';
 
+/* Browser-native route handoff. Apps opt in by placing their changing page
+   boundary in React's ViewTransition with class `appkit-page-transition`.
+   The shell stays live and fixed; only the page canvas is snapshotted. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-group(.appkit-page-transition) {
+  animation-duration: var(--duration-base);
+  animation-timing-function: var(--ease-out);
+}
+
+::view-transition-image-pair(.appkit-page-transition) {
+  isolation: isolate;
+}
+
+::view-transition-old(.appkit-page-transition) {
+  animation: none;
+  opacity: 0;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(.appkit-page-transition) {
+  animation: appkit-page-in var(--duration-base) var(--ease-out) both;
+  mix-blend-mode: normal;
+}
+
+@keyframes appkit-page-in {
+  from {
+    opacity: 0.9;
+    translate: 0 1px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
+  }
+}
+
 .appkit-dashboard-layout .react-grid-placeholder {
   border-radius: var(--radius-xl);
   background: color-mix(in oklab, var(--color-primary) 14%, transparent);

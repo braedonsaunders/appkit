@@ -7,6 +7,7 @@
   "sideEffects": ["*.css"],
   "exports": {
     ".": "./src/index.ts",
+    "./page-transition": "./src/page-transition.tsx",
     "./styles.css": "./src/styles.css",
     "./package.json": "./package.json"
   },

@@ -63,6 +63,8 @@ appkit-original UI with no direct sibling component source:
   `Tooltip`.
 - The Sonner-compatible `toast`/`Toaster` implementation. Its API mirrors what
   the siblings consume, but the implementation is appkit's.
+- `PageTransition` and the `appkit-page-transition` browser-native route motion;
+  neither sibling had a routed-page transition implementation to extract.
 - The standalone component-gallery composition and appkit brand artwork.
 
 These originals may be useful, but they are not evidence of OpenBooks/BeaconHS

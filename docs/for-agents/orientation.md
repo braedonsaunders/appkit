@@ -26,7 +26,8 @@ on `<html>`; tokens flip automatically. **Rebrand the whole suite by editing the
 
 Motion tokens: `--ease-out` `--ease-in-out` `--ease-spring`, `--duration-{fast,
 base,slow}`. Reveal helpers: `.reveal` (CSS `@starting-style`, visible-by-default)
-and `.appkit-row` (staggered table rows).
+and `.appkit-row` (staggered table rows). Browser-native routed-page motion is
+available through the optional `@appkit/ui/page-transition` entry point.
 
 ## 2. Primitive index
 
@@ -105,6 +106,13 @@ fields; mobile uses the same data in a drawer and bottom tab bar. `TopNav`,
   cards use `CardStudio` in a `Drawer`, appear in the library, and become
   `DashboardLibraryItem`s. The working references are `/dashboard`,
   `/dashboard/customize`, and `/insights` in the playground.
+- **Routed page transitions** keep `AppShell` outside the animated boundary and
+  wrap only its changing page canvas in `PageTransition`, keyed by
+  `usePathname()`. Enable Next's `experimental.viewTransition` flag and import
+  the primitive from `@appkit/ui/page-transition`. The shared styles use the
+  motion tokens, preserve chart and text sharpness, disable motion for
+  `prefers-reduced-motion`, and leave unsupported browsers with normal instant
+  navigation.
 
 ## 4. Analytics and card queries (`@appkit/analytics`)
 
@@ -159,8 +167,11 @@ contract to `InsightResultView`.
 ```
 
 `next.config.ts`: `transpilePackages: ['@appkit/ui', '@appkit/tokens']` (they ship
-TSX source, not built output). Then compose screens from the primitives above —
-every color a token, light + dark for free.
+TSX source, not built output). For native page handoffs, also set
+`experimental: { viewTransition: true }`, then wrap the changing `AppShell`
+children with `<PageTransition navigationKey={pathname}>`. This optional entry
+point tracks the current Next/React View Transition API. Then compose screens
+from the primitives above — every color a token, light + dark for free.
 
 ## 6. Multi-tenancy out of the box (`@appkit/db` + `@appkit/tenant`)
 

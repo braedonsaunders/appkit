@@ -42,7 +42,7 @@ imported by every app.
 | Package | Role | Status |
 |---|---|---|
 | `@appkit/tokens` | Semantic color, shape, elevation, and motion tokens; Tailwind v4 utilities. | implemented |
-| `@appkit/ui` | Tokenized primitives, app shell, page layouts, dashboard grid, card studio, visualization renderers, URL-driven list controls, and API reference. | implemented |
+| `@appkit/ui` | Tokenized primitives, app shell, native page transitions, page layouts, dashboard grid, card studio, visualization renderers, URL-driven list controls, and API reference. | implemented |
 | `@appkit/analytics` | Semantic catalogues, safe formulas, parameter-bound query compilation, result contracts, and visualization registry. | implemented + tested |
 | `@appkit/db` | Postgres RLS engine, schema helpers, identity model, dashboard/card persistence, API keys, and idempotency. | implemented + live-tested |
 | `@appkit/tenant` | Request context and wildcard RBAC over tenant-scoped database handles. | implemented + live-tested |

@@ -23,6 +23,7 @@ import {
   type SidebarNavGroup,
   cn,
 } from '@appkit/ui'
+import { PageTransition } from '@appkit/ui/page-transition'
 import { AppkitLogo } from './appkit-logo'
 
 type Theme = 'light' | 'system' | 'dark'
@@ -205,7 +206,7 @@ export function AppFrame({
         sidebarCollapsedFooter={<CollapsedThemeToggle theme={theme} />}
         mobileFooter={<SidebarFooter theme={theme} />}
       >
-        {children}
+        <PageTransition navigationKey={pathname}>{children}</PageTransition>
       </AppShell>
     </ListNavProvider>
   )

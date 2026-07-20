@@ -1,6 +1,11 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // Route navigations are React transitions in the App Router. This enables
+    // the browser-native View Transitions handoff around the persistent shell.
+    viewTransition: true,
+  },
   // Workspace packages ship TSX/TS source, not built output.
   transpilePackages: [
     '@appkit/ui',
