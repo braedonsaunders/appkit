@@ -14,7 +14,11 @@ import {
   Badge,
   Button,
   Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
   Checkbox,
+  Drawer,
   Input,
   Label,
   Textarea,
@@ -94,6 +98,7 @@ export function FormDesigner({
   const [selected, setSelected] = React.useState<{ sectionId: string; fieldId?: string }>(() => ({
     sectionId: value.sections[0]?.id ?? '',
   }))
+  const [propertiesOpen, setPropertiesOpen] = React.useState(false)
   const types = availableFieldTypes ?? (Object.keys(FIELD_TYPES) as FieldType[])
   const normalizedQuery = query.trim().toLowerCase()
   const palette = types.filter((type) => {
@@ -120,6 +125,7 @@ export function FormDesigner({
     const next = createFormField(type, existing)
     commit((draft) => draft.sections[targetIndex]!.fields.push(next))
     setSelected({ sectionId: value.sections[targetIndex]!.id, fieldId: next.id })
+    setPropertiesOpen(true)
   }
 
   function addSection() {
@@ -127,112 +133,159 @@ export function FormDesigner({
     const id = newId('section', existing)
     commit((draft) => draft.sections.push({ id, title: 'New section', fields: [] }))
     setSelected({ sectionId: id })
+    setPropertiesOpen(true)
   }
 
   return (
-    <div className={cn('grid min-h-[42rem] overflow-hidden rounded-xl border border-border bg-bg lg:grid-cols-[16rem_minmax(0,1fr)_19rem]', className)}>
-      <aside className="border-b border-border bg-bg-subtle p-3 lg:border-r lg:border-b-0">
-        <div className="mb-3 flex items-center justify-between">
+    <div className={cn('flex h-full min-h-0 flex-col overflow-hidden bg-bg', className)}>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
+        {/* Source-faithful BeaconHS split: fixed, independently scrolling builder rail. */}
+        <aside className="flex h-56 w-full shrink-0 flex-col border-b border-border bg-surface lg:h-auto lg:w-72 lg:border-r lg:border-b-0">
+          <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2.5">
           <div>
             <h2 className="text-sm font-semibold text-fg">Field library</h2>
-            <p className="text-xs text-fg-muted">Drag-free, deterministic schema authoring.</p>
+            <p className="text-xs text-fg-muted">Choose a field to add it.</p>
           </div>
           <Badge variant="secondary">{types.length}</Badge>
         </div>
-        <div className="relative mb-3">
-          <Search className="pointer-events-none absolute top-2.5 left-3 size-4 text-fg-subtle" />
-          <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find a field…" className="pl-9" />
-        </div>
-        <div className="app-scroll max-h-[34rem] space-y-4 overflow-y-auto pr-1">
-          {CATEGORY_ORDER.map((category) => {
-            const items = palette.filter((type) => FIELD_TYPES[type].category === category)
-            if (items.length === 0) return null
-            return (
-              <section key={category}>
-                <h3 className="mb-1.5 text-[11px] font-semibold tracking-wide text-fg-muted uppercase">{category}</h3>
-                <div className="space-y-1">
-                  {items.map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      disabled={readOnly}
-                      onClick={() => addField(type)}
-                      className="group flex w-full items-start gap-2 rounded-md border border-transparent px-2 py-2 text-left hover:border-border hover:bg-surface disabled:opacity-50"
-                    >
-                      <Plus className="mt-0.5 size-4 shrink-0 text-primary" />
-                      <span className="min-w-0">
-                        <span className="block text-xs font-medium text-fg">{FIELD_TYPES[type].label}</span>
-                        <span className="line-clamp-2 text-[11px] leading-4 text-fg-muted">{FIELD_TYPES[type].description}</span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            )
-          })}
-        </div>
-      </aside>
-
-      <main className="min-w-0 bg-bg p-4 sm:p-6">
-        <div className="mx-auto max-w-3xl space-y-4">
-          <div>
-            <Label htmlFor="form-title">Form title</Label>
-            <Input
-              id="form-title"
-              className="mt-1 text-lg font-semibold"
-              value={readText(value.title, locale)}
-              disabled={readOnly}
-              onChange={(event) => commit((draft) => { draft.title = writeText(draft.title, event.target.value, locale) })}
-            />
+          <div className="shrink-0 border-b border-border p-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute top-2.5 left-3 size-4 text-fg-subtle" />
+              <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find a field…" className="pl-9" />
+            </div>
           </div>
-          {value.sections.map((itemSection, itemSectionIndex) => (
-            <Card
-              key={itemSection.id}
-              className={cn('overflow-hidden', selected.sectionId === itemSection.id && !selected.fieldId && 'ring-2 ring-ring/30')}
-            >
-              <button
-                type="button"
-                onClick={() => setSelected({ sectionId: itemSection.id })}
-                className="flex w-full items-center gap-3 border-b border-border bg-bg-subtle px-4 py-3 text-left"
-              >
-                <GripVertical className="size-4 text-fg-subtle" />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold text-fg">{readText(itemSection.title, locale, 'Untitled section')}</span>
-                  <span className="text-xs text-fg-muted">{itemSection.fields.length} field{itemSection.fields.length === 1 ? '' : 's'}</span>
-                </span>
-              </button>
-              <div className="space-y-2 p-3">
-                {itemSection.fields.length === 0 ? (
-                  <button type="button" onClick={() => setSelected({ sectionId: itemSection.id })} className="w-full rounded-lg border border-dashed border-border-strong px-4 py-8 text-center text-sm text-fg-muted">
-                    Select this section, then add a field from the library.
-                  </button>
-                ) : itemSection.fields.map((itemField, itemFieldIndex) => (
-                  <button
-                    key={itemField.id}
-                    type="button"
-                    onClick={() => setSelected({ sectionId: itemSection.id, fieldId: itemField.id })}
+          <div className="app-scroll min-h-0 flex-1 overflow-y-auto p-3">
+            {CATEGORY_ORDER.map((category) => {
+              const items = palette.filter((type) => FIELD_TYPES[type].category === category)
+              if (items.length === 0) return null
+              return (
+                <section key={category} className="mb-3">
+                  <h3 className="px-1 pb-1 text-[10px] font-semibold tracking-wider text-fg-subtle uppercase">{category}</h3>
+                  <div className="grid grid-cols-1 gap-1">
+                    {items.map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        disabled={readOnly}
+                        onClick={() => addField(type)}
+                        className="flex items-center gap-2 rounded border border-border px-2 py-1.5 text-left text-xs text-fg hover:border-primary hover:bg-primary-subtle disabled:cursor-not-allowed disabled:opacity-50"
+                        title={`Add ${FIELD_TYPES[type].label}`}
+                      >
+                        <Plus className="size-3 shrink-0" />
+                        <span className="truncate">{FIELD_TYPES[type].label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )
+            })}
+          </div>
+        </aside>
+
+        {/* Source-faithful BeaconHS split: the build surface owns the remaining space. */}
+        <div className="flex min-w-0 flex-1 flex-col bg-bg-subtle">
+          <div className="flex shrink-0 items-center gap-2 border-b border-border bg-surface px-3 py-2">
+            <span className="text-xs font-semibold text-fg">Build</span>
+            <span className="text-xs text-fg-muted">{value.sections.length} section{value.sections.length === 1 ? '' : 's'}</span>
+            <div className="ml-auto w-full max-w-sm">
+              <Input
+                id="form-title"
+                aria-label="Form title"
+                className="h-8 text-sm font-semibold"
+                value={readText(value.title, locale)}
+                disabled={readOnly}
+                onChange={(event) => commit((draft) => { draft.title = writeText(draft.title, event.target.value, locale) })}
+              />
+            </div>
+          </div>
+          <main className="app-scroll min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
+            <div className="w-full space-y-3">
+              {value.sections.map((itemSection, itemSectionIndex) => {
+                const sectionActive = selected.sectionId === itemSection.id && !selected.fieldId
+                return (
+                  <Card
+                    key={itemSection.id}
                     className={cn(
-                      'flex w-full items-center gap-3 rounded-lg border bg-surface px-3 py-3 text-left shadow-sm',
-                      selected.fieldId === itemField.id ? 'border-primary ring-2 ring-ring/20' : 'border-border hover:border-border-strong',
+                      'border transition-colors',
+                      sectionActive ? 'border-primary ring-1 ring-ring' : 'border-border',
                     )}
                   >
-                    <GripVertical className="size-4 shrink-0 text-fg-subtle" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-fg">{readText(itemField.label, locale, FIELD_TYPES[itemField.type].label)}</span>
-                      <span className="text-xs text-fg-muted">{FIELD_TYPES[itemField.type].label}</span>
-                    </span>
-                    {itemField.required || itemField.validation?.required ? <Badge variant="warning">Required</Badge> : null}
-                    <span className="text-xs tabular-nums text-fg-subtle">{itemFieldIndex + 1}</span>
-                  </button>
-                ))}
-              </div>
-            </Card>
-          ))}
-          <Button type="button" variant="outline" onClick={addSection} disabled={readOnly}><Plus size={16} />Add section</Button>
+                    <CardHeader className="flex flex-row items-center justify-between gap-2 p-4 pb-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelected({ sectionId: itemSection.id })
+                          setPropertiesOpen(true)
+                        }}
+                        className="min-w-0 flex-1 text-left"
+                      >
+                        <CardTitle className="truncate text-base">{readText(itemSection.title, locale, 'Untitled section')}</CardTitle>
+                        <span className="text-xs text-fg-muted">{itemSection.fields.length} field{itemSection.fields.length === 1 ? '' : 's'}</span>
+                      </button>
+                      <div className="flex items-center gap-1">
+                        <IconButton label="Move section up" disabled={readOnly || itemSectionIndex === 0} onClick={() => commit((draft) => { const [moved] = draft.sections.splice(itemSectionIndex, 1); draft.sections.splice(itemSectionIndex - 1, 0, moved!) })}><ArrowUp size={14} /></IconButton>
+                        <IconButton label="Move section down" disabled={readOnly || itemSectionIndex === value.sections.length - 1} onClick={() => commit((draft) => { const [moved] = draft.sections.splice(itemSectionIndex, 1); draft.sections.splice(itemSectionIndex + 1, 0, moved!) })}><ArrowDown size={14} /></IconButton>
+                        <IconButton label="Delete section" disabled={readOnly || value.sections.length === 1} onClick={() => {
+                          const nextSection = value.sections[itemSectionIndex === 0 ? 1 : itemSectionIndex - 1]
+                          commit((draft) => draft.sections.splice(itemSectionIndex, 1))
+                          if (nextSection) setSelected({ sectionId: nextSection.id })
+                        }}><Trash2 size={14} className="text-danger" /></IconButton>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      {itemSection.fields.length === 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelected({ sectionId: itemSection.id })
+                            setPropertiesOpen(true)
+                          }}
+                          className="w-full rounded-md border border-dashed border-border-strong p-4 text-center text-xs text-fg-subtle"
+                        >
+                          Select this section, then add a field from the library.
+                        </button>
+                      ) : (
+                        <ul className="divide-y divide-border-subtle">
+                          {itemSection.fields.map((itemField, itemFieldIndex) => (
+                            <li key={itemField.id}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelected({ sectionId: itemSection.id, fieldId: itemField.id })
+                                  setPropertiesOpen(true)
+                                }}
+                                className={cn(
+                                  'flex w-full items-center gap-2 rounded px-2 py-2 text-left transition-colors hover:bg-surface-hover',
+                                  selected.fieldId === itemField.id && 'bg-primary-subtle text-primary',
+                                )}
+                              >
+                                <GripVertical className="size-4 shrink-0 text-fg-subtle" />
+                                <span className="min-w-0 flex-1 truncate text-sm font-medium">{readText(itemField.label, locale, FIELD_TYPES[itemField.type].label)}</span>
+                                <Badge variant="secondary" className="text-[10px]">{FIELD_TYPES[itemField.type].label}</Badge>
+                                {itemField.required || itemField.validation?.required ? <Badge variant="warning" className="text-[10px]">Required</Badge> : null}
+                                <span className="w-5 text-right text-xs tabular-nums text-fg-subtle">{itemFieldIndex + 1}</span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </CardContent>
+                  </Card>
+                )
+              })}
+              <Button type="button" variant="outline" onClick={addSection} disabled={readOnly} className="w-full"><Plus size={14} />Add section</Button>
+            </div>
+          </main>
         </div>
-      </main>
+      </div>
 
-      <aside className="border-t border-border bg-bg-subtle p-4 lg:border-t-0 lg:border-l">
+      {/* BeaconHS properties are a flyout, not a permanent third column. */}
+      <Drawer
+        open={propertiesOpen}
+        onClose={() => setPropertiesOpen(false)}
+        title={field ? 'Field properties' : 'Section properties'}
+        size="sm"
+      >
         {field && section ? (
           <FieldInspector
             field={field}
@@ -279,9 +332,13 @@ export function FormDesigner({
             } : undefined}
           />
         ) : <p className="text-sm text-fg-muted">Select a section or field to edit it.</p>}
-      </aside>
+      </Drawer>
     </div>
   )
+}
+
+function IconButton({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
+  return <button type="button" title={label} aria-label={label} onClick={onClick} disabled={disabled} className="rounded p-1 text-fg-muted hover:bg-surface-hover hover:text-fg disabled:cursor-not-allowed disabled:opacity-40">{children}</button>
 }
 
 function SectionInspector({ title, description, readOnly, onTitle, onDescription, onDelete }: { title: string; description: string; readOnly: boolean; onTitle: (value: string) => void; onDescription: (value: string) => void; onDelete?: () => void }) {

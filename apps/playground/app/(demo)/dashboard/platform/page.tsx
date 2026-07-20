@@ -88,7 +88,7 @@ const GROUPS: AdminHubGroup[] = [
         description: 'Give app builders a portable designer and validated fill runtime while product persistence stays behind explicit adapters.',
         icon: <ClipboardList />,
         features: [
-          'Searchable field library, section canvas, property inspector, ordering, options, and required-state authoring',
+          'BeaconHS split designer shell: independently scrolling builder rail and canvas with properties in a drawer',
           'BeaconHS conditional-logic authoring extracted with injectable labels and semantic tokens',
           'Built-in form controls plus explicit host adapters for files, signatures, entity pickers, data sources, and specialized capture',
           'Live preview, full-schema linting, import/export, and browser persistence in the demo workbench',

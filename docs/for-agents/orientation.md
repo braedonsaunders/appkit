@@ -173,7 +173,9 @@ things.
 
 `@appkit/forms` is controlled UI over that contract. Its `LogicBuilder` is the
 BeaconHS template-designer implementation with labels and theme values injected.
-`FormDesigner` receives a
+Its `FormDesigner` shell preserves BeaconHS's fixed, independently scrolling
+builder rail, flex build surface, and drawer-based properties interaction rather
+than introducing a permanent third column. `FormDesigner` receives a
 schema and `onChange`; `FormRenderer` receives the same schema plus controlled or
 uncontrolled response values. Common controls, repeating sections, visibility,
 and submit validation work without host code. Files, signatures, entity/data
