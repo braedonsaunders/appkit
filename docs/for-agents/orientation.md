@@ -350,10 +350,15 @@ under `@appkit/pdf/html`, so a report-only service does not install Chromium.
 `/summary`, `/template`, and `/design` rendering adapters.
 
 `@appkit/design-studio` owns the bounded multi-artboard print document. Its
-Fabric canvas adapter is isolated at `@appkit/design-studio/fabric`. Data
-field keys and sample values come from an app-supplied catalogue; credentials,
-equipment, projects, and other product entities are not hardcoded in the
+complete controlled BeaconHS editor is isolated at `@appkit/design-studio/react`:
+Fabric selection, drag/resize/rotation, inline text editing, zoom/fullscreen,
+artboards, insertion, layers, z-order, visibility/locking, property inspectors,
+and print-provider settings. `@appkit/design-studio/fabric` remains the lazy
+canvas-runtime boundary. Data field keys, sample values, persistence, and output
+actions come from the application; product entities are not hardcoded in the
 package. The working references are `/reports` and `/design-studio`.
+Applications that render the editor import `@appkit/design-studio/styles.css`
+in their Tailwind entry alongside `@appkit/ui/styles.css`.
 
 ## 11. Workflows, sync, integrations, notifications, and customization
 

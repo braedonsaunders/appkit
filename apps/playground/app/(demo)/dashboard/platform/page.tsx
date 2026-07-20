@@ -342,7 +342,7 @@ const GROUPS: AdminHubGroup[] = [
           'Bounded multi-artboard document model with application-defined data fields',
           'Letter, A4-style, card, label, and custom physical formats',
           'Safe normalization, catalogue validation, HTML rendering, and print-provider profiles',
-          'Optional Fabric entry adds an interactive canvas only when a builder needs one',
+          'Optional React/Fabric entry adds the complete artboard, layer, inspector, transform, zoom, and print workspace',
         ],
         href: '/design-studio',
         linkLabel: 'Open design studio',

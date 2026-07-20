@@ -150,7 +150,7 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 | `@appkit/forms`         | Visual form designer and fill runtime with host adapters for files, signatures, entities, and specialized fields.                                                             |
 | `@appkit/editor`        | Optional controlled TipTap rich-text authoring.                                                                                                                               |
 | `@appkit/customization` | App-defined records, custom fields, form layouts, list views, filters, actions, defaults, and linting.                                                                        |
-| `@appkit/design-studio` | Bounded multi-artboard print design with safe HTML output and an optional Fabric canvas.                                                                                      |
+| `@appkit/design-studio` | Bounded multi-artboard print design, safe HTML output, and the complete optional Fabric editor with layers, inspectors, drag/resize, zoom, and print controls.               |
 | `@appkit/i18n`          | Tenant locale policy, request negotiation, user overrides, and localized authored content.                                                                                    |
 
 ### Data, access, and extension

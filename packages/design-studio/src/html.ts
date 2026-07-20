@@ -28,11 +28,25 @@ function renderElement(element: DesignElement, data: DesignData): string {
     let text = element.kind === 'text' ? element.text : valueForField(element.field, data) || element.fallback || ''
     if (element.kind === 'field' && text) { if (element.transform === 'uppercase') text = text.toUpperCase(); if (element.transform?.startsWith('date-')) text = formatDate(text, element.transform === 'date-long'); text = `${element.prefix ?? ''}${text}${element.suffix ?? ''}` }
     const align = element.align ?? 'left'
-    return `<div class="ds-el" style="${base}font-family:${esc(element.fontFamily ?? 'Arial, sans-serif')};font-size:${element.fontSize ?? 12}pt;font-weight:${element.fontWeight ?? '600'};font-style:${element.fontStyle ?? 'normal'};color:${esc(element.color ?? hexColor('fg'))};text-align:${align};line-height:${element.lineHeight ?? 1.15};display:flex;align-items:center;justify-content:${align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start'}">${esc(text)}</div>`
+    return `<div class="ds-el" style="${base}font-family:${esc(element.fontFamily ?? 'Arial, sans-serif')};font-size:${element.fontSize ?? 12}pt;font-weight:${element.fontWeight ?? '600'};font-style:${element.fontStyle ?? 'normal'};color:${esc(element.color ?? hexColor('fg'))};text-align:${align};letter-spacing:${element.letterSpacing ?? 0}in;line-height:${element.lineHeight ?? 1.15};display:flex;align-items:center;justify-content:${align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start'}">${esc(text)}</div>`
   }
-  if (element.kind === 'image') { const source = element.field ? valueForField(element.field, data) : element.url ?? ''; return source ? `<img class="ds-el" alt="" src="${esc(source)}" style="${base}object-fit:${element.fit ?? 'contain'};border-radius:${element.radius ?? 0}in">` : '' }
-  if (element.kind === 'qr') { const source = valueForField(element.field, data); return source ? `<img class="ds-el" alt="" src="${esc(source)}" style="${base}background:${esc(element.background ?? hexColor('surface'))};padding:.03in">` : '' }
-  if (element.kind === 'seal') return `<div class="ds-el" style="${base}border-radius:50%;background:${esc(element.fill ?? hexColor('primary'))};border:.025in solid ${esc(element.stroke ?? hexColor('primary-active'))};display:flex;align-items:center;justify-content:center;color:${hexColor('primary-fg')};font-weight:800">${esc(element.text ?? '')}</div>`
+  if (element.kind === 'image') {
+    const source = element.field ? valueForField(element.field, data) : element.url ?? ''
+    return source
+      ? `<img class="ds-el" alt="" src="${esc(source)}" style="${base}object-fit:${element.fit ?? 'contain'};border-radius:${element.radius ?? 0}in">`
+      : `<div class="ds-el" style="${base}border:.01in dashed ${hexColor('border-strong')};border-radius:${element.radius ?? 0}in;background:${hexColor('bg-subtle')};color:${hexColor('fg-subtle')};font-size:6pt;display:flex;align-items:center;justify-content:center">${esc(element.name)}</div>`
+  }
+  if (element.kind === 'qr') {
+    const source = valueForField(element.field, data)
+    return source
+      ? `<img class="ds-el" alt="" src="${esc(source)}" style="${base}background:${esc(element.background ?? hexColor('surface'))};padding:.03in">`
+      : `<div class="ds-el" style="${base}background:${esc(element.background ?? hexColor('surface'))};border:.01in solid ${hexColor('border-strong')};color:${esc(element.foreground ?? hexColor('fg'))};font-size:8pt;display:flex;align-items:center;justify-content:center">QR</div>`
+  }
+  if (element.kind === 'seal') {
+    const organization = valueForField('organization.name', data) || valueForField('tenant.name', data)
+    const initials = organization.split(/\s+/).filter(Boolean).map((word) => word[0]?.toUpperCase()).slice(0, 2).join('')
+    return `<div class="ds-el" style="${base}border-radius:50%;background:${esc(element.fill ?? hexColor('primary'))};border:.025in solid ${esc(element.stroke ?? hexColor('primary-active'))};display:flex;align-items:center;justify-content:center;color:${hexColor('primary-fg')};font-weight:800">${esc(element.text || initials || 'OK')}</div>`
+  }
   const borderRadius = element.kind === 'ellipse' ? '50%' : `${element.radius ?? 0}in`
   const line = element.kind === 'line' ? `border-top:${element.strokeWidth ?? .01}in solid ${esc(element.stroke ?? hexColor('fg'))};height:0` : `background:${esc(element.fill ?? 'transparent')};border:${element.strokeWidth ?? 0}in solid ${esc(element.stroke ?? 'transparent')};border-radius:${borderRadius}`
   return `<div class="ds-el" style="${base}${line}"></div>`

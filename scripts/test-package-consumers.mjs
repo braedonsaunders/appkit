@@ -36,6 +36,8 @@ async function verifyNodeAndReactConsumer() {
         type: 'module',
         dependencies: {
           ...tarballs,
+          fabric: '^7.0.0',
+          'lucide-react': '^1.24.0',
           react: '^19.2.7',
           'react-dom': '^19.2.7',
           typescript: '^5.9.3',
@@ -48,11 +50,11 @@ async function verifyNodeAndReactConsumer() {
   )
   await writeFile(
     join(directory, 'smoke.mjs'),
-    `import assert from 'node:assert/strict'\nimport React from 'react'\nimport { renderToStaticMarkup } from 'react-dom/server'\nimport { parseFormula } from '@appkit/analytics'\nimport { color } from '@appkit/tokens'\nimport { Button } from '@appkit/ui'\nimport { emptyFormSchema, validateFormSchema } from '@appkit/forms-core'\n\nassert.equal(parseFormula('count()', { resolveField: () => null }).ok, true)\nassert.equal(color('primary').startsWith('rgb('), true)\nassert.equal(validateFormSchema(emptyFormSchema('Smoke')).title, 'Smoke')\nassert.match(renderToStaticMarkup(React.createElement(Button, null, 'Ready')), /Ready/)\n`,
+    `import assert from 'node:assert/strict'\nimport React from 'react'\nimport { renderToStaticMarkup } from 'react-dom/server'\nimport { parseFormula } from '@appkit/analytics'\nimport { color } from '@appkit/tokens'\nimport { Button } from '@appkit/ui'\nimport { emptyFormSchema, validateFormSchema } from '@appkit/forms-core'\nimport { createDesignDocument } from '@appkit/design-studio'\nimport { DesignStudioEditor } from '@appkit/design-studio/react'\n\nassert.equal(parseFormula('count()', { resolveField: () => null }).ok, true)\nassert.equal(color('primary').startsWith('rgb('), true)\nassert.equal(validateFormSchema(emptyFormSchema('Smoke')).title, 'Smoke')\nassert.match(renderToStaticMarkup(React.createElement(Button, null, 'Ready')), /Ready/)\nconst design = createDesignDocument({ name: 'Smoke', theme: { primary: '#0f766e', accent: '#d97706', paper: '#ffffff', ink: '#0f172a', muted: '#64748b' } })\nassert.match(renderToStaticMarkup(React.createElement(DesignStudioEditor, { document: design, onChange() {}, catalog: { fields: [] } })), /Smoke/)\n`,
   )
   await writeFile(
     join(directory, 'smoke.ts'),
-    `${typePackages.map((name, index) => `import type * as Package${index} from '${name}'`).join('\n')}\n${typePackages.map((_, index) => `type PackageContract${index} = typeof Package${index}`).join('\n')}\n${typePackages.map((_, index) => `void (null as unknown as PackageContract${index})`).join('\n')}\n`,
+    `${typePackages.map((name, index) => `import type * as Package${index} from '${name}'`).join('\n')}\nimport type { DesignStudioEditorProps } from '@appkit/design-studio/react'\n${typePackages.map((_, index) => `type PackageContract${index} = typeof Package${index}`).join('\n')}\n${typePackages.map((_, index) => `void (null as unknown as PackageContract${index})`).join('\n')}\nvoid (null as unknown as DesignStudioEditorProps)\n`,
   )
   await writeFile(
     join(directory, 'tsconfig.json'),

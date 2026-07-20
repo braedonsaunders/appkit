@@ -20,3 +20,19 @@ test('renders nested app-defined data and escapes authored values', () => {
   assert.match(html, /&lt;Braedon&gt;/)
   assert.doesNotMatch(html, /<Braedon>/)
 })
+
+test('preserves the source renderer behavior for editor element kinds', () => {
+  const document = createDesignDocument({ name: 'Credential', theme })
+  document.artboards[0]!.elements.push(
+    { id: 'title', name: 'Title', kind: 'text', text: 'Credential', x: 1, y: 1, width: 2, height: .4, letterSpacing: .02 },
+    { id: 'logo', name: 'Logo', kind: 'image', field: 'organization.logo', x: 1, y: 2, width: 1, height: 1 },
+    { id: 'qr', name: 'QR', kind: 'qr', field: 'verify.qr', x: 2, y: 2, width: 1, height: 1 },
+    { id: 'seal', name: 'Seal', kind: 'seal', x: 3, y: 2, width: 1, height: 1 },
+  )
+
+  const html = renderDesignDocumentHtml(document, { organization: { name: 'Northstar Works' } })
+  assert.match(html, /letter-spacing:0\.02in/)
+  assert.match(html, />Logo<\/div>/)
+  assert.match(html, />QR<\/div>/)
+  assert.match(html, />NW<\/div>/)
+})

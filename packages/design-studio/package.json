@@ -1,12 +1,17 @@
 {
   "name": "@appkit/design-studio",
   "version": "0.1.0",
-  "description": "Generalized print-design document schema and renderer extracted from BeaconHS.",
+  "description": "Generalized print-design document schema, renderer, and interactive editor extracted from BeaconHS.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./fabric": "./src/fabric.ts",
+    "./react": "./src/react.ts",
+    "./styles.css": "./src/styles.css",
     "./package.json": "./package.json"
   },
   "main": "./src/index.ts",
@@ -24,16 +29,38 @@
     "@appkit/tokens": "workspace:*"
   },
   "peerDependencies": {
-    "fabric": "^7.0.0"
+    "@appkit/ui": "^0.1.0",
+    "fabric": "^7.0.0",
+    "lucide-react": "^1.24.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
+    "@appkit/ui": {
+      "optional": true
+    },
     "fabric": {
+      "optional": true
+    },
+    "lucide-react": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
       "optional": true
     }
   },
   "devDependencies": {
+    "@appkit/ui": "workspace:*",
     "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "fabric": "^7.0.0",
+    "lucide-react": "^1.24.0",
+    "react": "^19",
+    "react-dom": "^19",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3"
   },

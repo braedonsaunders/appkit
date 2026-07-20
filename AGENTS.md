@@ -81,6 +81,12 @@ dependencies, styles, migrations, README, and license for npm publication.
   (decouple app coupling — i18n, app-specific offsets — into props). Do **not**
   approximate from memory. If no source exists, say so and build it to the same
   quality bar.
+- **Parity before generalization.** Extract the complete reusable source surface
+  and its behavior before calling a package complete. A schema, loader,
+  read-only preview, partial shell, or demo-specific imitation is not parity
+  when the source application also has an editor, inspector, runtime, adapter,
+  or persistence seam. Generalize product coupling through typed inputs; do not
+  omit working source capabilities.
 - **Fully tokenized — no hardcoded colors, ever.** Every color resolves through a
   semantic token (`bg-surface`, `text-fg`, `border-border`, `text-primary`,
   `bg-danger-subtle`, …). A raw `slate`/`teal`/`#hex` in a component is a bug.
