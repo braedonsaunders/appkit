@@ -29,6 +29,8 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
+    "@appkit/forms": "^0.1.0",
+    "@appkit/forms-core": "^0.1.0",
     "@appkit/ui": "^0.1.0",
     "@appkit/db": "^0.1.0",
     "drizzle-orm": "^0.45.2",
@@ -38,6 +40,12 @@
     "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
+    "@appkit/forms": {
+      "optional": true
+    },
+    "@appkit/forms-core": {
+      "optional": true
+    },
     "@appkit/ui": {
       "optional": true
     },
@@ -61,6 +69,8 @@
     }
   },
   "devDependencies": {
+    "@appkit/forms": "workspace:*",
+    "@appkit/forms-core": "workspace:*",
     "@appkit/ui": "workspace:*",
     "@appkit/db": "workspace:*",
     "drizzle-orm": "^0.45.2",

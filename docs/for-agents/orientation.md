@@ -167,11 +167,14 @@ without inventing a credential, fake conversation, or provider-specific demo.
 production reference applications. It accepts both plain-string authoring copy and locale-keyed
 copy, with or without a workflow. Its field registry is the union of the source
 products: finance fields (`currency`, `percentage`, `gl_account`, `party`) sit
-beside the full safety/field-operations vocabulary. The package owns parsing,
-cross-reference linting, conditional logic, formula evaluation, defaults,
-response validation, normalization, scoring, participant extraction, document
-sanitization, and text extraction. It has no UI, localization, token, or email
-rendering dependency.
+beside the full safety/field-operations vocabulary. The dependency-light root
+owns parsing, cross-reference linting, conditional logic, formula evaluation,
+defaults, response validation, scoring, participant extraction, attachment URL
+policy, and DOM-free text extraction. Rich document sanitization and response
+normalization are explicit `@appkit/forms-core/sanitize` and
+`@appkit/forms-core/response-normalize` entries so a validator-only service does
+not allocate or bundle a browser DOM. The package has no UI, localization,
+token, or email-rendering dependency.
 The live `/forms/core` reference executes the schema parser and response
 validator, lists the field registry, and displays both automation vocabularies.
 
@@ -393,8 +396,14 @@ limits, cycle detection, linting, durable runs, replay-safe action claims, and
 approval gates. Its `any`/`all` quorum behavior and pause/resume seam come from
 the production reference implementations. Gate rows retain
 their branch plans so a worker can resume after a process restart.
-`@appkit/workflows/react` adds the shared two-pane React Flow authoring shell,
-node registry, and branch handles. `/approval-tokens` signs one-click decisions;
+`@appkit/workflows/react` adds the production multi-flow studio: workflow
+library rail, enable/rename/delete controls, full React Flow canvas, node
+toolbar, typed node registry, subject-compatible templates, drawer inspector,
+and live lint. The application injects its subject profile, persistence adapter,
+optional message catalogue, and optional email-design adapter while the package
+owns the complete authoring interaction. The smaller single-graph
+`WorkflowBuilder` remains available for embedded editors.
+`/approval-tokens` signs one-click decisions;
 `/schema` and `/drizzle` own definitions, runs, gates, and action executions.
 The two source-native automation schemas remain in `@appkit/forms-core`; apps
 adapt either schema through `WorkflowPlanner` and inject their action handlers.

@@ -1,7 +1,8 @@
 import { storesResponseValue } from './field-types'
 import { evaluateLogicRule, type EvalContext, type RowMap } from './evaluator'
 import type { FormSchemaV1, FormSection } from './schema'
-import { normalizeDocumentHref, sanitizeDocumentHtml } from './sanitize'
+import { normalizeDocumentHref } from './document-url'
+import { sanitizeDocumentHtml } from './sanitize'
 
 type FormResponseValues = Record<string, unknown>
 type FormResponseRows = Record<string, Array<Record<string, unknown>>>

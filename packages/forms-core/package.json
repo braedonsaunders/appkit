@@ -11,6 +11,9 @@
     "./safety-flow-subjects": "./src/flow-subjects.ts",
     "./business-automation": "./src/business-automation.ts",
     "./business-flow-subjects": "./src/business-flow-subjects.ts",
+    "./response-normalize": "./src/response-normalize.ts",
+    "./sanitize": "./src/sanitize.ts",
+    "./text": "./src/text.ts",
     "./package.json": "./package.json"
   },
   "main": "./src/index.ts",
@@ -25,6 +28,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
+    "htmlparser2": "^10.1.0",
     "isomorphic-dompurify": "^3.18.0",
     "zod": "^4.4.3"
   },

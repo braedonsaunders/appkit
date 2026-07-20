@@ -171,7 +171,7 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@appkit/analytics`     | App-owned semantic catalogues, parsed formulas, tenant-bound parameterized SQL, result contracts, and a visualization registry.                                       |
 | `@appkit/reports`       | Fiscal periods plus framework-neutral report definition, result, layout, execution, and schedule contracts.                                                        |
-| `@appkit/workflows`     | Bounded graphs, visual authoring, durable runs, replay-safe actions, pause/resume approval gates, any/all quorum, HMAC email decisions, and optional Drizzle storage. |
+| `@appkit/workflows`     | Multi-flow visual studio, compatible templates, typed inspectors, bounded graphs, durable replay-safe actions, pause/resume approval gates, any/all quorum, HMAC email decisions, and optional Drizzle storage. |
 | `@appkit/sync`          | Connector registry, cursors, record caps, dry runs, crosswalks, fail-closed authoritative snapshots, CSV/transforms, hardened egress, and optional SQL drivers.       |
 | `@appkit/integrations`  | Trigger/destination registry, token mapping, send-once policy, partial retry ledgers, and optional HTTP, Slack/Teams, Sheets, email, SQL, and Drizzle adapters.       |
 | `@appkit/notifications` | Inbox records, preferences, digest/quiet-hour policy, channel planning, stable delivery keys, and optional React/Drizzle entries.                                     |

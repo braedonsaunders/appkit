@@ -1,6 +1,6 @@
 import { evaluateLogicRule, type EvalContext, type FieldValueMap, type RowMap } from './evaluator'
 import { storesResponseValue } from './field-types'
-import { isApplicationAttachmentUrl } from './sanitize'
+import { isApplicationAttachmentUrl } from './document-url'
 import {
   matrixConfigSchema,
   tableConfigSchema,

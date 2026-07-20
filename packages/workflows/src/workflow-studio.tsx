@@ -1,0 +1,2870 @@
+'use client'
+
+import {
+  GeneratedText,
+  useGeneratedTranslations,
+  GeneratedValue,
+  useGeneratedValueTranslations,
+} from './workflow-messages'
+
+// Visual automation authoring canvas.
+// Node graph: Trigger → Condition / Gate / Action. Conditions branch then/else;
+// Gates (human approve/reject) branch approve/reject. Persistence and execution
+// are supplied by the host adapter. Nodes are real React components, so the
+// condition inspector reuses the shared LogicBuilder.
+
+import * as React from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import {
+  addEdge,
+  Background,
+  Controls,
+  Handle,
+  MiniMap,
+  Position,
+  ReactFlow,
+  useEdgesState,
+  useNodesState,
+  type Connection,
+  type Edge,
+  type Node,
+  type NodeProps,
+} from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
+import {
+  GitBranch,
+  Mail,
+  Pencil,
+  Plus,
+  Rocket,
+  Save,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+  TriangleAlert,
+  Workflow,
+  X,
+  Zap,
+} from 'lucide-react'
+import { Button, Drawer, Input, Label, Select, SearchSelect, Textarea, toast } from '@appkit/ui'
+import type {
+  ActionData,
+  AutomationGraph,
+  AutomationNode,
+  EmailTarget,
+  TriggerData,
+} from '@appkit/forms-core/safety-automation'
+import {
+  emptyAutomationGraph,
+  lintAutomationGraph,
+} from '@appkit/forms-core/safety-automation'
+import type { FlowSubjectProfile } from '@appkit/forms-core/safety-flow-subjects'
+import { LogicBuilder } from '@appkit/forms'
+
+const MAX_FLOW_NAME_LENGTH = 120
+
+export type FlowSubjectRef = { type: FlowSubjectProfile['subjectType']; key: string }
+export type WorkflowStudioAdapter = {
+  create: (subject: FlowSubjectRef, name: string) => Promise<{ ok: boolean; id?: string; error?: string }>
+  remove: (id: string) => Promise<{ ok: boolean; error?: string }>
+  rename: (id: string, name: string) => Promise<{ ok: boolean; error?: string }>
+  save: (id: string, graph: AutomationGraph) => Promise<{ ok: boolean; error?: string }>
+  setEnabled: (id: string, enabled: boolean) => Promise<{ ok: boolean; error?: string }>
+  generate?: (id: string, prompt: string) => Promise<{ ok: boolean; graph?: AutomationGraph; error?: string }>
+}
+
+export type WorkflowEmailDesignEditor = unknown
+export type WorkflowEmailDesignAdapter = {
+  Editor: React.ComponentType<{
+    initialHtml: string | null
+    mergeFields: Array<{ key: string }>
+    onReady: (editor: WorkflowEmailDesignEditor) => void
+  }>
+  compile: (editor: WorkflowEmailDesignEditor) => Promise<{ ok: boolean; html?: string; sourceHtml?: string; error?: string }>
+}
+
+type EmailTemplateOption = { id: string; name: string }
+type PdfTemplateOption = { id: string; name: string }
+type TargetAppOption = { id: string; name: string }
+type ActionFieldOptions = {
+  all: string[]
+  writable: string[]
+  photoSources: string[]
+  textOutputs: string[]
+  numeric: string[]
+}
+
+// Pickable people / roles / departments for the send_email recipient editor.
+export type RecipientOptions = {
+  people: { id: string; name: string }[]
+  roles: { key: string; name: string }[]
+  departments: { id: string; name: string }[]
+  personGroups: { id: string; name: string }[]
+  contacts: { id: string; name: string; orgUnitName: string }[]
+  obligations: { id: string; name: string }[]
+  spreadsheetTemplates: { id: string; name: string }[]
+}
+const EMPTY_RECIPIENT_OPTIONS: RecipientOptions = {
+  people: [],
+  roles: [],
+  departments: [],
+  personGroups: [],
+  contacts: [],
+  obligations: [],
+  spreadsheetTemplates: [],
+}
+
+const RECIPIENT_LABEL: Record<EmailTarget['type'], string> = {
+  submitter: 'The submitter',
+  submitter_manager: "The submitter's manager",
+  record_person_manager: "The record person's manager",
+  person: 'A specific person',
+  role: 'Everyone in a role',
+  department_manager: "A department's managers",
+  person_group: 'A People group',
+  literal: 'Specific email address(es)',
+  field: 'A record field',
+  person_group_for_record_person: "A People group in the record person's department",
+  org_unit_contact: 'A contact for the record location',
+  compliance_recipient: 'A recipient for a matching compliance assignment',
+}
+
+function defaultTarget(type: EmailTarget['type'], firstField: string): EmailTarget {
+  switch (type) {
+    case 'role':
+      return { type: 'role', role: '' }
+    case 'literal':
+      return { type: 'literal', email: '' }
+    case 'person':
+      return { type: 'person', personId: '' }
+    case 'department_manager':
+      return { type: 'department_manager', departmentId: '' }
+    case 'person_group':
+      return { type: 'person_group', groupId: '' }
+    case 'field':
+      return { type: 'field', field: firstField }
+    case 'person_group_for_record_person':
+      return { type: 'person_group_for_record_person', groupId: '', personField: firstField }
+    case 'record_person_manager':
+      return { type: 'record_person_manager', personField: firstField }
+    case 'org_unit_contact':
+      return { type: 'org_unit_contact', contactId: '', orgUnitField: firstField }
+    case 'compliance_recipient':
+      return {
+        type: 'compliance_recipient',
+        obligationId: '',
+        personField: firstField,
+        recipient: { type: 'person', personId: '' },
+      }
+    case 'submitter_manager':
+      return { type: 'submitter_manager' }
+    default:
+      return { type: 'submitter' }
+  }
+}
+
+// Multi-recipient editor: any mix of submitter / person / manager / role /
+// department managers / CSV emails / record field. Add + remove rows freely.
+function RecipientsEditor({
+  to,
+  onChange,
+  readOnly,
+  fieldIds,
+  options,
+}: {
+  to: EmailTarget[]
+  onChange: (to: EmailTarget[]) => void
+  readOnly: boolean
+  fieldIds: string[]
+  options: RecipientOptions
+}) {
+  const tGenerated = useGeneratedTranslations()
+  const tGeneratedValue = useGeneratedValueTranslations()
+  const rows = to.length > 0 ? to : [{ type: 'submitter' } as EmailTarget]
+  const update = (i: number, t: EmailTarget) => onChange(rows.map((x, j) => (j === i ? t : x)))
+  const peopleOpts = options.people.map((p) => ({ value: p.id, label: p.name }))
+  const deptOpts = options.departments.map((d) => ({ value: d.id, label: d.name }))
+  const personGroupOpts = options.personGroups.map((g) => ({ value: g.id, label: g.name }))
+  const contactOpts = options.contacts.map((contact) => ({
+    value: contact.id,
+    label: contact.name,
+    hint: contact.orgUnitName,
+  }))
+  const obligationOpts = options.obligations.map((obligation) => ({
+    value: obligation.id,
+    label: obligation.name,
+  }))
+  return (
+    <Field label={tGenerated('m_0d99b2b56f8b5d')}>
+      <div className="space-y-2">
+        <GeneratedValue
+          value={rows.map((t, i) => (
+            <div
+              key={i}
+              className="space-y-1.5 rounded-md border border-border p-2"
+            >
+              <div className="flex items-center gap-1.5">
+                <Select
+                  value={t.type}
+                  disabled={readOnly}
+                  onChange={(e) =>
+                    update(
+                      i,
+                      defaultTarget(e.target.value as EmailTarget['type'], fieldIds[0] ?? ''),
+                    )
+                  }
+                >
+                  {(Object.keys(RECIPIENT_LABEL) as EmailTarget['type'][]).map((k) => (
+                    <option key={k} value={k}>
+                      {RECIPIENT_LABEL[k]}
+                    </option>
+                  ))}
+                </Select>
+                <GeneratedValue
+                  value={
+                    !readOnly && rows.length > 1 ? (
+                      <button
+                        type="button"
+                        title={tGenerated('m_0d9b2e08c28452')}
+                        onClick={() => onChange(rows.filter((_, j) => j !== i))}
+                        className="shrink-0 rounded p-1 text-fg-subtle hover:bg-danger-subtle hover:text-danger "
+                      >
+                        <X size={14} />
+                      </button>
+                    ) : null
+                  }
+                />
+              </div>
+              <GeneratedValue
+                value={
+                  t.type === 'person' ? (
+                    <SearchSelect
+                      value={t.personId}
+                      disabled={readOnly}
+                      options={peopleOpts}
+                      placeholder={tGenerated('m_0a302f85a5260b')}
+                      onChange={(v) => update(i, { type: 'person', personId: v })}
+                    />
+                  ) : null
+                }
+              />
+              <GeneratedValue
+                value={
+                  t.type === 'record_person_manager' ? (
+                    <Select
+                      value={t.personField}
+                      disabled={readOnly}
+                      onChange={(event) =>
+                        update(i, {
+                          type: 'record_person_manager',
+                          personField: event.target.value,
+                        })
+                      }
+                    >
+                      {fieldIds.map((field) => (
+                        <option key={field} value={field}>
+                          {field}
+                        </option>
+                      ))}
+                    </Select>
+                  ) : null
+                }
+              />
+              <GeneratedValue
+                value={
+                  t.type === 'person_group_for_record_person' ? (
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <SearchSelect
+                        value={t.groupId}
+                        disabled={readOnly}
+                        options={personGroupOpts}
+                        placeholder={tGenerated('m_0ecfd22a8fb573')}
+                        onChange={(groupId) => update(i, { ...t, groupId })}
+                      />
+                      <Select
+                        value={t.personField}
+                        disabled={readOnly}
+                        onChange={(event) => update(i, { ...t, personField: event.target.value })}
+                      >
+                        {fieldIds.map((field) => (
+                          <option key={field} value={field}>
+                            {field}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                  ) : null
+                }
+              />
+              <GeneratedValue
+                value={
+                  t.type === 'org_unit_contact' ? (
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <SearchSelect
+                        value={t.contactId}
+                        disabled={readOnly}
+                        options={contactOpts}
+                        placeholder={tGenerated('m_15593bf256f963')}
+                        onChange={(contactId) => update(i, { ...t, contactId })}
+                      />
+                      <Select
+                        value={t.orgUnitField}
+                        disabled={readOnly}
+                        onChange={(event) => update(i, { ...t, orgUnitField: event.target.value })}
+                      >
+                        {fieldIds.map((field) => (
+                          <option key={field} value={field}>
+                            {field}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                  ) : null
+                }
+              />
+              <GeneratedValue
+                value={
+                  t.type === 'compliance_recipient' ? (
+                    <div className="space-y-2">
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <SearchSelect
+                          value={t.obligationId}
+                          disabled={readOnly}
+                          options={obligationOpts}
+                          placeholder={tGenerated('m_1f1c58a54a4d66')}
+                          onChange={(obligationId) => update(i, { ...t, obligationId })}
+                        />
+                        <Select
+                          value={t.personField}
+                          disabled={readOnly}
+                          onChange={(event) => update(i, { ...t, personField: event.target.value })}
+                        >
+                          {fieldIds.map((field) => (
+                            <option key={field} value={field}>
+                              {field}
+                            </option>
+                          ))}
+                        </Select>
+                      </div>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <Select
+                          value={t.recipient.type}
+                          disabled={readOnly}
+                          onChange={(event) =>
+                            update(i, {
+                              ...t,
+                              recipient:
+                                event.target.value === 'literal'
+                                  ? { type: 'literal', email: '' }
+                                  : { type: 'person', personId: '' },
+                            })
+                          }
+                        >
+                          <option value="person">
+                            <GeneratedValue value="A specific person" />
+                          </option>
+                          <option value="literal">
+                            <GeneratedValue value="Specific email address(es)" />
+                          </option>
+                        </Select>
+                        {t.recipient.type === 'person' ? (
+                          <SearchSelect
+                            value={t.recipient.personId}
+                            disabled={readOnly}
+                            options={peopleOpts}
+                            placeholder={tGenerated('m_0e6e22a9a495b0')}
+                            onChange={(personId) =>
+                              update(i, { ...t, recipient: { type: 'person', personId } })
+                            }
+                          />
+                        ) : (
+                          <Input
+                            value={t.recipient.email}
+                            disabled={readOnly}
+                            placeholder={tGeneratedValue('name@example.com')}
+                            onChange={(event) =>
+                              update(i, {
+                                ...t,
+                                recipient: { type: 'literal', email: event.target.value },
+                              })
+                            }
+                          />
+                        )}
+                      </div>
+                    </div>
+                  ) : null
+                }
+              />
+              <GeneratedValue
+                value={
+                  t.type === 'department_manager' ? (
+                    <SearchSelect
+                      value={t.departmentId}
+                      disabled={readOnly}
+                      options={deptOpts}
+                      placeholder={tGenerated('m_1a73ab43e2b5d2')}
+                      onChange={(v) => update(i, { type: 'department_manager', departmentId: v })}
+                    />
+                  ) : null
+                }
+              />
+              <GeneratedValue
+                value={
+                  t.type === 'person_group' ? (
+                    <SearchSelect
+                      value={t.groupId}
+                      disabled={readOnly}
+                      options={personGroupOpts}
+                      placeholder={tGenerated('m_0b6591278bf814')}
+                      onChange={(v) => update(i, { type: 'person_group', groupId: v })}
+                    />
+                  ) : null
+                }
+              />
+              <GeneratedValue
+                value={
+                  t.type === 'role' ? (
+                    options.roles.length > 0 ? (
+                      <Select
+                        value={t.role}
+                        disabled={readOnly}
+                        onChange={(e) => update(i, { type: 'role', role: e.target.value })}
+                      >
+                        <option value="">{'— choose a role —'}</option>
+                        {options.roles.map((r) => (
+                          <option key={r.key} value={r.key}>
+                            {r.name}
+                          </option>
+                        ))}
+                      </Select>
+                    ) : (
+                      <Input
+                        value={t.role}
+                        disabled={readOnly}
+                        placeholder={tGenerated('m_1f114a74597cfb')}
+                        onChange={(e) => update(i, { type: 'role', role: e.target.value })}
+                      />
+                    )
+                  ) : null
+                }
+              />
+              <GeneratedValue
+                value={
+                  t.type === 'literal' ? (
+                    <Input
+                      value={t.email}
+                      disabled={readOnly}
+                      placeholder={tGenerated('m_05b63ccf241fff')}
+                      onChange={(e) => update(i, { type: 'literal', email: e.target.value })}
+                    />
+                  ) : null
+                }
+              />
+              <GeneratedValue
+                value={
+                  t.type === 'field' ? (
+                    <Select
+                      value={t.field}
+                      disabled={readOnly}
+                      onChange={(e) => update(i, { type: 'field', field: e.target.value })}
+                    >
+                      {fieldIds.map((f) => (
+                        <option key={f} value={f}>
+                          {f}
+                        </option>
+                      ))}
+                    </Select>
+                  ) : null
+                }
+              />
+            </div>
+          ))}
+        />
+        <GeneratedValue
+          value={
+            !readOnly ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onChange([...rows, { type: 'submitter' }])}
+              >
+                <Plus size={13} /> <GeneratedText id="m_09417c94b44711" />
+              </Button>
+            ) : null
+          }
+        />
+      </div>
+    </Field>
+  )
+}
+
+export type FlowSummary = { id: string; name: string; enabled: boolean; graph: AutomationGraph }
+type FlowMeta = { id: string; name: string; enabled: boolean }
+
+type NData = AutomationNode['data']
+type FlowNode = Node<NData>
+
+const newId = (prefix: string) => `${prefix}_${globalThis.crypto.randomUUID()}`
+
+function toFlow(graph: AutomationGraph): { nodes: FlowNode[]; edges: Edge[] } {
+  return {
+    nodes: graph.nodes.map((n) => ({
+      id: n.id,
+      type: n.data.kind,
+      position: n.position,
+      data: n.data,
+    })),
+    edges: graph.edges.map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      sourceHandle: e.sourceHandle ?? null,
+      label: e.sourceHandle && e.sourceHandle !== 'next' ? e.sourceHandle : undefined,
+    })),
+  }
+}
+
+function fromFlow(nodes: FlowNode[], edges: Edge[]): AutomationGraph {
+  return {
+    schemaVersion: 1,
+    nodes: nodes.map((n) => ({
+      id: n.id,
+      position: { x: Math.round(n.position.x), y: Math.round(n.position.y) },
+      data: n.data,
+    })),
+    edges: edges.map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      sourceHandle: (e.sourceHandle as AutomationGraph['edges'][number]['sourceHandle']) ?? 'next',
+    })),
+  }
+}
+
+// --- Node summaries + components -------------------------------------------
+
+function triggerSummary(t: TriggerData): string {
+  switch (t.trigger) {
+    case 'on_submit':
+      return 'On submit'
+    case 'on_field_value':
+      return 'When a field matches…'
+    case 'status_change':
+      return `Status → ${t.to}`
+    case 'scheduled':
+      return `Scheduled (${t.cron})`
+    case 'session_overdue':
+      return 'Session check-in overdue'
+    case 'on_create':
+      return 'On create'
+    case 'on_sign':
+      return 'On sign'
+    case 'on_lock':
+      return 'On lock / close'
+    case 'on_unlock':
+      return 'On unlock / reopen'
+    case 'on_delete':
+      return 'On delete'
+    case 'manual':
+      return `Button: ${t.label || 'Run flow'}`
+  }
+}
+
+const ACTION_LABEL: Record<ActionData['action'], string> = {
+  send_email: 'Send email',
+  create_capa: 'Create CAPA',
+  create_incident: 'Create incident',
+  notify_role: 'Notify role',
+  set_field: 'Set field',
+  flag_non_compliant: 'Flag non-compliant',
+  webhook: 'Webhook',
+  create_response: 'Start another form',
+  analyze_photos: 'Analyze photos (AI)',
+  start_monitored_session: 'Start monitored session',
+  change_status: 'Change status',
+  duplicate_record: 'Duplicate record',
+  export_pdf: 'Export PDF',
+}
+
+const TRIGGER_LABEL: Record<TriggerData['trigger'], string> = {
+  on_submit: 'A record is submitted',
+  on_field_value: 'A field matches a condition',
+  status_change: 'Status changes',
+  scheduled: 'On a schedule',
+  session_overdue: 'A monitored session goes overdue',
+  on_create: 'A record is created',
+  on_sign: 'A record is signed',
+  on_lock: 'A record is locked / closed',
+  on_unlock: 'A record is unlocked / reopened',
+  on_delete: 'A record is deleted',
+  manual: 'A user clicks a button',
+}
+
+// Build a fresh TriggerData from a trigger kind (used by the picker + defaults).
+function buildTrigger(
+  v: TriggerData['trigger'],
+  firstField: string,
+  firstStatus: string,
+): TriggerData {
+  if (v === 'on_field_value')
+    return { trigger: 'on_field_value', rule: { op: 'isSet', field: firstField } }
+  if (v === 'status_change') return { trigger: 'status_change', to: firstStatus }
+  if (v === 'scheduled') return { trigger: 'scheduled', cron: '0 8 * * 1' }
+  if (v === 'manual')
+    return {
+      trigger: 'manual',
+      buttonId: newId('btn'),
+      label: 'Run flow',
+    }
+  return { trigger: v } as TriggerData
+}
+
+const CARD = 'rounded-lg border bg-surface px-3 py-2 text-xs shadow-sm w-48'
+const HANDLE = { width: 9, height: 9 }
+
+function TriggerNode({ data, selected }: NodeProps) {
+  const d = data as Extract<NData, { kind: 'trigger' }>
+  return (
+    <div
+      className={`${CARD} ${selected ? 'border-primary ring-1 ring-primary' : 'border-success border-success'}`}
+    >
+      <div className="flex items-center gap-1.5 font-semibold text-success text-success">
+        <Zap size={13} /> <GeneratedText id="m_1db1e5c9ca41ce" />
+      </div>
+      <div className="mt-0.5 truncate text-fg-muted">
+        <GeneratedValue value={triggerSummary(d.trigger)} />
+      </div>
+      <Handle type="source" position={Position.Right} id="next" style={HANDLE} />
+    </div>
+  )
+}
+
+function ConditionNode({ data, selected }: NodeProps) {
+  const d = data as Extract<NData, { kind: 'condition' }>
+  return (
+    <div
+      className={`${CARD} ${selected ? 'border-primary ring-1 ring-primary' : 'border-warning border-warning'}`}
+    >
+      <Handle type="target" position={Position.Left} style={HANDLE} />
+      <div className="flex items-center gap-1.5 font-semibold text-warning text-warning">
+        <GitBranch size={13} /> <GeneratedText id="m_0c33471afd0f99" />
+      </div>
+      <div className="mt-0.5 truncate text-fg-muted">
+        <GeneratedValue value={d.label || <GeneratedText id="m_006e893d66b28d" />} />
+      </div>
+      <Handle type="source" position={Position.Right} id="then" style={{ ...HANDLE, top: '38%' }} />
+      <Handle type="source" position={Position.Right} id="else" style={{ ...HANDLE, top: '70%' }} />
+    </div>
+  )
+}
+
+function GateNode({ data, selected }: NodeProps) {
+  const d = data as Extract<NData, { kind: 'gate' }>
+  return (
+    <div
+      className={`${CARD} ${selected ? 'border-primary ring-1 ring-primary' : 'border-primary border-primary'}`}
+    >
+      <Handle type="target" position={Position.Left} style={HANDLE} />
+      <div className="flex items-center gap-1.5 font-semibold text-primary text-primary">
+        <ShieldCheck size={13} /> <GeneratedText id="m_0f7bb45f90ba7e" />
+      </div>
+      <div className="mt-0.5 truncate text-fg-muted">
+        <GeneratedValue value={d.gate.title || <GeneratedText id="m_0abb67c4c65a36" />} />
+      </div>
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="approve"
+        style={{ ...HANDLE, top: '38%' }}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="reject"
+        style={{ ...HANDLE, top: '70%' }}
+      />
+    </div>
+  )
+}
+
+function ActionNode({ data, selected }: NodeProps) {
+  const d = data as Extract<NData, { kind: 'action' }>
+  return (
+    <div
+      className={`${CARD} ${selected ? 'border-primary ring-1 ring-primary' : 'border-info border-info'}`}
+    >
+      <Handle type="target" position={Position.Left} style={HANDLE} />
+      <div className="flex items-center gap-1.5 font-semibold text-info text-info">
+        <Mail size={13} /> <GeneratedText id="m_0bad495a7046e9" />
+      </div>
+      <div className="mt-0.5 truncate text-fg-muted">
+        <GeneratedValue value={ACTION_LABEL[d.action.action]} />
+      </div>
+      <Handle type="source" position={Position.Right} id="next" style={HANDLE} />
+    </div>
+  )
+}
+
+// --- Default node data ------------------------------------------------------
+
+function defaultData(
+  kind: NData['kind'],
+  firstField: string,
+  profile: FlowSubjectProfile,
+  actionFields: ActionFieldOptions,
+): NData {
+  switch (kind) {
+    case 'trigger':
+      return {
+        kind: 'trigger',
+        trigger: buildTrigger(
+          profile.triggers[0] ?? 'on_submit',
+          firstField,
+          profile.statusValues?.[0] ?? 'submitted',
+        ),
+      }
+    case 'condition':
+      return { kind: 'condition', rule: { op: 'isSet', field: firstField }, label: 'If…' }
+    case 'gate':
+      return {
+        kind: 'gate',
+        gate: { title: 'Supervisor approval', assignee: { type: 'submitter' } },
+      }
+    case 'action':
+      return {
+        kind: 'action',
+        action: defaultAction(profile.actions[0] ?? 'send_email', actionFields),
+      }
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+function MiniToggle({
+  checked,
+  disabled,
+  onChange,
+}: {
+  checked: boolean
+  disabled?: boolean
+  onChange: (v: boolean) => void
+}) {
+  const tGeneratedValue = useGeneratedValueTranslations()
+  const tGenerated = useGeneratedTranslations()
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      title={tGeneratedValue(
+        checked ? tGenerated('m_0c0c6c7a4b5bf5') : tGenerated('m_11bf1bf8c148ff'),
+      )}
+      onClick={(e) => {
+        e.stopPropagation()
+        onChange(!checked)
+      }}
+      className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition ${
+        checked ? 'bg-primary' : 'bg-border-strong bg-fg-muted'
+      } ${disabled ? 'opacity-50' : ''}`}
+    >
+      <span
+        className={`inline-block h-3 w-3 transform rounded-full bg-surface shadow transition ${
+          checked ? 'translate-x-3.5' : 'translate-x-0.5'
+        }`}
+      />
+    </button>
+  )
+}
+
+// Quick-start flows for common automations. Each builds a ready-to-tweak graph;
+// the user fills in blanks (role/url) and hits Save.
+export type WorkflowTemplate = {
+  key: string
+  label: string
+  description: string
+  build: () => AutomationGraph
+}
+
+const DEFAULT_WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
+  {
+    key: 'email_submitter',
+    label: 'Email the submitter',
+    description: 'On submit, send a confirmation email to whoever filled it out.',
+    build: () => ({
+      schemaVersion: 1,
+      nodes: [
+        {
+          id: 'trg',
+          position: { x: 60, y: 140 },
+          data: { kind: 'trigger', trigger: { trigger: 'on_submit' } },
+        },
+        {
+          id: 'act',
+          position: { x: 380, y: 140 },
+          data: {
+            kind: 'action',
+            action: {
+              action: 'send_email',
+              to: [{ type: 'submitter' }],
+              subject: 'Submission received',
+              bodyTemplate: 'Thanks — your submission has been received.',
+            },
+          },
+        },
+      ],
+      edges: [{ id: 'e1', source: 'trg', target: 'act', sourceHandle: 'next' }],
+    }),
+  },
+  {
+    key: 'notify_role',
+    label: 'Notify a team',
+    description: 'On submit, send an in-app notification to a role you choose.',
+    build: () => ({
+      schemaVersion: 1,
+      nodes: [
+        {
+          id: 'trg',
+          position: { x: 60, y: 140 },
+          data: { kind: 'trigger', trigger: { trigger: 'on_submit' } },
+        },
+        {
+          id: 'act',
+          position: { x: 380, y: 140 },
+          data: {
+            kind: 'action',
+            action: { action: 'notify_role', role: '', message: 'A new submission needs review.' },
+          },
+        },
+      ],
+      edges: [{ id: 'e1', source: 'trg', target: 'act', sourceHandle: 'next' }],
+    }),
+  },
+  {
+    key: 'capa_noncompliant',
+    label: 'CAPA when non-compliant',
+    description: 'If the compliance score is below 80, open a corrective action.',
+    build: () => ({
+      schemaVersion: 1,
+      nodes: [
+        {
+          id: 'trg',
+          position: { x: 40, y: 160 },
+          data: { kind: 'trigger', trigger: { trigger: 'on_submit' } },
+        },
+        {
+          id: 'cnd',
+          position: { x: 320, y: 160 },
+          data: {
+            kind: 'condition',
+            rule: { op: 'lt', field: 'compliance_score', value: 80 },
+            label: 'Score below 80',
+          },
+        },
+        {
+          id: 'act',
+          position: { x: 620, y: 100 },
+          data: {
+            kind: 'action',
+            action: {
+              action: 'create_capa',
+              titleTemplate: 'Follow-up corrective action',
+              severity: 'high',
+            },
+          },
+        },
+      ],
+      edges: [
+        { id: 'e1', source: 'trg', target: 'cnd', sourceHandle: 'next' },
+        { id: 'e2', source: 'cnd', target: 'act', sourceHandle: 'then' },
+      ],
+    }),
+  },
+  {
+    key: 'approval',
+    label: 'Require approval',
+    description: 'On submit, pause for a supervisor to approve or reject.',
+    build: () => ({
+      schemaVersion: 1,
+      nodes: [
+        {
+          id: 'trg',
+          position: { x: 60, y: 140 },
+          data: { kind: 'trigger', trigger: { trigger: 'on_submit' } },
+        },
+        {
+          id: 'gat',
+          position: { x: 380, y: 140 },
+          data: {
+            kind: 'gate',
+            gate: { title: 'Supervisor approval', assignee: { type: 'role', role: '' } },
+          },
+        },
+      ],
+      edges: [{ id: 'e1', source: 'trg', target: 'gat', sourceHandle: 'next' }],
+    }),
+  },
+  {
+    key: 'webhook',
+    label: 'Send to a webhook',
+    description: 'On submit, POST the response to an external URL (Zapier, Make, your API).',
+    build: () => ({
+      schemaVersion: 1,
+      nodes: [
+        {
+          id: 'trg',
+          position: { x: 60, y: 140 },
+          data: { kind: 'trigger', trigger: { trigger: 'on_submit' } },
+        },
+        {
+          id: 'act',
+          position: { x: 380, y: 140 },
+          data: { kind: 'action', action: { action: 'webhook', url: '', method: 'POST' } },
+        },
+      ],
+      edges: [{ id: 'e1', source: 'trg', target: 'act', sourceHandle: 'next' }],
+    }),
+  },
+  {
+    key: 'monitored_session',
+    label: 'Monitored session (lone worker)',
+    description:
+      'On submit, start a recurring check-in timer; if a check-in is missed past the grace period, notify a role.',
+    build: () => ({
+      schemaVersion: 1,
+      nodes: [
+        {
+          id: 'trg',
+          position: { x: 60, y: 80 },
+          data: { kind: 'trigger', trigger: { trigger: 'on_submit' } },
+        },
+        {
+          id: 'mon',
+          position: { x: 380, y: 80 },
+          data: {
+            kind: 'action',
+            action: {
+              action: 'start_monitored_session',
+              intervalMinutes: 30,
+              graceMinutes: 10,
+              durationMinutes: 120,
+              requireGeo: true,
+            },
+          },
+        },
+        {
+          id: 'ovd',
+          position: { x: 60, y: 260 },
+          data: { kind: 'trigger', trigger: { trigger: 'session_overdue' } },
+        },
+        {
+          id: 'esc',
+          position: { x: 380, y: 260 },
+          data: {
+            kind: 'action',
+            action: {
+              action: 'notify_role',
+              role: '',
+              message: 'A monitored session check-in is overdue — follow up now.',
+              channel: 'in_app',
+            },
+          },
+        },
+      ],
+      edges: [
+        { id: 'e1', source: 'trg', target: 'mon', sourceHandle: 'next' },
+        { id: 'e2', source: 'ovd', target: 'esc', sourceHandle: 'next' },
+      ],
+    }),
+  },
+]
+
+export function FlowsCanvas({
+  profile,
+  emailTemplates,
+  pdfTemplates = [],
+  targetApps = [],
+  recipientOptions = EMPTY_RECIPIENT_OPTIONS,
+  flows,
+  canEdit,
+  adapter,
+  templates = DEFAULT_WORKFLOW_TEMPLATES,
+  emailDesign,
+  embedded = false,
+  backLink,
+}: {
+  profile: FlowSubjectProfile
+  emailTemplates: EmailTemplateOption[]
+  pdfTemplates?: PdfTemplateOption[]
+  targetApps?: TargetAppOption[]
+  recipientOptions?: RecipientOptions
+  flows: FlowSummary[]
+  canEdit: boolean
+  adapter: WorkflowStudioAdapter
+  templates?: readonly WorkflowTemplate[]
+  emailDesign?: WorkflowEmailDesignAdapter
+  // When rendered inside a host editor, hide the standalone back link
+  // + the redundant subject-name prefix (the editor header already has it).
+  embedded?: boolean
+  backLink?: React.ReactNode
+}) {
+  const tGeneratedValue = useGeneratedValueTranslations()
+  const tGenerated = useGeneratedTranslations()
+  // Subject-driven: triggers/actions/status/fields all come from the profile, so
+  // the same canvas renders for a form template OR a native module.
+  const subject: FlowSubjectRef = { type: profile.subjectType, key: profile.subjectKey }
+  const subjectLabel = profile.label
+  const fieldIds = useMemo(() => profile.fields.map((f) => f.key), [profile])
+  const actionFields = useMemo<ActionFieldOptions>(
+    () => ({
+      all: profile.fields.map((field) => field.key),
+      writable: profile.fields
+        .filter((field) =>
+          profile.subjectType === 'module' ? field.writable === true : field.writable !== false,
+        )
+        .map((field) => field.key),
+      photoSources: profile.fields.filter((field) => field.photoSource).map((field) => field.key),
+      textOutputs: profile.fields.filter((field) => field.textOutput).map((field) => field.key),
+      numeric: profile.fields
+        .filter(
+          (field) =>
+            field.kind === 'number' &&
+            (profile.subjectType === 'module' ? field.writable === true : field.writable !== false),
+        )
+        .map((field) => field.key),
+    }),
+    [profile],
+  )
+  // Working graphs live in a ref keyed by flow id; switching flows captures the
+  // current canvas into the ref and loads the target's graph. Save persists the
+  // selected flow only (n8n-style). The sidebar list holds name/enabled.
+  const graphs = useRef<Map<string, AutomationGraph>>(new Map(flows.map((f) => [f.id, f.graph])))
+  const [flowList, setFlowList] = useState<FlowMeta[]>(
+    flows.map((f) => ({ id: f.id, name: f.name, enabled: f.enabled })),
+  )
+  const [selectedFlowId, setSelectedFlowId] = useState<string | null>(flows[0]?.id ?? null)
+  const initial = useMemo(() => toFlow(flows[0]?.graph ?? emptyAutomationGraph()), [flows])
+  const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>(initial.nodes)
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initial.edges)
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [pending, start] = useTransition()
+  const [showAi, setShowAi] = useState(false)
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [showTemplates, setShowTemplates] = useState(false)
+
+  // Follow the app's dark theme so React Flow's canvas / controls / minimap /
+  // edges render dark too (the `.dark` class is toggled by the theme switcher).
+  const [isDark, setIsDark] = useState(false)
+  useEffect(() => {
+    const el = document.documentElement
+    const sync = () => setIsDark(el.classList.contains('dark'))
+    sync()
+    const obs = new MutationObserver(sync)
+    obs.observe(el, { attributes: true, attributeFilter: ['class'] })
+    return () => obs.disconnect()
+  }, [])
+
+  const nodeTypes = useMemo(
+    () => ({ trigger: TriggerNode, condition: ConditionNode, gate: GateNode, action: ActionNode }),
+    [],
+  )
+
+  const availableFields = useMemo(
+    () => profile.fields.map((f) => ({ id: f.key, label: f.label })),
+    [profile],
+  )
+  const availableTemplates = useMemo(
+    () =>
+      templates.filter((template) => {
+        const graph = template.build()
+        return lintAutomationGraph(graph, new Set(fieldIds), profile).length === 0
+      }),
+    [fieldIds, profile, templates],
+  )
+  const selectedNode = nodes.find((n) => n.id === selectedNodeId) ?? null
+  const selectedFlow = flowList.find((f) => f.id === selectedFlowId) ?? null
+  const warnings = useMemo(
+    () =>
+      selectedFlowId
+        ? lintAutomationGraph(fromFlow(nodes, edges), new Set(fieldIds), profile)
+        : [],
+    [edges, fieldIds, nodes, profile, selectedFlowId],
+  )
+
+  const captureCurrent = useCallback(() => {
+    if (selectedFlowId) graphs.current.set(selectedFlowId, fromFlow(nodes, edges))
+  }, [selectedFlowId, nodes, edges])
+
+  const loadFlow = useCallback(
+    (id: string | null) => {
+      const g = id ? (graphs.current.get(id) ?? emptyAutomationGraph()) : emptyAutomationGraph()
+      const f = toFlow(g)
+      setNodes(id ? f.nodes : [])
+      setEdges(id ? f.edges : [])
+      setSelectedNodeId(null)
+      setSelectedFlowId(id)
+    },
+    [setNodes, setEdges],
+  )
+
+  const selectFlow = (id: string) => {
+    if (id === selectedFlowId) return
+    captureCurrent()
+    loadFlow(id)
+  }
+
+  const addFlow = () => {
+    start(async () => {
+      const res = await adapter.create(subject, 'New flow')
+      if (!res.ok || !res.id) {
+        toast.error(tGeneratedValue(res.error ?? tGenerated('m_11eec81d216014')))
+        return
+      }
+      captureCurrent()
+      graphs.current.set(res.id, emptyAutomationGraph())
+      setFlowList((l) => [...l, { id: res.id!, name: 'New flow', enabled: false }])
+      loadFlow(res.id)
+      toast.success(tGenerated('m_07105e19c7e789'))
+    })
+  }
+
+  const toggleEnabled = (id: string, enabled: boolean) => {
+    setFlowList((l) => l.map((f) => (f.id === id ? { ...f, enabled } : f)))
+    start(async () => {
+      const result = await adapter.setEnabled(id, enabled)
+      if (!result.ok) {
+        setFlowList((list) =>
+          list.map((flow) => (flow.id === id ? { ...flow, enabled: !enabled } : flow)),
+        )
+        toast.error(
+          tGeneratedValue(
+            result.error ??
+              (enabled ? tGenerated('m_02c65a444f151a') : tGenerated('m_1e6f44ac3a3238')),
+          ),
+        )
+      }
+    })
+  }
+
+  const commitRename = (id: string) => {
+    const nm = editName.trim() || 'Flow'
+    if (nm.length > MAX_FLOW_NAME_LENGTH) {
+      toast.error(tGenerated('m_1e52dceb23405d', { value0: MAX_FLOW_NAME_LENGTH }))
+      return
+    }
+    const previousName = flowList.find((flow) => flow.id === id)?.name
+    setFlowList((l) => l.map((f) => (f.id === id ? { ...f, name: nm } : f)))
+    setEditingId(null)
+    start(async () => {
+      const result = await adapter.rename(id, nm)
+      if (!result.ok) {
+        if (previousName) {
+          setFlowList((list) =>
+            list.map((flow) => (flow.id === id ? { ...flow, name: previousName } : flow)),
+          )
+        }
+        toast.error(tGeneratedValue(result.error ?? tGenerated('m_0245cf85678788')))
+      }
+    })
+  }
+
+  const removeFlow = (id: string) => {
+    start(async () => {
+      const result = await adapter.remove(id)
+      if (!result.ok) {
+        toast.error(tGeneratedValue(result.error ?? tGenerated('m_15741a97c1becc')))
+        return
+      }
+      graphs.current.delete(id)
+      const next = flowList.filter((f) => f.id !== id)
+      setFlowList(next)
+      if (id === selectedFlowId) loadFlow(next[0]?.id ?? null)
+      toast.success(tGenerated('m_0ac2f784b6e43b'))
+    })
+  }
+
+  const onConnect = useCallback(
+    (c: Connection) => setEdges((eds) => addEdge({ ...c, id: newId('e') }, eds)),
+    [setEdges],
+  )
+
+  const addNode = (kind: NData['kind']) => {
+    if (!selectedFlowId) return
+    const id = newId(kind)
+    const node: FlowNode = {
+      id,
+      type: kind,
+      position: { x: 80 + Math.random() * 240, y: 80 + Math.random() * 240 },
+      data: defaultData(kind, fieldIds[0] ?? '', profile, actionFields),
+    }
+    setNodes((ns) => [...ns, node])
+    setSelectedNodeId(id)
+  }
+
+  const patchData = (id: string, data: NData) =>
+    setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, data } : n)))
+
+  const removeNode = (id: string) => {
+    setNodes((ns) => ns.filter((n) => n.id !== id))
+    setEdges((es) => es.filter((e) => e.source !== id && e.target !== id))
+    setSelectedNodeId(null)
+  }
+
+  const save = () => {
+    if (!selectedFlowId) return
+    const graph = fromFlow(nodes, edges)
+    graphs.current.set(selectedFlowId, graph)
+    start(async () => {
+      const res = await adapter.save(selectedFlowId, graph)
+      if (!res.ok) {
+        toast.error(tGeneratedValue(res.error ?? tGenerated('m_141dec99716e82')))
+        return
+      }
+      toast.success(tGenerated('m_03c918fe3c11b7'))
+    })
+  }
+
+  const runAi = () => {
+    if (!selectedFlowId) {
+      toast.error(tGenerated('m_0776dc4696267a'))
+      return
+    }
+    start(async () => {
+      if (!adapter.generate) return
+      const res = await adapter.generate(selectedFlowId, aiPrompt)
+      if (!res.ok || !res.graph) {
+        toast.error(tGeneratedValue(res.error ?? tGenerated('m_0a2bad9c653946')))
+        return
+      }
+      graphs.current.set(selectedFlowId, res.graph)
+      const f = toFlow(res.graph)
+      setNodes(f.nodes)
+      setEdges(f.edges)
+      setSelectedNodeId(null)
+      setShowAi(false)
+      toast.success(tGenerated('m_162609b68a9ac6'))
+    })
+  }
+
+  const applyTemplate = (t: WorkflowTemplate) => {
+    if (!selectedFlowId) {
+      toast.error(tGenerated('m_0776dc4696267a'))
+      return
+    }
+    const graph = t.build()
+    graphs.current.set(selectedFlowId, graph)
+    const f = toFlow(graph)
+    setNodes(f.nodes)
+    setEdges(f.edges)
+    setSelectedNodeId(null)
+    setShowTemplates(false)
+    toast.success(tGenerated('m_0e58c2382f9cda'))
+  }
+
+  return (
+    <div className="flex h-full min-h-0">
+      {/* Left rail — flows list */}
+      <aside className="flex w-60 shrink-0 flex-col border-r border-border bg-bg-subtle">
+        <div className="flex items-center justify-between border-b border-border px-3 py-2">
+          <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-fg-muted uppercase text-fg-subtle">
+            <Workflow size={13} /> <GeneratedText id="m_1a4786daa752b1" />
+          </span>
+          <GeneratedValue
+            value={
+              canEdit ? (
+                <button
+                  type="button"
+                  onClick={addFlow}
+                  disabled={pending}
+                  title={tGenerated('m_0c4753241b87b2')}
+                  className="rounded p-1 text-fg-muted hover:bg-surface hover:text-fg disabled:opacity-50 text-fg-subtle  "
+                >
+                  <Plus size={15} />
+                </button>
+              ) : null
+            }
+          />
+
+          {warnings.length > 0 ? (
+            <details className="absolute top-3 right-3 z-10 max-w-sm rounded-lg border border-warning/30 bg-warning-subtle/95 px-3 py-2 text-sm text-warning shadow-sm backdrop-blur">
+              <summary className="flex cursor-pointer list-none items-center gap-2 select-none">
+                <TriangleAlert size={14} className="shrink-0" />
+                <span className="font-medium">
+                  {warnings.length} {warnings.length === 1 ? 'warning' : 'warnings'}
+                </span>
+              </summary>
+              <ul className="mt-1.5 list-disc space-y-0.5 pl-6 text-xs">
+                {warnings.map((warning, index) => (
+                  <li key={`${index}-${warning}`}>{warning}</li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
+        </div>
+        <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2">
+          <GeneratedValue
+            value={
+              flowList.length === 0 ? (
+                <div className="px-2 py-6 text-center text-xs text-fg-subtle">
+                  <GeneratedText id="m_09b3b5bd8c347d" />
+                  <GeneratedValue
+                    value={
+                      canEdit ? (
+                        <button
+                          onClick={addFlow}
+                          className="mt-2 block w-full text-primary hover:underline"
+                        >
+                          <GeneratedText id="m_19bca60b6c1661" />
+                        </button>
+                      ) : null
+                    }
+                  />
+                </div>
+              ) : (
+                flowList.map((f) => {
+                  const active = f.id === selectedFlowId
+                  return (
+                    <div
+                      key={f.id}
+                      onClick={() => selectFlow(f.id)}
+                      className={`group flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
+                        active
+                          ? 'bg-surface shadow-sm ring-1 ring-primary'
+                          : 'hover:bg-surface-hover'
+                      }`}
+                    >
+                      <MiniToggle
+                        checked={f.enabled}
+                        disabled={!canEdit}
+                        onChange={(v) => toggleEnabled(f.id, v)}
+                      />
+                      <GeneratedValue
+                        value={
+                          editingId === f.id ? (
+                            <input
+                              autoFocus
+                              value={editName}
+                              maxLength={MAX_FLOW_NAME_LENGTH}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => setEditName(e.target.value)}
+                              onBlur={() => commitRename(f.id)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') commitRename(f.id)
+                                if (e.key === 'Escape') setEditingId(null)
+                              }}
+                              className="min-w-0 flex-1 rounded border border-border-strong px-1 py-0.5 text-sm outline-none focus:border-primary"
+                            />
+                          ) : (
+                            <span
+                              className={`min-w-0 flex-1 truncate ${
+                                f.enabled
+                                  ? 'text-fg'
+                                  : 'text-fg-subtle line-through text-fg-muted'
+                              }`}
+                            >
+                              <GeneratedValue value={f.name} />
+                            </span>
+                          )
+                        }
+                      />
+                      <GeneratedValue
+                        value={
+                          canEdit && editingId !== f.id ? (
+                            <>
+                              <button
+                                type="button"
+                                title={tGenerated('m_19a03337702a01')}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setEditingId(f.id)
+                                  setEditName(f.name)
+                                }}
+                                className="opacity-0 transition group-hover:opacity-100"
+                              >
+                                <Pencil size={12} className="text-fg-subtle hover:text-fg-muted" />
+                              </button>
+                              <button
+                                type="button"
+                                title={tGenerated('m_15741a97c1becc')}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  removeFlow(f.id)
+                                }}
+                                className="opacity-0 transition group-hover:opacity-100"
+                              >
+                                <Trash2 size={12} className="text-fg-subtle hover:text-danger" />
+                              </button>
+                            </>
+                          ) : null
+                        }
+                      />
+                    </div>
+                  )
+                })
+              )
+            }
+          />
+        </div>
+      </aside>
+
+      {/* Main column — header + canvas */}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border bg-surface px-4 py-2">
+          <div className="flex min-w-0 items-center gap-2 text-sm">
+            <GeneratedValue
+              value={
+                !embedded && backLink ? (
+                  <>
+                    {backLink}
+                    <span className="h-4 w-px bg-border" />
+                  </>
+                ) : null
+              }
+            />
+            <span className="min-w-0 truncate">
+              <GeneratedValue
+                value={
+                  embedded ? null : (
+                    <span className="font-semibold">
+                      <GeneratedValue value={subjectLabel} />
+                    </span>
+                  )
+                }
+              />
+              <GeneratedValue value={' '} />
+              <span className={embedded ? 'font-semibold text-fg' : 'text-fg-subtle'}>
+                <GeneratedValue value={embedded ? '' : '· '} />
+                <GeneratedValue
+                  value={selectedFlow ? selectedFlow.name : <GeneratedText id="m_1a4786daa752b1" />}
+                />
+              </span>
+            </span>
+            <GeneratedValue
+              value={
+                selectedFlow && !selectedFlow.enabled ? (
+                  <span className="ml-2 rounded bg-bg-subtle px-1.5 py-0.5 text-[10px] font-medium text-fg-muted">
+                    <GeneratedText id="m_0ea7ffe3f671e7" />
+                  </span>
+                ) : null
+              }
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <GeneratedValue
+              value={
+                canEdit && selectedFlowId ? (
+                  <>
+                    <Button variant="outline" size="sm" onClick={() => addNode('trigger')}>
+                      <Plus size={13} /> <GeneratedText id="m_1db1e5c9ca41ce" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => addNode('condition')}>
+                      <Plus size={13} /> <GeneratedText id="m_0c33471afd0f99" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => addNode('gate')}>
+                      <Plus size={13} /> <GeneratedText id="m_0f7bb45f90ba7e" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => addNode('action')}>
+                      <Plus size={13} /> <GeneratedText id="m_0bad495a7046e9" />
+                    </Button>
+                  </>
+                ) : null
+              }
+            />
+            <GeneratedValue
+              value={
+                canEdit && selectedFlowId ? (
+                  <Button variant="outline" size="sm" onClick={() => setShowTemplates(true)}>
+                    <Rocket size={13} /> <GeneratedText id="m_0a19e6387037d4" />
+                  </Button>
+                ) : null
+              }
+            />
+            <GeneratedValue
+              value={
+                adapter.generate && selectedFlowId ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAi(true)}
+                    disabled={pending}
+                  >
+                    <Sparkles size={13} /> <GeneratedText id="m_1e0a86199c09df" />
+                  </Button>
+                ) : null
+              }
+            />
+            <GeneratedValue
+              value={
+                canEdit && selectedFlowId ? (
+                  <Button size="sm" onClick={save} disabled={pending}>
+                    <Save size={13} />{' '}
+                    <GeneratedValue
+                      value={
+                        pending ? (
+                          <GeneratedText id="m_106811f2aac664" />
+                        ) : (
+                          <GeneratedText id="m_19e6bff894c3c7" />
+                        )
+                      }
+                    />
+                  </Button>
+                ) : null
+              }
+            />
+          </div>
+        </header>
+
+        <div className="relative min-h-0 flex-1">
+          <GeneratedValue
+            value={
+              selectedFlowId ? (
+                <ReactFlow
+                  nodes={nodes}
+                  edges={edges}
+                  onNodesChange={onNodesChange}
+                  onEdgesChange={onEdgesChange}
+                  onConnect={onConnect}
+                  onNodeClick={(_, n) => setSelectedNodeId(n.id)}
+                  onPaneClick={() => setSelectedNodeId(null)}
+                  nodeTypes={nodeTypes}
+                  nodesConnectable={canEdit}
+                  colorMode={isDark ? 'dark' : 'light'}
+                  fitView
+                  fitViewOptions={{ padding: 0.3, maxZoom: 0.8 }}
+                  minZoom={0.2}
+                  proOptions={{ hideAttribution: true }}
+                >
+                  <Background />
+                  <Controls showInteractive={false} />
+                  <MiniMap pannable zoomable />
+                </ReactFlow>
+              ) : (
+                <div className="flex h-full items-center justify-center">
+                  <div className="rounded-xl border border-dashed border-border-strong bg-surface p-6 text-center">
+                    <p className="text-sm font-medium text-fg">
+                      <GeneratedText id="m_1abfbb4f0b4f36" />
+                    </p>
+                    <p className="mt-1 max-w-xs text-xs text-fg-muted">
+                      <GeneratedText id="m_028d6ce274ccaa" />
+                    </p>
+                  </div>
+                </div>
+              )
+            }
+          />
+
+          <GeneratedValue
+            value={
+              selectedFlowId && nodes.length === 0 ? (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4">
+                  <div className="pointer-events-auto w-full max-w-lg rounded-xl border border-dashed border-border-strong bg-surface/95 p-5 text-center shadow-sm">
+                    <p className="text-sm font-semibold text-fg">
+                      <GeneratedText id="m_1df84b29521519" />
+                    </p>
+                    <p className="mt-1 text-xs text-fg-muted">
+                      <GeneratedText id="m_139d4c0c9f7be0" />
+                    </p>
+                    <GeneratedValue
+                      value={
+                        canEdit ? (
+                          <div className="mt-3 grid grid-cols-1 gap-2 text-left sm:grid-cols-2">
+                            <GeneratedValue
+                              value={availableTemplates.map((t) => (
+                                <button
+                                  key={t.key}
+                                  type="button"
+                                  onClick={() => applyTemplate(t)}
+                                  className="rounded-lg border border-border bg-surface p-2.5 transition hover:border-primary hover:bg-primary-subtle/40"
+                                >
+                                  <div className="text-xs font-semibold text-fg">
+                                    <GeneratedValue value={t.label} />
+                                  </div>
+                                  <div className="mt-0.5 text-[11px] leading-snug text-fg-muted">
+                                    <GeneratedValue value={t.description} />
+                                  </div>
+                                </button>
+                              ))}
+                            />
+                          </div>
+                        ) : null
+                      }
+                    />
+                  </div>
+                </div>
+              ) : null
+            }
+          />
+        </div>
+      </div>
+
+      <Drawer
+        open={selectedNode != null}
+        onClose={() => setSelectedNodeId(null)}
+        title={tGeneratedValue(
+          selectedNode
+            ? tGenerated('m_0a45a3f047a285', { value0: selectedNode.data.kind })
+            : tGenerated('m_03a66f9d34ac7b'),
+        )}
+        size="sm"
+        footer={
+          selectedNode && canEdit ? (
+            <Button variant="outline" onClick={() => removeNode(selectedNode.id)}>
+              <Trash2 size={14} className="text-danger" /> <GeneratedText id="m_09838d30eb3121" />
+            </Button>
+          ) : null
+        }
+      >
+        <GeneratedValue
+          value={
+            selectedNode ? (
+              <NodeInspector
+                data={selectedNode.data}
+                fieldIds={fieldIds}
+                actionFields={actionFields}
+                availableFields={availableFields}
+                profile={profile}
+                emailTemplates={emailTemplates}
+                pdfTemplates={pdfTemplates}
+                targetApps={targetApps}
+                recipientOptions={recipientOptions}
+                emailDesign={emailDesign}
+                readOnly={!canEdit}
+                onChange={(d) => patchData(selectedNode.id, d)}
+              />
+            ) : null
+          }
+        />
+      </Drawer>
+
+      <Drawer
+        open={showTemplates}
+        onClose={() => setShowTemplates(false)}
+        title={tGenerated('m_01a6df8deac3ad')}
+        description={tGenerated('m_127e5a438a4764')}
+        size="sm"
+      >
+        <div className="space-y-2">
+          <GeneratedValue
+            value={availableTemplates.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => applyTemplate(t)}
+                className="block w-full rounded-lg border border-border bg-surface p-3 text-left transition hover:border-primary hover:bg-primary-subtle/40"
+              >
+                <div className="text-sm font-semibold text-fg">
+                  <GeneratedValue value={t.label} />
+                </div>
+                <div className="mt-0.5 text-xs leading-snug text-fg-muted">
+                  <GeneratedValue value={t.description} />
+                </div>
+              </button>
+            ))}
+          />
+          <p className="pt-1 text-[11px] text-fg-subtle text-fg-muted">
+            <GeneratedText id="m_0be1be4daf3028" />
+          </p>
+        </div>
+      </Drawer>
+
+      <Drawer
+        open={showAi}
+        onClose={() => setShowAi(false)}
+        title={tGenerated('m_0c24b0e0c8e0fa')}
+        description={tGenerated('m_0d4729dfb8d8fa')}
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowAi(false)} disabled={pending}>
+              <GeneratedText id="m_112e2e8ecda428" />
+            </Button>
+            <Button onClick={runAi} disabled={pending || aiPrompt.trim().length < 4}>
+              <Sparkles size={14} />{' '}
+              <GeneratedValue
+                value={
+                  pending ? (
+                    <GeneratedText id="m_11beb293de9d2d" />
+                  ) : (
+                    <GeneratedText id="m_1dbb9f90b1c6f2" />
+                  )
+                }
+              />
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-2">
+          <Textarea
+            rows={4}
+            value={aiPrompt}
+            placeholder={tGenerated('m_01e855ecae74db')}
+            onChange={(e) => setAiPrompt(e.target.value)}
+          />
+          <p className="text-[11px] text-fg-subtle text-fg-muted">
+            <GeneratedText id="m_06e04a2aa58e1f" />
+          </p>
+        </div>
+      </Drawer>
+    </div>
+  )
+}
+
+// --- Inspector (per-kind editing) ------------------------------------------
+
+function NodeInspector({
+  data,
+  fieldIds,
+  actionFields,
+  availableFields,
+  profile,
+  emailTemplates,
+  pdfTemplates,
+  targetApps,
+  recipientOptions,
+  emailDesign,
+  readOnly,
+  onChange,
+}: {
+  data: NData
+  fieldIds: string[]
+  actionFields: ActionFieldOptions
+  availableFields: { id: string; label: string }[]
+  profile: FlowSubjectProfile
+  emailTemplates: EmailTemplateOption[]
+  pdfTemplates: PdfTemplateOption[]
+  targetApps: TargetAppOption[]
+  recipientOptions: RecipientOptions
+  emailDesign?: WorkflowEmailDesignAdapter
+  readOnly: boolean
+  onChange: (d: NData) => void
+}) {
+  const tGenerated = useGeneratedTranslations()
+  if (data.kind === 'trigger') {
+    const t = data.trigger
+    return (
+      <div className="space-y-3">
+        <Field label={tGenerated('m_13cc128f69897c')}>
+          <Select
+            value={t.trigger}
+            disabled={readOnly}
+            onChange={(e) => {
+              const v = e.target.value as TriggerData['trigger']
+              onChange({
+                kind: 'trigger',
+                trigger: buildTrigger(
+                  v,
+                  fieldIds[0] ?? '',
+                  profile.statusValues?.[0] ?? 'submitted',
+                ),
+              })
+            }}
+          >
+            {profile.triggers.map((tk) => (
+              <option key={tk} value={tk}>
+                {TRIGGER_LABEL[tk]}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <GeneratedValue
+          value={
+            t.trigger === 'on_field_value' ? (
+              <Field label={tGenerated('m_19a82ebc42ebe3')}>
+                <LogicBuilder
+                  rule={t.rule}
+                  availableFields={availableFields}
+                  onChange={(rule) =>
+                    onChange({
+                      kind: 'trigger',
+                      trigger: {
+                        trigger: 'on_field_value',
+                        rule: rule ?? { op: 'isSet', field: fieldIds[0] ?? '' },
+                      },
+                    })
+                  }
+                />
+              </Field>
+            ) : null
+          }
+        />
+        <GeneratedValue
+          value={
+            t.trigger === 'status_change' ? (
+              <Field label={tGenerated('m_0b5f0bfe110fb9')}>
+                <Select
+                  value={t.to}
+                  disabled={readOnly}
+                  onChange={(e) =>
+                    onChange({
+                      kind: 'trigger',
+                      trigger: { trigger: 'status_change', to: e.target.value },
+                    })
+                  }
+                >
+                  {(profile.statusValues ?? ['submitted']).map((s) => (
+                    <option key={s} value={s}>
+                      {s.replace(/_/g, ' ')}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            ) : null
+          }
+        />
+        <GeneratedValue
+          value={
+            t.trigger === 'scheduled' ? (
+              <Field label={tGenerated('m_18651428376053')}>
+                <Input
+                  value={t.cron}
+                  disabled={readOnly}
+                  onChange={(e) =>
+                    onChange({
+                      kind: 'trigger',
+                      trigger: { ...t, cron: e.target.value },
+                    })
+                  }
+                />
+              </Field>
+            ) : null
+          }
+        />
+        <GeneratedValue
+          value={
+            t.trigger === 'manual' ? (
+              <>
+                <p className="text-[11px] text-fg-muted">
+                  <GeneratedText id="m_0acdcecd1c4f9c" />
+                </p>
+                <Field label={tGenerated('m_18b7c648c39e28')}>
+                  <Input
+                    value={t.label}
+                    disabled={readOnly}
+                    placeholder={tGenerated('m_120d9d75eb5980')}
+                    onChange={(e) =>
+                      onChange({ kind: 'trigger', trigger: { ...t, label: e.target.value } })
+                    }
+                  />
+                </Field>
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label={tGenerated('m_03cf3a97d03fef')}>
+                    <Select
+                      value={t.variant ?? 'default'}
+                      disabled={readOnly}
+                      onChange={(e) =>
+                        onChange({
+                          kind: 'trigger',
+                          trigger: {
+                            ...t,
+                            variant: e.target.value as NonNullable<typeof t.variant>,
+                          },
+                        })
+                      }
+                    >
+                      <option value="default">{'Primary'}</option>
+                      <option value="outline">{'Outline'}</option>
+                      <option value="secondary">{'Secondary'}</option>
+                      <option value="destructive">{'Destructive'}</option>
+                    </Select>
+                  </Field>
+                  <Field label={tGenerated('m_158279b74f9a6e')}>
+                    <Input
+                      value={t.icon ?? ''}
+                      disabled={readOnly}
+                      placeholder={tGenerated('m_1498caf65a85c4')}
+                      onChange={(e) =>
+                        onChange({
+                          kind: 'trigger',
+                          trigger: {
+                            ...t,
+                            icon: e.target.value.trim() ? e.target.value : undefined,
+                          },
+                        })
+                      }
+                    />
+                  </Field>
+                </div>
+                <Field label={tGenerated('m_01066829ab2176')}>
+                  <Input
+                    value={t.confirm ?? ''}
+                    disabled={readOnly}
+                    placeholder={tGenerated('m_1c97926a04b9c7')}
+                    onChange={(e) =>
+                      onChange({
+                        kind: 'trigger',
+                        trigger: {
+                          ...t,
+                          confirm: e.target.value.trim() ? e.target.value : undefined,
+                        },
+                      })
+                    }
+                  />
+                </Field>
+                <Field label={tGenerated('m_126e942baf656b')}>
+                  <Input
+                    type="number"
+                    value={t.order ?? ''}
+                    disabled={readOnly}
+                    placeholder={tGenerated('m_0f137cab523375')}
+                    onChange={(e) => {
+                      const raw = e.target.value.trim()
+                      const n = raw === '' ? undefined : Number.parseInt(raw, 10)
+                      onChange({
+                        kind: 'trigger',
+                        trigger: {
+                          ...t,
+                          order: Number.isFinite(n as number) ? (n as number) : undefined,
+                        },
+                      })
+                    }}
+                  />
+                </Field>
+                <Field label={tGenerated('m_0ef7e5f0c544da')}>
+                  <LogicBuilder
+                    rule={t.showIf}
+                    availableFields={availableFields}
+                    onChange={(rule) =>
+                      onChange({ kind: 'trigger', trigger: { ...t, showIf: rule ?? undefined } })
+                    }
+                  />
+                  <p className="mt-1 text-[11px] text-fg-subtle text-fg-muted">
+                    <GeneratedText id="m_01a3b7ba2ed936" />
+                    <GeneratedValue value={' '} />
+                    <span className="font-mono">
+                      <GeneratedValue value={t.buttonId} />
+                    </span>
+                  </p>
+                </Field>
+              </>
+            ) : null
+          }
+        />
+      </div>
+    )
+  }
+
+  if (data.kind === 'condition') {
+    return (
+      <div className="space-y-3">
+        <Field label={tGenerated('m_1d088977412efb')}>
+          <Input
+            value={data.label ?? ''}
+            disabled={readOnly}
+            onChange={(e) => onChange({ ...data, label: e.target.value })}
+          />
+        </Field>
+        <Field label={tGenerated('m_16a46bc46302d1')}>
+          <LogicBuilder
+            rule={data.rule}
+            availableFields={availableFields}
+            onChange={(rule) =>
+              onChange({ ...data, rule: rule ?? { op: 'isSet', field: fieldIds[0] ?? '' } })
+            }
+          />
+        </Field>
+      </div>
+    )
+  }
+
+  if (data.kind === 'gate') {
+    const g = data.gate
+    return (
+      <div className="space-y-3">
+        <Field label={tGenerated('m_0decefd558c355')}>
+          <Input
+            value={g.title}
+            disabled={readOnly}
+            onChange={(e) => onChange({ kind: 'gate', gate: { ...g, title: e.target.value } })}
+          />
+        </Field>
+        <Field label={tGenerated('m_1f4ba956f2ba0f')}>
+          <Select
+            value={g.assignee.type}
+            disabled={readOnly}
+            onChange={(e) =>
+              onChange({
+                kind: 'gate',
+                gate: {
+                  ...g,
+                  assignee:
+                    e.target.value === 'role' ? { type: 'role', role: '' } : { type: 'submitter' },
+                },
+              })
+            }
+          >
+            <option value="submitter">{'The submitter'}</option>
+            <option value="role">{'A role'}</option>
+          </Select>
+        </Field>
+        <GeneratedValue
+          value={
+            g.assignee.type === 'role' ? (
+              <Field label={tGenerated('m_1099c1fe8b6614')}>
+                <Input
+                  value={g.assignee.role}
+                  disabled={readOnly}
+                  onChange={(e) =>
+                    onChange({
+                      kind: 'gate',
+                      gate: { ...g, assignee: { type: 'role', role: e.target.value } },
+                    })
+                  }
+                />
+              </Field>
+            ) : null
+          }
+        />
+        <label className="flex items-center gap-2 text-sm text-fg">
+          <input
+            type="checkbox"
+            checked={!!g.signatureRequired}
+            disabled={readOnly}
+            onChange={(e) =>
+              onChange({ kind: 'gate', gate: { ...g, signatureRequired: e.target.checked } })
+            }
+          />
+          <GeneratedText id="m_02ffe91f500dc8" />
+        </label>
+      </div>
+    )
+  }
+
+  // action
+  return (
+    <ActionInspector
+      data={data}
+      fieldIds={fieldIds}
+      actionFields={actionFields}
+      availableFields={availableFields}
+      actions={profile.actions}
+      emailTemplates={emailTemplates}
+      pdfTemplates={pdfTemplates}
+      targetApps={targetApps}
+      recipientOptions={recipientOptions}
+      emailDesign={emailDesign}
+      readOnly={readOnly}
+      onChange={onChange}
+    />
+  )
+}
+
+function ActionInspector({
+  data,
+  fieldIds,
+  actionFields,
+  availableFields,
+  actions,
+  emailTemplates,
+  pdfTemplates,
+  targetApps,
+  recipientOptions,
+  emailDesign,
+  readOnly,
+  onChange,
+}: {
+  data: Extract<NData, { kind: 'action' }>
+  fieldIds: string[]
+  actionFields: ActionFieldOptions
+  availableFields: { id: string; label: string }[]
+  actions: ActionData['action'][]
+  emailTemplates: EmailTemplateOption[]
+  pdfTemplates: PdfTemplateOption[]
+  targetApps: TargetAppOption[]
+  recipientOptions: RecipientOptions
+  emailDesign?: WorkflowEmailDesignAdapter
+  readOnly: boolean
+  onChange: (d: NData) => void
+}) {
+  const tGeneratedValue = useGeneratedValueTranslations()
+  const tGenerated = useGeneratedTranslations()
+  const a = data.action
+  const set = (action: ActionData) => onChange({ kind: 'action', action })
+  const actionChoices = actions.length
+    ? actions
+    : (Object.keys(ACTION_LABEL) as ActionData['action'][])
+
+  // send_email "design" (one-off) mode — a full-screen drag-and-drop builder.
+  const EmailDesignBuilder = emailDesign?.Editor
+  const [designOpen, setDesignOpen] = useState(false)
+  const [designBusy, setDesignBusy] = useState(false)
+  const designRef = useRef<WorkflowEmailDesignEditor | null>(null)
+  const saveDesign = async () => {
+    const ed = designRef.current
+    if (!ed || !emailDesign || a.action !== 'send_email') return
+    setDesignBusy(true)
+    try {
+      const res = await emailDesign.compile(ed)
+      if (!res.ok || !res.html || !res.sourceHtml) {
+        toast.error(tGeneratedValue(res.error ?? tGenerated('m_002d59b20693c5')))
+        return
+      }
+      set({ ...a, mode: 'design', sourceHtml: res.sourceHtml, compiledHtml: res.html })
+      setDesignOpen(false)
+    } finally {
+      setDesignBusy(false)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <GeneratedValue
+        value={
+          designOpen ? (
+            <div className="fixed inset-0 z-[60] flex flex-col bg-surface bg-bg">
+              <div className="flex items-center justify-between border-b border-border px-4 py-2">
+                <span className="text-sm font-semibold text-fg">
+                  <GeneratedText id="m_1d8534a5e92ce6" />
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setDesignOpen(false)}>
+                    <GeneratedText id="m_112e2e8ecda428" />
+                  </Button>
+                  <Button size="sm" disabled={designBusy} onClick={saveDesign}>
+                    <GeneratedValue
+                      value={
+                        designBusy ? (
+                          <GeneratedText id="m_106811f2aac664" />
+                        ) : (
+                          <GeneratedText id="m_1f0e1a82c4aae4" />
+                        )
+                      }
+                    />
+                  </Button>
+                </div>
+              </div>
+              <div className="min-h-0 flex-1">
+                {EmailDesignBuilder ? <EmailDesignBuilder
+                  initialHtml={a.action === 'send_email' ? (a.sourceHtml ?? null) : null}
+                  mergeFields={fieldIds.map((f) => ({ key: f }))}
+                  onReady={(ed) => {
+                    designRef.current = ed
+                  }}
+                /> : null}
+              </div>
+            </div>
+          ) : null
+        }
+      />
+      <Field label={tGenerated('m_0bad495a7046e9')}>
+        <Select
+          value={a.action}
+          disabled={readOnly}
+          onChange={(e) => set(defaultAction(e.target.value as ActionData['action'], actionFields))}
+        >
+          {actionChoices.map((k) => (
+            <option key={k} value={k}>
+              {ACTION_LABEL[k]}
+            </option>
+          ))}
+        </Select>
+      </Field>
+
+      <GeneratedValue
+        value={
+          a.action === 'send_email' ? (
+            <>
+              <RecipientsEditor
+                to={a.to}
+                onChange={(to) => set({ ...a, to })}
+                readOnly={readOnly}
+                fieldIds={fieldIds}
+                options={recipientOptions}
+              />
+              <Field label={tGenerated('m_079594be6652a8')}>
+                <Select
+                  value={a.channel ?? 'email'}
+                  disabled={readOnly}
+                  onChange={(e) =>
+                    set({ ...a, channel: e.target.value as 'email' | 'sms' | 'in_app' })
+                  }
+                >
+                  <option value="email">{'Email'}</option>
+                  <option value="sms">{'SMS (text)'}</option>
+                  <option value="in_app">{'In-app notification'}</option>
+                </Select>
+              </Field>
+              <Field
+                label={tGeneratedValue(
+                  (a.channel ?? 'email') === 'email'
+                    ? tGenerated('m_03a92a8bba62c3')
+                    : tGenerated('m_12449ce6dd3e47'),
+                )}
+              >
+                <Select
+                  value={a.mode ?? 'inline'}
+                  disabled={readOnly}
+                  onChange={(e) =>
+                    set({ ...a, mode: e.target.value as 'inline' | 'template' | 'design' })
+                  }
+                >
+                  <option value="inline">{'Write it here'}</option>
+                  <option value="template">{'Use a saved template'}</option>
+                  <option value="design">{'Design one (drag & drop)'}</option>
+                </Select>
+              </Field>
+              <GeneratedValue
+                value={
+                  (a.mode ?? 'inline') === 'design' ? (
+                    <>
+                      <Field label={tGenerated('m_1928431de4aaf1')}>
+                        <Input
+                          value={a.subjectTemplate ?? ''}
+                          disabled={readOnly}
+                          onChange={(e) => set({ ...a, subjectTemplate: e.target.value })}
+                        />
+                      </Field>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={readOnly}
+                        onClick={() => setDesignOpen(true)}
+                      >
+                        <GeneratedValue
+                          value={
+                            a.compiledHtml ? (
+                              <GeneratedText id="m_1ed448916bb007" />
+                            ) : (
+                              <GeneratedText id="m_1f13f5c3b87576" />
+                            )
+                          }
+                        />
+                      </Button>
+                      <GeneratedValue
+                        value={
+                          a.compiledHtml ? (
+                            <p className="text-xs text-success">
+                              <GeneratedText id="m_1a12949487d961" />
+                            </p>
+                          ) : (
+                            <p className="text-xs text-fg-subtle">
+                              <GeneratedText id="m_00021f60b601ff" />
+                            </p>
+                          )
+                        }
+                      />
+                    </>
+                  ) : (a.mode ?? 'inline') === 'template' ? (
+                    <>
+                      <Field label={tGenerated('m_13704e4d90cde4')}>
+                        <Select
+                          value={a.templateId ?? ''}
+                          disabled={readOnly}
+                          onChange={(e) => set({ ...a, templateId: e.target.value })}
+                        >
+                          <option value="">{'— choose a template —'}</option>
+                          {emailTemplates.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.name}
+                            </option>
+                          ))}
+                        </Select>
+                      </Field>
+                      <GeneratedValue
+                        value={
+                          emailTemplates.length === 0 ? (
+                            <p className="text-xs text-fg-subtle">
+                              <GeneratedText id="m_01725f4d4cbece" />
+                            </p>
+                          ) : null
+                        }
+                      />
+                      <Field label={tGenerated('m_0a88689556c4a0')}>
+                        <Input
+                          value={a.subjectOverride ?? ''}
+                          disabled={readOnly}
+                          onChange={(e) => set({ ...a, subjectOverride: e.target.value })}
+                        />
+                      </Field>
+                    </>
+                  ) : (
+                    <>
+                      <Field label={tGenerated('m_1928431de4aaf1')}>
+                        <Input
+                          value={a.subject ?? ''}
+                          disabled={readOnly}
+                          onChange={(e) => set({ ...a, subject: e.target.value })}
+                        />
+                      </Field>
+                      <Field label={tGenerated('m_18d98590ba5c28')}>
+                        <Textarea
+                          rows={4}
+                          value={a.bodyTemplate ?? ''}
+                          disabled={readOnly}
+                          onChange={(e) => set({ ...a, bodyTemplate: e.target.value })}
+                        />
+                      </Field>
+                    </>
+                  )
+                }
+              />
+              <Field label={tGenerated('m_04c18d4965cadc')}>
+                <label className="flex items-center gap-2 text-sm text-fg">
+                  <input
+                    type="checkbox"
+                    checked={!!a.attachPdf}
+                    disabled={readOnly}
+                    onChange={(e) => set({ ...a, attachPdf: e.target.checked })}
+                    className="h-4 w-4 rounded border-border-strong text-primary focus:ring-primary"
+                  />
+                  <GeneratedText id="m_1afb19e2a3fd62" />
+                </label>
+              </Field>
+              <GeneratedValue
+                value={
+                  a.attachPdf ? (
+                    <Field label={tGenerated('m_0728ad8d6726a2')}>
+                      <Select
+                        value={
+                          a.pdfTemplateId
+                            ? `tpl:${a.pdfTemplateId}`
+                            : a.pdfFormat === 'summary'
+                              ? 'builtin:summary'
+                              : 'builtin:auto'
+                        }
+                        disabled={readOnly}
+                        onChange={(e) => {
+                          const v = e.target.value
+                          if (v.startsWith('tpl:')) {
+                            set({ ...a, pdfTemplateId: v.slice(4), pdfFormat: undefined })
+                          } else if (v === 'builtin:summary') {
+                            set({ ...a, pdfTemplateId: undefined, pdfFormat: 'summary' })
+                          } else {
+                            set({ ...a, pdfTemplateId: undefined, pdfFormat: undefined })
+                          }
+                        }}
+                      >
+                        <optgroup label={tGenerated('m_09bfd82959f8d2')}>
+                          <option value="builtin:auto">
+                            {'Assigned PDF template (falls back to the field summary)'}
+                          </option>
+                          <option value="builtin:summary">
+                            {'Field summary (key / value table)'}
+                          </option>
+                        </optgroup>
+                        {pdfTemplates.length > 0 ? (
+                          <optgroup label={tGenerated('m_1bf56760eea2b5')}>
+                            {pdfTemplates.map((t) => (
+                              <option key={t.id} value={`tpl:${t.id}`}>
+                                {t.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ) : null}
+                      </Select>
+                    </Field>
+                  ) : null
+                }
+              />
+              <div className="space-y-3 rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-fg">
+                      <GeneratedText id="m_091185429bbc1c" />
+                    </p>
+                    <p className="text-xs text-fg-muted">
+                      <GeneratedText id="m_16eed28e441ee2" />
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={readOnly || recipientOptions.spreadsheetTemplates.length === 0}
+                    onClick={() => {
+                      const template = recipientOptions.spreadsheetTemplates[0]
+                      if (!template) return
+                      set({
+                        ...a,
+                        spreadsheetAttachments: [
+                          ...(a.spreadsheetAttachments ?? []),
+                          { templateAttachmentId: template.id },
+                        ],
+                      })
+                    }}
+                  >
+                    <Plus className="mr-1 h-4 w-4" />
+                    <GeneratedText id="m_114fd68aa28e60" />
+                  </Button>
+                </div>
+                {recipientOptions.spreadsheetTemplates.length === 0 ? (
+                  <p className="text-xs text-fg-muted">
+                    <GeneratedText id="m_1ed36573238d1d" />
+                  </p>
+                ) : null}
+                {(a.spreadsheetAttachments ?? []).map((attachment, index) => (
+                  <div
+                    key={`${attachment.templateAttachmentId}:${index}`}
+                    className="space-y-3 rounded-md bg-bg-subtle p-3 bg-surface/50"
+                  >
+                    <div className="flex items-end gap-2">
+                      <div className="min-w-0 flex-1">
+                        <Field label={tGenerated('m_0d5b3e3dbea5a7')}>
+                          <Select
+                            value={attachment.templateAttachmentId}
+                            disabled={readOnly}
+                            onChange={(event) => {
+                              const next = [...(a.spreadsheetAttachments ?? [])]
+                              next[index] = {
+                                ...attachment,
+                                templateAttachmentId: event.target.value,
+                              }
+                              set({ ...a, spreadsheetAttachments: next })
+                            }}
+                          >
+                            {recipientOptions.spreadsheetTemplates.map((template) => (
+                              <option key={template.id} value={template.id}>
+                                {template.name}
+                              </option>
+                            ))}
+                          </Select>
+                        </Field>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={tGenerated('m_1300a5099634f1')}
+                        disabled={readOnly}
+                        onClick={() => {
+                          const next = (a.spreadsheetAttachments ?? []).filter(
+                            (_, itemIndex) => itemIndex !== index,
+                          )
+                          set({ ...a, spreadsheetAttachments: next.length > 0 ? next : undefined })
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Field label={tGenerated('m_1566168cfca5cb')}>
+                      <Input
+                        value={attachment.filename ?? ''}
+                        placeholder={tGenerated('m_14dfc66e74338e')}
+                        disabled={readOnly}
+                        onChange={(event) => {
+                          const next = [...(a.spreadsheetAttachments ?? [])]
+                          next[index] = {
+                            ...attachment,
+                            filename: event.target.value || undefined,
+                          }
+                          set({ ...a, spreadsheetAttachments: next })
+                        }}
+                      />
+                    </Field>
+                    <div>
+                      <p className="mb-2 text-xs font-medium text-fg">
+                        <GeneratedText id="m_05928758fdadda" />
+                      </p>
+                      <LogicBuilder
+                        rule={attachment.when}
+                        availableFields={availableFields}
+                        onChange={(rule) => {
+                          const next = [...(a.spreadsheetAttachments ?? [])]
+                          next[index] = { ...attachment, when: rule }
+                          set({ ...a, spreadsheetAttachments: next })
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : null
+        }
+      />
+
+      <GeneratedValue
+        value={
+          a.action === 'create_capa' ? (
+            <>
+              <Field label={tGenerated('m_1b31092e597972')}>
+                <Input
+                  value={a.titleTemplate}
+                  disabled={readOnly}
+                  onChange={(e) => set({ ...a, titleTemplate: e.target.value })}
+                />
+              </Field>
+              <Field label={tGenerated('m_168b365cc671bf')}>
+                <Select
+                  value={a.severity ?? 'medium'}
+                  disabled={readOnly}
+                  onChange={(e) =>
+                    set({
+                      ...a,
+                      severity: e.target.value as 'low' | 'medium' | 'high' | 'critical',
+                    })
+                  }
+                >
+                  {['low', 'medium', 'high', 'critical'].map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label={tGenerated('m_0b8592c90b3997')}>
+                <Input
+                  type="number"
+                  value={a.dueInDays ?? ''}
+                  disabled={readOnly}
+                  onChange={(e) =>
+                    set({
+                      ...a,
+                      dueInDays: e.target.value === '' ? undefined : Number(e.target.value),
+                    })
+                  }
+                />
+              </Field>
+            </>
+          ) : null
+        }
+      />
+
+      <GeneratedValue
+        value={
+          a.action === 'create_incident' ? (
+            <Field label={tGenerated('m_1b31092e597972')}>
+              <Input
+                value={a.titleTemplate}
+                disabled={readOnly}
+                onChange={(e) => set({ ...a, titleTemplate: e.target.value })}
+              />
+            </Field>
+          ) : null
+        }
+      />
+
+      <GeneratedValue
+        value={
+          a.action === 'notify_role' ? (
+            <>
+              <Field label={tGenerated('m_1099c1fe8b6614')}>
+                <Input
+                  value={a.role}
+                  disabled={readOnly}
+                  onChange={(e) => set({ ...a, role: e.target.value })}
+                />
+              </Field>
+              <Field label={tGenerated('m_0e4ff640f8e7d6')}>
+                <Input
+                  value={a.message}
+                  disabled={readOnly}
+                  onChange={(e) => set({ ...a, message: e.target.value })}
+                />
+              </Field>
+            </>
+          ) : null
+        }
+      />
+
+      <GeneratedValue
+        value={
+          a.action === 'set_field' ? (
+            <>
+              <Field label={tGenerated('m_1dfe960eaa6224')}>
+                <Select
+                  value={a.field}
+                  disabled={readOnly}
+                  onChange={(e) => set({ ...a, field: e.target.value })}
+                >
+                  <option value="">{'— pick a field —'}</option>
+                  {actionFields.writable.map((f) => (
+                    <option key={f} value={f}>
+                      {f}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label={tGenerated('m_1cc0e5e7b5f442')}>
+                <Input
+                  value={a.value.kind === 'literal' ? String(a.value.value ?? '') : ''}
+                  disabled={readOnly}
+                  onChange={(e) => set({ ...a, value: { kind: 'literal', value: e.target.value } })}
+                />
+              </Field>
+            </>
+          ) : null
+        }
+      />
+
+      <GeneratedValue
+        value={
+          a.action === 'flag_non_compliant' ? (
+            <Field label={tGenerated('m_1cd0901d5dfe1a')}>
+              <Input
+                value={a.reason ?? ''}
+                disabled={readOnly}
+                onChange={(e) => set({ ...a, reason: e.target.value })}
+              />
+            </Field>
+          ) : null
+        }
+      />
+
+      <GeneratedValue
+        value={
+          a.action === 'webhook' ? (
+            <>
+              <Field label={tGenerated('m_165a381fa8ae74')}>
+                <Input
+                  value={a.url}
+                  disabled={readOnly}
+                  onChange={(e) => set({ ...a, url: e.target.value })}
+                />
+              </Field>
+              <Field label={tGenerated('m_0984e05d5d435f')}>
+                <Select
+                  value={a.method}
+                  disabled={readOnly}
+                  onChange={(e) => set({ ...a, method: e.target.value as 'POST' | 'PUT' })}
+                >
+                  <option value="POST">{'POST'}</option>
+                  <option value="PUT">{'PUT'}</option>
+                </Select>
+              </Field>
+            </>
+          ) : null
+        }
+      />
+
+      <GeneratedValue
+        value={
+          a.action === 'create_response' ? (
+            <Field label={tGenerated('m_057778f7de97cd')}>
+              <SearchSelect
+                value={a.templateId}
+                disabled={readOnly}
+                options={targetApps.map((app) => ({ value: app.id, label: app.name }))}
+                placeholder={tGenerated('m_1cc7bc088003bc')}
+                sheetTitle="Target app"
+                ariaLabel="Target app"
+                onChange={(templateId) => set({ ...a, templateId })}
+              />
+              <p className="mt-1 text-[11px] text-fg-subtle text-fg-muted">
+                <GeneratedText id="m_0569fdc1833cbf" />
+              </p>
+            </Field>
+          ) : null
+        }
+      />
+
+      <GeneratedValue
+        value={
+          a.action === 'analyze_photos' ? (
+            <>
+              <Field label={tGenerated('m_0bb985b1bd9e88')}>
+                <Select
+                  value={a.fieldId}
+                  disabled={readOnly}
+                  onChange={(e) => set({ ...a, fieldId: e.target.value })}
+                >
+                  <option value="">{'— pick a field —'}</option>
+                  {actionFields.photoSources.map((f) => (
+                    <option key={f} value={f}>
+                      {f}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label={tGenerated('m_108b4cbe4ba75e')}>
+                <Select
+                  value={a.storeInField ?? ''}
+                  disabled={readOnly}
+                  onChange={(e) => set({ ...a, storeInField: e.target.value || undefined })}
+                >
+                  <option value="">{'— none —'}</option>
+                  {actionFields.textOutputs.map((f) => (
+                    <option key={f} value={f}>
+                      {f}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <label className="flex items-center gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  checked={!!a.createCapaOnHazard}
+                  disabled={readOnly}
+                  onChange={(e) => set({ ...a, createCapaOnHazard: e.target.checked })}
+                />
+                <GeneratedText id="m_1fb66407994e0c" />
+              </label>
+              <GeneratedValue
+                value={
+                  a.createCapaOnHazard ? (
+                    <Field label={tGenerated('m_0ac24b7d0c1efa')}>
+                      <Select
+                        value={a.minSeverity ?? 'medium'}
+                        disabled={readOnly}
+                        onChange={(e) =>
+                          set({ ...a, minSeverity: e.target.value as 'low' | 'medium' | 'high' })
+                        }
+                      >
+                        <option value="low">{'Low and above'}</option>
+                        <option value="medium">{'Medium and above'}</option>
+                        <option value="high">{'High only'}</option>
+                      </Select>
+                    </Field>
+                  ) : null
+                }
+              />
+            </>
+          ) : null
+        }
+      />
+
+      <GeneratedValue
+        value={
+          a.action === 'start_monitored_session' ? (
+            <>
+              <p className="text-[11px] text-fg-muted">
+                <GeneratedText id="m_06251479eec41c" />
+              </p>
+              <MonitorNum
+                label={tGenerated('m_059b9458e92a71')}
+                value={a.intervalMinutes}
+                fieldKey={a.intervalFieldKey}
+                fieldIds={actionFields.numeric}
+                readOnly={readOnly}
+                onValue={(v) => set({ ...a, intervalMinutes: Math.max(1, v) })}
+                onField={(k) => set({ ...a, intervalFieldKey: k })}
+              />
+              <MonitorNum
+                label={tGenerated('m_1bc3a7ded730b8')}
+                value={a.graceMinutes}
+                fieldKey={a.graceFieldKey}
+                fieldIds={actionFields.numeric}
+                readOnly={readOnly}
+                onValue={(v) => set({ ...a, graceMinutes: Math.max(0, v) })}
+                onField={(k) => set({ ...a, graceFieldKey: k })}
+              />
+              <MonitorNum
+                label={tGenerated('m_0d9d758963404e')}
+                value={a.durationMinutes ?? 0}
+                fieldKey={a.durationFieldKey}
+                fieldIds={actionFields.numeric}
+                readOnly={readOnly}
+                onValue={(v) => set({ ...a, durationMinutes: Math.max(0, v) })}
+                onField={(k) => set({ ...a, durationFieldKey: k })}
+              />
+              <label className="flex items-center gap-2 text-xs text-fg">
+                <input
+                  type="checkbox"
+                  checked={!!a.requireGeo}
+                  disabled={readOnly}
+                  onChange={(e) => set({ ...a, requireGeo: e.target.checked })}
+                />
+                <GeneratedText id="m_1d75b79556863c" />
+              </label>
+            </>
+          ) : null
+        }
+      />
+    </div>
+  )
+}
+
+// Number input that can be a fixed value OR bound to a submitted number field —
+// used by the start_monitored_session inspector for interval/grace/duration.
+function MonitorNum({
+  label,
+  value,
+  fieldKey,
+  fieldIds,
+  readOnly,
+  onValue,
+  onField,
+}: {
+  label: string
+  value: number
+  fieldKey: string | undefined
+  fieldIds: string[]
+  readOnly: boolean
+  onValue: (v: number) => void
+  onField: (k: string | undefined) => void
+}) {
+  const tGeneratedValue = useGeneratedValueTranslations()
+  return (
+    <Field label={tGeneratedValue(label)}>
+      <div className="flex items-center gap-1.5">
+        <Input
+          type="number"
+          min="0"
+          className="h-8 w-20"
+          value={String(value)}
+          disabled={readOnly || !!fieldKey}
+          onChange={(e) => onValue(Math.floor(Number(e.target.value) || 0))}
+        />
+        <span className="text-xs text-fg-subtle text-fg-muted">
+          <GeneratedText id="m_0e0bbc9cd7e263" />
+        </span>
+        <Select
+          className="h-8 flex-1"
+          value={fieldKey ?? ''}
+          disabled={readOnly}
+          onChange={(e) => onField(e.target.value || undefined)}
+        >
+          <option value="">{'— fixed value —'}</option>
+          {fieldIds.map((f) => (
+            <option key={f} value={f}>
+              {'bind:'} {f}
+            </option>
+          ))}
+        </Select>
+      </div>
+    </Field>
+  )
+}
+
+function defaultAction(kind: ActionData['action'], fields: ActionFieldOptions): ActionData {
+  switch (kind) {
+    case 'send_email':
+      return { action: 'send_email', to: [{ type: 'submitter' }], subject: '', bodyTemplate: '' }
+    case 'create_capa':
+      return { action: 'create_capa', titleTemplate: '', severity: 'medium' }
+    case 'create_incident':
+      return { action: 'create_incident', titleTemplate: '' }
+    case 'notify_role':
+      return { action: 'notify_role', role: '', message: '' }
+    case 'set_field':
+      return {
+        action: 'set_field',
+        field: fields.writable[0] ?? '',
+        value: { kind: 'literal', value: '' },
+      }
+    case 'flag_non_compliant':
+      return { action: 'flag_non_compliant' }
+    case 'webhook':
+      return { action: 'webhook', url: '', method: 'POST' }
+    case 'create_response':
+      return { action: 'create_response', templateId: '' }
+    case 'analyze_photos':
+      return { action: 'analyze_photos', fieldId: fields.photoSources[0] ?? '' }
+    case 'start_monitored_session':
+      return {
+        action: 'start_monitored_session',
+        intervalMinutes: 30,
+        graceMinutes: 10,
+        durationMinutes: 120,
+        requireGeo: false,
+      }
+    case 'change_status':
+      return { action: 'change_status', to: '' }
+    case 'duplicate_record':
+      return { action: 'duplicate_record' }
+    case 'export_pdf':
+      return { action: 'export_pdf' }
+  }
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs">
+        <GeneratedValue value={label} />
+      </Label>
+      <GeneratedValue value={children} />
+    </div>
+  )
+}

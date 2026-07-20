@@ -1,26 +1,220 @@
 'use client'
 
 import * as React from 'react'
-import { Input, Label, Select, Textarea } from '@appkit/ui'
-import type { WorkflowGraph, WorkflowNodeDefinition } from '@appkit/workflows'
-import { WorkflowBuilder } from '@appkit/workflows/react'
+import type { AutomationGraph } from '@appkit/forms-core/safety-automation'
+import type { FlowSubjectProfile } from '@appkit/forms-core/safety-flow-subjects'
+import {
+  FlowsCanvas,
+  type FlowSummary,
+  type RecipientOptions,
+  type WorkflowStudioAdapter,
+} from '@appkit/workflows/react'
 
-type DemoNode = { kind: 'trigger' | 'condition' | 'gate' | 'action'; label: string; event?: string; expression?: string; assignee?: string; action?: string; message?: string }
-const definitions: WorkflowNodeDefinition<DemoNode>[] = [
-  { kind: 'trigger', label: 'Trigger', description: 'Start from a record or schedule event.', branches: ['next'], create: () => ({ kind: 'trigger', label: 'Project submitted', event: 'project.submitted' }) },
-  { kind: 'condition', label: 'Condition', description: 'Route records using a governed rule.', branches: ['then', 'else'], create: () => ({ kind: 'condition', label: 'Value over $500k', expression: 'contractValue > 500000' }) },
-  { kind: 'gate', label: 'Approval gate', description: 'Pause until an assignee approves or rejects.', branches: ['approve', 'reject'], create: () => ({ kind: 'gate', label: 'Executive approval', assignee: 'Executive team' }) },
-  { kind: 'action', label: 'Action', description: 'Notify, update, export, or invoke an app adapter.', branches: ['next'], create: () => ({ kind: 'action', label: 'Notify project team', action: 'notify', message: 'The project was approved.' }) },
+const profile: FlowSubjectProfile = {
+  subjectType: 'module',
+  subjectKey: 'projects',
+  label: 'Projects',
+  triggers: ['on_create', 'on_submit', 'status_change', 'scheduled', 'manual'],
+  actions: ['send_email', 'notify_role', 'set_field', 'change_status', 'duplicate_record', 'export_pdf'],
+  statusValues: ['draft', 'submitted', 'in_review', 'approved', 'active', 'closed'],
+  fields: [
+    { key: 'name', label: 'Project name', kind: 'text' },
+    { key: 'status', label: 'Status', kind: 'enum', writable: true },
+    { key: 'contract_value', label: 'Contract value', kind: 'number', writable: true },
+    { key: 'start_date', label: 'Start date', kind: 'date', writable: true },
+    { key: 'owner_id', label: 'Owner', kind: 'person' },
+    { key: 'region', label: 'Region', kind: 'text', writable: true },
+  ],
+}
+
+const recipientOptions: RecipientOptions = {
+  people: [
+    { id: 'person-alex', name: 'Alex Morgan' },
+    { id: 'person-sam', name: 'Sam Rivera' },
+  ],
+  roles: [
+    { key: 'project_managers', name: 'Project managers' },
+    { key: 'executives', name: 'Executives' },
+    { key: 'administrators', name: 'Administrators' },
+  ],
+  departments: [],
+  personGroups: [],
+  contacts: [],
+  obligations: [],
+  spreadsheetTemplates: [],
+}
+
+const initialFlows: FlowSummary[] = [
+  {
+    id: 'contract-approval',
+    name: 'Contract approval',
+    enabled: true,
+    graph: {
+      schemaVersion: 1,
+      nodes: [
+        {
+          id: 'submitted',
+          position: { x: 40, y: 120 },
+          data: { kind: 'trigger', trigger: { trigger: 'on_submit' } },
+        },
+        {
+          id: 'threshold',
+          position: { x: 340, y: 120 },
+          data: {
+            kind: 'condition',
+            label: 'Contract value threshold',
+            rule: { op: 'gt', field: 'contract_value', value: 500000 },
+          },
+        },
+        {
+          id: 'approval',
+          position: { x: 650, y: 40 },
+          data: {
+            kind: 'gate',
+            gate: {
+              title: 'Executive approval',
+              assignee: { type: 'role', role: 'executives' },
+              signatureRequired: true,
+            },
+          },
+        },
+        {
+          id: 'activate-approved',
+          position: { x: 960, y: 40 },
+          data: { kind: 'action', action: { action: 'change_status', to: 'active' } },
+        },
+        {
+          id: 'activate-standard',
+          position: { x: 650, y: 230 },
+          data: { kind: 'action', action: { action: 'change_status', to: 'active' } },
+        },
+      ],
+      edges: [
+        { id: 'submitted-threshold', source: 'submitted', target: 'threshold', sourceHandle: 'next' },
+        { id: 'threshold-approval', source: 'threshold', target: 'approval', sourceHandle: 'then' },
+        { id: 'threshold-standard', source: 'threshold', target: 'activate-standard', sourceHandle: 'else' },
+        { id: 'approval-active', source: 'approval', target: 'activate-approved', sourceHandle: 'approve' },
+      ],
+    },
+  },
+  {
+    id: 'deadline-reminders',
+    name: 'Deadline reminders',
+    enabled: true,
+    graph: {
+      schemaVersion: 1,
+      nodes: [
+        {
+          id: 'weekday-morning',
+          position: { x: 100, y: 120 },
+          data: { kind: 'trigger', trigger: { trigger: 'scheduled', cron: '0 8 * * 1-5', tz: 'America/Toronto' } },
+        },
+        {
+          id: 'notify-managers',
+          position: { x: 430, y: 120 },
+          data: {
+            kind: 'action',
+            action: {
+              action: 'notify_role',
+              role: 'project_managers',
+              message: 'Review upcoming project deadlines and outstanding work.',
+              channel: 'in_app',
+            },
+          },
+        },
+      ],
+      edges: [
+        { id: 'schedule-notify', source: 'weekday-morning', target: 'notify-managers', sourceHandle: 'next' },
+      ],
+    },
+  },
+  {
+    id: 'project-handoff',
+    name: 'Project handoff',
+    enabled: false,
+    graph: {
+      schemaVersion: 1,
+      nodes: [
+        {
+          id: 'approved',
+          position: { x: 100, y: 120 },
+          data: { kind: 'trigger', trigger: { trigger: 'status_change', from: 'approved', to: 'active' } },
+        },
+        {
+          id: 'handoff-email',
+          position: { x: 430, y: 120 },
+          data: {
+            kind: 'action',
+            action: {
+              action: 'send_email',
+              to: [{ type: 'role', role: 'project_managers' }],
+              mode: 'inline',
+              subject: 'Project {{name}} is ready for handoff',
+              bodyTemplate: 'The project is active. Open the project to review the handoff package.',
+              attachPdf: true,
+            },
+          },
+        },
+      ],
+      edges: [
+        { id: 'active-handoff', source: 'approved', target: 'handoff-email', sourceHandle: 'next' },
+      ],
+    },
+  },
 ]
 
-const initial: WorkflowGraph<DemoNode> = { schemaVersion: 1, nodes: [
-  { id: 'trigger', position: { x: 120, y: 40 }, data: { kind: 'trigger', label: 'Project submitted', event: 'project.submitted' } },
-  { id: 'condition', position: { x: 120, y: 190 }, data: { kind: 'condition', label: 'Value over $500k', expression: 'contractValue > 500000' } },
-  { id: 'gate', position: { x: 20, y: 350 }, data: { kind: 'gate', label: 'Executive approval', assignee: 'Executive team' } },
-  { id: 'action', position: { x: 300, y: 350 }, data: { kind: 'action', label: 'Notify project team', action: 'notify', message: 'The project can proceed.' } },
-], edges: [{ id: 'e1', source: 'trigger', target: 'condition', sourceHandle: 'next' }, { id: 'e2', source: 'condition', target: 'gate', sourceHandle: 'then' }, { id: 'e3', source: 'condition', target: 'action', sourceHandle: 'else' }, { id: 'e4', source: 'gate', target: 'action', sourceHandle: 'approve' }] }
-
 export function WorkflowWorkbench() {
-  const [graph, setGraph] = React.useState(initial)
-  return <WorkflowBuilder value={graph} onChange={setGraph} definitions={definitions} className="h-full" renderInspector={({ node, update }) => <div className="space-y-4"><div><Label htmlFor="node-label">Label</Label><Input id="node-label" value={node.data.label} onChange={(event) => update({ ...node.data, label: event.target.value })} /></div>{node.data.kind === 'trigger' ? <div><Label htmlFor="event">Event</Label><Select id="event" value={node.data.event} onChange={(event) => update({ ...node.data, event: event.target.value })}><option value="project.submitted">Project submitted</option><option value="project.updated">Project updated</option><option value="scheduled">Scheduled</option></Select></div> : null}{node.data.kind === 'condition' ? <div><Label htmlFor="expression">Rule</Label><Input id="expression" value={node.data.expression} onChange={(event) => update({ ...node.data, expression: event.target.value })} /></div> : null}{node.data.kind === 'gate' ? <div><Label htmlFor="assignee">Assignee</Label><Select id="assignee" value={node.data.assignee} onChange={(event) => update({ ...node.data, assignee: event.target.value })}><option>Executive team</option><option>Project managers</option><option>Record owner</option></Select></div> : null}{node.data.kind === 'action' ? <><div><Label htmlFor="action">Action</Label><Select id="action" value={node.data.action} onChange={(event) => update({ ...node.data, action: event.target.value })}><option value="notify">Send notification</option><option value="set_field">Update field</option><option value="export_pdf">Create PDF</option></Select></div><div><Label htmlFor="message">Message</Label><Textarea id="message" value={node.data.message} onChange={(event) => update({ ...node.data, message: event.target.value })} /></div></> : null}</div>} />
+  const flows = React.useRef(new Map(initialFlows.map((flow) => [flow.id, structuredClone(flow)])))
+
+  const adapter = React.useMemo<WorkflowStudioAdapter>(
+    () => ({
+      async create(_subject, name) {
+        const id = globalThis.crypto.randomUUID()
+        flows.current.set(id, {
+          id,
+          name,
+          enabled: false,
+          graph: { schemaVersion: 1, nodes: [], edges: [] },
+        })
+        return { ok: true, id }
+      },
+      async remove(id) {
+        flows.current.delete(id)
+        return { ok: true }
+      },
+      async rename(id, name) {
+        const flow = flows.current.get(id)
+        if (!flow) return { ok: false, error: 'Flow not found.' }
+        flows.current.set(id, { ...flow, name })
+        return { ok: true }
+      },
+      async save(id, graph: AutomationGraph) {
+        const flow = flows.current.get(id)
+        if (!flow) return { ok: false, error: 'Flow not found.' }
+        flows.current.set(id, { ...flow, graph: structuredClone(graph) })
+        return { ok: true }
+      },
+      async setEnabled(id, enabled) {
+        const flow = flows.current.get(id)
+        if (!flow) return { ok: false, error: 'Flow not found.' }
+        flows.current.set(id, { ...flow, enabled })
+        return { ok: true }
+      },
+    }),
+    [],
+  )
+
+  return (
+    <div className="h-full min-h-0 overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+      <FlowsCanvas
+        profile={profile}
+        emailTemplates={[]}
+        recipientOptions={recipientOptions}
+        flows={initialFlows}
+        canEdit
+        adapter={adapter}
+        embedded
+      />
+    </div>
+  )
 }

@@ -145,9 +145,9 @@ const GROUPS: AdminHubGroup[] = [
         description: 'Run durable event, decision, approval, and action workflows.',
         icon: <Workflow />,
         features: [
-          'Two-pane node library, independently scrolling inspector, and graph canvas',
-          'Application-supplied trigger and action registries',
-          'Bounded graph persistence, branch handles, node positioning, and cycle detection',
+          'Multi-flow library with enable, rename, delete, and subject-compatible templates',
+          'Full graph canvas, typed node toolbar, drawer inspector, branch handles, and live validation',
+          'Application-supplied subject profiles, trigger/action registries, and persistence adapters',
           'Replay-safe action ledger, pause/resume gates, and any/all approval quorums',
           'HMAC email approvals plus optional Drizzle schema/store and React visual builder',
         ],

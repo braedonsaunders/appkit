@@ -1,69 +1,64 @@
-// Flatten rich-text HTML into readable plaintext. Many narrative columns store
-// HTML (TipTap editor output or imported office content), while list cells,
-// search indexes, plain-text emails, and option labels need text. Parse through
-// the same hardened DOM implementation used by the canonical rich-text
-// sanitizer; regex tag stripping is not an HTML parser and can expose content
-// hidden in malformed or nested markup.
+// Flatten rich-text HTML into readable plaintext without allocating a browser
+// DOM. This entry is used by validation and search/indexing paths, so it must be
+// safe to import in Node, workers, and serverless runtimes. htmlparser2 handles
+// malformed/nested markup and entity decoding; regex tag stripping does not.
 
-import DOMPurify from 'isomorphic-dompurify'
+import { Parser } from 'htmlparser2'
 
-type TextTreeNode = {
-  childNodes?: ArrayLike<TextTreeNode>
-  nodeName?: string
-  nodeType: number
-  textContent?: string | null
-}
-
-const TEXT_NODE = 3
 const BLOCK_ELEMENTS = new Set([
-  'ADDRESS',
-  'ARTICLE',
-  'ASIDE',
-  'BLOCKQUOTE',
-  'DIV',
-  'FIGCAPTION',
-  'FIGURE',
-  'FOOTER',
-  'H1',
-  'H2',
-  'H3',
-  'H4',
-  'H5',
-  'H6',
-  'HEADER',
-  'HR',
-  'LI',
-  'MAIN',
-  'NAV',
-  'OL',
-  'P',
-  'PRE',
-  'SECTION',
-  'TABLE',
-  'TR',
-  'UL',
+  'address',
+  'article',
+  'aside',
+  'blockquote',
+  'div',
+  'figcaption',
+  'figure',
+  'footer',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'header',
+  'hr',
+  'li',
+  'main',
+  'nav',
+  'ol',
+  'p',
+  'pre',
+  'section',
+  'table',
+  'tr',
+  'ul',
 ])
-
-function appendText(node: TextTreeNode, out: string[]): void {
-  if (node.nodeType === TEXT_NODE) {
-    out.push(node.textContent ?? '')
-    return
-  }
-  const name = node.nodeName?.toUpperCase()
-  if (name === 'BR') out.push('\n')
-  for (const child of Array.from(node.childNodes ?? [])) appendText(child, out)
-  if (name && BLOCK_ELEMENTS.has(name)) out.push('\n')
-}
 
 /** Convert rich-text HTML to readable plaintext, preserving block line breaks. */
 export function htmlToText(html: string | null | undefined): string {
   if (!html) return ''
-  const root = DOMPurify.sanitize(html, {
-    ALLOWED_ATTR: [],
-    RETURN_DOM: true,
-  }) as unknown as TextTreeNode
   const out: string[] = []
-  appendText(root, out)
+  let suppressedDepth = 0
+  const parser = new Parser(
+    {
+      onopentag(name) {
+        if (name === 'script' || name === 'style' || name === 'template') suppressedDepth += 1
+        if (!suppressedDepth && name === 'br') out.push('\n')
+      },
+      ontext(value) {
+        if (!suppressedDepth) out.push(value)
+      },
+      onclosetag(name) {
+        if (name === 'script' || name === 'style' || name === 'template') {
+          suppressedDepth = Math.max(0, suppressedDepth - 1)
+          return
+        }
+        if (!suppressedDepth && BLOCK_ELEMENTS.has(name)) out.push('\n')
+      },
+    },
+    { decodeEntities: true },
+  )
+  parser.end(html)
   return out
     .join('')
     .replace(/\u00a0/g, ' ')
