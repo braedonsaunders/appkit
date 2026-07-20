@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <a href="https://appkit-demo-braedonsaunders-projects.vercel.app"><strong>Open the live demo</strong></a> ·
+  <a href="https://appkit-demo-braedonsaunders-projects.vercel.app/dashboard/platform"><strong>See what you can build</strong></a> ·
   <a href="#start-small-or-take-the-whole-stack">Quick start</a> ·
   <a href="#what-you-can-build-with">Packages</a> ·
   <a href="#modular-by-construction">Architecture</a> ·
@@ -224,7 +224,7 @@ inflate a client bundle.
 `apps/playground` is a real Next.js 16 application, not a static component
 catalogue. Authentication is intentionally disabled throughout the public demo;
 one built-in identity exercises tenant context and permissions without a login.
-The [hosted demo](https://appkit-demo-braedonsaunders-projects.vercel.app) runs
+The [hosted demo](https://appkit-demo-braedonsaunders-projects.vercel.app/dashboard/platform) runs
 without a database. Its sample tenant data is deterministic, analytics queries
 execute in memory, and editable dashboard and insight-card state persists in the
 browser.

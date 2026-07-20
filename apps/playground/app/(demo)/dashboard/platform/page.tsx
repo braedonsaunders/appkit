@@ -9,6 +9,7 @@ import {
   Database,
   FileOutput,
   FileText,
+  Gauge,
   KeyRound,
   Languages,
   Layers3,
@@ -18,6 +19,8 @@ import {
   MessageSquare,
   Palette,
   Paintbrush,
+  Puzzle,
+  Rocket,
   ScrollText,
   ServerCog,
   ShieldCheck,
@@ -26,11 +29,72 @@ import {
 } from 'lucide-react'
 import { EMAIL_PROVIDER_SPECS } from '@appkit/emails/providers'
 import { SMS_PROVIDER_SPECS } from '@appkit/sms/providers'
-import { AdminHub, Badge, type AdminHubGroup } from '@appkit/ui'
+import { AdminHub, Badge, Button, type AdminHubGroup } from '@appkit/ui'
 
 export const metadata = { title: 'Platform — appkit' }
 
 const GROUPS: AdminHubGroup[] = [
+  {
+    label: 'What you gain',
+    description: 'Start with the whole product foundation, or take one proven layer at a time.',
+    accent: 'teal',
+    layout: 'detailed',
+    cards: [
+      {
+        title: 'create-appkit',
+        description: 'Go from an empty directory to a branded, navigable application in one command.',
+        icon: <Rocket />,
+        badge: <Badge variant="success">Fast path</Badge>,
+        features: [
+          'Next.js 16, React 19, TypeScript, Tailwind v4, tokens, themes, and the application shell arrive wired together',
+          'Choose topbar or sidebar navigation without rebuilding the shell',
+          'Authentication, Postgres, queues, AI, and provider integrations stay optional',
+          'Workspace dependencies become normal npm ranges in generated applications',
+        ],
+        href: '/components',
+        linkLabel: 'See the foundation in use',
+      },
+      {
+        title: 'Modular by construction',
+        description: 'Import the capability you need without accepting an all-or-nothing framework.',
+        icon: <Puzzle />,
+        features: [
+          'Dependency-light package roots keep React, Drizzle, browser automation, and provider SDKs out until requested',
+          'Explicit subpath exports make optional runtime and UI layers visible in the import itself',
+          'Application adapters preserve your domain model, routing, storage, credentials, and deployment choices',
+          'Packages share contracts and tokens, so independently adopted pieces still compose cleanly',
+        ],
+        href: '/components',
+        linkLabel: 'Inspect an optional layer',
+      },
+      {
+        title: 'Production guardrails',
+        description: 'Inherit the constraints teams usually discover after launch.',
+        icon: <ShieldCheck />,
+        features: [
+          'Tenant isolation, wildcard RBAC, audit history, idempotent writes, sealed secrets, and replay-safe background work',
+          'Bounded graphs, queries, templates, uploads, user code, agent loops, retries, and provider responses',
+          'Semantic tokens, keyboard interaction, focus management, dark mode, and reduced-motion behavior',
+          'Fail-closed validation at persistence, execution, and external-delivery boundaries',
+        ],
+        href: '/admin/audit',
+        linkLabel: 'Inspect the audit trail',
+      },
+      {
+        title: 'A reference you can operate',
+        description: 'Every linked surface is a working implementation, not a component screenshot.',
+        icon: <Gauge />,
+        features: [
+          'Build dashboard cards, forms, reports, workflows, record layouts, and print designs directly in the demo',
+          'Exercise API docs, notifications, settings, audit history, sync, and integration configuration',
+          'The public demo runs without authentication and can use database-free adapters where persistence is unnecessary',
+          'Each screen shows the package composition an application can import and own',
+        ],
+        href: '/workflows',
+        linkLabel: 'Build a workflow',
+      },
+    ],
+  },
   {
     label: 'Build the application',
     description: 'Interface, data, permissions, analytics, forms, and localization.',
@@ -438,9 +502,16 @@ const GROUPS: AdminHubGroup[] = [
 export default function PlatformPage() {
   return (
     <AdminHub
-      title="AppKit platform"
-      description="Packages and capabilities available to every application."
-      actions={<Badge variant="success">31 packages</Badge>}
+      title="Build the product. Keep the hard parts."
+      description="AppKit gives TypeScript teams a production-shaped application foundation—complete enough to start fast, modular enough to adopt without a rewrite."
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="success">32 modular packages</Badge>
+          <Button asChild variant="outline" size="sm">
+            <a href="https://github.com/braedonsaunders/appkit" target="_blank" rel="noreferrer">View on GitHub</a>
+          </Button>
+        </div>
+      }
       groups={GROUPS}
     />
   )

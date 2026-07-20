@@ -62,7 +62,7 @@ export async function DashboardExperience({ mode }: { mode: 'view' | 'edit' }) {
       <QuickAction href="/insights?new=1" icon={<CreditCard size={16} />} label="Build an insight card" />
       <QuickAction href="/admin/users" icon={<Users size={16} />} label="Manage users" />
       <QuickAction href="/api-docs" icon={<Code2 size={16} />} label="Explore the API" />
-      <QuickAction href="/dashboard/platform" icon={<Boxes size={16} />} label="View platform capabilities" />
+      <QuickAction href="/dashboard/platform" icon={<Boxes size={16} />} label="See what AppKit gives you" />
     </div></DashboardPanel>,
     'panel:platform': <DashboardPanel title="Dashboard capabilities" icon={<Activity size={16} />} actions={<Badge variant="success">Live</Badge>}><div className="grid h-full content-center gap-4 sm:grid-cols-2">
       <Feature icon={<Library />} title="Card library" text="Reusable tenant-owned cards can be drafted, published, and dropped onto any dashboard." />
