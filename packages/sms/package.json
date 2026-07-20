@@ -1,7 +1,7 @@
 {
-  "name": "@appkit/emails",
+  "name": "@appkit/sms",
   "version": "0.1.0",
-  "description": "Email delivery — Resend, SendGrid, Mailgun, Postmark, and SMTP transports with sealed-secret config and platform→tenant policy.",
+  "description": "SMS delivery — five providers (Twilio, Vonage, MessageBird, Plivo, Telnyx) via fetch, sealed-secret config, platform→tenant policy.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {
@@ -16,12 +16,8 @@
     "test": "node --import tsx --test src/*.test.ts",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
-  "dependencies": {
-    "nodemailer": "^6.9.16"
-  },
   "devDependencies": {
     "@types/node": "^22",
-    "@types/nodemailer": "^6.4.17",
     "tsx": "^4.19.2"
   }
 }

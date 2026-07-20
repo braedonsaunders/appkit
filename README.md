@@ -1,4 +1,4 @@
-# appkit
+![appkit](docs/assets/appkit-logo.svg)
 
 The design + platform foundation for the ecosystem. `appkit` is the single source
 of truth for how every app in the suite **looks, feels, and works** — extracted
@@ -41,16 +41,39 @@ imported by every app.
 
 | Package | Role | Status |
 |---|---|---|
-| `@appkit/tokens` | Design tokens — color, radius, elevation, motion. Light/dark. The look. | **building** |
-| `@appkit/ui` | Tokenized, animated primitives (button, card, input, badge, …). The feel. | **building** |
-| `@appkit/shell` | App chrome — nav, sidebar, top bar, command palette, app switcher. | planned |
-| `@appkit/tenant` | Postgres-RLS org scoping (`withOrg`), request context, RBAC. | planned |
-| `@appkit/db` | Drizzle conventions — id/orgRef/money helpers, RLS policy SQL, migrate. | planned |
-| `@appkit/auth` | Identity / session client (OIDC relying-party). | planned |
-| `@appkit/events` | Event bus + transactional outbox + audit. | planned |
+| `@appkit/tokens` | Semantic color, shape, elevation, and motion tokens; Tailwind v4 utilities. | implemented |
+| `@appkit/ui` | Tokenized primitives, app shell, page layouts, URL-driven list controls, and API reference. | implemented |
+| `@appkit/db` | Postgres RLS engine, schema helpers, identity model, API keys, and idempotency. | implemented + live-tested |
+| `@appkit/tenant` | Request context and wildcard RBAC over tenant-scoped database handles. | implemented + live-tested |
+| `@appkit/auth` | Scrypt passwords and stateless HMAC sessions. | implemented + live-tested |
+| `@appkit/events` | Audit trail and transactional outbox. | implemented + live-tested |
+| `@appkit/api` | API-key auth, authorization, idempotent writes, typed errors, and OpenAPI descriptions. | implemented + live-tested |
+| `@appkit/endpoints` | Governed QuickJS sandbox for user-defined endpoint handlers. | implemented |
+| `@appkit/crypto` | AES-256-GCM sealed secrets with an HKDF-derived application key. | implemented |
+| `@appkit/emails` | Resend, SendGrid, Mailgun, Postmark, and SMTP delivery with tenant policy. | implemented |
+| `@appkit/sms` | Twilio, Vonage, MessageBird, Plivo, and Telnyx delivery with tenant policy. | implemented |
+| `@appkit/jobs` | BullMQ + Redis queue and worker harness. | implemented |
+| `@appkit/storage` | S3-compatible object storage and presigned URLs. | implemented |
 | `@appkit/forms-core` | The form/Builder engine. | planned |
-| `@appkit/ledger-client` | Typed, idempotent client for the openbooks financial hub. | planned |
-| `apps/starter` | The runnable starter — shell + showcase. Clone this to begin an app. | planned |
+| `apps/playground` | The full-stack running reference app and component gallery. | implemented + browser-tested |
+
+## The running reference
+
+`apps/playground` composes the platform instead of merely displaying components:
+real login and signed sessions, Postgres RLS tenant isolation, RBAC-gated audited
+mutations, a key-authenticated API, and URL-driven database lists. It also keeps
+the component gallery and admin reference surfaces in the same runnable app.
+
+```bash
+pnpm install
+cp apps/playground/.env.example apps/playground/.env.local
+# Point APPKIT_SUPER_URL at an existing Postgres database owner/superuser.
+pnpm --filter @appkit/playground seed
+pnpm --filter @appkit/playground dev
+```
+
+The seed command prints the live API key. The default local users are
+`admin@appkit.dev` and `casey@appkit.dev`, both with password `appkit-demo`.
 
 ## Conventions
 
@@ -65,6 +88,7 @@ imported by every app.
 
 ```bash
 pnpm install
-pnpm build      # turbo build across packages
-pnpm typecheck
+pnpm -r typecheck
+pnpm -r test
+pnpm build
 ```

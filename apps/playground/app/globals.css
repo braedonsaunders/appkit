@@ -11,30 +11,34 @@
   --drawer-top: 3.5rem;
 }
 
-/* Brand logo — stroke draw-in (pathLength-normalized), staggered via --ld.
-   Resting state is fully drawn; reduced-motion skips the animation. */
-@keyframes appkit-logo-draw {
-  from {
-    stroke-dashoffset: 1;
-  }
-}
+/* Brand logo — visible-by-default draw-in (pathLength-normalized), staggered
+   via --ld. @starting-style keeps a paused/prerendered tab on the fully drawn
+   resting state instead of stranding the brand at its hidden first frame. */
 .appkit-logo-draw {
   stroke-dasharray: 1;
-  animation: appkit-logo-draw 0.8s var(--ease-out) var(--ld, 0ms) backwards;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 0.8s var(--ease-out) var(--ld, 0ms);
 }
-@keyframes appkit-word-in {
-  from {
+.appkit-word-in {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.5s var(--ease-out) 0.45s,
+    transform 0.5s var(--ease-out) 0.45s;
+}
+@starting-style {
+  .appkit-logo-draw {
+    stroke-dashoffset: 1;
+  }
+  .appkit-word-in {
     opacity: 0;
     transform: translateY(2px);
   }
 }
-.appkit-word-in {
-  animation: appkit-word-in 0.5s var(--ease-out) 0.45s backwards;
-}
 @media (prefers-reduced-motion: reduce) {
   .appkit-logo-draw,
   .appkit-word-in {
-    animation: none;
+    transition: none;
   }
 }
 

@@ -2,13 +2,14 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { BookOpen, LayoutGrid, LogOut, Moon, Settings, Sparkles, Sun, Users } from 'lucide-react'
 import {
   AppShell,
   Avatar,
   Badge,
   Button,
+  ListNavProvider,
   type LinkRender,
   type SidebarNavGroup,
   Tooltip,
@@ -72,48 +73,61 @@ export function AppFrame({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const { dark, toggle } = useTheme()
+  const listNav = React.useMemo(
+    () => ({
+      pathname,
+      search: searchParams.toString(),
+      replace: (href: string) => router.replace(href, { scroll: false }),
+      push: (href: string) => router.push(href, { scroll: false }),
+    }),
+    [pathname, router, searchParams],
+  )
   return (
-    <AppShell
-      groups={NAV}
-      pathname={pathname}
-      brand={<AppkitLogo />}
-      linkRender={nextLink}
-      header={
-        <>
-          <Badge variant="secondary" className="hidden sm:inline-flex">
-            {tenantName}
-          </Badge>
-          <div className="ml-auto flex items-center gap-1.5">
-            <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
-              {dark ? <Sun className="size-5" /> : <Moon className="size-5" />}
-            </Button>
-            <Tooltip content={userEmail}>
-              <span className="flex items-center gap-2 rounded-md px-2 py-1">
-                <Avatar name={userName} size={28} />
-                <span className="hidden text-sm font-medium text-fg md:block">{userName}</span>
-              </span>
-            </Tooltip>
-            <form action={logoutAction}>
-              <Tooltip content="Sign out">
-                <Button variant="ghost" size="icon" type="submit" aria-label="Sign out">
-                  <LogOut className="size-4" />
-                </Button>
+    <ListNavProvider value={listNav}>
+      <AppShell
+        groups={NAV}
+        pathname={pathname}
+        brand={<AppkitLogo />}
+        linkRender={nextLink}
+        header={
+          <>
+            <Badge variant="secondary" className="hidden sm:inline-flex">
+              {tenantName}
+            </Badge>
+            <div className="ml-auto flex items-center gap-1.5">
+              <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
+                {dark ? <Sun className="size-5" /> : <Moon className="size-5" />}
+              </Button>
+              <Tooltip content={userEmail}>
+                <span className="flex items-center gap-2 rounded-md px-2 py-1">
+                  <Avatar name={userName} size={28} />
+                  <span className="hidden text-sm font-medium text-fg md:block">{userName}</span>
+                </span>
               </Tooltip>
-            </form>
+              <form action={logoutAction}>
+                <Tooltip content="Sign out">
+                  <Button variant="ghost" size="icon" type="submit" aria-label="Sign out">
+                    <LogOut className="size-4" />
+                  </Button>
+                </Tooltip>
+              </form>
+            </div>
+          </>
+        }
+        sidebarFooter={
+          <div className="flex items-center justify-between text-xs text-fg-muted">
+            <span>appkit</span>
+            <Badge variant="secondary" className="font-mono text-[10px]">
+              v0.1
+            </Badge>
           </div>
-        </>
-      }
-      sidebarFooter={
-        <div className="flex items-center justify-between text-xs text-fg-muted">
-          <span>appkit</span>
-          <Badge variant="secondary" className="font-mono text-[10px]">
-            v0.1
-          </Badge>
-        </div>
-      }
-    >
-      {children}
-    </AppShell>
+        }
+      >
+        {children}
+      </AppShell>
+    </ListNavProvider>
   )
 }

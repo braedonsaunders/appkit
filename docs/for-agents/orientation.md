@@ -50,8 +50,10 @@ backdrop, focus trap, scroll-lock, **expand-to-fullscreen**, stacked/nested) ·
 (kebab / right-click menu, items array) · `Tooltip`.
 
 **Data display** — `Table` (+ `TableHeader/Body/Row/Head/Cell`, staggered rows) ·
-`RecordList` (the **list-page pattern**: search + sortable typed columns —
-reference/amount/status/custom/actions — + pagination + empty state) · `LineGrid`
+`RecordList` (controlled in-memory search/sort/pagination with typed columns —
+reference/amount/status/custom/actions) · URL list kit: `parseListParams` /
+`parsePrefixedListParams`, `ListNavProvider`, `SearchInput`, `FilterChips`,
+`SortableTh` / `SortTh`, `Pagination` (shareable server-list state) · `LineGrid`
 (the **spreadsheet line editor**: Enter appends, Alt+↑/↓ moves, ⌘D/⌘⌫, data-driven
 columns) · `Badge` · `Avatar` (image + initials fallback) · `EmptyState` · `Card`
 (+ parts) · `Tabs` (animated indicator).
@@ -66,9 +68,14 @@ header + two-pane rail) + `SettingsNav` / `SettingsSection` / `SettingsRow`.
   `UrlDrawer` over the list (`?<record>=<id>`), not a separate route. Every flyout
   has the expand-to-fullscreen toggle. Wire i18n via `DrawerTextProvider`, the
   close-navigation via `DrawerNavigateContext` (so `UrlDrawer` closes by routing).
-- **List pages** use `RecordList` — pass `columns` + `rows` + `getRowId`, opt into
-  `search` / `sort` / `pagination`, supply your app's `<Link>` via `linkRender`.
-  Never render an unbounded/unsearchable table.
+- **Database list pages** use the URL list kit: parse the page's `searchParams`
+  with `parseListParams`, apply search/filter/sort/limit/offset in the RLS-scoped
+  server query, and render `SearchInput` + `FilterChips` + `SortableTh` +
+  `Pagination`. Wire `ListNavProvider` once to the app router so controls soft-
+  navigate without full reloads. Use prefixed keys when several lists share a
+  route. `apps/playground/app/(protected)/dashboard/team/page.tsx` is the live
+  reference. `RecordList` remains the controlled choice for bounded, already-
+  loaded data. Never render an unbounded or unsearchable table.
 - **Line-item editors** use `LineGrid` — columns are data (`text`/`amount`/
   `select`/`readonly`+`render`); it's controlled (rows in, rows out).
 - **Menus** use `useContextMenu()` + `<ContextMenu>` (kebab button →
@@ -135,6 +142,20 @@ export const { db, superDb, withTenant, withTenantContext, withSuperAdmin } =
 The canonical identity schema (tenants, users, memberships, roles,
 role_assignments, per-user permission overrides) ships in `@appkit/db/schema` —
 extend it, don't reinvent it.
+
+## 6. Secrets and outbound delivery (`@appkit/crypto`, `@appkit/emails`, `@appkit/sms`)
+
+- Seal tenant provider credentials with `sealSecret` from `@appkit/crypto` before
+  persistence and inject `unsealSecret` into email/SMS transport resolution.
+  Production requires the same 32+ character `APPKIT_SECRET` in every service
+  that seals or consumes credentials; local development has an explicit insecure
+  fallback.
+- Email and SMS resolve the same platform policy: `disabled` suppresses delivery,
+  `global_only` uses the platform provider, and `tenant_optional` prefers a valid
+  tenant provider. A corrupt explicitly enabled tenant override fails closed.
+- SMS destinations are strict E.164. The five fetch-based providers are Twilio,
+  Vonage, MessageBird, Plivo, and Telnyx; provider errors are bounded, sanitized,
+  and stripped of credentials before they reach logs or users.
 
 For the rules any app on this foundation must follow, see
 [`building-applications.md`](building-applications.md).
