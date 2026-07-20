@@ -8,6 +8,7 @@
 </p>
 
 <p align="center">
+  <a href="https://appkit-demo-braedonsaunders-projects.vercel.app"><strong>Open the live demo</strong></a> ·
   <a href="#start-small-or-take-the-whole-stack">Quick start</a> ·
   <a href="#what-you-can-build-with">Packages</a> ·
   <a href="#modular-by-construction">Architecture</a> ·
@@ -222,7 +223,11 @@ inflate a client bundle.
 
 `apps/playground` is a real Next.js 16 application, not a static component
 catalogue. Authentication is intentionally disabled throughout the public demo;
-one seeded identity exercises tenant context and permissions without a login.
+one built-in identity exercises tenant context and permissions without a login.
+The [hosted demo](https://appkit-demo-braedonsaunders-projects.vercel.app) runs
+without a database. Its sample tenant data is deterministic, analytics queries
+execute in memory, and editable dashboard and insight-card state persists in the
+browser.
 
 It includes the topbar/sidebar shell, admin hub and settings shell, configurable
 dashboard, insight-card studio, form designer and runtime, workflow canvas,
@@ -232,14 +237,18 @@ package inventory.
 
 ```bash
 pnpm install
-cp apps/playground/.env.example apps/playground/.env.local
-# Set APPKIT_SUPER_URL to a PostgreSQL owner/superuser connection.
-pnpm --filter @appkit/playground seed
 pnpm --filter @appkit/playground dev
 ```
 
 Open `http://localhost:4310/dashboard`. Use the account launcher to switch
-between the topbar (default) and sidebar navigation.
+between the topbar (default) and sidebar navigation. No database or provider
+credentials are required.
+
+To exercise the real tenant-scoped Postgres/RLS path, copy
+`apps/playground/.env.example` to `apps/playground/.env.local`, set both database
+URLs to your Postgres or Supabase connections, and run
+`pnpm --filter @appkit/playground seed` before starting the app. With those
+variables present, the same routes use durable package-owned persistence.
 
 ## Quality guarantees
 

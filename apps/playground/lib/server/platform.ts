@@ -11,6 +11,15 @@ type Platform = {
 type Runtime = typeof globalThis & { __appkitPlatform?: Platform }
 const runtime = globalThis as Runtime
 
+export function isDatabaseConfigured(): boolean {
+  const hasTenantUrl = Boolean(process.env.APPKIT_DB_URL)
+  const hasSuperUrl = Boolean(process.env.APPKIT_SUPER_URL)
+  if (hasTenantUrl !== hasSuperUrl) {
+    throw new Error('Configure both APPKIT_DB_URL and APPKIT_SUPER_URL, or omit both for the database-free demo.')
+  }
+  return hasTenantUrl
+}
+
 function build(): Platform {
   const url = process.env.APPKIT_DB_URL
   const superUrl = process.env.APPKIT_SUPER_URL

@@ -4,6 +4,8 @@ import { and, asc, eq } from 'drizzle-orm'
 import type { DashboardLayout, InsightCardDraft } from '@appkit/dashboard'
 import { insightCards, userDashboardLayouts } from '@appkit/dashboard/schema'
 import { getDemoEnvironment } from './demo-context'
+import { cloneDemoCards, DEMO_DASHBOARD_LAYOUT } from './demo-data'
+import { isDatabaseConfigured } from './platform'
 
 export const BUILTIN_DASHBOARD_LAYOUT: DashboardLayout = {
   widgets: [
@@ -17,6 +19,9 @@ export const BUILTIN_DASHBOARD_LAYOUT: DashboardLayout = {
 }
 
 export async function loadDashboardData() {
+  if (!isDatabaseConfigured()) {
+    return { layout: structuredClone(DEMO_DASHBOARD_LAYOUT), cards: cloneDemoCards() }
+  }
   const { ctx, tenant, user } = await getDemoEnvironment()
   return ctx.db(async (db) => {
     const [personal] = await db.select({ layout: userDashboardLayouts.layout }).from(userDashboardLayouts)
@@ -27,6 +32,7 @@ export async function loadDashboardData() {
 }
 
 export async function loadInsightCards(): Promise<InsightCardDraft[]> {
+  if (!isDatabaseConfigured()) return cloneDemoCards()
   const { ctx, tenant } = await getDemoEnvironment()
   return ctx.db(async (db) => (await db.select().from(insightCards).where(eq(insightCards.tenantId, tenant.id)).orderBy(asc(insightCards.name))).map((card) => ({
     id: card.id,

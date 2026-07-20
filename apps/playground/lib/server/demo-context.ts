@@ -4,7 +4,8 @@ import { and, eq } from 'drizzle-orm'
 import { memberships, tenants, users } from '@appkit/db'
 import { makeTenantContext, resolveMembershipAccess, type RequestContext } from '@appkit/tenant'
 import { PERMISSION_CATALOGUE } from '../permissions'
-import { platform } from './platform'
+import { DEMO_TENANT, DEMO_USER } from './demo-data'
+import { isDatabaseConfigured, platform } from './platform'
 
 export type DemoEnvironment = {
   ctx: RequestContext
@@ -13,12 +14,28 @@ export type DemoEnvironment = {
 }
 
 /**
- * Resolve the playground's fixed seeded identity. This is deliberately not an
+ * Resolve the playground's fixed demo identity. This is deliberately not an
  * authentication path: it never reads a cookie, credential, header, or request
- * state. The identity exists only so the public demo can exercise the same
- * tenant-scoped RequestContext, RBAC, audit, and RLS machinery a real app uses.
+ * state. Without database configuration it builds the same RequestContext from
+ * deterministic data; with both database URLs it resolves the seeded identity
+ * through the real RLS-backed platform.
  */
 export const getDemoEnvironment = cache(async (): Promise<DemoEnvironment> => {
+  if (!isDatabaseConfigured()) {
+    const ctx: RequestContext = {
+      userId: DEMO_USER.id,
+      tenantId: DEMO_TENANT.id,
+      isSuperAdmin: true,
+      membership: { id: DEMO_USER.membershipId, displayName: DEMO_USER.name },
+      permissions: new Set(PERMISSION_CATALOGUE),
+      scopes: [{ type: 'tenant' }],
+      db: async () => {
+        throw new Error('The database-free demo attempted to use its optional Postgres adapter.')
+      },
+    }
+    return { ctx, user: DEMO_USER, tenant: DEMO_TENANT }
+  }
+
   const { appkit } = platform()
   return appkit.withSuperAdmin(async (sdb) => {
     const [row] = await sdb

@@ -2,7 +2,8 @@ import 'server-only'
 
 import { compileQuery, type AnalyticsCatalog, type InsightQuery, type QueryResult } from '@appkit/analytics/server'
 import { getDemoEnvironment } from './demo-context'
-import { platform } from './platform'
+import { executeDemoQueryInMemory } from './demo-analytics-memory'
+import { isDatabaseConfigured, platform } from './platform'
 
 /**
  * The app owns this semantic catalogue. appkit owns parsing, validation,
@@ -59,6 +60,8 @@ export const DEMO_ANALYTICS_CATALOG: AnalyticsCatalog = {
 }
 
 export async function executeDemoQuery(query: InsightQuery): Promise<QueryResult> {
+  if (!isDatabaseConfigured()) return executeDemoQueryInMemory(query, DEMO_ANALYTICS_CATALOG)
+
   const { tenant } = await getDemoEnvironment()
   const compiled = compileQuery(query, tenant.id, DEMO_ANALYTICS_CATALOG)
   const started = performance.now()

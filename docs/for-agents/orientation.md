@@ -3,7 +3,10 @@
 Read this once and you can build a suite-consistent screen. Everything below is
 real and exported from the package named for its responsibility. The runnable
 proof is `apps/playground` — when in doubt, read how the playground composes the
-packages.
+packages. It runs database-free by default with deterministic server data,
+in-memory analytics execution, and browser-local builder persistence. Supplying
+both playground database URLs switches those same routes to Postgres/RLS and
+the packages' durable adapters.
 
 ## 1. The design system is tokens
 

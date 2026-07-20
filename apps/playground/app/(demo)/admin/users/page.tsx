@@ -31,10 +31,13 @@ import {
   parseListParams,
   pickString,
   type FilterOption,
+  type ListParams,
   type ListSearchParams,
 } from '@appkit/ui'
 import { Users } from 'lucide-react'
 import { getDemoEnvironment } from '../../../../lib/server/demo-context'
+import { DEMO_MEMBERS, DEMO_ROLES } from '../../../../lib/server/demo-data'
+import { isDatabaseConfigured } from '../../../../lib/server/platform'
 import { InviteMemberButton } from './invite-member-button'
 
 export const dynamic = 'force-dynamic'
@@ -67,7 +70,7 @@ export default async function UsersPage({
   })
   const roleFilter = pickString(currentParams.role)
 
-  const data = await ctx.db(async (db) => {
+  const data = isDatabaseConfigured() ? await ctx.db(async (db) => {
     const filters: SQL[] = []
     if (list.q) {
       const escaped = list.q.replace(/[\\%_]/g, '\\$&')
@@ -151,7 +154,7 @@ export default async function UsersPage({
         count: role.count,
       })),
     }
-  })
+  }) : fixtureUserData(list, roleFilter)
 
   return (
     <ListPageLayout
@@ -160,7 +163,7 @@ export default async function UsersPage({
           <PageHeader
             title="Users"
             description="Manage workspace members, roles, and access."
-            actions={can(ctx, 'team.manage') ? <InviteMemberButton /> : undefined}
+            actions={isDatabaseConfigured() && can(ctx, 'team.manage') ? <InviteMemberButton /> : undefined}
           />
           <div className="flex flex-wrap items-center gap-2">
             <SearchInput placeholder="Search name or email…" searchLabel="Search users" />
@@ -185,6 +188,41 @@ export default async function UsersPage({
       />
     </ListPageLayout>
   )
+}
+
+function fixtureUserData(
+  list: ListParams<UserSort>,
+  roleFilter: string | undefined,
+) {
+  const query = (list.q ?? '').toLocaleLowerCase()
+  const filtered = DEMO_MEMBERS.filter((member) =>
+    (!query || `${member.name} ${member.email}`.toLocaleLowerCase().includes(query))
+    && (!roleFilter || member.roleKey === roleFilter),
+  )
+  const sorted = [...filtered].sort((left, right) => {
+    const comparison = list.sort === 'email'
+      ? left.email.localeCompare(right.email)
+      : list.sort === 'since'
+        ? left.createdAt.getTime() - right.createdAt.getTime()
+        : left.name.localeCompare(right.name)
+    return list.dir === 'asc' ? comparison : -comparison
+  })
+  const start = (list.page - 1) * list.perPage
+  return {
+    total: filtered.length,
+    rows: sorted.slice(start, start + list.perPage).map<UserRow>((member) => ({
+      id: member.id,
+      name: member.name,
+      email: member.email,
+      roles: [member.role],
+      since: member.createdAt.toISOString().slice(0, 10),
+    })),
+    roleOptions: DEMO_ROLES.map<FilterOption>((role) => ({
+      value: role.key,
+      label: role.name,
+      count: DEMO_MEMBERS.filter((member) => member.roleKey === role.key).length,
+    })),
+  }
 }
 
 function UsersTable({

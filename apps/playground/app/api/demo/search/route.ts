@@ -2,6 +2,8 @@ import { eq, ilike, or } from 'drizzle-orm'
 import { memberships, users } from '@appkit/db'
 import { assertCan } from '@appkit/tenant'
 import { getDemoEnvironment } from '../../../../lib/server/demo-context'
+import { DEMO_MEMBERS } from '../../../../lib/server/demo-data'
+import { isDatabaseConfigured } from '../../../../lib/server/platform'
 
 const ROUTES = [
   { id: 'dashboard', title: 'Dashboard', subtitle: 'Live tenant overview', href: '/dashboard', iconKey: 'gauge' },
@@ -19,14 +21,18 @@ export async function GET(request: Request): Promise<Response> {
 
   const { ctx } = await getDemoEnvironment()
   assertCan(ctx, 'team.read')
-  const members = await ctx.db((db) =>
-    db
-      .select({ id: memberships.id, name: memberships.displayName, email: users.email })
-      .from(memberships)
-      .innerJoin(users, eq(users.id, memberships.userId))
-      .where(or(ilike(memberships.displayName, `%${query}%`), ilike(users.email, `%${query}%`)))
-      .limit(8),
-  )
+  const members = isDatabaseConfigured()
+    ? await ctx.db((db) =>
+        db
+          .select({ id: memberships.id, name: memberships.displayName, email: users.email })
+          .from(memberships)
+          .innerJoin(users, eq(users.id, memberships.userId))
+          .where(or(ilike(memberships.displayName, `%${query}%`), ilike(users.email, `%${query}%`)))
+          .limit(8),
+      )
+    : DEMO_MEMBERS.filter((member) =>
+        `${member.name} ${member.email}`.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
+      ).slice(0, 8)
   const normalized = query.toLocaleLowerCase()
   const routes = ROUTES.filter((route) => `${route.title} ${route.subtitle}`.toLocaleLowerCase().includes(normalized))
   const groups = [

@@ -64,8 +64,9 @@ app that imports it improves.
   a minimal Next.js application without inventing product domain screens.
 - `apps/playground` — the **living reference**: a runnable Next 16 app with the
   complete dashboard/card-building system, every primitive, and an `/admin`
-  area (hub + settings shell). Read it to see any primitive in real use; keep it
-  up to date when you add/​change a primitive.
+  area (hub + settings shell). It is database-free by default and switches to
+  the real Postgres/RLS adapters when both database URLs are configured. Read it
+  to see any primitive in real use; keep it up to date when you add/change one.
 
 pnpm + Turborepo. Internal packages link via `workspace:*`; the shared package
 compiler emits clean `dist` artifacts with compiled ESM, declarations, semver

@@ -14,25 +14,29 @@ import {
 } from '@appkit/ui'
 import { ScrollText } from 'lucide-react'
 import { getDemoEnvironment } from '../../../../lib/server/demo-context'
+import { DEMO_AUDIT_EVENTS } from '../../../../lib/server/demo-data'
+import { isDatabaseConfigured } from '../../../../lib/server/platform'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Audit log — appkit' }
 
 export default async function AuditPage() {
   const { ctx } = await getDemoEnvironment()
-  const rows = await ctx.db((db) =>
-    db
-      .select({
-        id: auditLog.id,
-        action: auditLog.action,
-        entityType: auditLog.entityType,
-        summary: auditLog.summary,
-        createdAt: auditLog.createdAt,
-      })
-      .from(auditLog)
-      .orderBy(desc(auditLog.createdAt))
-      .limit(100),
-  )
+  const rows = isDatabaseConfigured()
+    ? await ctx.db((db) =>
+        db
+          .select({
+            id: auditLog.id,
+            action: auditLog.action,
+            entityType: auditLog.entityType,
+            summary: auditLog.summary,
+            createdAt: auditLog.createdAt,
+          })
+          .from(auditLog)
+          .orderBy(desc(auditLog.createdAt))
+          .limit(100),
+      )
+    : DEMO_AUDIT_EVENTS
 
   return (
     <PageContainer>

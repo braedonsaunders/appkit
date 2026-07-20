@@ -14,6 +14,8 @@ import { getDemoEnvironment } from '../../../lib/server/demo-context'
 import { executeDemoQuery } from '../../../lib/server/analytics'
 import { loadDashboardData } from '../../../lib/server/dashboard'
 import { resetDashboardLayoutAction, saveDashboardLayoutAction } from '../../../lib/server/dashboard-actions'
+import { DEMO_AUDIT_EVENTS, DEMO_MEMBERS, DEMO_ROLES } from '../../../lib/server/demo-data'
+import { isDatabaseConfigured } from '../../../lib/server/platform'
 import { DashboardGridController } from './_dashboard-grid-controller'
 
 const BUILTINS: DashboardLibraryItem[] = [
@@ -26,15 +28,23 @@ const BUILTINS: DashboardLibraryItem[] = [
 ]
 
 export async function DashboardExperience({ mode }: { mode: 'view' | 'edit' }) {
-  const { ctx } = await getDemoEnvironment()
-  const [members, roleCount, keys, audits, recentAudits] = await ctx.db(async (db) => {
-    const [memberRows] = await db.select({ n: count() }).from(memberships)
-    const [roleRows] = await db.select({ n: count() }).from(roles)
-    const [keyRows] = await db.select({ n: count() }).from(apiKeys)
-    const [auditRows] = await db.select({ n: count() }).from(auditLog)
-    const recentAuditRows = await db.select({ createdAt: auditLog.createdAt }).from(auditLog).orderBy(desc(auditLog.createdAt)).limit(30)
-    return [memberRows!.n, roleRows!.n, keyRows!.n, auditRows!.n, recentAuditRows] as const
-  })
+  const databaseConfigured = isDatabaseConfigured()
+  const [members, roleCount, keys, audits, recentAudits] = databaseConfigured
+    ? await (await getDemoEnvironment()).ctx.db(async (db) => {
+        const [memberRows] = await db.select({ n: count() }).from(memberships)
+        const [roleRows] = await db.select({ n: count() }).from(roles)
+        const [keyRows] = await db.select({ n: count() }).from(apiKeys)
+        const [auditRows] = await db.select({ n: count() }).from(auditLog)
+        const recentAuditRows = await db.select({ createdAt: auditLog.createdAt }).from(auditLog).orderBy(desc(auditLog.createdAt)).limit(30)
+        return [memberRows!.n, roleRows!.n, keyRows!.n, auditRows!.n, recentAuditRows] as const
+      })
+    : [
+        DEMO_MEMBERS.length,
+        DEMO_ROLES.length,
+        0,
+        DEMO_AUDIT_EVENTS.length,
+        DEMO_AUDIT_EVENTS.map(({ createdAt }) => ({ createdAt })),
+      ] as const
   const auditByDay = new Map<string, number>()
   for (const row of recentAudits) {
     const day = row.createdAt.toISOString().slice(0, 10)
@@ -71,7 +81,7 @@ export async function DashboardExperience({ mode }: { mode: 'view' | 'edit' }) {
     }
   }
   const items: DashboardLibraryItem[] = [...BUILTINS, ...cards.map((card) => ({ id: `card:${card.id}`, label: card.name, description: card.description || `${card.visualization} insight`, category: 'insights', kind: 'card' as const, defaultSize: { w: 6, h: 5 }, minSize: { w: 3, h: 3 } }))]
-  return <DashboardGridController initialLayout={layout} nodes={nodes} items={items} mode={mode} onSave={saveDashboardLayoutAction} onReset={resetDashboardLayoutAction} />
+  return <DashboardGridController initialLayout={layout} nodes={nodes} items={items} mode={mode} onSave={saveDashboardLayoutAction} onReset={resetDashboardLayoutAction} browserPersistence={!databaseConfigured} />
 }
 
 function QuickAction({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
