@@ -15,7 +15,6 @@ import {
   ShieldCheck,
   Workflow,
 } from 'lucide-react'
-import { createSealer } from '@appkit/crypto'
 import { EMAIL_PROVIDER_SPECS } from '@appkit/emails'
 import { SMS_PROVIDER_SPECS } from '@appkit/sms'
 import {
@@ -26,7 +25,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CodeBlock,
   PageContainer,
   PageHeader,
 } from '@appkit/ui'
@@ -131,7 +129,7 @@ const GROUPS: { label: string; description: string; capabilities: Capability[] }
       {
         name: '@appkit/crypto',
         summary: 'AES-256-GCM sealed secrets using an HKDF-derived application key and a fresh nonce for every write.',
-        proof: 'The live crypto proof below seals a demo credential and verifies tamper detection on every render.',
+        proof: 'Email and SMS provider credentials use the same sealed-secret contract, with tamper rejection covered by the package test suite.',
         icon: <KeyRound />,
       },
       {
@@ -169,11 +167,6 @@ const GROUPS: { label: string; description: string; capabilities: Capability[] }
 ]
 
 export default function PlatformPage() {
-  const sealer = createSealer('appkit-public-demo-sealing-key-32-characters')
-  const sealed = sealer.sealSecret('twilio-demo-auth-token')
-  const tampered = `${sealed.ciphertext[0] === 'A' ? 'B' : 'A'}${sealed.ciphertext.slice(1)}`
-  const rejectsTampering = sealer.unsealSecret({ ...sealed, ciphertext: tampered }) === null
-
   return (
     <PageContainer className="space-y-8">
       <PageHeader
@@ -181,25 +174,6 @@ export default function PlatformPage() {
         description="Every shipped package is accounted for here—live where safe, interactive where useful, and explicit about infrastructure that needs an external service."
         actions={<Badge variant="success">14 packages · auth disabled</Badge>}
       />
-
-      <Card className="overflow-hidden border-primary/25 bg-primary-subtle/40">
-        <CardHeader>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge>@appkit/crypto · live proof</Badge>
-            <Badge variant={rejectsTampering ? 'success' : 'destructive'}>
-              {rejectsTampering ? 'Tamper rejected' : 'Tamper check failed'}
-            </Badge>
-          </div>
-          <CardTitle className="pt-2">A provider credential, sealed before persistence</CardTitle>
-          <CardDescription>
-            The plaintext exists only for this demonstration. Production stores the ciphertext and nonce, while APPKIT_SECRET stays in the environment.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 lg:grid-cols-2">
-          <CodeBlock code={`plaintext: twilio-demo-auth-token\nnonce: ${sealed.nonce}`} />
-          <CodeBlock code={`ciphertext: ${sealed.ciphertext}\nauthentication: AES-256-GCM`} />
-        </CardContent>
-      </Card>
 
       {GROUPS.map((group) => (
         <section key={group.label} className="space-y-3">
