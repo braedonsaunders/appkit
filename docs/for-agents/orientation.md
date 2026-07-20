@@ -61,6 +61,9 @@ columns) · `Badge` · `Avatar` (image + initials fallback) · `EmptyState` · `
 **App shell / admin** — `PageHeader` · `AdminHub` (the settings **landing/hub** —
 grouped accent cards) · `SettingsShell` (the **sidebar settings area** — fixed
 header + two-pane rail) + `SettingsNav` / `SettingsSection` / `SettingsRow`.
+`AppShell` renders the same navigation registry as a horizontal topbar (default)
+or collapsible sidebar via `navigationMode="topbar" | "sidebar"`; mobile uses the
+same groups in a drawer. `TopNav` and `AppSidebar` are also exported directly.
 
 ## 3. Composition patterns
 

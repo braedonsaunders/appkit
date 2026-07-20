@@ -33,8 +33,9 @@ export {
   type ApiEndpointDoc,
   type ApiParamDoc,
 } from './api-reference'
-export { AppShell } from './app-shell'
+export { AppShell, type AppShellNavigationMode } from './app-shell'
 export { AppSidebar } from './app-sidebar'
+export { TopNav } from './top-nav'
 export {
   SidebarNav,
   findActiveNavHref,

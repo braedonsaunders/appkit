@@ -4,13 +4,17 @@ import * as React from 'react'
 import { Menu } from 'lucide-react'
 import { AppSidebar } from './app-sidebar'
 import { SidebarNav, type SidebarNavGroup } from './sidebar-nav'
+import { TopNav } from './top-nav'
 import { Drawer } from './drawer'
 import type { LinkRender } from './settings-layout'
+import { cn } from './utils'
+
+export type AppShellNavigationMode = 'topbar' | 'sidebar'
 
 /**
- * The app frame: a collapsible desktop nav rail + a header (with a mobile nav
- * toggle) + the scrolling content area. Compose the header's right side (search,
- * notifications, account, theme toggle) yourself and pass it as `header`.
+ * The app frame with one navigation registry rendered as either a horizontal
+ * topbar (the default) or a collapsible desktop sidebar. Mobile always uses the
+ * same grouped navigation in a drawer. Compose the header's right side yourself.
  */
 export function AppShell({
   groups,
@@ -20,6 +24,7 @@ export function AppShell({
   header,
   banner,
   defaultCollapsed = false,
+  navigationMode = 'topbar',
   linkRender,
   children,
 }: {
@@ -32,6 +37,7 @@ export function AppShell({
   /** Full-width strip above the header (impersonation / super-admin banners). */
   banner?: React.ReactNode
   defaultCollapsed?: boolean
+  navigationMode?: AppShellNavigationMode
   linkRender?: LinkRender
   children: React.ReactNode
 }) {
@@ -39,14 +45,16 @@ export function AppShell({
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <AppSidebar
-        groups={groups}
-        pathname={pathname}
-        brand={brand}
-        footer={sidebarFooter}
-        defaultCollapsed={defaultCollapsed}
-        linkRender={linkRender}
-      />
+      {navigationMode === 'sidebar' ? (
+        <AppSidebar
+          groups={groups}
+          pathname={pathname}
+          brand={brand}
+          footer={sidebarFooter}
+          defaultCollapsed={defaultCollapsed}
+          linkRender={linkRender}
+        />
+      ) : null}
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden [padding-top:env(safe-area-inset-top)]">
         {banner}
@@ -59,6 +67,17 @@ export function AppShell({
           >
             <Menu size={18} />
           </button>
+          {brand ? (
+            <div className={cn('min-w-0 shrink-0', navigationMode === 'sidebar' && 'lg:hidden')}>{brand}</div>
+          ) : null}
+          {navigationMode === 'topbar' ? (
+            <TopNav
+              groups={groups}
+              pathname={pathname}
+              linkRender={linkRender}
+              className="hidden flex-1 overflow-x-auto lg:flex"
+            />
+          ) : null}
           {header}
         </header>
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-bg-subtle">{children}</main>

@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation'
 import {
   and,
   asc,
@@ -35,7 +34,7 @@ import {
   type ListSearchParams,
 } from '@appkit/ui'
 import { Users } from 'lucide-react'
-import { getSession } from '../../../../lib/server/session'
+import { getDemoEnvironment } from '../../../../lib/server/demo-context'
 import { InviteMemberButton } from './invite-member-button'
 
 export const dynamic = 'force-dynamic'
@@ -58,9 +57,7 @@ export default async function TeamPage({
 }: {
   searchParams: Promise<ListSearchParams>
 }) {
-  const session = await getSession()
-  if (!session) redirect('/login')
-  const { ctx } = session
+  const { ctx } = await getDemoEnvironment()
   const currentParams = await searchParams
   const list = parseListParams(currentParams, {
     sort: 'name',

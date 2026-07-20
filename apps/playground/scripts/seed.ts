@@ -1,7 +1,7 @@
-// Seed the playground against a real Postgres. Idempotent: re-running keeps the
-// tenant/users and mints a fresh API key (printed once).
+// Seed the public playground against a real Postgres. Idempotent: re-running
+// keeps the tenant/users and explicitly clears local-login credentials.
 //
-//   APPKIT_DB_URL=... APPKIT_SUPER_URL=... pnpm exec tsx scripts/seed.ts
+//   pnpm seed  # reads .env.local when present, otherwise the process environment
 
 import {
   API_TENANT_TABLES,
@@ -19,9 +19,8 @@ import {
   schema,
   seedRoles,
   tenants,
+  users,
 } from '@appkit/db'
-import { hashPassword } from '@appkit/auth'
-import { generateApiKey } from '@appkit/api'
 import { and, eq } from 'drizzle-orm'
 
 const APP_URL = process.env.APPKIT_DB_URL
@@ -33,7 +32,6 @@ if (!APP_URL || !SUPER_URL) {
 
 const ADMIN_EMAIL = 'admin@appkit.dev'
 const MEMBER_EMAIL = 'casey@appkit.dev'
-const PASSWORD = 'appkit-demo'
 
 async function main() {
   const { withSuperAdmin, superPool, pool } = createDb({ url: APP_URL!, superUrl: SUPER_URL!, schema })
@@ -57,6 +55,11 @@ async function main() {
     const tenantId = existingTenant?.id ?? (await createTenant(sdb as never, { name: 'Acme Inc', slug: 'acme' })).id
     console.log(`✓ tenant Acme Inc (${tenantId})`)
 
+    // The playground never accepts bearer credentials. Remove keys from older
+    // seed runs so the persisted demo state cannot imply otherwise.
+    await sdb.delete(apiKeys).where(eq(apiKeys.tenantId, tenantId))
+    console.log('✓ API credentials cleared (authentication disabled)')
+
     // 3. Built-in roles.
     const roleIds = await seedRoles(sdb as never, tenantId, [
       { key: 'admin', name: 'Admin', permissions: ['team.read', 'team.manage'] },
@@ -69,7 +72,8 @@ async function main() {
       const existing = await findUserByEmail(sdb as never, email)
       const userId =
         existing?.id ??
-        (await createUser(sdb as never, { email, name, passwordHash: hashPassword(PASSWORD), isSuperAdmin })).id
+        (await createUser(sdb as never, { email, name, isSuperAdmin })).id
+      await sdb.update(users).set({ passwordHash: null }).where(eq(users.id, userId))
       const [m] = await sdb
         .select({ id: memberships.id })
         .from(memberships)
@@ -81,25 +85,12 @@ async function main() {
       }
       return userId
     }
-    const adminId = await ensureUser(ADMIN_EMAIL, 'Ada Lovelace', 'admin', true)
+    await ensureUser(ADMIN_EMAIL, 'Ada Lovelace', 'admin', true)
     await ensureUser(MEMBER_EMAIL, 'Casey Grant', 'member', false)
     console.log('✓ users + memberships')
-
-    // 5. A fresh API key (read-only) for the API reference's Try-it.
-    const { token, hash } = generateApiKey()
-    await sdb.insert(apiKeys).values({
-      tenantId,
-      name: 'playground demo key',
-      keyHash: hash,
-      permissions: ['team.read'],
-      createdBy: adminId,
-    })
-    console.log('✓ API key minted')
     console.log('')
     console.log('──────────────────────────────────────────────')
-    console.log(`  login:    ${ADMIN_EMAIL} / ${PASSWORD}`)
-    console.log(`  member:   ${MEMBER_EMAIL} / ${PASSWORD}`)
-    console.log(`  api key:  ${token}`)
+    console.log(`  demo user: ${ADMIN_EMAIL} (authentication disabled)`)
     console.log('──────────────────────────────────────────────')
   })
 

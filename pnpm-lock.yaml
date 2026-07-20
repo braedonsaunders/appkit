@@ -20,18 +20,21 @@ importers:
 
   apps/playground:
     dependencies:
-      '@appkit/api':
+      '@appkit/crypto':
         specifier: workspace:*
-        version: link:../../packages/api
-      '@appkit/auth':
-        specifier: workspace:*
-        version: link:../../packages/auth
+        version: link:../../packages/crypto
       '@appkit/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@appkit/emails':
+        specifier: workspace:*
+        version: link:../../packages/emails
       '@appkit/events':
         specifier: workspace:*
         version: link:../../packages/events
+      '@appkit/sms':
+        specifier: workspace:*
+        version: link:../../packages/sms
       '@appkit/tenant':
         specifier: workspace:*
         version: link:../../packages/tenant

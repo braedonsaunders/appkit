@@ -32,7 +32,7 @@ const LIVE_ENDPOINTS: ApiEndpointDoc[] = [
     tag: 'Team',
     summary: 'List team members',
     description:
-      'A REAL @appkit/api endpoint: Bearer-key authenticated, permission-checked (team.read), and RLS-scoped to the key’s tenant. Paste the seeded API key above and Send — without it you get the typed 401 envelope.',
+      'A real database endpoint using the fixed public demo context. Authentication is disabled, while the query remains RLS-scoped to the demo tenant. In a production app, @appkit/api adds API-key auth, permission scopes, rate limiting, and idempotency.',
     permission: 'team.read',
     responseExample: { data: [{ id: '…', name: 'Ada Lovelace', email: 'admin@appkit.dev' }], total: 2 },
   },
@@ -52,7 +52,7 @@ const ENDPOINTS: ApiEndpointDoc[] = [
     path: '/invoices',
     tag: 'Invoices',
     summary: 'List invoices',
-    description: 'Returns invoices for the authenticated tenant.',
+    description: 'Returns example invoices. A production route would resolve the requesting tenant first.',
     permission: 'invoices.read',
     params: [
       { name: 'status', type: 'string', description: 'Filter by status (paid, pending, …)' },
@@ -91,12 +91,14 @@ export default function ApiDocs() {
         <ApiReference
           endpoints={LIVE_ENDPOINTS}
           baseUrl="/api/v1"
-          title="Live API (key-authed)"
-          description="Backed by @appkit/api against the real database. Paste the API key printed by the seed to authenticate; sending without it demonstrates the typed 401."
+          showBearerToken={false}
+          title="Live API (public demo)"
+          description="Backed by the real RLS-scoped database with authentication deliberately disabled. Expand Team and send the request immediately."
         />
         <ApiReference
           endpoints={ENDPOINTS}
           baseUrl="/api/demo"
+          showBearerToken={false}
           title="Demo endpoints"
           description="Self-documenting — generated from route descriptions. Expand an endpoint and hit Send."
         />

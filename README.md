@@ -60,9 +60,11 @@ imported by every app.
 ## The running reference
 
 `apps/playground` composes the platform instead of merely displaying components:
-real login and signed sessions, Postgres RLS tenant isolation, RBAC-gated audited
-mutations, a key-authenticated API, and URL-driven database lists. It also keeps
-the component gallery and admin reference surfaces in the same runnable app.
+Postgres RLS tenant isolation, RBAC-gated audited mutations, a live public demo
+API, URL-driven database lists, and a package-by-package platform overview. The
+demo intentionally disables authentication everywhere and uses one fixed seeded
+identity solely to exercise tenant context and permissions. `@appkit/auth` remains
+available to consuming applications.
 
 ```bash
 pnpm install
@@ -72,8 +74,9 @@ pnpm --filter @appkit/playground seed
 pnpm --filter @appkit/playground dev
 ```
 
-The seed command prints the live API key. The default local users are
-`admin@appkit.dev` and `casey@appkit.dev`, both with password `appkit-demo`.
+The seed creates the fixed `admin@appkit.dev` demo identity without a password.
+Open `/dashboard/platform` for an inventory and proof point for every package;
+use the header control to switch between topbar (default) and sidebar navigation.
 
 ## Conventions
 

@@ -232,6 +232,7 @@ export function ApiReference({
   title,
   description,
   apiKey: initialApiKey,
+  showBearerToken = true,
   className,
 }: {
   endpoints: ApiEndpointDoc[]
@@ -239,6 +240,8 @@ export function ApiReference({
   title?: string
   description?: string
   apiKey?: string
+  /** Show the optional bearer-token input beside the base URL. */
+  showBearerToken?: boolean
   className?: string
 }) {
   const [apiKey, setApiKey] = React.useState(initialApiKey ?? '')
@@ -266,12 +269,14 @@ export function ApiReference({
             <div className="text-xs text-fg-subtle">Base URL</div>
             <code className="truncate font-mono text-sm text-fg">{baseUrl}</code>
           </div>
-          <Input
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="Bearer token (optional)"
-            className="sm:w-64"
-          />
+          {showBearerToken ? (
+            <Input
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="Bearer token (optional)"
+              className="sm:w-64"
+            />
+          ) : null}
         </div>
       ) : null}
 

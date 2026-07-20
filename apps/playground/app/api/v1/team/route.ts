@@ -1,22 +1,20 @@
 import { eq } from 'drizzle-orm'
 import { memberships, users } from '@appkit/db'
-import { authorize } from '@appkit/api'
-import { platform } from '../../../../lib/server/platform'
+import { assertCan } from '@appkit/tenant'
+import { getDemoEnvironment } from '../../../../lib/server/demo-context'
 
-// The real public API: authenticated by an @appkit/api key, RBAC-checked, and
-// RLS-scoped to the key's tenant. Try it from /api-docs with the seeded key.
+// A public demo endpoint. It uses the same fixed demo RequestContext as the UI,
+// so the database query remains RLS-scoped without requiring any authentication.
 
-export async function GET(req: Request): Promise<Response> {
-  const { api } = platform()
-  return api.withApiKey(req, async (auth) => {
-    authorize(auth, 'team.read')
-    const data = await auth.ctx.db((db) =>
-      db
-        .select({ id: memberships.id, name: memberships.displayName, email: users.email })
-        .from(memberships)
-        .innerJoin(users, eq(users.id, memberships.userId))
-        .orderBy(memberships.createdAt),
-    )
-    return Response.json({ data, total: data.length })
-  })
+export async function GET(): Promise<Response> {
+  const { ctx } = await getDemoEnvironment()
+  assertCan(ctx, 'team.read')
+  const data = await ctx.db((db) =>
+    db
+      .select({ id: memberships.id, name: memberships.displayName, email: users.email })
+      .from(memberships)
+      .innerJoin(users, eq(users.id, memberships.userId))
+      .orderBy(memberships.createdAt),
+  )
+  return Response.json({ data, total: data.length, demo: { authentication: 'disabled' } })
 }

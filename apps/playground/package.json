@@ -9,15 +9,16 @@
     "start": "next start --port 4310",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf .next *.tsbuildinfo",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts"
   },
   "dependencies": {
-    "@appkit/api": "workspace:*",
-    "@appkit/auth": "workspace:*",
+    "@appkit/crypto": "workspace:*",
     "@appkit/db": "workspace:*",
+    "@appkit/emails": "workspace:*",
     "@appkit/events": "workspace:*",
     "@appkit/tenant": "workspace:*",
     "@appkit/tokens": "workspace:*",
+    "@appkit/sms": "workspace:*",
     "@appkit/ui": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "framer-motion": "^12.42.2",
