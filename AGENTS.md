@@ -13,6 +13,9 @@ never re-invented per app.
   **generalized, app-agnostic rules** for building any application on this
   foundation (distilled from the openbooks + beaconhs AGENTS.md). Apps built on
   appkit should adopt these verbatim.
+- [`provenance.md`](docs/for-agents/provenance.md) — the audited distinction
+  between faithful extraction, generalized production pattern, and
+  appkit-original code. Never claim parity without a named sibling source.
 
 ## Mission
 

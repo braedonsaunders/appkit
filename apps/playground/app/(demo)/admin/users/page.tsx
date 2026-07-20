@@ -38,13 +38,13 @@ import { getDemoEnvironment } from '../../../../lib/server/demo-context'
 import { InviteMemberButton } from './invite-member-button'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Team — appkit' }
+export const metadata = { title: 'Users — appkit' }
 
-const BASE_PATH = '/dashboard/team'
-const TEAM_SORTS = ['name', 'email', 'since'] as const
-type TeamSort = (typeof TEAM_SORTS)[number]
+const BASE_PATH = '/admin/users'
+const USER_SORTS = ['name', 'email', 'since'] as const
+type UserSort = (typeof USER_SORTS)[number]
 
-type TeamRow = {
+type UserRow = {
   id: string
   name: string
   email: string
@@ -52,7 +52,7 @@ type TeamRow = {
   since: string
 }
 
-export default async function TeamPage({
+export default async function UsersPage({
   searchParams,
 }: {
   searchParams: Promise<ListSearchParams>
@@ -63,7 +63,7 @@ export default async function TeamPage({
     sort: 'name',
     dir: 'asc',
     perPage: 10,
-    allowedSorts: TEAM_SORTS,
+    allowedSorts: USER_SORTS,
   })
   const roleFilter = pickString(currentParams.role)
 
@@ -138,7 +138,7 @@ export default async function TeamPage({
 
     return {
       total: totals[0]?.value ?? 0,
-      rows: members.map<TeamRow>((member) => ({
+      rows: members.map<UserRow>((member) => ({
         id: member.id,
         name: member.name,
         email: member.email,
@@ -158,12 +158,12 @@ export default async function TeamPage({
       header={
         <>
           <PageHeader
-            title="Team"
+            title="Users"
             description="Live from Postgres, RLS-scoped to your tenant. Search, filters, sorting, and pagination live in the URL."
             actions={can(ctx, 'team.manage') ? <InviteMemberButton /> : undefined}
           />
           <div className="flex flex-wrap items-center gap-2">
-            <SearchInput placeholder="Search name or email…" searchLabel="Search team" />
+            <SearchInput placeholder="Search name or email…" searchLabel="Search users" />
             <FilterChips
               basePath={BASE_PATH}
               currentParams={currentParams}
@@ -175,7 +175,7 @@ export default async function TeamPage({
         </>
       }
     >
-      <TeamTable rows={data.rows} currentParams={currentParams} sort={list.sort} dir={list.dir} />
+      <UsersTable rows={data.rows} currentParams={currentParams} sort={list.sort} dir={list.dir} />
       <Pagination
         basePath={BASE_PATH}
         currentParams={currentParams}
@@ -187,15 +187,15 @@ export default async function TeamPage({
   )
 }
 
-function TeamTable({
+function UsersTable({
   rows,
   currentParams,
   sort,
   dir,
 }: {
-  rows: TeamRow[]
+  rows: UserRow[]
   currentParams: ListSearchParams
-  sort: TeamSort
+  sort: UserSort
   dir: 'asc' | 'desc'
 }) {
   const sortProps = { basePath: BASE_PATH, currentParams, dir }

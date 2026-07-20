@@ -74,6 +74,6 @@ export async function inviteMemberAction(
     return { error: e instanceof Error ? e.message : 'Invite failed.', ok: false }
   }
 
-  revalidatePath('/dashboard/team')
+  revalidatePath('/admin/users')
   return { error: null, ok: true }
 }

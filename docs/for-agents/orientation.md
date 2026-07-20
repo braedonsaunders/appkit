@@ -61,9 +61,12 @@ columns) · `Badge` · `Avatar` (image + initials fallback) · `EmptyState` · `
 **App shell / admin** — `PageHeader` · `AdminHub` (the settings **landing/hub** —
 grouped accent cards) · `SettingsShell` (the **sidebar settings area** — fixed
 header + two-pane rail) + `SettingsNav` / `SettingsSection` / `SettingsRow`.
-`AppShell` renders the same navigation registry as a horizontal topbar (default)
-or collapsible sidebar via `navigationMode="topbar" | "sidebar"`; mobile uses the
-same groups in a drawer. `TopNav` and `AppSidebar` are also exported directly.
+`AppShell` renders the same OpenBooks/BeaconHS-compatible navigation registry as
+the OpenBooks workspace-dropdown topbar (default) or the shared collapsible
+sidebar via `navigationMode="topbar" | "sidebar"`. The registry supports the
+siblings' serializable `iconKey`, `id`, subgroup, exact-match, and mobile-pin
+fields; mobile uses the same data in a drawer and bottom tab bar. `TopNav`,
+`AppSidebar`, `SidebarNav`, and `MobileTabBar` are also exported directly.
 
 ## 3. Composition patterns
 
@@ -76,7 +79,7 @@ same groups in a drawer. `TopNav` and `AppSidebar` are also exported directly.
   server query, and render `SearchInput` + `FilterChips` + `SortableTh` +
   `Pagination`. Wire `ListNavProvider` once to the app router so controls soft-
   navigate without full reloads. Use prefixed keys when several lists share a
-  route. `apps/playground/app/(protected)/dashboard/team/page.tsx` is the live
+  route. `apps/playground/app/(demo)/admin/users/page.tsx` is the live
   reference. `RecordList` remains the controlled choice for bounded, already-
   loaded data. Never render an unbounded or unsearchable table.
 - **Line-item editors** use `LineGrid` — columns are data (`text`/`amount`/

@@ -19,6 +19,7 @@ export function AppSidebar({
   pathname,
   brand,
   footer,
+  collapsedFooter,
   defaultCollapsed = false,
   collapsible = true,
   linkRender,
@@ -29,6 +30,7 @@ export function AppSidebar({
   pathname: string
   brand?: React.ReactNode
   footer?: React.ReactNode
+  collapsedFooter?: React.ReactNode
   defaultCollapsed?: boolean
   collapsible?: boolean
   linkRender?: LinkRender
@@ -73,7 +75,9 @@ export function AppSidebar({
 
       <SidebarNav groups={groups} pathname={pathname} collapsed={collapsed} linkRender={linkRender} />
 
-      {footer ? <div className="border-t border-border p-3">{footer}</div> : null}
+      {footer || collapsedFooter ? (
+        <div className="border-t border-border p-3">{collapsed ? collapsedFooter : footer}</div>
+      ) : null}
     </aside>
   )
 }

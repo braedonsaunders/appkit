@@ -1,7 +1,6 @@
 'use client'
 
 import * as React from 'react'
-import Link from 'next/link'
 import {
   ArrowRight,
   Bell,
@@ -9,12 +8,9 @@ import {
   CircleAlert,
   Info,
   MoreHorizontal,
-  Moon,
   Palette,
   PanelRightOpen,
   Pencil,
-  Sparkles,
-  Sun,
   Trash2,
   TriangleAlert,
 } from 'lucide-react'
@@ -52,37 +48,6 @@ import {
   Tooltip,
   useContextMenu,
 } from '@appkit/ui'
-
-function useTheme() {
-  const [dark, setDark] = React.useState(false)
-  React.useEffect(() => {
-    const root = document.documentElement
-    let saved: string | null = null
-    try {
-      saved = localStorage.getItem('theme')
-    } catch {}
-    if (saved === 'dark') root.classList.add('dark')
-    if (saved === 'light') root.classList.add('light')
-    const effectiveDark =
-      root.classList.contains('dark') ||
-      (!root.classList.contains('light') &&
-        window.matchMedia('(prefers-color-scheme: dark)').matches)
-    setDark(effectiveDark)
-  }, [])
-  const toggle = React.useCallback(() => {
-    setDark((d) => {
-      const next = !d
-      const root = document.documentElement
-      root.classList.toggle('dark', next)
-      root.classList.toggle('light', !next)
-      try {
-        localStorage.setItem('theme', next ? 'dark' : 'light')
-      } catch {}
-      return next
-    })
-  }, [])
-  return { dark, toggle }
-}
 
 function Section({
   title,
@@ -195,7 +160,6 @@ const LINE_COLUMNS: LineGridColumn<LineRow>[] = [
 ]
 
 export default function ComponentGallery() {
-  const { dark, toggle } = useTheme()
   const [open, setOpen] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
   const [tab, setTab] = React.useState('overview')
@@ -230,35 +194,8 @@ export default function ComponentGallery() {
   })
 
   return (
-    <div className="mx-auto min-h-screen max-w-5xl">
-      <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border bg-bg/80 px-6 backdrop-blur-md">
-        <div className="flex items-center gap-2 font-semibold">
-          <Sparkles className="size-5 text-primary" />
-          appkit
-          <Badge variant="secondary">v0.1</Badge>
-        </div>
-        <div className="flex items-center gap-1">
-          <Link
-            href="/admin"
-            className="rounded-md px-3 py-1.5 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
-          >
-            Admin
-          </Link>
-          <Link
-            href="/dashboard/platform"
-            className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-fg transition-colors hover:bg-primary-hover"
-          >
-            Platform overview
-          </Link>
-          <Tooltip content={dark ? 'Light mode' : 'Dark mode'}>
-            <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
-              {dark ? <Sun className="size-5" /> : <Moon className="size-5" />}
-            </Button>
-          </Tooltip>
-        </div>
-      </header>
-
-      <main className="space-y-14 px-6 py-12">
+    <div className="app-scroll h-full overflow-y-auto">
+      <main className="mx-auto max-w-5xl space-y-14 px-6 py-12">
         {/* Hero */}
         <div className="reveal space-y-5">
           <Badge>

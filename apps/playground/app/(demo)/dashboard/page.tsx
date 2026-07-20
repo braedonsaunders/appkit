@@ -76,7 +76,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             <Button asChild>
-              <Link href="/dashboard/team">Manage the team</Link>
+              <Link href="/admin/users">Manage users</Link>
             </Button>
             <Button variant="outline" asChild>
               <Link href="/api-docs">Call the API</Link>

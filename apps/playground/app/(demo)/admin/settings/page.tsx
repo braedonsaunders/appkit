@@ -2,62 +2,19 @@
 
 import * as React from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { Bell, GripVertical, Settings, Shield } from 'lucide-react'
 import {
-  Bell,
-  GripVertical,
-  Mail,
-  MoreHorizontal,
-  Moon,
-  Pencil,
-  Plus,
-  Settings,
-  Shield,
-  Sun,
-  Trash2,
-  UserRound,
-  Users,
-} from 'lucide-react'
-import {
-  Avatar,
-  Badge,
-  type BadgeProps,
   Button,
-  ContextMenu,
-  Dialog,
   Input,
-  Label,
   type LinkRender,
-  RecordList,
-  type RecordColumn,
   Select,
   SettingsRow,
   SettingsSection,
   SettingsShell,
   type SettingsNavGroup,
   Switch,
-  toast,
-  useContextMenu,
 } from '@appkit/ui'
-
-function useTheme() {
-  const [dark, setDark] = React.useState(false)
-  React.useEffect(() => {
-    const r = document.documentElement
-    setDark(r.classList.contains('dark') || (!r.classList.contains('light') && matchMedia('(prefers-color-scheme: dark)').matches))
-  }, [])
-  const toggle = () =>
-    setDark((d) => {
-      const next = !d
-      const r = document.documentElement
-      r.classList.toggle('dark', next)
-      r.classList.toggle('light', !next)
-      try {
-        localStorage.setItem('theme', next ? 'dark' : 'light')
-      } catch {}
-      return next
-    })
-  return { dark, toggle }
-}
 
 const nextLink: LinkRender = ({ href, children, className }) => (
   <Link href={href} className={className}>
@@ -65,15 +22,6 @@ const nextLink: LinkRender = ({ href, children, className }) => (
   </Link>
 )
 
-type User = { id: string; name: string; email: string; role: string; status: 'Active' | 'Invited' | 'Suspended'; avatar?: string }
-const USERS: User[] = [
-  { id: '1', name: 'Ada Lovelace', email: 'ada@acme.com', role: 'Owner', status: 'Active', avatar: 'https://i.pravatar.cc/64?img=5' },
-  { id: '2', name: 'Grace Hopper', email: 'grace@acme.com', role: 'Admin', status: 'Active' },
-  { id: '3', name: 'Alan Turing', email: 'alan@acme.com', role: 'Editor', status: 'Active' },
-  { id: '4', name: 'Katherine Johnson', email: 'kj@acme.com', role: 'Editor', status: 'Invited' },
-  { id: '5', name: 'Linus Pauling', email: 'linus@acme.com', role: 'Viewer', status: 'Suspended' },
-]
-const STATUS_VARIANT: Record<User['status'], BadgeProps['variant']> = { Active: 'success', Invited: 'info', Suspended: 'warning' }
 const ROLES = [
   { value: 'owner', label: 'Owner' },
   { value: 'admin', label: 'Admin' },
@@ -98,21 +46,22 @@ const NAV_ITEMS = ['Dashboard', 'Invoices', 'Expenses', 'Reports', 'Customers', 
 
 const NAV: SettingsNavGroup[] = [
   {
+    label: 'Workspace',
     items: [
       { key: 'general', label: 'General', icon: <Settings /> },
-      { key: 'users', label: 'Users', icon: <Users />, badge: <Badge variant="secondary">{USERS.length}</Badge> },
-      { key: 'roles', label: 'Roles', icon: <Shield /> },
       { key: 'navigation', label: 'Navigation', icon: <GripVertical /> },
       { key: 'notifications', label: 'Notifications', icon: <Bell /> },
     ],
   },
+  {
+    label: 'Access',
+    items: [{ key: 'roles', label: 'Roles & permissions', icon: <Shield /> }],
+  },
 ]
 
 export default function SettingsPage() {
-  const { dark, toggle } = useTheme()
-  const [active, setActive] = React.useState('users')
-  const [invite, setInvite] = React.useState(false)
-  const [inviteEmail, setInviteEmail] = React.useState('')
+  const router = useRouter()
+  const [active, setActive] = React.useState('general')
 
   React.useEffect(() => {
     const s = new URLSearchParams(window.location.search).get('s')
@@ -120,56 +69,24 @@ export default function SettingsPage() {
   }, [])
 
   return (
-    <div className="h-screen">
+    <div className="h-full">
       <SettingsShell
-        title="Settings"
-        description="Manage your workspace, people, and access."
+        title="Company setup"
+        description="Configure workspace defaults, access, navigation, and notifications."
         back={{ href: '/admin', label: 'Administration' }}
         nav={NAV}
         activeKey={active}
-        onSelect={setActive}
+        onSelect={(key) => {
+          setActive(key)
+          router.replace(`/admin/settings?s=${key}`, { scroll: false })
+        }}
         linkRender={nextLink}
-        actions={
-          <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
-            {dark ? <Sun className="size-5" /> : <Moon className="size-5" />}
-          </Button>
-        }
       >
         {active === 'general' ? <GeneralSettings /> : null}
-        {active === 'users' ? <UsersSettings onInvite={() => setInvite(true)} /> : null}
         {active === 'roles' ? <RolesSettings /> : null}
         {active === 'navigation' ? <NavigationSettings /> : null}
         {active === 'notifications' ? <NotificationSettings /> : null}
       </SettingsShell>
-
-      <Dialog
-        open={invite}
-        onClose={() => setInvite(false)}
-        title="Invite a user"
-        description="They'll get an email with a link to join the workspace."
-        size="sm"
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setInvite(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                setInvite(false)
-                setInviteEmail('')
-                toast.success('Invitation sent', { description: inviteEmail || 'user@acme.com' })
-              }}
-            >
-              <Mail className="size-4" /> Send invite
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-1.5">
-          <Label htmlFor="invite-email">Email address</Label>
-          <Input id="invite-email" type="email" placeholder="colleague@acme.com" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
-        </div>
-      </Dialog>
     </div>
   )
 }
@@ -216,82 +133,6 @@ function GeneralSettings() {
         </SettingsRow>
       </SettingsSection>
     </>
-  )
-}
-
-function UsersSettings({ onInvite }: { onInvite: () => void }) {
-  const menu = useContextMenu()
-  const [menuUser, setMenuUser] = React.useState<User | null>(null)
-  const [search, setSearch] = React.useState('')
-  const rows = USERS.filter((u) => (search ? `${u.name} ${u.email} ${u.role}`.toLowerCase().includes(search.toLowerCase()) : true))
-  const columns: RecordColumn<User>[] = [
-    {
-      key: 'name',
-      label: 'User',
-      render: (u) => (
-        <div className="flex items-center gap-3">
-          <Avatar name={u.name} src={u.avatar} size={32} />
-          <div className="min-w-0">
-            <div className="truncate font-medium text-fg">{u.name}</div>
-            <div className="truncate text-xs text-fg-muted">{u.email}</div>
-          </div>
-        </div>
-      ),
-    },
-    { key: 'role', label: 'Role' },
-    { key: 'status', label: 'Status', kind: 'status', statusVariant: (v) => STATUS_VARIANT[v as User['status']] },
-    {
-      key: 'actions',
-      label: '',
-      kind: 'actions',
-      render: (u) => (
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label={`Actions for ${u.name}`}
-          onClick={(e) => {
-            setMenuUser(u)
-            menu.openBelow(e.currentTarget)
-          }}
-        >
-          <MoreHorizontal className="size-4" />
-        </Button>
-      ),
-    },
-  ]
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button onClick={onInvite}>
-          <Plus className="size-4" /> Invite user
-        </Button>
-      </div>
-      <RecordList
-        columns={columns}
-        rows={rows}
-        getRowId={(u) => u.id}
-        search={{ value: search, onChange: setSearch, placeholder: 'Search people…' }}
-        empty={{ title: 'No people found', description: 'Try a different search.' }}
-      />
-      <ContextMenu
-        open={menu.open && menuUser != null}
-        position={menu.position}
-        onClose={() => {
-          menu.close()
-          setMenuUser(null)
-        }}
-        items={
-          menuUser == null
-            ? []
-            : [
-                { key: 'edit', label: 'Edit', icon: Pencil, onSelect: () => toast.info(`Editing ${menuUser.name}`) },
-                { key: 'role', label: 'Change role', icon: UserRound, onSelect: () => toast('Role changed') },
-                { key: 'sep', separator: true },
-                { key: 'rm', label: 'Remove', icon: Trash2, danger: true, onSelect: () => toast.error(`Removed ${menuUser.name}`) },
-              ]
-        }
-      />
-    </div>
   )
 }
 

@@ -36,9 +36,14 @@ export {
 export { AppShell, type AppShellNavigationMode } from './app-shell'
 export { AppSidebar } from './app-sidebar'
 export { TopNav } from './top-nav'
+export { MobileTabBar } from './mobile-tab-bar'
 export {
   SidebarNav,
   findActiveNavHref,
+  selectMobileTabs,
+  toBlocks,
+  NavIcon,
+  type NavBlock,
   type SidebarNavItem,
   type SidebarNavGroup,
 } from './sidebar-nav'

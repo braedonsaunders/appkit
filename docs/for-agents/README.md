@@ -10,6 +10,8 @@ immediately. Start at the repo root [`AGENTS.md`](../../AGENTS.md), then:
   app-agnostic rules for building any application on this foundation (distilled
   from the openbooks + beaconhs `AGENTS.md`). Apps built on appkit adopt these
   and add only their domain-specific rules.
+- **[provenance.md](provenance.md)** — the audited split between faithful
+  extractions, generalized production patterns, and appkit-original code.
 
 The living reference for everything documented here is `apps/playground` — a
 runnable app that exercises every primitive plus an `/admin` area. When a doc and

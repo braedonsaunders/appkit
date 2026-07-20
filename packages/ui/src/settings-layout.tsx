@@ -10,10 +10,28 @@ export type LinkRender = (props: {
   children: React.ReactNode
   className: string
   title?: string
+  ariaCurrent?: 'page' | 'true'
+  role?: string
+  dataWalkthrough?: string
 }) => React.ReactNode
 
-const defaultLink: LinkRender = ({ href, children, className, title }) => (
-  <a href={href} className={className} title={title}>
+const defaultLink: LinkRender = ({
+  href,
+  children,
+  className,
+  title,
+  ariaCurrent,
+  role,
+  dataWalkthrough,
+}) => (
+  <a
+    href={href}
+    className={className}
+    title={title}
+    aria-current={ariaCurrent}
+    role={role}
+    data-walkthrough={dataWalkthrough}
+  >
     {children}
   </a>
 )

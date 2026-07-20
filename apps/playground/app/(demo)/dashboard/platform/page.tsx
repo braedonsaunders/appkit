@@ -66,17 +66,17 @@ const GROUPS: { label: string; description: string; capabilities: Capability[] }
       {
         name: '@appkit/db',
         summary: 'Drizzle schema conventions, canonical identity tables, API tables, and a Postgres row-level-security executor.',
-        proof: 'Dashboard counts and Team rows are live Postgres queries constrained by RLS.',
+        proof: 'Dashboard counts and Admin users are live Postgres queries constrained by RLS.',
         icon: <Database />,
-        href: '/dashboard/team',
+        href: '/admin/users',
         linkLabel: 'See live data',
       },
       {
         name: '@appkit/tenant',
         summary: 'RequestContext, wildcard RBAC, visibility scopes, permission overrides, and super-admin behavior.',
-        proof: 'The fixed demo identity resolves real permissions; Team mutations still call assertCan.',
+        proof: 'The fixed demo identity resolves real permissions; user mutations still call assertCan.',
         icon: <ShieldCheck />,
-        href: '/dashboard/team',
+        href: '/admin/users',
         linkLabel: 'See RBAC flow',
       },
       {
@@ -94,9 +94,9 @@ const GROUPS: { label: string; description: string; capabilities: Capability[] }
       {
         name: '@appkit/events',
         summary: 'Audit records, JSON diffs, and a transactional outbox with stable deduplication keys.',
-        proof: 'Inviting a Team member writes a real audit row in the same tenant context.',
+        proof: 'Inviting a user writes a real audit row in the same tenant context.',
         icon: <ScrollText />,
-        href: '/dashboard/team',
+        href: '/admin/users',
         linkLabel: 'Create an audit event',
       },
       {

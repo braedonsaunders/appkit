@@ -12,7 +12,7 @@ export function InviteMemberButton() {
   return (
     <>
       <Button onClick={() => setOpen(true)}>
-        <Plus className="size-4" /> Invite member
+        <Plus className="size-4" /> Invite user
       </Button>
       <InviteDrawer open={open} onClose={close} />
     </>
@@ -32,7 +32,7 @@ function InviteDrawer({ open, onClose }: { open: boolean; onClose: () => void })
     <Drawer
       open={open}
       onClose={onClose}
-      title="Invite a member"
+      title="Invite a user"
       description="Creates a real user + membership, RBAC-gated and written to the audit log."
       size="sm"
     >
