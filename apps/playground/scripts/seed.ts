@@ -34,6 +34,13 @@ if (!APP_URL || !SUPER_URL) {
   console.error('Set APPKIT_DB_URL and APPKIT_SUPER_URL')
   process.exit(1)
 }
+const appConnection = new URL(APP_URL)
+const appRole = decodeURIComponent(appConnection.username)
+const appPassword = decodeURIComponent(appConnection.password)
+if (!/^[A-Za-z_][A-Za-z0-9_]{0,62}$/.test(appRole) || !appPassword) {
+  console.error('APPKIT_DB_URL must contain a valid Postgres role and password')
+  process.exit(1)
+}
 
 const ADMIN_EMAIL = 'admin@appkit.dev'
 const MEMBER_EMAIL = 'casey@appkit.dev'
@@ -42,11 +49,20 @@ async function main() {
   const { withSuperAdmin, superPool, pool } = createDb({ url: APP_URL!, superUrl: SUPER_URL!, schema })
 
   // 1. App role + grants + RLS policies (idempotent).
+  const roleExists = await superPool.query(`select 1 from pg_roles where rolname = $1`, [appRole])
+  if (roleExists.rowCount === 0) {
+    await superPool.query(
+      `create role ${quoteIdentifier(appRole)} login password ${quoteLiteral(appPassword)} nosuperuser nobypassrls`,
+    )
+  } else {
+    await superPool.query(
+      `alter role ${quoteIdentifier(appRole)} login password ${quoteLiteral(appPassword)} nosuperuser nobypassrls`,
+    )
+  }
+  await superPool.query(`grant usage on schema public to ${quoteIdentifier(appRole)}`)
   await superPool.query(
-    `do $$ begin if not exists (select 1 from pg_roles where rolname='appkit_app') then create role appkit_app login password 'appkit' nosuperuser nobypassrls; end if; end $$;`,
+    `grant select, insert, update, delete on all tables in schema public to ${quoteIdentifier(appRole)}`,
   )
-  await superPool.query(`grant usage on schema public to appkit_app`)
-  await superPool.query(`grant select, insert, update, delete on all tables in schema public to appkit_app`)
   const rls = installRlsSql([...IDENTITY_TENANT_TABLES, ...PLATFORM_TENANT_TABLES, ...API_TENANT_TABLES, ...DASHBOARD_TENANT_TABLES])
   for (const stmt of rls.split(';')) {
     const s = stmt.trim()
@@ -161,3 +177,11 @@ main().catch((e) => {
   console.error(e)
   process.exit(1)
 })
+
+function quoteIdentifier(value: string): string {
+  return `"${value.replaceAll('"', '""')}"`
+}
+
+function quoteLiteral(value: string): string {
+  return `'${value.replaceAll("'", "''")}'`
+}

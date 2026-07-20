@@ -11,8 +11,11 @@
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
-  "files": ["src"],
+  "files": [
+    "src"
+  ],
   "scripts": {
+    "build": "node ../../scripts/build-package.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test src/*.test.ts",
     "clean": "rm -rf dist *.tsbuildinfo"
@@ -24,5 +27,29 @@
     "@types/node": "^22",
     "@types/nodemailer": "^6.4.17",
     "tsx": "^4.19.2"
+  },
+  "author": "Braedon Saunders",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/braedonsaunders/appkit.git",
+    "directory": "packages/emails"
+  },
+  "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/emails#readme",
+  "bugs": {
+    "url": "https://github.com/braedonsaunders/appkit/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "appkit",
+    "application-framework",
+    "typescript"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist",
+    "linkDirectory": false,
+    "provenance": true
   }
 }

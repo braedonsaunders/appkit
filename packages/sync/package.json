@@ -20,6 +20,7 @@
     "drizzle"
   ],
   "scripts": {
+    "build": "node ../../scripts/build-package.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test src/*.test.ts",
     "clean": "rm -rf dist *.tsbuildinfo"
@@ -57,5 +58,29 @@
     "postgres": "^3.4.9",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3"
+  },
+  "author": "Braedon Saunders",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/braedonsaunders/appkit.git",
+    "directory": "packages/sync"
+  },
+  "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/sync#readme",
+  "bugs": {
+    "url": "https://github.com/braedonsaunders/appkit/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "appkit",
+    "application-framework",
+    "typescript"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist",
+    "linkDirectory": false,
+    "provenance": true
   }
 }

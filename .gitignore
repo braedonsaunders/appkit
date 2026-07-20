@@ -7,3 +7,6 @@ dist/
 .env
 .env.local
 coverage/
+.artifacts/
+*.tgz
+.vercel

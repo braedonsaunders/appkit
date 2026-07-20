@@ -13,6 +13,10 @@ appkit has three kinds of code. Do not blur them:
 This inventory was audited against the local OpenBooks and BeaconHS checkouts
 on 2026-07-20.
 
+The `create-appkit` scaffold and package build/release toolchain are
+**appkit-original infrastructure**. They compose and distribute the audited
+surfaces below; they are not presented as extracted product features.
+
 ## Application shell and navigation
 
 | appkit surface | classification | production source |

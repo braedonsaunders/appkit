@@ -238,9 +238,23 @@ contract to `InsightResultView`.
 
 ## 7. Scaffolding a new app
 
-```jsonc
-// deps
-"@appkit/ui": "workspace:*", "@appkit/tokens": "workspace:*"
+```bash
+pnpm create appkit my-app
+# Optional groups: ai, analytics, communications, customization, documents,
+# forms, integrations, platform, tenancy, workflows
+pnpm create appkit my-app --features forms,tenancy,workflows --yes
+```
+
+`create-appkit` writes a minimal Next.js application with the real `AppShell`,
+semantic-token stylesheet, pre-paint theme script, `ThemeProvider`, framework
+link adapter, `Toaster`, and browser-native `PageTransition` already composed.
+It refuses to overwrite a non-empty directory and can install with pnpm, npm,
+Yarn, or Bun. Feature groups add packages, not invented domain screens or data.
+
+For an existing application, install only the foundation packages:
+
+```bash
+pnpm add @appkit/ui @appkit/tokens
 ```
 
 ```css
@@ -259,9 +273,9 @@ contract to `InsightResultView`.
 </html>
 ```
 
-Add every AppKit package used by a Next application to `transpilePackages`
-(packages ship TypeScript source, not built output). For native page handoffs,
-also set
+Published packages ship compiled ESM and declarations, so consumers do not add
+AppKit to Next.js `transpilePackages`. Local workspace development continues to
+use source-linked `workspace:*` dependencies. For native page handoffs, set
 `experimental: { viewTransition: true }`, then wrap the changing `AppShell`
 children with `<PageTransition navigationKey={pathname}>`. This optional entry
 point tracks the current Next/React View Transition API. Then compose screens

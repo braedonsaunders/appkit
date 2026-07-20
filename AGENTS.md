@@ -59,13 +59,17 @@ app that imports it improves.
   with React, Drizzle store, and feature-owned schema adapter entry points.
 - `packages/customization` — app-supplied record catalogues, custom fields,
   configurable form layouts, and list views.
+- `packages/create-appkit` — the public scaffold CLI. It composes the real shell,
+  theme, navigation, page transition, and selected optional package groups into
+  a minimal Next.js application without inventing product domain screens.
 - `apps/playground` — the **living reference**: a runnable Next 16 app with the
   complete dashboard/card-building system, every primitive, and an `/admin`
   area (hub + settings shell). Read it to see any primitive in real use; keep it
   up to date when you add/​change a primitive.
 
-pnpm + Turborepo. Internal packages link via `workspace:*` — nothing needs
-publishing to build locally.
+pnpm + Turborepo. Internal packages link via `workspace:*`; the shared package
+compiler emits clean `dist` artifacts with compiled ESM, declarations, semver
+dependencies, styles, migrations, README, and license for npm publication.
 
 ## Working in appkit
 
@@ -98,6 +102,8 @@ pnpm install
 pnpm -r typecheck     # tsc --noEmit across every workspace
 pnpm lint             # package boundaries + isolated roots + workspace lint
 pnpm build            # turbo build
+pnpm test:packages    # inspect real packed npm artifacts
+pnpm test:consumers   # install tarballs in fresh Node/React/Next consumers
 ```
 
 Never commit on red. Never `ts-ignore` / `eslint-disable` / `--no-verify` around

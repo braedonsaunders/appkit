@@ -12,13 +12,30 @@
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
-  "files": ["src"],
-  "scripts": { "typecheck": "tsc --noEmit", "test": "node --import tsx --test src/*.test.ts", "clean": "rm -rf dist *.tsbuildinfo" },
-  "dependencies": { "@appkit/tokens": "workspace:*", "pdfkit": "^0.17.1" },
-  "peerDependencies": { "isomorphic-dompurify": "^3.18.0", "puppeteer-core": "^25.3.0" },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "build": "node ../../scripts/build-package.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@appkit/tokens": "workspace:*",
+    "pdfkit": "^0.17.1"
+  },
+  "peerDependencies": {
+    "isomorphic-dompurify": "^3.18.0",
+    "puppeteer-core": "^25.3.0"
+  },
   "peerDependenciesMeta": {
-    "isomorphic-dompurify": { "optional": true },
-    "puppeteer-core": { "optional": true }
+    "isomorphic-dompurify": {
+      "optional": true
+    },
+    "puppeteer-core": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^22",
@@ -28,5 +45,29 @@
     "puppeteer-core": "^25.3.0",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3"
+  },
+  "author": "Braedon Saunders",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/braedonsaunders/appkit.git",
+    "directory": "packages/pdf"
+  },
+  "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/pdf#readme",
+  "bugs": {
+    "url": "https://github.com/braedonsaunders/appkit/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "appkit",
+    "application-framework",
+    "typescript"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist",
+    "linkDirectory": false,
+    "provenance": true
   }
 }

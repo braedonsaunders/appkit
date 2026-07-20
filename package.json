@@ -9,15 +9,21 @@
   },
   "scripts": {
     "build": "turbo run build",
+    "build:packages": "turbo run build --filter='./packages/*'",
     "typecheck": "turbo run typecheck",
     "lint": "pnpm check:boundaries && pnpm test:isolation && turbo run lint",
+    "test": "turbo run test",
     "check:boundaries": "node scripts/check-package-boundaries.mjs",
     "test:isolation": "node scripts/check-package-isolation.mjs",
+    "sync:package-metadata": "node scripts/sync-package-metadata.mjs",
+    "test:packages": "node scripts/test-package-tarballs.mjs",
+    "test:consumers": "node scripts/test-package-consumers.mjs",
+    "validate": "pnpm -r typecheck && pnpm lint && pnpm test && pnpm build && pnpm test:packages && pnpm test:consumers",
     "dev": "turbo run dev",
     "clean": "turbo run clean && rm -rf node_modules",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "turbo run build && changeset publish"
+    "release": "pnpm build:packages && pnpm test:packages && pnpm test:consumers && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.7",

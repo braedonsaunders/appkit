@@ -6,7 +6,9 @@
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
-  "files": ["src"],
+  "files": [
+    "src"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./delivery-input": "./src/delivery-input.ts",
@@ -14,6 +16,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
+    "build": "node ../../scripts/build-package.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
@@ -24,5 +27,29 @@
   "devDependencies": {
     "@types/node": "^22",
     "vitest": "^3.2.4"
+  },
+  "author": "Braedon Saunders",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/braedonsaunders/appkit.git",
+    "directory": "packages/email-render"
+  },
+  "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/email-render#readme",
+  "bugs": {
+    "url": "https://github.com/braedonsaunders/appkit/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "appkit",
+    "application-framework",
+    "typescript"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist",
+    "linkDirectory": false,
+    "provenance": true
   }
 }

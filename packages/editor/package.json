@@ -4,11 +4,20 @@
   "description": "Optional TipTap rich-text authoring for AppKit forms and documents.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
-  "exports": { ".": "./src/index.ts", "./package.json": "./package.json" },
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
-  "files": ["src"],
-  "scripts": { "typecheck": "tsc --noEmit", "clean": "rm -rf dist *.tsbuildinfo" },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "build": "node ../../scripts/build-package.mjs",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
   "dependencies": {
     "@appkit/ui": "workspace:*",
     "@tiptap/extension-link": "^3.27.4",
@@ -16,7 +25,10 @@
     "@tiptap/react": "^3.27.4",
     "@tiptap/starter-kit": "^3.27.4"
   },
-  "peerDependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
   "devDependencies": {
     "@types/node": "^22",
     "@types/react": "^19",
@@ -24,5 +36,29 @@
     "react": "^19",
     "react-dom": "^19",
     "typescript": "^5.9.3"
+  },
+  "author": "Braedon Saunders",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/braedonsaunders/appkit.git",
+    "directory": "packages/editor"
+  },
+  "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/editor#readme",
+  "bugs": {
+    "url": "https://github.com/braedonsaunders/appkit/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "appkit",
+    "application-framework",
+    "typescript"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist",
+    "linkDirectory": false,
+    "provenance": true
   }
 }

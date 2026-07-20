@@ -181,6 +181,7 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+    publishDirectory: dist
 
   packages/analytics:
     devDependencies:
@@ -193,6 +194,7 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+    publishDirectory: dist
 
   packages/api:
     dependencies:
@@ -212,6 +214,7 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.1
+    publishDirectory: dist
 
   packages/auth:
     dependencies:
@@ -228,6 +231,20 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.1
+    publishDirectory: dist
+
+  packages/create-appkit:
+    devDependencies:
+      '@types/node':
+        specifier: ^22
+        version: 22.20.1
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+    publishDirectory: dist
 
   packages/crypto:
     devDependencies:
@@ -237,6 +254,7 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.1
+    publishDirectory: dist
 
   packages/customization:
     devDependencies:
@@ -249,6 +267,7 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+    publishDirectory: dist
 
   packages/dashboard:
     dependencies:
@@ -292,6 +311,7 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+    publishDirectory: dist
 
   packages/db:
     dependencies:
@@ -314,6 +334,7 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.1
+    publishDirectory: dist
 
   packages/design-studio:
     dependencies:
@@ -333,6 +354,7 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+    publishDirectory: dist
 
   packages/editor:
     dependencies:
@@ -370,6 +392,7 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+    publishDirectory: dist
 
   packages/email-render:
     dependencies:
@@ -383,6 +406,7 @@ importers:
       vitest:
         specifier: ^3.2.4
         version: 3.2.7(@types/debug@4.1.13)(@types/node@22.20.1)(jiti@2.7.0)(jsdom@29.1.1(canvas@3.2.3))(lightningcss@1.32.0)(tsx@4.23.1)
+    publishDirectory: dist
 
   packages/emails:
     dependencies:
@@ -399,6 +423,7 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.1
+    publishDirectory: dist
 
   packages/endpoints:
     dependencies:
@@ -412,6 +437,7 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.1
+    publishDirectory: dist
 
   packages/events:
     dependencies:
@@ -428,6 +454,7 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.1
+    publishDirectory: dist
 
   packages/forms:
     dependencies:
@@ -465,6 +492,7 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.1
+    publishDirectory: dist
 
   packages/forms-core:
     dependencies:
@@ -487,6 +515,7 @@ importers:
       vitest:
         specifier: ^3.2.4
         version: 3.2.7(@types/debug@4.1.13)(@types/node@22.20.1)(jiti@2.7.0)(jsdom@29.1.1(canvas@3.2.3))(lightningcss@1.32.0)(tsx@4.23.1)
+    publishDirectory: dist
 
   packages/forms-documents:
     dependencies:
@@ -512,6 +541,7 @@ importers:
       vitest:
         specifier: ^3.2.4
         version: 3.2.7(@types/debug@4.1.13)(@types/node@22.20.1)(jiti@2.7.0)(jsdom@29.1.1(canvas@3.2.3))(lightningcss@1.32.0)(tsx@4.23.1)
+    publishDirectory: dist
 
   packages/forms-pdf:
     dependencies:
@@ -534,6 +564,7 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+    publishDirectory: dist
 
   packages/i18n:
     devDependencies:
@@ -543,6 +574,7 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.1
+    publishDirectory: dist
 
   packages/integrations:
     devDependencies:
@@ -567,6 +599,7 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+    publishDirectory: dist
 
   packages/jobs:
     dependencies:
@@ -580,6 +613,7 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.1
+    publishDirectory: dist
 
   packages/notifications:
     devDependencies:
@@ -619,6 +653,7 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+    publishDirectory: dist
 
   packages/pdf:
     dependencies:
@@ -650,6 +685,7 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+    publishDirectory: dist
 
   packages/reports:
     dependencies:
@@ -666,6 +702,7 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+    publishDirectory: dist
 
   packages/sms:
     devDependencies:
@@ -675,6 +712,7 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.1
+    publishDirectory: dist
 
   packages/storage:
     dependencies:
@@ -688,6 +726,7 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.1
+    publishDirectory: dist
 
   packages/sync:
     devDependencies:
@@ -715,6 +754,7 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+    publishDirectory: dist
 
   packages/tenant:
     dependencies:
@@ -731,12 +771,14 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.1
+    publishDirectory: dist
 
   packages/tokens:
     dependencies:
       tailwindcss:
         specifier: ^4.0.0
         version: 4.3.3
+    publishDirectory: dist
 
   packages/ui:
     dependencies:
@@ -780,6 +822,7 @@ importers:
       vitest:
         specifier: ^3.2.4
         version: 3.2.7(@types/debug@4.1.13)(@types/node@22.20.1)(jiti@2.7.0)(jsdom@29.1.1(canvas@3.2.3))(lightningcss@1.32.0)(tsx@4.23.1)
+    publishDirectory: dist
 
   packages/workflows:
     devDependencies:
@@ -819,6 +862,7 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+    publishDirectory: dist
 
 packages:
 

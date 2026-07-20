@@ -1,19 +1,21 @@
 {
-  "name": "@appkit/i18n",
+  "name": "create-appkit",
   "version": "0.1.0",
-  "description": "Tenant-aware locale policy and localized-content resolution for AppKit applications.",
+  "description": "Create a production-ready Next.js application on the modular AppKit foundation.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
-  "exports": {
-    ".": "./src/index.ts",
-    "./key": "./src/system-key.ts",
-    "./package.json": "./package.json"
+  "bin": {
+    "create-appkit": "./dist/index.js"
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "files": [
     "src"
   ],
+  "exports": {
+    ".": "./src/scaffold.ts",
+    "./package.json": "./package.json"
+  },
   "scripts": {
     "build": "node ../../scripts/build-package.mjs",
     "typecheck": "tsc --noEmit",
@@ -22,15 +24,16 @@
   },
   "devDependencies": {
     "@types/node": "^22",
-    "tsx": "^4.19.2"
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
   },
   "author": "Braedon Saunders",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/braedonsaunders/appkit.git",
-    "directory": "packages/i18n"
+    "directory": "packages/create-appkit"
   },
-  "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/i18n#readme",
+  "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/create-appkit#readme",
   "bugs": {
     "url": "https://github.com/braedonsaunders/appkit/issues"
   },

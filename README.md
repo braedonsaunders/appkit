@@ -69,6 +69,22 @@ than a component gallery but do not want a rigid all-or-nothing framework.
 
 ## Start small or take the whole stack
 
+Start a new Next.js application with the shell, tokens, theme runtime, and page
+transitions already connected:
+
+```bash
+pnpm create appkit my-app
+```
+
+Add optional capability groups at creation time:
+
+```bash
+pnpm create appkit operations --features forms,tenancy,workflows --yes
+```
+
+The scaffold is deliberately small: it gives you a production-shaped AppKit
+application without generating product-specific routes, records, or fake data.
+
 Install only the interface foundation:
 
 ```bash
@@ -115,8 +131,10 @@ await requestContext.db(async (db) => {
 });
 ```
 
-This repository currently links packages with `workspace:*`, so a local clone
-can run and compose the complete stack without publishing anything first.
+Published packages contain compiled ESM, TypeScript declarations, source maps,
+styles, and required migrations—not monorepo source or tests. Every package is
+independently installable; internal AppKit dependencies use normal semver ranges
+in npm artifacts while this repository keeps fast `workspace:*` links locally.
 
 ## What you can build with
 
@@ -236,6 +254,8 @@ between the topbar (default) and sidebar navigation.
   metadata, response sizes, timeouts, and public IP ranges.
 - Package tests, monorepo typecheck, architecture checks, build, and browser
   verification are required before changes land.
+- Every npm artifact is packed and inspected, then installed from its tarball in
+  fresh Node, React, and Next.js consumers before release.
 
 ## Develop AppKit
 
@@ -249,7 +269,11 @@ pnpm -r typecheck
 pnpm -r test
 pnpm lint
 pnpm build
+pnpm test:packages
+pnpm test:consumers
 ```
 
-AppKit is AGPL-3.0-or-later. The package scope is pre-release; set the owned npm
-scope in `.changeset/config.json` before the first public publish.
+AppKit is AGPL-3.0-or-later. Changesets owns package versioning and the release
+PR; successful merges publish provenance-enabled artifacts to npm. See the
+[publishing guide](docs/publishing.md) for the exact artifact and release
+contracts.

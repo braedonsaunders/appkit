@@ -63,6 +63,24 @@ for (const [name, { directory, manifest }] of packages) {
   const appkitDependencies = Object.keys(dependencies).filter((dependency) => dependency.startsWith('@appkit/'))
   const allowlist = appkitRuntimeAllowlists[name]
 
+  if (manifest.scripts?.build !== 'node ../../scripts/build-package.mjs') {
+    errors.push(`${name} must build its publish directory with the shared package compiler`)
+  }
+  if (
+    manifest.publishConfig?.directory !== 'dist'
+    || manifest.publishConfig?.linkDirectory !== false
+    || manifest.publishConfig?.access !== 'public'
+    || manifest.publishConfig?.provenance !== true
+  ) {
+    errors.push(`${name} must publish the provenance-enabled dist directory as a public package`)
+  }
+  if (!manifest.repository?.url || manifest.repository.directory !== `packages/${directory}`) {
+    errors.push(`${name} must identify its package directory in the AppKit repository`)
+  }
+  if (manifest.license !== 'AGPL-3.0-or-later') {
+    errors.push(`${name} must declare the repository license`)
+  }
+
   if (allowlist) {
     for (const dependency of appkitDependencies) {
       if (!allowlist.includes(dependency)) {
