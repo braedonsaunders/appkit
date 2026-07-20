@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import {
   Braces,
+  BarChart3,
   Cloud,
   Database,
   KeyRound,
@@ -57,11 +58,19 @@ const GROUPS: { label: string; description: string; capabilities: Capability[] }
       },
       {
         name: '@appkit/ui',
-        summary: 'Accessible primitives, overlays, data grids, app shells, admin layouts, URL lists, and feedback patterns.',
-        proof: 'The component gallery exercises the interactive primitive set.',
+        summary: 'Accessible primitives, dashboard grid and studio, app shells, admin layouts, URL lists, and feedback patterns.',
+        proof: 'The component gallery plus the dashboard and insight library exercise the interactive primitive set.',
         icon: <Layers3 />,
         href: '/components',
         linkLabel: 'Open components',
+      },
+      {
+        name: '@appkit/analytics',
+        summary: 'Semantic catalogues, parsed formula ASTs, tenant-bound query compilation, results, and visualization metadata.',
+        proof: 'The insight studio runs parameter-bound Postgres previews and renders ten visualization types from one contract.',
+        icon: <BarChart3 />,
+        href: '/insights',
+        linkLabel: 'Open card studio',
       },
       {
         name: '@appkit/db',
@@ -170,7 +179,7 @@ export default function PlatformPage() {
       <PageHeader
         title="Everything in appkit"
         description="Every shipped package is accounted for here—live where safe, interactive where useful, and explicit about infrastructure that needs an external service."
-        actions={<Badge variant="success">13 packages · auth disabled</Badge>}
+        actions={<Badge variant="success">14 packages · auth disabled</Badge>}
       />
 
       <Card className="overflow-hidden border-primary/25 bg-primary-subtle/40">

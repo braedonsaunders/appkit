@@ -33,6 +33,9 @@ app that imports it improves.
   values live.**
 - `packages/ui` — the component library. Tokenized, motion-aware, accessible,
   Server-Component-safe primitives (see the index in `orientation.md`).
+- `packages/analytics` — the app-agnostic dashboard query core: semantic
+  catalogues, safe formula AST/parser, parameter-bound Postgres compiler, result
+  contract, and visualization registry. Apps provide domain sources/fields.
 - `packages/db` — the **multi-tenant data layer**: a Postgres RLS engine
   (`createDb` → tenant-scoped `db` + BYPASSRLS `superDb`, `withTenant` /
   `withSuperAdmin`), schema helpers, the RLS policy installer, and the canonical
@@ -41,9 +44,10 @@ app that imports it improves.
 - `packages/tenant` — request context + RBAC on top of `@appkit/db`:
   `RequestContext`, `can` / `assertCan` (wildcards, read-tiers, per-user
   grant/deny overrides), `resolveMembershipAccess`, super-admin.
-- `apps/playground` — the **living reference**: a runnable Next 16 app that
-  showcases every primitive + an `/admin` area (hub + settings shell). Read it to
-  see any primitive in real use; keep it up to date when you add/​change a primitive.
+- `apps/playground` — the **living reference**: a runnable Next 16 app with the
+  complete dashboard/card-building system, every primitive, and an `/admin`
+  area (hub + settings shell). Read it to see any primitive in real use; keep it
+  up to date when you add/​change a primitive.
 
 pnpm + Turborepo. Internal packages link via `workspace:*` — nothing needs
 publishing to build locally.

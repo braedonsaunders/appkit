@@ -5,6 +5,7 @@
 
 import {
   API_TENANT_TABLES,
+  DASHBOARD_TENANT_TABLES,
   IDENTITY_TENANT_TABLES,
   PLATFORM_TENANT_TABLES,
   addMembership,
@@ -14,12 +15,14 @@ import {
   createTenant,
   createUser,
   findUserByEmail,
+  insightCards,
   installRlsSql,
   memberships,
   schema,
   seedRoles,
   tenants,
   users,
+  userDashboardLayouts,
 } from '@appkit/db'
 import { and, eq } from 'drizzle-orm'
 
@@ -42,12 +45,12 @@ async function main() {
   )
   await superPool.query(`grant usage on schema public to appkit_app`)
   await superPool.query(`grant select, insert, update, delete on all tables in schema public to appkit_app`)
-  const rls = installRlsSql([...IDENTITY_TENANT_TABLES, ...PLATFORM_TENANT_TABLES, ...API_TENANT_TABLES])
+  const rls = installRlsSql([...IDENTITY_TENANT_TABLES, ...PLATFORM_TENANT_TABLES, ...API_TENANT_TABLES, ...DASHBOARD_TENANT_TABLES])
   for (const stmt of rls.split(';')) {
     const s = stmt.trim()
     if (s) await superPool.query(s)
   }
-  console.log('✓ RLS installed on', [...IDENTITY_TENANT_TABLES, ...PLATFORM_TENANT_TABLES, ...API_TENANT_TABLES].length, 'tables')
+  console.log('✓ RLS installed on', [...IDENTITY_TENANT_TABLES, ...PLATFORM_TENANT_TABLES, ...API_TENANT_TABLES, ...DASHBOARD_TENANT_TABLES].length, 'tables')
 
   await withSuperAdmin(async (sdb) => {
     // 2. Tenant.
@@ -85,9 +88,63 @@ async function main() {
       }
       return userId
     }
-    await ensureUser(ADMIN_EMAIL, 'Ada Lovelace', 'admin', true)
+    const adminId = await ensureUser(ADMIN_EMAIL, 'Ada Lovelace', 'admin', true)
     await ensureUser(MEMBER_EMAIL, 'Casey Grant', 'member', false)
     console.log('✓ users + memberships')
+
+    // 5. A real starter card library. These semantic queries are persisted in
+    // the same format authored by CardStudio and run through the safe compiler.
+    const starterCards = [
+      {
+        name: 'Members by role',
+        description: 'Current workspace membership grouped by assigned role.',
+        query: { source: 'members', dimensions: [{ field: 'role' }], measures: [{ fn: 'count' as const }], filters: [], limit: 100 },
+        visualization: 'donut' as const,
+        visualizationSettings: {},
+        status: 'published' as const,
+      },
+      {
+        name: 'Membership growth',
+        description: 'Team members grouped by the month they joined.',
+        query: { source: 'members', dimensions: [{ field: 'joined_at', bin: 'month' as const }], measures: [{ fn: 'count' as const }], filters: [], limit: 100 },
+        visualization: 'line' as const,
+        visualizationSettings: { showValues: true },
+        status: 'published' as const,
+      },
+      {
+        name: 'Recent audit activity',
+        description: 'The latest tenant-scoped events from the append-only audit trail.',
+        query: { source: 'audit', measures: [], dimensions: [], filters: [], limit: 20 },
+        visualization: 'table' as const,
+        visualizationSettings: {},
+        status: 'published' as const,
+      },
+    ]
+    const cardIds: string[] = []
+    for (const card of starterCards) {
+      const [existing] = await sdb.select({ id: insightCards.id }).from(insightCards).where(and(eq(insightCards.tenantId, tenantId), eq(insightCards.name, card.name))).limit(1)
+      if (existing) {
+        await sdb.update(insightCards).set({ ...card, ownerUserId: adminId, updatedAt: new Date() }).where(eq(insightCards.id, existing.id))
+        cardIds.push(existing.id)
+      } else {
+        const [created] = await sdb.insert(insightCards).values({ tenantId, ownerUserId: adminId, ...card }).returning({ id: insightCards.id })
+        cardIds.push(created!.id)
+      }
+    }
+    const [dashboard] = await sdb.select({ id: userDashboardLayouts.id }).from(userDashboardLayouts).where(and(eq(userDashboardLayouts.tenantId, tenantId), eq(userDashboardLayouts.userId, adminId))).limit(1)
+    if (!dashboard) {
+      await sdb.insert(userDashboardLayouts).values({ tenantId, userId: adminId, isCustomized: false, sourceRole: 'admin', layout: { widgets: [
+        { id: 'metric:members', x: 0, y: 0, w: 3, h: 2 },
+        { id: 'metric:roles', x: 3, y: 0, w: 3, h: 2 },
+        { id: 'metric:auth', x: 6, y: 0, w: 3, h: 2 },
+        { id: 'metric:audit', x: 9, y: 0, w: 3, h: 2 },
+        { id: `card:${cardIds[0]}`, x: 0, y: 2, w: 6, h: 5 },
+        { id: `card:${cardIds[1]}`, x: 6, y: 2, w: 6, h: 5 },
+        { id: 'panel:quick-actions', x: 0, y: 7, w: 4, h: 5 },
+        { id: 'panel:platform', x: 4, y: 7, w: 8, h: 5 },
+      ] } })
+    }
+    console.log('✓ dashboard + insight card library')
     console.log('')
     console.log('──────────────────────────────────────────────')
     console.log(`  demo user: ${ADMIN_EMAIL} (authentication disabled)`)

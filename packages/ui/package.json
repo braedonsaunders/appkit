@@ -19,11 +19,13 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
+    "@appkit/analytics": "workspace:*",
     "@appkit/tokens": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.42.2",
     "lucide-react": "^1.24.0",
+    "react-grid-layout": "^2.2.3",
     "tailwind-merge": "^3.6.0"
   },
   "peerDependencies": {

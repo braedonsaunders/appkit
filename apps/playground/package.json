@@ -12,6 +12,7 @@
     "seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts"
   },
   "dependencies": {
+    "@appkit/analytics": "workspace:*",
     "@appkit/crypto": "workspace:*",
     "@appkit/db": "workspace:*",
     "@appkit/emails": "workspace:*",

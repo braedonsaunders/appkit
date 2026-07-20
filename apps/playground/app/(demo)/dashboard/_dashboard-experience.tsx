@@ -1,0 +1,74 @@
+import Link from 'next/link'
+import { count } from 'drizzle-orm'
+import {
+  Activity, BookOpen, Boxes, Code2, CreditCard, KeyRound, Library, LockKeyhole,
+  ScrollText, Shield, Sparkles, Users,
+} from 'lucide-react'
+import { apiKeys, auditLog, memberships, roles } from '@appkit/db'
+import {
+  Badge, Button, DashboardMetricCard, DashboardPanel, InsightCard,
+  type DashboardLibraryItem,
+} from '@appkit/ui'
+import { getDemoEnvironment } from '../../../lib/server/demo-context'
+import { executeDemoQuery } from '../../../lib/server/analytics'
+import { loadDashboardData } from '../../../lib/server/dashboard'
+import { resetDashboardLayoutAction, saveDashboardLayoutAction } from '../../../lib/server/dashboard-actions'
+import { DashboardGridController } from './_dashboard-grid-controller'
+
+const BUILTINS: DashboardLibraryItem[] = [
+  { id: 'metric:members', label: 'Team members', description: 'Active workspace memberships', category: 'headlines', defaultSize: { w: 3, h: 2 }, minSize: { w: 2, h: 2 }, maxSize: { h: 2 } },
+  { id: 'metric:roles', label: 'Roles', description: 'Configured access roles', category: 'headlines', defaultSize: { w: 3, h: 2 }, minSize: { w: 2, h: 2 }, maxSize: { h: 2 } },
+  { id: 'metric:auth', label: 'Authentication', description: 'Demo authentication state', category: 'headlines', defaultSize: { w: 3, h: 2 }, minSize: { w: 2, h: 2 }, maxSize: { h: 2 } },
+  { id: 'metric:audit', label: 'Audit events', description: 'Append-only platform activity', category: 'headlines', defaultSize: { w: 3, h: 2 }, minSize: { w: 2, h: 2 }, maxSize: { h: 2 } },
+  { id: 'panel:quick-actions', label: 'Quick actions', description: 'Common demo workflows', category: 'workspace', defaultSize: { w: 4, h: 5 }, minSize: { w: 3, h: 4 } },
+  { id: 'panel:platform', label: 'Dashboard building system', description: 'Explore the extracted appkit stack', category: 'workspace', defaultSize: { w: 8, h: 5 }, minSize: { w: 5, h: 4 } },
+]
+
+export async function DashboardExperience({ mode }: { mode: 'view' | 'edit' }) {
+  const { ctx } = await getDemoEnvironment()
+  const [members, roleCount, keys, audits] = await ctx.db(async (db) => {
+    const [memberRows] = await db.select({ n: count() }).from(memberships)
+    const [roleRows] = await db.select({ n: count() }).from(roles)
+    const [keyRows] = await db.select({ n: count() }).from(apiKeys)
+    const [auditRows] = await db.select({ n: count() }).from(auditLog)
+    return [memberRows!.n, roleRows!.n, keyRows!.n, auditRows!.n] as const
+  })
+  const { layout, cards } = await loadDashboardData()
+  const nodes: Record<string, React.ReactNode> = {
+    'metric:members': <DashboardMetricCard label="Team members" value={members} detail="RLS-scoped memberships" icon={<Users size={18} />} tone="primary" />,
+    'metric:roles': <DashboardMetricCard label="Roles" value={roleCount} detail="RBAC permission bundles" icon={<Shield size={18} />} tone="info" />,
+    'metric:auth': <DashboardMetricCard label="Authentication" value={keys === 0 ? 'Disabled' : 'Enabled'} detail={`${keys} active API credentials`} icon={<LockKeyhole size={18} />} tone="success" />,
+    'metric:audit': <DashboardMetricCard label="Audit events" value={audits} detail="Append-only activity" icon={<ScrollText size={18} />} tone="warning" />,
+    'panel:quick-actions': <DashboardPanel title="Quick actions" icon={<Sparkles size={16} />}><div className="grid gap-2">
+      <QuickAction href="/insights?new=1" icon={<CreditCard size={16} />} label="Build an insight card" />
+      <QuickAction href="/admin/users" icon={<Users size={16} />} label="Manage users" />
+      <QuickAction href="/api-docs" icon={<Code2 size={16} />} label="Explore the API" />
+      <QuickAction href="/dashboard/platform" icon={<Boxes size={16} />} label="Browse the full kit" />
+    </div></DashboardPanel>,
+    'panel:platform': <DashboardPanel title="Dashboard building system" icon={<Activity size={16} />} actions={<Badge variant="success">Live</Badge>}><div className="grid h-full content-center gap-4 sm:grid-cols-2">
+      <Feature icon={<Library />} title="Card library" text="Reusable tenant-owned cards can be drafted, published, and dropped onto any dashboard." />
+      <Feature icon={<Code2 />} title="Safe query language" text="Fields and sources are app-authored; filters are bound parameters and formulas compile from a parsed AST." />
+      <Feature icon={<Activity />} title="10 visualizations" text="Scalar, progress, table, bars, lines, areas, pies, donuts, rows, and gauges share one renderer contract." />
+      <Feature icon={<BookOpen />} title="Drop-in foundation" text="The grid, studio, persistence schema, and renderer are app-agnostic extractions from OpenBooks and BeaconHS." />
+    </div></DashboardPanel>,
+  }
+
+  for (const card of cards) {
+    try {
+      const result = await executeDemoQuery(card.query)
+      nodes[`card:${card.id}`] = <InsightCard title={card.name} description={card.description} result={result} visualization={card.visualization} settings={card.visualizationSettings} />
+    } catch (error) {
+      nodes[`card:${card.id}`] = <DashboardPanel title={card.name}><div role="alert" className="grid h-full place-items-center px-6 text-center text-sm text-danger">{error instanceof Error ? error.message : 'This query could not run.'}</div></DashboardPanel>
+    }
+  }
+  const items: DashboardLibraryItem[] = [...BUILTINS, ...cards.map((card) => ({ id: `card:${card.id}`, label: card.name, description: card.description || `${card.visualization} insight`, category: 'insights', kind: 'card' as const, defaultSize: { w: 6, h: 5 }, minSize: { w: 3, h: 3 } }))]
+  return <DashboardGridController initialLayout={layout} nodes={nodes} items={items} mode={mode} onSave={saveDashboardLayoutAction} onReset={resetDashboardLayoutAction} />
+}
+
+function QuickAction({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
+  return <Button variant="outline" className="h-11 justify-start" asChild><Link href={href}><span className="text-primary">{icon}</span>{label}</Link></Button>
+}
+
+function Feature({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
+  return <div className="flex gap-3"><span className="mt-0.5 text-primary [&_svg]:size-4">{icon}</span><div><h4 className="text-sm font-semibold text-fg">{title}</h4><p className="mt-1 text-xs leading-relaxed text-fg-muted">{text}</p></div></div>
+}

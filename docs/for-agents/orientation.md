@@ -58,6 +58,14 @@ reference/amount/status/custom/actions) · URL list kit: `parseListParams` /
 columns) · `Badge` · `Avatar` (image + initials fallback) · `EmptyState` · `Card`
 (+ parts) · `Tabs` (animated indicator).
 
+**Dashboards & insights** — `DashboardGrid` (responsive 12-column grid, view/edit
+modes, drag/resize, remove, save/reset, categorized widget/card drawer) ·
+`DashboardMetricCard` · `DashboardPanel` · `InsightCard` · `InsightResultView`
+(scalar/progress/table/bar/row/line/area/pie/donut/gauge) · `CardStudio` (source,
+measures, parsed formulas, dimensions, filters, visualization settings, live
+preview, autosave, publish/delete). These are the generalized OpenBooks/BeaconHS
+dashboard system, not gallery mockups.
+
 **App shell / admin** — `PageHeader` · `AdminHub` (the settings **landing/hub** —
 grouped accent cards) · `SettingsShell` (the **sidebar settings area** — fixed
 header + two-pane rail) + `SettingsNav` / `SettingsSection` / `SettingsRow`.
@@ -91,8 +99,43 @@ fields; mobile uses the same data in a drawer and bottom tab bar. `TopNav`,
   description })`; mount one `<Toaster richColors closeButton />` at the app root.
 - **Admin** = `AdminHub` (landing grid of category cards) → `SettingsShell` (the
   sidebar area) with content built from `SettingsSection` + `SettingsRow`.
+- **Dashboard pages** load a user/role/default `DashboardLayout`, build a node
+  registry from built-ins plus persisted cards, and pass both to `DashboardGrid`.
+  The app owns node content; appkit owns responsive layout/editing. Saved insight
+  cards use `CardStudio` in a `Drawer`, appear in the library, and become
+  `DashboardLibraryItem`s. The working references are `/dashboard`,
+  `/dashboard/customize`, and `/insights` in the playground.
 
-## 4. Scaffolding a new app
+## 4. Analytics and card queries (`@appkit/analytics`)
+
+The analytics package deliberately knows no OpenBooks or BeaconHS domain tables.
+An app provides an `AnalyticsCatalog`: authored source `FROM` clauses, the tenant
+column, and a whitelist of fields with authored SQL expressions and semantic
+types. User input can only select these keys. `compileQuery` always adds the
+tenant predicate as `$1`, parameter-binds every filter/literal, validates formula
+AST functions, caps result limits, and never accepts raw user SQL.
+
+```ts
+import { compileQuery, type AnalyticsCatalog } from '@appkit/analytics/server'
+
+const catalogue: AnalyticsCatalog = { sources: [{
+  key: 'orders', label: 'Orders', from: 'orders o', tenantColumn: 'o.tenant_id',
+  detailColumns: ['number', 'created_at'], fields: [
+    { key: 'number', label: 'Number', expression: 'o.number', semanticType: 'text' },
+    { key: 'total', label: 'Total', expression: 'o.total', semanticType: 'currency' },
+    { key: 'created_at', label: 'Created at', expression: 'o.created_at', semanticType: 'date', canBin: true },
+  ],
+}] }
+const compiled = compileQuery(card.query, tenantId, catalogue)
+const result = await pool.query(compiled.sql, compiled.params)
+```
+
+Formula text such as `sum([Total]) / count()` is parsed into a safe typed AST;
+store the AST in the card query, not the original string. Apps execute compiled
+SQL inside `withTenantContext`/`withTenant` and return the shared `QueryResult`
+contract to `InsightResultView`.
+
+## 5. Scaffolding a new app
 
 ```jsonc
 // deps
@@ -119,7 +162,7 @@ fields; mobile uses the same data in a drawer and bottom tab bar. `TopNav`,
 TSX source, not built output). Then compose screens from the primitives above —
 every color a token, light + dark for free.
 
-## 5. Multi-tenancy out of the box (`@appkit/db` + `@appkit/tenant`)
+## 6. Multi-tenancy out of the box (`@appkit/db` + `@appkit/tenant`)
 
 An app on appkit is multi-tenant with super-admin from day one — you don't build
 RLS or RBAC yourself.
@@ -149,7 +192,12 @@ The canonical identity schema (tenants, users, memberships, roles,
 role_assignments, per-user permission overrides) ships in `@appkit/db/schema` —
 extend it, don't reinvent it.
 
-## 6. Secrets and outbound delivery (`@appkit/crypto`, `@appkit/emails`, `@appkit/sms`)
+The same schema exports `userDashboardLayouts`, `insightCards`, and
+`DASHBOARD_TENANT_TABLES`. Include the latter in the RLS installer. Layouts are
+personal per tenant/user; cards persist their semantic query, visualization,
+settings, owner, and draft/published state.
+
+## 7. Secrets and outbound delivery (`@appkit/crypto`, `@appkit/emails`, `@appkit/sms`)
 
 - Seal tenant provider credentials with `sealSecret` from `@appkit/crypto` before
   persistence and inject `unsealSecret` into email/SMS transport resolution.

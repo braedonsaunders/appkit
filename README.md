@@ -42,8 +42,9 @@ imported by every app.
 | Package | Role | Status |
 |---|---|---|
 | `@appkit/tokens` | Semantic color, shape, elevation, and motion tokens; Tailwind v4 utilities. | implemented |
-| `@appkit/ui` | Tokenized primitives, app shell, page layouts, URL-driven list controls, and API reference. | implemented |
-| `@appkit/db` | Postgres RLS engine, schema helpers, identity model, API keys, and idempotency. | implemented + live-tested |
+| `@appkit/ui` | Tokenized primitives, app shell, page layouts, dashboard grid, card studio, visualization renderers, URL-driven list controls, and API reference. | implemented |
+| `@appkit/analytics` | Semantic catalogues, safe formulas, parameter-bound query compilation, result contracts, and visualization registry. | implemented + tested |
+| `@appkit/db` | Postgres RLS engine, schema helpers, identity model, dashboard/card persistence, API keys, and idempotency. | implemented + live-tested |
 | `@appkit/tenant` | Request context and wildcard RBAC over tenant-scoped database handles. | implemented + live-tested |
 | `@appkit/auth` | Scrypt passwords and stateless HMAC sessions. | implemented + live-tested |
 | `@appkit/events` | Audit trail and transactional outbox. | implemented + live-tested |
@@ -61,7 +62,8 @@ imported by every app.
 
 `apps/playground` composes the platform instead of merely displaying components:
 Postgres RLS tenant isolation, RBAC-gated audited mutations, a live public demo
-API, URL-driven database lists, and a package-by-package platform overview. The
+API, a customizable dashboard, a persisted insight-card library and query
+studio, URL-driven database lists, and a package-by-package platform overview. The
 demo intentionally disables authentication everywhere and uses one fixed seeded
 identity solely to exercise tenant context and permissions. `@appkit/auth` remains
 available to consuming applications.
@@ -74,9 +76,11 @@ pnpm --filter @appkit/playground seed
 pnpm --filter @appkit/playground dev
 ```
 
-The seed creates the fixed `admin@appkit.dev` demo identity without a password.
-Open `/dashboard/platform` for an inventory and proof point for every package;
-use the header control to switch between topbar (default) and sidebar navigation.
+The seed creates the fixed `admin@appkit.dev` demo identity without a password,
+starter insight cards, and a personal dashboard. Open `/dashboard` for the live
+dashboard system, `/insights` for the card studio, or `/dashboard/platform` for
+every package; use the header control to switch between topbar (default) and
+sidebar navigation.
 
 ## Conventions
 

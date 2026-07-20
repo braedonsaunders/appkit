@@ -45,6 +45,16 @@ Faithful or generalized extractions:
   OpenBooks production list pages and navigation helpers.
 - `Select` is an appkit convenience adapter over the extracted `SearchSelect`;
   the earlier standalone combobox was invented and removed in commit `fb323a0`.
+- `DashboardGrid`, its customize toolbar, edit overlays, categorized widget
+  drawer, and role/personal/default layout contract are faithful generalized
+  extractions from OpenBooks `web/app/(app)/dashboard` and BeaconHS
+  `apps/web/src/app/(app)/dashboard`.
+- `DashboardMetricCard`, `DashboardPanel`, the card-library list, and the
+  two-column `CardStudio` visual grammar are faithful generalized extractions
+  from OpenBooks dashboard widgets and `web/app/(app)/insights/CardStudio.tsx`.
+- `InsightResultView` and the expanded visualization vocabulary are generalized
+  from both siblings' insights renderers, with BeaconHS providing the richer
+  scalar/progress/row/donut/gauge vocabulary.
 
 appkit-original UI with no direct sibling component source:
 
@@ -64,6 +74,7 @@ a new sibling source.
 | package | classification | production lineage |
 |---|---|---|
 | `@appkit/tokens` | appkit-original abstraction | semantic-token layer built around the siblings' real light/dark palette and UI values |
+| `@appkit/analytics` | generalized extraction | OpenBooks `packages/analytics` catalog/compile/execute/viz contracts plus BeaconHS `packages/analytics` BHQL AST, expression parser, semantic safety, results, and visualization registry; all domain catalogues are injected |
 | `@appkit/db` | generalized extraction | OpenBooks DB executor/schema conventions plus BeaconHS Postgres RLS engine |
 | `@appkit/tenant` | generalized extraction | BeaconHS request context/RBAC, decoupled from its domain schema |
 | `@appkit/auth` | generalized extraction | OpenBooks password/session implementation |
@@ -75,6 +86,11 @@ a new sibling source.
 | `@appkit/sms` | faithful generalized extraction | BeaconHS provider catalogue and transport policy |
 | `@appkit/jobs` | generalized extraction | BeaconHS BullMQ connection and worker patterns |
 | `@appkit/storage` | generalized extraction | BeaconHS S3-compatible storage core |
+
+The `user_dashboard_layouts` and `insight_cards` schema in `@appkit/db` follows
+the two siblings' production personal/role layout and persisted insight-card
+models. The playground's `members`/`roles`/`audit` semantic catalogue is demo-app
+composition over real tables, not part of the reusable analytics package.
 
 ## Rule for future work
 
