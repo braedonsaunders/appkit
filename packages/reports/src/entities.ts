@@ -6,6 +6,10 @@ export type ReportEntityColumn = {
   kind: ReportColumnKind
   /** Application-authored SQL expression. */
   expression: string
+  /** Physical column override for schema-discovered catalogues. */
+  sql?: string
+  /** Synthetic JSON/array columns are omitted from printable documents. */
+  arrayUnnest?: 'array' | 'jsonb'
   description?: string
   enumOptions?: { value: string; label: string }[]
 }
@@ -21,6 +25,12 @@ export type ReportEntity = {
   columns: ReportEntityColumn[]
   defaultColumns: string[]
   defaultSort?: { column: string; direction: 'asc' | 'desc' }
+  softDelete?: boolean
+  /** Explicit authored predicate when `from` is not a plain table. */
+  softDeleteExpression?: string
+  /** Implicit permission/scope filter applied to every custom query. */
+  baseFilter?: import('./filters').ReportRuleGroup
+  relations?: { via: string; target: string; foreignColumn: string; label: string }[]
 }
 
 export type ReportEntityCatalog = { entities: ReportEntity[] }

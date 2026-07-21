@@ -15,7 +15,7 @@ for (const directory of readdirSync(join(root, 'packages'))) {
 }
 
 for (const [source, commit] of [
-  ['reference application A', '680b153f84550025a55149bc6deaaaf83b16f41f'],
+  ['reference application A', '8d6ace86d3faf92381f2dbfe9ed0d14d937d7beb'],
   ['reference application B', '2bc3d36ae435b6bb7072a9c990b835bbce47fd0e'],
 ]) {
   if (!provenance.includes(commit)) errors.push(`${source} source commit is not pinned`)

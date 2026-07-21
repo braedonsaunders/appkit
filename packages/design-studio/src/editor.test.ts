@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { hexColor } from '@appkit/tokens'
-import type { DesignElement, DesignFieldCatalog, DesignStudioTheme } from './schema'
+import type { DesignElement, DesignFieldCatalog } from './schema'
+import type { DesignStudioTheme } from './defaults'
 import { createDesignElement, uniqueDesignElementId } from './editor'
 
 const catalog: DesignFieldCatalog = {

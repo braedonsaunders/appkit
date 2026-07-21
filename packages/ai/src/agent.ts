@@ -10,7 +10,7 @@ import {
 export type AgentModelTier = 'fast' | 'smart'
 
 export class AgentDisabledError extends Error {
-  constructor(message = 'The AI agent is not configured.') {
+  constructor(message = 'No AI model is available for this request.') {
     super(message)
     this.name = 'AgentDisabledError'
   }

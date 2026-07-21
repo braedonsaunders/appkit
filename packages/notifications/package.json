@@ -9,6 +9,8 @@
     "./react": "./src/react.ts",
     "./drizzle": "./src/drizzle.ts",
     "./schema": "./src/schema.ts",
+    "./digest": "./src/digest.ts",
+    "./push": "./src/push.ts",
     "./package.json": "./package.json"
   },
   "main": "./src/index.ts",
@@ -27,6 +29,7 @@
   "peerDependencies": {
     "@appkit/db": "^0.1.0",
     "@appkit/ui": "^0.1.0",
+    "@appkit/jobs": "^0.1.0",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
@@ -37,6 +40,9 @@
       "optional": true
     },
     "@appkit/ui": {
+      "optional": true
+    },
+    "@appkit/jobs": {
       "optional": true
     },
     "drizzle-orm": {
@@ -55,6 +61,7 @@
   "devDependencies": {
     "@appkit/db": "workspace:*",
     "@appkit/ui": "workspace:*",
+    "@appkit/jobs": "workspace:*",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

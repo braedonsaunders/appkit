@@ -18,7 +18,7 @@ test('diff handles null before/after', () => {
 })
 
 test('assertDomainEvent requires type + dedup key', () => {
-  const ok = { tenantId: 't', eventType: 'invoice.paid', subjectId: 's', dedupKey: 'k', payload: {} }
+  const ok = { tenantId: 't', eventType: 'invoice.paid', subjectId: 's', dedupKey: 'k', payload: { effects: { notification: { title: 'Paid' } } } }
   assert.doesNotThrow(() => assertDomainEvent(ok))
   assert.throws(() => assertDomainEvent({ ...ok, eventType: '  ' }))
   assert.throws(() => assertDomainEvent({ ...ok, dedupKey: '' }))

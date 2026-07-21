@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { ArrowDown, ArrowUp, GripVertical, Plus, Search, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, GitBranch, GripVertical, List, MousePointerClick, Plus, Search, Settings2, Trash2, Wrench } from 'lucide-react'
 import {
   CHOICE_FIELD_TYPES,
   FIELD_TYPES,
@@ -17,15 +17,18 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  Checkbox,
   Drawer,
   Input,
-  Label,
-  Textarea,
   cn,
 } from '@appkit/ui'
 import { readText, writeText } from './text'
-import { LogicBuilder } from './logic-builder'
+import { CanvasEditor, defaultBox } from './canvas-editor'
+import { RecordBehaviorPanel } from './record-behavior-panel'
+import { RecordListPanel } from './record-list-panel'
+import { RecordActionsPanel } from './record-actions-panel'
+import type { RecordActionFlow, RecordActionFlowAdapter, RecordConfig } from './record-config'
+import { FieldProperties, SectionProperties, type FormDataSource } from './properties'
+import { FormTabsEditor, FormWorkflowEditor } from './workflow-properties'
 
 export type FormDesignerProps = {
   value: FormSchemaV1
@@ -34,6 +37,16 @@ export type FormDesignerProps = {
   availableFieldTypes?: readonly FieldType[]
   className?: string
   readOnly?: boolean
+  recordConfig?: RecordConfig
+  onRecordConfigChange?: (config: RecordConfig) => void
+  onRecordConfigSave?: (config: RecordConfig) => void | Promise<void>
+  roles?: { key: string; name: string }[]
+  recordActionFlows?: RecordActionFlow[]
+  recordActionAdapter?: RecordActionFlowAdapter
+  onRecordActionsChanged?: () => void | Promise<void>
+  dataSources?: readonly FormDataSource[]
+  dataSourcesLoading?: boolean
+  onRefreshDataSources?: () => void | Promise<void>
 }
 
 const CATEGORY_ORDER = ['standard', 'choice', 'scoring', 'picker', 'media', 'identity', 'computed', 'data', 'display'] as const
@@ -93,12 +106,24 @@ export function FormDesigner({
   availableFieldTypes,
   className,
   readOnly = false,
+  recordConfig,
+  onRecordConfigChange,
+  onRecordConfigSave,
+  roles,
+  recordActionFlows,
+  recordActionAdapter,
+  onRecordActionsChanged,
+  dataSources,
+  dataSourcesLoading,
+  onRefreshDataSources,
 }: FormDesignerProps) {
   const [query, setQuery] = React.useState('')
+  const [rail, setRail] = React.useState<'fields' | 'workflow' | 'record' | 'list' | 'actions'>('fields')
   const [selected, setSelected] = React.useState<{ sectionId: string; fieldId?: string }>(() => ({
     sectionId: value.sections[0]?.id ?? '',
   }))
   const [propertiesOpen, setPropertiesOpen] = React.useState(false)
+  const dragTypeRef = React.useRef<FieldType | null>(null)
   const types = availableFieldTypes ?? (Object.keys(FIELD_TYPES) as FieldType[])
   const normalizedQuery = query.trim().toLowerCase()
   const palette = types.filter((type) => {
@@ -109,6 +134,14 @@ export function FormDesigner({
   const section = value.sections[sectionIndex]
   const fieldIndex = section?.fields.findIndex((field) => field.id === selected.fieldId) ?? -1
   const field = section?.fields[fieldIndex]
+  const recordFields = React.useMemo(() => value.sections.flatMap((itemSection) => itemSection.fields.map((itemField) => ({ id: itemField.id, label: readText(itemField.label, locale, itemField.id) }))), [locale, value.sections])
+  const railItems = React.useMemo(() => [
+    { id: 'fields' as const, label: 'Fields', icon: Wrench, available: true },
+    { id: 'workflow' as const, label: 'Pages', icon: GitBranch, available: true },
+    { id: 'record' as const, label: 'Record', icon: Settings2, available: Boolean(onRecordConfigChange) },
+    { id: 'list' as const, label: 'List', icon: List, available: Boolean(onRecordConfigChange) },
+    { id: 'actions' as const, label: 'Actions', icon: MousePointerClick, available: Boolean(recordActionAdapter) },
+  ].filter((item) => item.available), [onRecordConfigChange, recordActionAdapter])
 
   const commit = React.useCallback(
     (mutate: (draft: FormSchemaV1) => void) => {
@@ -123,7 +156,15 @@ export function FormDesigner({
     const targetIndex = sectionIndex >= 0 ? sectionIndex : 0
     const existing = new Set(value.sections.flatMap((item) => item.fields.map((itemField) => itemField.id)))
     const next = createFormField(type, existing)
-    commit((draft) => draft.sections[targetIndex]!.fields.push(next))
+    commit((draft) => {
+      const target = draft.sections[targetIndex]!
+      target.fields.push(next)
+      if (target.canvas) {
+        const box = defaultBox(type)
+        const bottom = target.canvas.items.reduce((max, item) => Math.max(max, item.y + item.h), 0)
+        target.canvas.items.push({ i: next.id, x: 0, y: bottom, ...box })
+      }
+    })
     setSelected({ sectionId: value.sections[targetIndex]!.id, fieldId: next.id })
     setPropertiesOpen(true)
   }
@@ -140,7 +181,16 @@ export function FormDesigner({
     <div className={cn('flex h-full min-h-0 flex-col overflow-hidden bg-bg', className)}>
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
         {/* Fixed, independently scrolling builder rail. */}
-        <aside className="flex h-56 w-full shrink-0 flex-col border-b border-border bg-surface lg:h-auto lg:w-72 lg:border-r lg:border-b-0">
+        <aside className="flex h-64 w-full shrink-0 flex-col border-b border-border bg-surface lg:h-auto lg:w-80 lg:border-r lg:border-b-0">
+          {railItems.length > 1 ? (
+            <div className="flex shrink-0 border-b border-border p-1">
+              {railItems.map((item) => {
+                const Icon = item.icon
+                return <button key={item.id} type="button" aria-pressed={rail === item.id} onClick={() => setRail(item.id)} className={cn('flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded px-1 py-1.5 text-[10px] font-medium transition-colors', rail === item.id ? 'bg-primary-subtle text-primary' : 'text-fg-muted hover:bg-surface-hover hover:text-fg')}><Icon size={14} /><span className="truncate">{item.label}</span></button>
+              })}
+            </div>
+          ) : null}
+          {rail === 'fields' ? <>
           <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2.5">
           <div>
             <h2 className="text-sm font-semibold text-fg">Field library</h2>
@@ -167,6 +217,13 @@ export function FormDesigner({
                         key={type}
                         type="button"
                         disabled={readOnly}
+                        draggable={!readOnly}
+                        onDragStart={(event) => {
+                          dragTypeRef.current = type
+                          event.dataTransfer.effectAllowed = 'copy'
+                          event.dataTransfer.setData('application/x-appkit-form-field', type)
+                        }}
+                        onDragEnd={() => { dragTypeRef.current = null }}
                         onClick={() => addField(type)}
                         className="flex items-center gap-2 rounded border border-border px-2 py-1.5 text-left text-xs text-fg hover:border-primary hover:bg-primary-subtle disabled:cursor-not-allowed disabled:opacity-50"
                         title={`Add ${FIELD_TYPES[type].label}`}
@@ -180,6 +237,11 @@ export function FormDesigner({
               )
             })}
           </div>
+          </> : null}
+          {rail === 'workflow' ? <div className="app-scroll min-h-0 flex-1 space-y-4 overflow-y-auto p-3"><FormTabsEditor schema={value} locale={locale} readOnly={readOnly} onChange={(tabs, sectionTabs) => commit((draft) => { draft.tabs = tabs; for (const itemSection of draft.sections) itemSection.tabId = sectionTabs[itemSection.id] })} /><FormWorkflowEditor schema={value} locale={locale} readOnly={readOnly} onChange={(steps) => commit((draft) => { draft.workflow = { ...(draft.workflow ?? {}), steps } })} /></div> : null}
+          {rail === 'record' && onRecordConfigChange ? <div className="app-scroll min-h-0 flex-1 overflow-y-auto p-3"><RecordBehaviorPanel value={recordConfig} roles={roles} onChange={onRecordConfigChange} onSave={onRecordConfigSave} readOnly={readOnly} /></div> : null}
+          {rail === 'list' && onRecordConfigChange ? <div className="app-scroll min-h-0 flex-1 overflow-y-auto p-3"><RecordListPanel value={recordConfig?.list} fields={recordFields} onChange={(list) => onRecordConfigChange({ ...recordConfig, list })} onSave={onRecordConfigSave ? async (list) => onRecordConfigSave({ ...recordConfig, list }) : undefined} readOnly={readOnly} /></div> : null}
+          {rail === 'actions' && recordActionAdapter ? <div className="app-scroll min-h-0 flex-1 overflow-y-auto p-3"><RecordActionsPanel flows={recordActionFlows ?? []} adapter={recordActionAdapter} onChanged={onRecordActionsChanged} readOnly={readOnly} /></div> : null}
         </aside>
 
         {/* The build surface owns the remaining space. */}
@@ -233,7 +295,44 @@ export function FormDesigner({
                       </div>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                      {itemSection.fields.length === 0 ? (
+                      {itemSection.canvas ? (
+                        <CanvasEditor
+                          section={itemSection}
+                          locale={locale}
+                          defaultLocale={locale}
+                          selectedFieldId={selected.sectionId === itemSection.id ? selected.fieldId ?? null : null}
+                          dragTypeRef={dragTypeRef}
+                          onLayout={(items) => {
+                            if (readOnly) return
+                            commit((draft) => { draft.sections[itemSectionIndex]!.canvas = { ...draft.sections[itemSectionIndex]!.canvas!, items } })
+                          }}
+                          onAddWidget={(type, box) => {
+                            if (readOnly) return
+                            const existing = new Set(value.sections.flatMap((candidate) => candidate.fields.map((candidateField) => candidateField.id)))
+                            const next = createFormField(type, existing)
+                            commit((draft) => {
+                              const target = draft.sections[itemSectionIndex]!
+                              target.fields.push(next)
+                              target.canvas!.items.push({ i: next.id, ...box })
+                            })
+                            setSelected({ sectionId: itemSection.id, fieldId: next.id })
+                            setPropertiesOpen(true)
+                          }}
+                          onSelect={(fieldId) => {
+                            setSelected({ sectionId: itemSection.id, fieldId })
+                            setPropertiesOpen(true)
+                          }}
+                          onDelete={(fieldId) => {
+                            if (readOnly) return
+                            commit((draft) => {
+                              const target = draft.sections[itemSectionIndex]!
+                              target.fields = target.fields.filter((candidate) => candidate.id !== fieldId)
+                              target.canvas!.items = target.canvas!.items.filter((item) => item.i !== fieldId)
+                            })
+                            setSelected({ sectionId: itemSection.id })
+                          }}
+                        />
+                      ) : itemSection.fields.length === 0 ? (
                         <button
                           type="button"
                           onClick={() => {
@@ -289,6 +388,7 @@ export function FormDesigner({
         {field && section ? (
           <FieldInspector
             field={field}
+            sections={value.sections}
             availableFields={value.sections.flatMap((itemSection) =>
               itemSection.fields
                 .filter((itemField) => itemField.id !== field.id)
@@ -298,6 +398,11 @@ export function FormDesigner({
                 })),
             )}
             locale={locale}
+            schema={value}
+            sectionId={section.id}
+            dataSources={dataSources}
+            dataSourcesLoading={dataSourcesLoading}
+            onRefreshDataSources={onRefreshDataSources}
             readOnly={readOnly}
             onPatch={(patch) => {
               commit((draft) => Object.assign(draft.sections[sectionIndex]!.fields[fieldIndex]!, patch))
@@ -321,11 +426,11 @@ export function FormDesigner({
           />
         ) : section ? (
           <SectionInspector
-            title={readText(section.title, locale)}
-            description={readText(section.description, locale)}
+            section={section}
+            schema={value}
+            locale={locale}
             readOnly={readOnly}
-            onTitle={(next) => commit((draft) => { const target = draft.sections[sectionIndex]!; target.title = writeText(target.title, next, locale) })}
-            onDescription={(next) => commit((draft) => { const target = draft.sections[sectionIndex]!; target.description = writeText(target.description, next, locale) })}
+            onChange={(patch) => commit((draft) => Object.assign(draft.sections[sectionIndex]!, patch))}
             onDelete={value.sections.length > 1 ? () => {
               commit((draft) => draft.sections.splice(sectionIndex, 1))
               setSelected({ sectionId: value.sections[sectionIndex === 0 ? 1 : sectionIndex - 1]!.id })
@@ -341,32 +446,14 @@ function IconButton({ label, onClick, disabled, children }: { label: string; onC
   return <button type="button" title={label} aria-label={label} onClick={onClick} disabled={disabled} className="rounded p-1 text-fg-muted hover:bg-surface-hover hover:text-fg disabled:cursor-not-allowed disabled:opacity-40">{children}</button>
 }
 
-function SectionInspector({ title, description, readOnly, onTitle, onDescription, onDelete }: { title: string; description: string; readOnly: boolean; onTitle: (value: string) => void; onDescription: (value: string) => void; onDelete?: () => void }) {
-  return <div className="space-y-4"><div><h2 className="text-sm font-semibold text-fg">Section settings</h2><p className="text-xs text-fg-muted">Group related fields and layout.</p></div><div><Label>Title</Label><Input className="mt-1" value={title} disabled={readOnly} onChange={(event) => onTitle(event.target.value)} /></div><div><Label>Description</Label><Textarea className="mt-1" value={description} disabled={readOnly} onChange={(event) => onDescription(event.target.value)} /></div>{onDelete ? <Button variant="destructive" size="sm" onClick={onDelete} disabled={readOnly}><Trash2 size={15} />Delete section</Button> : null}</div>
+function SectionInspector({ section, schema, locale, readOnly, onChange, onDelete }: { section: FormSchemaV1['sections'][number]; schema: FormSchemaV1; locale: AppLocale; readOnly: boolean; onChange: (patch: Partial<FormSchemaV1['sections'][number]>) => void; onDelete?: () => void }) {
+  return <div className="space-y-4"><SectionProperties section={section} schema={schema} locale={locale} readOnly={readOnly} onChange={onChange} />{onDelete ? <Button variant="destructive" size="sm" onClick={onDelete} disabled={readOnly}><Trash2 size={15} />Delete section</Button> : null}</div>
 }
 
-function FieldInspector({ field, availableFields, locale, readOnly, onPatch, onMove, onDelete, canMoveUp, canMoveDown }: { field: FormField; availableFields: { id: string; label: string }[]; locale: AppLocale; readOnly: boolean; onPatch: (patch: Partial<FormField>) => void; onMove: (offset: number) => void; onDelete: () => void; canMoveUp: boolean; canMoveDown: boolean }) {
-  const options = field.validation?.options ?? []
+function FieldInspector({ field, schema, sectionId, locale, readOnly, dataSources, dataSourcesLoading, onRefreshDataSources, onPatch, onMove, onDelete, canMoveUp, canMoveDown }: { field: FormField; schema: FormSchemaV1; sectionId: string; sections: FormSchemaV1['sections']; availableFields: { id: string; label: string }[]; locale: AppLocale; readOnly: boolean; dataSources?: readonly FormDataSource[]; dataSourcesLoading?: boolean; onRefreshDataSources?: () => void | Promise<void>; onPatch: (patch: Partial<FormField>) => void; onMove: (offset: number) => void; onDelete: () => void; canMoveUp: boolean; canMoveDown: boolean }) {
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between gap-2"><div><h2 className="text-sm font-semibold text-fg">Field settings</h2><p className="text-xs text-fg-muted">{FIELD_TYPES[field.type].description}</p></div><Badge variant="secondary">{field.type}</Badge></div>
-      <div><Label>Label</Label><Input className="mt-1" value={readText(field.label, locale)} disabled={readOnly} onChange={(event) => onPatch({ label: writeText(field.label, event.target.value, locale) })} /></div>
-      <div><Label>Field key</Label><Input className="mt-1 font-mono" value={field.id} disabled={readOnly} onChange={(event) => onPatch({ id: event.target.value.replace(/[^A-Za-z0-9_-]/g, '_') })} /></div>
-      <div><Label>Help text</Label><Textarea className="mt-1" value={readText(field.helpText, locale)} disabled={readOnly} onChange={(event) => onPatch({ helpText: writeText(field.helpText, event.target.value, locale) })} /></div>
-      <label className="flex items-center gap-2 text-sm text-fg"><Checkbox checked={Boolean(field.required || field.validation?.required)} disabled={readOnly} onChange={(event) => onPatch({ required: event.target.checked })} />Required</label>
-      {CHOICE_FIELD_TYPES.has(field.type) ? (
-        <div className="space-y-2"><Label>Options</Label>{options.map((option, index) => <div key={`${option.value}-${index}`} className="flex gap-1"><Input value={readText(option.label, locale)} disabled={readOnly} onChange={(event) => { const next = [...options]; next[index] = { ...option, label: writeText(option.label, event.target.value, locale) }; onPatch({ validation: { ...field.validation, options: next } }) }} /><Button type="button" size="icon" variant="ghost" aria-label="Delete option" disabled={readOnly || options.length <= 1} onClick={() => onPatch({ validation: { ...field.validation, options: options.filter((_, itemIndex) => itemIndex !== index) } })}><Trash2 size={15} /></Button></div>)}<Button type="button" size="sm" variant="outline" disabled={readOnly} onClick={() => onPatch({ validation: { ...field.validation, options: [...options, { value: `option_${options.length + 1}`, label: `Option ${options.length + 1}` }] } })}><Plus size={14} />Add option</Button></div>
-      ) : null}
-      <div className="space-y-2">
-        <Label>Display rule</Label>
-        <LogicBuilder
-          rule={field.showIf}
-          availableFields={availableFields}
-          onChange={(showIf) => onPatch({ showIf })}
-          labels={{ heading: 'Show field when' }}
-          disabled={readOnly}
-        />
-      </div>
+      <FieldProperties sectionId={sectionId} field={field} schema={schema} locale={locale} dataSources={dataSources} dataSourcesLoading={dataSourcesLoading} onRefreshDataSources={onRefreshDataSources} readOnly={readOnly} onChange={onPatch} />
       <div className="flex flex-wrap gap-1"><Button type="button" size="icon" variant="outline" aria-label="Move field up" disabled={readOnly || !canMoveUp} onClick={() => onMove(-1)}><ArrowUp size={15} /></Button><Button type="button" size="icon" variant="outline" aria-label="Move field down" disabled={readOnly || !canMoveDown} onClick={() => onMove(1)}><ArrowDown size={15} /></Button><Button type="button" size="sm" variant="destructive" disabled={readOnly} onClick={onDelete}><Trash2 size={15} />Delete</Button></div>
     </div>
   )

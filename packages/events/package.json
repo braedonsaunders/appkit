@@ -6,6 +6,9 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./internal-auth": "./src/internal-auth.ts",
+    "./relay": "./src/relay.ts",
+    "./recipients": "./src/recipients.ts",
     "./package.json": "./package.json"
   },
   "main": "./src/index.ts",

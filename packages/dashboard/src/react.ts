@@ -14,6 +14,7 @@ export {
   InsightResultView,
 } from './insight-card'
 export { CardStudio } from './card-studio'
+export { DashboardStudio, type DashboardStudioProps } from './dashboard-studio'
 export type {
   InsightCardDraft,
   CardStudioResult,

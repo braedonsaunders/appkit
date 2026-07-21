@@ -626,9 +626,9 @@ function TriggerNode({ data, selected }: NodeProps) {
   const d = data as Extract<NData, { kind: 'trigger' }>
   return (
     <div
-      className={`${CARD} ${selected ? 'border-primary ring-1 ring-primary' : 'border-success border-success'}`}
+      className={`${CARD} ${selected ? 'border-primary ring-1 ring-primary' : 'border-success'}`}
     >
-      <div className="flex items-center gap-1.5 font-semibold text-success text-success">
+      <div className="flex items-center gap-1.5 font-semibold text-success">
         <Zap size={13} /> <GeneratedText id="m_1db1e5c9ca41ce" />
       </div>
       <div className="mt-0.5 truncate text-fg-muted">
@@ -643,10 +643,10 @@ function ConditionNode({ data, selected }: NodeProps) {
   const d = data as Extract<NData, { kind: 'condition' }>
   return (
     <div
-      className={`${CARD} ${selected ? 'border-primary ring-1 ring-primary' : 'border-warning border-warning'}`}
+      className={`${CARD} ${selected ? 'border-primary ring-1 ring-primary' : 'border-warning'}`}
     >
       <Handle type="target" position={Position.Left} style={HANDLE} />
-      <div className="flex items-center gap-1.5 font-semibold text-warning text-warning">
+      <div className="flex items-center gap-1.5 font-semibold text-warning">
         <GitBranch size={13} /> <GeneratedText id="m_0c33471afd0f99" />
       </div>
       <div className="mt-0.5 truncate text-fg-muted">
@@ -662,10 +662,10 @@ function GateNode({ data, selected }: NodeProps) {
   const d = data as Extract<NData, { kind: 'gate' }>
   return (
     <div
-      className={`${CARD} ${selected ? 'border-primary ring-1 ring-primary' : 'border-primary border-primary'}`}
+      className={`${CARD} ${selected ? 'border-primary ring-1 ring-primary' : 'border-primary'}`}
     >
       <Handle type="target" position={Position.Left} style={HANDLE} />
-      <div className="flex items-center gap-1.5 font-semibold text-primary text-primary">
+      <div className="flex items-center gap-1.5 font-semibold text-primary">
         <ShieldCheck size={13} /> <GeneratedText id="m_0f7bb45f90ba7e" />
       </div>
       <div className="mt-0.5 truncate text-fg-muted">
@@ -691,10 +691,10 @@ function ActionNode({ data, selected }: NodeProps) {
   const d = data as Extract<NData, { kind: 'action' }>
   return (
     <div
-      className={`${CARD} ${selected ? 'border-primary ring-1 ring-primary' : 'border-info border-info'}`}
+      className={`${CARD} ${selected ? 'border-primary ring-1 ring-primary' : 'border-info'}`}
     >
       <Handle type="target" position={Position.Left} style={HANDLE} />
-      <div className="flex items-center gap-1.5 font-semibold text-info text-info">
+      <div className="flex items-center gap-1.5 font-semibold text-info">
         <Mail size={13} /> <GeneratedText id="m_0bad495a7046e9" />
       </div>
       <div className="mt-0.5 truncate text-fg-muted">
@@ -765,7 +765,7 @@ function MiniToggle({
         onChange(!checked)
       }}
       className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition ${
-        checked ? 'bg-primary' : 'bg-border-strong bg-fg-muted'
+        checked ? 'bg-primary' : 'bg-border-strong'
       } ${disabled ? 'opacity-50' : ''}`}
     >
       <span

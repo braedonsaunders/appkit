@@ -78,7 +78,8 @@ modes, drag/resize, remove, save/reset, categorized widget/card drawer) ·
 `AdvancedInsightResultView` (flat results plus typed pivots/heatmaps and fifteen
 visualization contracts) · `CardStudio` (source,
 measures, parsed formulas, dimensions, filters, visualization settings, live
-preview, autosave, publish/delete). These are generalized production
+preview, autosave, publish/delete) · `DashboardStudio` (controlled metadata,
+autosave, publish, pin, delete, and grid composition). These are generalized production
 dashboard system, not gallery mockups. Framework-neutral types remain at
 `@appkit/dashboard`; persistence is explicitly installed from
 `@appkit/dashboard/schema`.
@@ -160,6 +161,10 @@ parts/token usage through `onComplete`.
 cancellation, and disabled state; the app injects its persistence-backed send
 transport. The playground documents this contract on `/dashboard/platform`
 without inventing a credential, fake conversation, or provider-specific demo.
+The root also exports the production provider catalogue and model policy,
+writing, extraction, dataset analysis, activity digest, document-agent, bounded
+vision, and structured builder helpers. Applications still supply credentials,
+domain prompts, persistence, and authorized tools.
 
 ## 5. Forms and localized authoring
 
@@ -186,19 +191,22 @@ payloads intentionally remain separate where same-named actions mean different
 things.
 
 `@appkit/forms` is controlled UI over that contract. Its `LogicBuilder` is the
-production template-designer implementation with labels and theme values injected.
-Its current `FormDesigner` preserves the source shell's independently scrolling
-builder rail, flex build surface, and drawer-based properties interaction, but
-it is not yet a drop-in replacement for the full production designer. It omits
-source formula authoring, type-specific configuration, layout, behavior/list/
-action, assignment, and permission panels. `FormDesigner` receives a
-schema and `onChange`; `FormRenderer` receives the same schema plus controlled or
-uncontrolled response values. Common controls, repeating sections, visibility,
-and submit validation work without host code. Files, signatures, entity/data
-pickers, and specialized capture use explicit `fieldAdapters`, because their
-storage and tenant queries must remain inside the consuming application's RLS
-boundary. The live `/forms` reference supports design, validated fill preview,
-JSON editing, import/export, and browser persistence.
+production template-designer implementation with labels and theme values
+injected. `FormDesigner` preserves the source shell's independently scrolling
+field library, sortable build surface, one-third/two-thirds layout, and
+drawer-based properties interaction. The package owns formula/default/logic/
+validation authoring; table, matrix, slider, and data-source configuration;
+section grid, canvas, repeating, and page assignment; guided workflow steps and
+assignees; record editing/locking; list columns; and workflow-backed record
+actions. `FormDesigner` receives a schema and `onChange`; `FormRenderer` receives
+the same schema plus controlled or uncontrolled response values. Native controls
+include tables, matrices, risk selection, signatures, sketches, formulas,
+repetition, workflow navigation, and submit validation. Entity/data pickers,
+media upload, camera/scanner, address lookup, and tenant queries use typed
+`fieldAdapters`, because their services must remain inside the consuming
+application's trust and RLS boundary. The live `/forms` reference exercises the
+production designer, validated fill preview, JSON editing, data-bound fields,
+import/export, and browser persistence.
 
 `@appkit/editor` owns the optional TipTap authoring control used by rich-text
 fields. `@appkit/forms-documents` owns localized companion-field generation,
@@ -347,30 +355,31 @@ same feature-owned pattern under `@appkit/notifications/schema`.
 
 ## 10. Reports and documents
 
-`@appkit/reports` owns fiscal periods, nested filter trees, tenant-bound row and
-summary query compilation, fiscal breakouts, grouped result shaping, saved
-definition registries, document layout, execution, and hardened schedule
-contracts. `@appkit/reports/react` exports the production-shaped `ReportStudio`:
+`@appkit/reports` owns fiscal periods, nested filter trees, relationship
+refinement, metadata-backed custom fields, tenant-bound row and summary query
+compilation, fiscal breakouts, grouped result shaping, saved definition
+registries, document layout/rendering, DST-safe cadence, schedule policy, and
+lease-based idempotent run claiming. `@appkit/reports/react` exports the production-shaped `ReportStudio`:
 a one-third scrolling build rail and two-thirds live document preview with row,
 summary, filter, page, schedule, run, and save interactions. Applications inject
-the data catalogue, tenant-scoped execution, persistence, and export transport.
-Domain-specific built-in definitions and the claiming/delivery worker remain in
-the consuming application rather than becoming framework defaults.
+the data catalogue, tenant-scoped execution, persistence, and export/delivery
+transport. Domain-specific built-in definitions remain in the consuming
+application rather than becoming framework defaults.
 
 `@appkit/pdf` provides a pure-JS PDFKit report,
 table, and financial-statement renderer. Bounded template rendering is under
 `@appkit/pdf/template`; HTML sanitization and hardened Chromium printing are
 under `@appkit/pdf/html`, so a report-only service does not install Chromium.
 `@appkit/forms-pdf` provides safe form-summary HTML at its root, then opt-in
-`/summary`, `/template`, and `/design` rendering adapters.
+production browser/resource runtime, PNG conversion, summary, record/report
+template, and full-bleed design rendering entries.
 
 `@appkit/design-studio` owns the bounded multi-artboard print document. Its
-current controlled editor is isolated at `@appkit/design-studio/react` and
+controlled editor is isolated at `@appkit/design-studio/react` and
 supports Fabric selection, drag/resize/rotation, inline text editing,
 zoom/fullscreen, artboards, insertion, layers, z-order, visibility/locking,
-basic property inspectors, and print-provider settings. It is not yet source-
-compatible with the full production editor: source DTOs, document factories,
-presets/exports, and several inspector controls remain to be ported.
+the full text/shape/image/QR property inspector, factories/defaults, controlled
+copy, HTML output, and print-provider settings.
 `@appkit/design-studio/fabric` remains the lazy
 canvas-runtime boundary. Data field keys, sample values, persistence, and output
 actions come from the application; product entities are not hardcoded in the
@@ -408,7 +417,8 @@ owns the complete authoring interaction. The smaller single-graph
 The two source-native automation schemas remain in `@appkit/forms-core`; apps
 adapt either schema through `WorkflowPlanner` and inject their action handlers.
 
-`@appkit/sync` is the inbound connector spine: app-defined connectors emit a
+`@appkit/sync` is the inbound connector spine: app-defined and built-in CSV,
+database, HTTPS JSON, managed-provider, and ERP connectors emit a
 generic `{entity, externalId, data}` envelope into an injected target adapter.
 The runtime owns cursors, record caps, dry runs, error accounting, and
 authoritative snapshots that refuse to archive when a pull is empty or any row
@@ -427,7 +437,8 @@ egress entry. The working settings-shell reference is `/admin/integrations`.
 
 `@appkit/notifications` applies tenant category policy, per-user channel
 preferences, digest/quiet-hour behavior, critical delivery rules, and stable
-deduplication keys before invoking app-owned delivery adapters. Its root has no
+deduplication keys before invoking app-owned delivery adapters. Digest
+aggregation and push subscription lifecycle are package-owned. Its root has no
 dependencies. `@appkit/notifications/schema` owns its feature tables,
 `@appkit/notifications/drizzle` provides the RLS-aware store, and
 `@appkit/notifications/react` provides the inbox and preference matrix.

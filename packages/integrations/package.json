@@ -6,6 +6,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./triggers": "./src/trigger-catalog.ts",
+    "./destinations": "./src/destination-registry.ts",
     "./catalog": "./src/types.ts",
     "./destination-catalog": "./src/destination-catalog.ts",
     "./http": "./src/http.ts",

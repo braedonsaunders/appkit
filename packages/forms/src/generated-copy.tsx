@@ -1,0 +1,62 @@
+import type { ReactNode } from "react"
+
+const COPY: Record<string, string> = {
+  "m_00ded356f0f424": "s",
+  "m_011434db59926f": "↳ auto-fills",
+  "m_013e7516f5d2ac": "severity. Select the cell again to clear.",
+  "m_01f47383f19f8c": "I",
+  "m_0289ca8aa7b891": "flags missing PPE + hazards",
+  "m_0301e90977d549": "Base",
+  "m_033fc0f555f2d1": "likelihood ×",
+  "m_03d716fddcdd92": "B",
+  "m_04b7380779afc4": "Example repeating sections",
+  "m_05a0e2d38bded7": "sign here",
+  "m_05b9318155a4da": "Decimal places",
+  "m_068bf7c4eb45a2": "Add operand",
+  "m_07c67e89962d16": "Preview ·",
+  "m_07cd022cc38d60": "Capture location",
+  "m_0839e554b28c58": "Loading canvas…",
+  "m_09a3fb77851262": "Separator",
+  "m_0a43fb83c91fdf": "Scan or type a code",
+  "m_0c75ca758719d2": "When (condition)",
+  "m_0d0facbd71aa6a": "Type your name to attest",
+  "m_0d4127eb7af91b": "Right",
+  "m_0d90d1eceb566b": "table",
+  "m_0e6eb1d4f48e48": "Remove element",
+  "m_0fec93e95858fc": "Analyze for hazards",
+  "m_10e50435ff2693": "+ upload",
+  "m_10f4f461b6e849": "Degree (2 = √, 3 = ∛)",
+  "m_1287c1049195af": "• List",
+  "m_13e61f4185333d": "Not rated",
+  "m_146f7d831bfd96": "Left",
+  "m_14dac40a7e102a": "row {value0} {value1}",
+  "m_15ca343c0669d7": "No compatible picker fields in this template. Add a person, customer, project, site, or area picker first.",
+  "m_15f748343d3956": "count",
+  "m_16a715c725d406": "S",
+  "m_16c009976e0b86": "Drag elements here from the left panel",
+  "m_178de0c94da150": "Search an address…",
+  "m_17cb3d26a75938": "Drag to move",
+  "m_18010438ac7907": "+ photo",
+  "m_182c889ab6dd96": "L",
+  "m_18c006b02858b9": "tap photo to mark hazards",
+  "m_196f872aa354d3": "Else",
+  "m_1979ef2713c627": "Exponent",
+  "m_198b8dba5a829c": "Scan",
+  "m_19f38a950f87b6": "rows",
+  "m_1a1dcc7d0b9e8a": "pick many",
+  "m_1a4be3846f6837": "Select the cell where likelihood meets severity.",
+  "m_1abf555859c0a8": "draw / diagram here",
+  "m_1aea6765cbbb07": "Then",
+  "m_1b781270c0d2f5": "name@example.com",
+  "m_1cc0e5e7b5f442": "Value",
+  "m_1d33f094c621dc": "pick one",
+  "m_1d6aa8702d3fac": "field",
+  "m_1e3a16a7c41097": "Example top-level values",
+  "m_1e4d427e74e767": "Clear"
+}
+
+export function useGeneratedTranslations() { return (key: string, values?: Record<string, unknown>) => interpolate(COPY[key] ?? key, values) }
+export function useGeneratedValueTranslations() { return <Value,>(value: Value): Value => value }
+export function GeneratedText({ id, values }: { id: string; values?: Record<string, unknown> }) { return <>{interpolate(COPY[id] ?? id, values)}</> }
+export function GeneratedValue({ value }: { value: ReactNode }) { return <>{value}</> }
+function interpolate(value: string, values?: Record<string, unknown>): string { let result = value; for (const [key, replacement] of Object.entries(values ?? {})) result = result.replaceAll("{" + key + "}", String(replacement ?? "")); return result }

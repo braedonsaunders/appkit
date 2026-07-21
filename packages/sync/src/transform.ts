@@ -48,6 +48,13 @@ export function datePart(v: string | null): string | null {
   return Number.isNaN(t) ? null : new Date(t).toISOString().slice(0, 10)
 }
 
+export function orgLevel(
+  value: string | null,
+): string | undefined {
+  const normalized = String(value ?? '').trim().toLowerCase()
+  return normalized || undefined
+}
+
 /** Finite number or null. */
 export function numPart(v: string | null): number | null {
   if (v == null || v === '') return null

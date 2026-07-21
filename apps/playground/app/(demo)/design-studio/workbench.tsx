@@ -104,6 +104,7 @@ export function DesignWorkbench() {
     catalog={catalog}
     data={data}
     theme={theme}
+    className="h-full min-h-0"
     actions={<><Button type="button" variant="outline" size="sm" onClick={reset}><RotateCcw size={14} />Reset</Button><Button type="button" variant="outline" size="sm" onClick={preview}><Eye size={14} />Preview output</Button></>}
   />
 }

@@ -2,6 +2,10 @@ import { and, eq } from 'drizzle-orm'
 import { isDeepStrictEqual } from 'node:util'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { auditLog, domainEventOutbox } from '@appkit/db'
+import { assertDomainEventPayload, type DomainEventPayload } from './relay'
+
+export * from './relay'
+export * from './recipients'
 
 type Db = NodePgDatabase<Record<string, never>>
 
@@ -86,7 +90,7 @@ export type RecordDomainEventInput = {
   eventType: string
   subjectId: string
   dedupKey: string
-  payload: Record<string, unknown>
+  payload: DomainEventPayload
 }
 
 /** Every event needs a type + a stable dedup key. */
@@ -94,6 +98,7 @@ export function assertDomainEvent(input: RecordDomainEventInput): void {
   if (!input.eventType.trim() || !input.dedupKey.trim()) {
     throw new Error('A domain event requires an event type and a deduplication key')
   }
+  assertDomainEventPayload(input.payload)
 }
 
 /**

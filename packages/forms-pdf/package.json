@@ -9,6 +9,8 @@
     "./summary": "./src/summary.ts",
     "./template": "./src/template.ts",
     "./design": "./src/design.ts",
+    "./production": "./src/production.ts",
+    "./runtime": "./src/runtime.ts",
     "./package.json": "./package.json"
   },
   "main": "./src/index.ts",
@@ -19,7 +21,7 @@
   "scripts": {
     "build": "node ../../scripts/build-package.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test src/*.test.ts",
+    "test": "node --import tsx --test src/*.test.ts && vitest run src/*.spec.ts src/templates/*.spec.ts",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
@@ -27,7 +29,10 @@
   },
   "peerDependencies": {
     "@appkit/design-studio": "^0.1.0",
-    "@appkit/pdf": "^0.1.0"
+    "@appkit/pdf": "^0.1.0",
+    "@appkit/reports": "^0.1.0",
+    "@appkit/sync": "^0.1.0",
+    "puppeteer-core": "^25.3.0"
   },
   "peerDependenciesMeta": {
     "@appkit/design-studio": {
@@ -35,14 +40,27 @@
     },
     "@appkit/pdf": {
       "optional": true
+    },
+    "@appkit/reports": {
+      "optional": true
+    },
+    "@appkit/sync": {
+      "optional": true
+    },
+    "puppeteer-core": {
+      "optional": true
     }
   },
   "devDependencies": {
     "@appkit/design-studio": "workspace:*",
     "@appkit/pdf": "workspace:*",
+    "@appkit/reports": "workspace:*",
+    "@appkit/sync": "workspace:*",
     "@types/node": "^22",
     "tsx": "^4.19.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.9",
+    "puppeteer-core": "^25.3.0"
   },
   "author": "Braedon Saunders",
   "repository": {

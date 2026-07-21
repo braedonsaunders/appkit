@@ -7,6 +7,12 @@
   "exports": {
     ".": "./src/index.ts",
     "./catalog": "./src/types.ts",
+    "./registry": "./src/registry.ts",
+    "./connectors/csv": "./src/connectors/csv.ts",
+    "./connectors/database": "./src/connectors/database.ts",
+    "./connectors/http-json": "./src/connectors/http-json.ts",
+    "./connectors/nango": "./src/connectors/nango.ts",
+    "./connectors/netsuite": "./src/connectors/netsuite.ts",
     "./egress": "./src/egress.ts",
     "./db-drivers": "./src/db-drivers.ts",
     "./schema": "./src/schema.ts",

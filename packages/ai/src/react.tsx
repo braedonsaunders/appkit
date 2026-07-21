@@ -45,7 +45,7 @@ const DEFAULT_LABELS: AgentPanelLabels = {
   title: 'Assistant',
   welcomeTitle: 'How can I help?',
   welcomeDescription: 'Ask about your workspace or let the assistant use an approved tool.',
-  disabledTitle: 'AI is not configured',
+  disabledTitle: 'Connect an AI provider',
   disabledDescription: 'Connect an AI provider to enable agent conversations. No provider credentials are included in the demo.',
   placeholder: 'Ask the assistant…',
   send: 'Send',

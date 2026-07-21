@@ -4,7 +4,11 @@ import * as React from 'react'
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react'
 import {
   evaluateLogicRule,
+  evaluateFormulaTree,
+  resolveDefaultValue,
   validateResponse,
+  type EntityAttrsByField,
+  type EvalContext,
   type FieldType,
   type FormField,
   type FormSchemaV1,
@@ -23,6 +27,8 @@ import {
 } from '@appkit/ui'
 import { RichTextEditor } from '@appkit/editor'
 import { readText } from './text'
+import { AddressField, GpsField, MatrixField, RiskField, SignatureField, SketchField, TableField } from './runtime-controls'
+import type { RiskMatrixConfig } from './risk-matrix'
 
 export type FormValues = Record<string, unknown>
 export type FormOption = { value: string; label: string; hint?: string }
@@ -50,6 +56,9 @@ export type FormRendererProps = {
   optionsByField?: Readonly<Record<string, readonly FormOption[]>>
   fieldAdapters?: Partial<Record<FieldType, FormFieldAdapter>>
   className?: string
+  requestContext?: EvalContext['requestContext']
+  entities?: EntityAttrsByField
+  riskMatrix?: RiskMatrixConfig
 }
 
 const ADAPTER_FIELD_TYPES = new Set<FieldType>([
@@ -60,13 +69,6 @@ const ADAPTER_FIELD_TYPES = new Set<FieldType>([
   'file',
   'video',
   'audio',
-  'sketch',
-  'signature',
-  'gps',
-  'address',
-  'table',
-  'matrix',
-  'risk_matrix',
   'lookup',
   'data_table',
   'metric',
@@ -84,12 +86,32 @@ export function FormRenderer({
   optionsByField = {},
   fieldAdapters = {},
   className,
+  requestContext,
+  entities = {},
+  riskMatrix,
 }: FormRendererProps) {
-  const [internalValues, setInternalValues] = React.useState<FormValues>(defaultValues)
+  const initialValues = React.useMemo(
+    () => applySchemaDefaults(schema, defaultValues, requestContext, entities),
+    [defaultValues, entities, requestContext, schema],
+  )
+  const [internalValues, setInternalValues] = React.useState<FormValues>(initialValues)
   const [errors, setErrors] = React.useState<ValidationError[]>([])
   const [submitting, setSubmitting] = React.useState(false)
+  const [stepIndex, setStepIndex] = React.useState(0)
+  const [activeTabId, setActiveTabId] = React.useState(schema.tabs?.[0]?.id ?? '')
   const values = controlledValues ?? internalValues
   const errorMap = new Map(errors.map((error) => [error.fieldId, error.message]))
+  const rows = Object.fromEntries(schema.sections.filter((section) => section.repeating).map((section) => [section.id, Array.isArray(values[section.id]) ? values[section.id] as FormValues[] : []]))
+  const evalContext: EvalContext = { values, rows, entities, requestContext }
+  const steps = schema.workflow?.steps ?? []
+  const currentStep = steps[Math.min(stepIndex, Math.max(0, steps.length - 1))]
+  const stepSections = currentStep
+    ? schema.sections.filter((section) => (section.step ?? steps[0]?.key) === currentStep.key)
+    : schema.sections
+  const tabs = schema.tabs ?? []
+  const visibleSections = tabs.length > 1 && steps.length <= 1
+    ? stepSections.filter((section) => (section.tabId ?? tabs[0]?.id) === activeTabId)
+    : stepSections
 
   function update(fieldId: string, next: unknown) {
     const updated = { ...values, [fieldId]: next }
@@ -111,17 +133,31 @@ export function FormRenderer({
     }
   }
 
+  function nextStep() {
+    const sectionIds = new Set(stepSections.map((section) => section.id))
+    const fieldIds = new Set(stepSections.flatMap((section) => section.fields.map((field) => field.id)))
+    const nextErrors = validateResponse(schema, values, 'submit').filter((error) => {
+      if (error.fieldId.startsWith('__section_')) return sectionIds.has(error.fieldId.slice(10))
+      if (fieldIds.has(error.fieldId)) return true
+      return [...sectionIds].some((sectionId) => error.fieldId.startsWith(`${sectionId}.`))
+    })
+    setErrors(nextErrors)
+    if (nextErrors.length === 0) setStepIndex((current) => Math.min(steps.length - 1, current + 1))
+  }
+
   return (
     <form onSubmit={submit} className={cn('space-y-6', className)} noValidate>
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight text-fg">{readText(schema.title, locale, 'Untitled form')}</h1>
         {schema.description ? <p className="text-sm text-fg-muted">{readText(schema.description, locale)}</p> : null}
       </header>
+      {steps.length > 1 ? <nav aria-label="Form progress" className="grid gap-2" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>{steps.map((step, index) => <button key={step.key} type="button" onClick={() => index <= stepIndex && setStepIndex(index)} disabled={index > stepIndex} className={cn('rounded-md border px-3 py-2 text-left text-xs', index === stepIndex ? 'border-primary bg-primary-subtle text-primary' : index < stepIndex ? 'border-success bg-success-subtle text-success' : 'border-border bg-surface text-fg-muted')}><span className="block font-semibold">{index + 1}. {readText(step.title, locale, step.key)}</span></button>)}</nav> : null}
+      {tabs.length > 1 && steps.length <= 1 ? <div role="tablist" className="flex gap-1 overflow-x-auto border-b border-border">{tabs.map((tab) => <button key={tab.id} type="button" role="tab" aria-selected={activeTabId === tab.id} onClick={() => setActiveTabId(tab.id)} className={cn('border-b-2 px-3 py-2 text-sm font-medium', activeTabId === tab.id ? 'border-primary text-primary' : 'border-transparent text-fg-muted hover:text-fg')}>{readText(tab.title, locale, tab.id)}</button>)}</div> : null}
       {errors.length > 0 ? (
         <Alert variant="destructive" role="alert"><AlertDescription>Review {errors.length} field{errors.length === 1 ? '' : 's'} before submitting.</AlertDescription></Alert>
       ) : null}
-      {schema.sections.map((section) => {
-        const visible = !section.showIf || evaluateLogicRule(section.showIf, { values, rows: {} })
+      {visibleSections.map((section) => {
+        const visible = !section.showIf || evaluateLogicRule(section.showIf, evalContext)
         if (!visible) return null
         if (section.repeating) {
           const rows = Array.isArray(values[section.id])
@@ -138,6 +174,8 @@ export function FormRenderer({
               locale={locale}
               optionsByField={optionsByField}
               fieldAdapters={fieldAdapters}
+              evalContext={evalContext}
+              riskMatrix={riskMatrix}
             />
           )
         }
@@ -149,34 +187,38 @@ export function FormRenderer({
                 {section.description ? <p className="mt-1 text-sm text-fg-muted">{readText(section.description, locale)}</p> : null}
               </div>
             ) : null}
-            <div className={cn('grid gap-5 p-5', section.layout?.columns === 2 && 'sm:grid-cols-2', section.layout?.columns === 3 && 'sm:grid-cols-2 lg:grid-cols-3', section.layout?.columns === 4 && 'sm:grid-cols-2 lg:grid-cols-4')}>
+            <div className={cn('grid gap-5 p-5', section.canvas ? 'grid-cols-12 auto-rows-[40px]' : section.layout?.columns === 2 ? 'sm:grid-cols-2' : section.layout?.columns === 3 ? 'sm:grid-cols-2 lg:grid-cols-3' : section.layout?.columns === 4 ? 'sm:grid-cols-2 lg:grid-cols-4' : '')}>
               {section.fields.map((field) => {
-                const fieldVisible = !field.showIf || evaluateLogicRule(field.showIf, { values, rows: {} })
+                const fieldVisible = !field.showIf || evaluateLogicRule(field.showIf, evalContext)
                 if (!fieldVisible) return null
+                const canvasItem = section.canvas?.items.find((item) => item.i === field.id)
+                const fieldValue = field.type === 'formula' && field.formula
+                  ? evaluateFormulaTree(field.formula, evalContext)
+                  : values[field.id]
                 return (
-                  <FieldControl
-                    key={field.id}
+                  <div key={field.id} className={cn(!canvasItem && field.config?.width === 'full' && 'col-span-full')} style={canvasItem ? { gridColumn: `${canvasItem.x + 1} / span ${canvasItem.w}`, gridRow: `${canvasItem.y + 1} / span ${canvasItem.h}` } : undefined}><FieldControl
                     field={field}
-                    value={values[field.id]}
+                    value={fieldValue}
                     onChange={(next) => update(field.id, next)}
                     error={errorMap.get(field.id)}
                     disabled={disabled || submitting}
                     locale={locale}
                     options={optionsByField[field.id] ?? []}
                     adapter={fieldAdapters[field.type]}
-                  />
+                    riskMatrix={riskMatrix}
+                  /></div>
                 )
               })}
             </div>
           </section>
         )
       })}
-      {onSubmit ? <div className="flex justify-end"><Button type="submit" disabled={disabled || submitting}>{submitting ? 'Submitting…' : submitLabel}</Button></div> : null}
+      {onSubmit ? <div className="flex justify-between gap-2">{steps.length > 1 && stepIndex > 0 ? <Button type="button" variant="outline" disabled={disabled || submitting} onClick={() => setStepIndex((current) => Math.max(0, current - 1))}>Back</Button> : <span />}{steps.length > 1 && stepIndex < steps.length - 1 ? <Button type="button" disabled={disabled || submitting} onClick={nextStep}>Next</Button> : <Button type="submit" disabled={disabled || submitting}>{submitting ? 'Submitting…' : submitLabel}</Button>}</div> : null}
     </form>
   )
 }
 
-function RepeatingSection({ section, rows, onChange, errorMap, disabled, locale, optionsByField, fieldAdapters }: {
+function RepeatingSection({ section, rows, onChange, errorMap, disabled, locale, optionsByField, fieldAdapters, evalContext, riskMatrix }: {
   section: FormSchemaV1['sections'][number]
   rows: FormValues[]
   onChange: (rows: FormValues[]) => void
@@ -185,6 +227,8 @@ function RepeatingSection({ section, rows, onChange, errorMap, disabled, locale,
   locale: AppLocale
   optionsByField: Readonly<Record<string, readonly FormOption[]>>
   fieldAdapters: Partial<Record<FieldType, FormFieldAdapter>>
+  evalContext: EvalContext
+  riskMatrix?: RiskMatrixConfig
 }) {
   const canAdd = section.maxRows === undefined || rows.length < section.maxRows
   const canRemove = rows.length > (section.minRows ?? 0)
@@ -212,9 +256,11 @@ function RepeatingSection({ section, rows, onChange, errorMap, disabled, locale,
             </div>
             <div className="grid gap-5 sm:grid-cols-2">
               {section.fields.map((field) => {
-                const visible = !field.showIf || evaluateLogicRule(field.showIf, { values: { ...row }, rows: {} })
+                const rowContext: EvalContext = { ...evalContext, values: { ...evalContext.values, ...row } }
+                const visible = !field.showIf || evaluateLogicRule(field.showIf, rowContext)
                 if (!visible) return null
-                return <FieldControl key={field.id} field={field} value={row[field.id]} onChange={(next) => patchRow(rowIndex, field.id, next)} error={errorMap.get(`${section.id}.${rowIndex}.${field.id}`)} disabled={disabled} locale={locale} options={optionsByField[field.id] ?? []} adapter={fieldAdapters[field.type]} />
+                const fieldValue = field.type === 'formula' && field.formula ? evaluateFormulaTree(field.formula, rowContext) : row[field.id]
+                return <FieldControl key={field.id} field={field} value={fieldValue} onChange={(next) => patchRow(rowIndex, field.id, next)} error={errorMap.get(`${section.id}.${rowIndex}.${field.id}`)} disabled={disabled} locale={locale} options={optionsByField[field.id] ?? []} adapter={fieldAdapters[field.type]} riskMatrix={riskMatrix} />
               })}
             </div>
           </div>
@@ -232,14 +278,22 @@ function rowLabel(template: string | undefined, index: number, row: FormValues):
     .replace(/\{([A-Za-z0-9_-]+)\}/g, (_, key: string) => String(row[key] ?? ''))
 }
 
-function FieldControl({ field, value, onChange, error, disabled, locale, options, adapter }: FormFieldAdapterProps & { options: readonly FormOption[]; adapter?: FormFieldAdapter }) {
+function FieldControl({ field, value, onChange, error, disabled, locale, options, adapter, riskMatrix }: FormFieldAdapterProps & { options: readonly FormOption[]; adapter?: FormFieldAdapter; riskMatrix?: RiskMatrixConfig }) {
   if (adapter) return <div className="space-y-2">{fieldLabel(field, locale)}{adapter({ field, value, onChange, error, disabled, locale })}{fieldHelp(field, locale, error)}</div>
 
   if (field.type === 'heading') return <h3 className="col-span-full text-lg font-semibold text-fg">{readText(field.label, locale)}</h3>
   if (field.type === 'paragraph') return <p className="col-span-full text-sm text-fg-muted">{readText(field.helpText ?? field.label, locale)}</p>
   if (field.type === 'divider') return <hr className="col-span-full border-border" />
   if (field.type === 'formula') return <OutputField field={field} value={value} locale={locale} />
-  if (ADAPTER_FIELD_TYPES.has(field.type)) return <AdapterRequired field={field} locale={locale} />
+  const nativeProps = { field, value, onChange, disabled }
+  if (field.type === 'gps') return <FieldFrame field={field} locale={locale} error={error}><GpsField {...nativeProps} /></FieldFrame>
+  if (field.type === 'address') return <FieldFrame field={field} locale={locale} error={error}><AddressField {...nativeProps} /></FieldFrame>
+  if (field.type === 'table') return <FieldFrame field={field} locale={locale} error={error}><TableField {...nativeProps} /></FieldFrame>
+  if (field.type === 'matrix') return <FieldFrame field={field} locale={locale} error={error}><MatrixField {...nativeProps} /></FieldFrame>
+  if (field.type === 'risk_matrix') return <FieldFrame field={field} locale={locale} error={error} hideLabel><RiskField {...nativeProps} matrix={riskMatrix} /></FieldFrame>
+  if (field.type === 'signature') return <FieldFrame field={field} locale={locale} error={error}><SignatureField {...nativeProps} /></FieldFrame>
+  if (field.type === 'sketch') return <FieldFrame field={field} locale={locale} error={error}><SketchField {...nativeProps} /></FieldFrame>
+  if (ADAPTER_FIELD_TYPES.has(field.type)) throw new Error(`Form field ${field.id} (${field.type}) requires a field adapter`)
 
   const common = { id: field.id, disabled, 'aria-invalid': Boolean(error), 'aria-describedby': `${field.id}-help` } as const
   const choiceOptions = field.validation?.options?.map((option) => ({ value: option.value, label: readText(option.label, locale) })) ?? options
@@ -318,6 +372,10 @@ function FieldControl({ field, value, onChange, error, disabled, locale, options
   return <div className={cn('space-y-2', (field.colSpan ?? 1) > 1 && 'sm:col-span-2')}>{fieldLabel(field, locale)}{control}{fieldHelp(field, locale, error)}</div>
 }
 
+function FieldFrame({ field, locale, error, hideLabel = false, children }: { field: FormField; locale: AppLocale; error?: string; hideLabel?: boolean; children: React.ReactNode }) {
+  return <div className={cn('space-y-2', (field.colSpan ?? 1) > 1 && 'sm:col-span-2')}>{hideLabel ? null : fieldLabel(field, locale)}{children}{fieldHelp(field, locale, error)}</div>
+}
+
 function fieldLabel(field: FormField, locale: AppLocale) {
   return <Label htmlFor={field.id}>{readText(field.label, locale)}{field.required || field.validation?.required ? <span className="ml-1 text-danger" aria-hidden="true">*</span> : null}</Label>
 }
@@ -328,10 +386,6 @@ function fieldHelp(field: FormField, locale: AppLocale, error?: string) {
 
 function OutputField({ field, value, locale }: { field: FormField; value: unknown; locale: AppLocale }) {
   return <div className="space-y-2"><Label>{readText(field.label, locale)}</Label><output className="block rounded-md border border-border bg-bg-subtle px-3 py-2 text-sm font-medium text-fg">{value === undefined || value === null ? '—' : String(value)}</output></div>
-}
-
-function AdapterRequired({ field, locale }: { field: FormField; locale: AppLocale }) {
-  return <div className="space-y-2"><Label>{readText(field.label, locale)}</Label><Alert variant="info"><AlertDescription>Connect the {field.type.replaceAll('_', ' ')} adapter supplied by your application.</AlertDescription></Alert></div>
 }
 
 function numberConfig(field: FormField, key: 'min' | 'max' | 'step'): number | undefined {
@@ -354,4 +408,31 @@ function safeLink(value: string): string | null {
   } catch {
     return null
   }
+}
+
+function applySchemaDefaults(
+  schema: FormSchemaV1,
+  supplied: FormValues,
+  requestContext: EvalContext['requestContext'],
+  entities: EntityAttrsByField,
+): FormValues {
+  const values = structuredClone(supplied)
+  const rows = Object.fromEntries(
+    schema.sections
+      .filter((section) => section.repeating)
+      .map((section) => [
+        section.id,
+        Array.isArray(values[section.id]) ? values[section.id] as FormValues[] : [],
+      ]),
+  )
+  const context: EvalContext = { values, rows, entities, requestContext }
+  for (const section of schema.sections) {
+    if (section.repeating) continue
+    for (const field of section.fields) {
+      if (values[field.id] !== undefined || !field.defaultValue) continue
+      const resolved = resolveDefaultValue(field.defaultValue, context)
+      if (resolved !== undefined && resolved !== null) values[field.id] = resolved
+    }
+  }
+  return values
 }

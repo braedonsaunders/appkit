@@ -50,6 +50,7 @@ function compileRows(entity: ReportEntity, query: CustomReportQuery, tenantId: s
   const selectKeys = groupBy && !keys.includes(groupBy) ? [...keys, groupBy] : keys
   const parameters = new SqlParameters()
   const where = [`${entity.tenantColumn} = ${parameters.add(tenantId)}`]
+  appendImplicitFilters(entity, where, parameters)
   if (query.filters) {
     const filters = compileReportRuleGroup(entity, query.filters, parameters)
     if (filters) where.push(filters)
@@ -69,6 +70,7 @@ function compileSummary(entity: ReportEntity, query: CustomReportQuery, tenantId
   const startMonth = Math.max(1, Math.min(12, Math.trunc(options.fiscalStartMonth ?? 1)))
   const parameters = new SqlParameters()
   const where = [`${entity.tenantColumn} = ${parameters.add(tenantId)}`]
+  appendImplicitFilters(entity, where, parameters)
   if (query.filters) {
     const filters = compileReportRuleGroup(entity, query.filters, parameters)
     if (filters) where.push(filters)
@@ -123,3 +125,12 @@ function toOutputColumn(entity: ReportEntity, key: string, label?: string): Repo
 function semanticType(entity: ReportEntity, key: string): ReportColumn['semanticType'] { const kind = reportColumn(entity, key)?.kind; return kind === 'number' ? 'number' : kind === 'date' || kind === 'timestamp' ? 'date' : kind === 'boolean' ? 'boolean' : kind === 'enum' ? 'category' : 'text' }
 function resolveLimit(value: number | null | undefined, maxRows = 10_000): number { const hard = Math.max(1, Math.min(10_000, Math.trunc(maxRows))); return Math.max(1, Math.min(hard, Number.isFinite(value) ? Math.trunc(value!) : 1000)) }
 function unique(values: string[]): string[] { return [...new Set(values)] }
+
+function appendImplicitFilters(entity: ReportEntity, where: string[], parameters: SqlParameters): void {
+  if (entity.softDeleteExpression) where.push(`${entity.softDeleteExpression} IS NULL`)
+  else if (entity.softDelete && /^[a-z_][a-z0-9_]*$/i.test(entity.from)) where.push(`"${entity.from}"."deleted_at" IS NULL`)
+  if (entity.baseFilter) {
+    const compiled = compileReportRuleGroup(entity, entity.baseFilter, parameters)
+    if (compiled) where.push(compiled)
+  }
+}

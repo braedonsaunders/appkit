@@ -1,6 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
-import { notificationPreferences, notifications } from './schema'
+import { notificationPreferences, notifications, webPushSubscriptions } from './schema'
 import type { NotificationChannel, NotificationEvent, NotificationRecord, NotificationRecipient, NotificationStore } from './index'
 
 type Db = NodePgDatabase<Record<string, never>>
@@ -25,11 +25,34 @@ export function createDrizzleNotificationStore(db: Db): NotificationStore {
   }
 }
 
+export function createDrizzlePushSubscriptionStore(db: Db) {
+  return {
+    async upsert(input: { tenantId: string; userId: string; endpoint: string; p256dh: string; auth: string; userAgent?: string | null }) {
+      const [row] = await db.insert(webPushSubscriptions).values(input).onConflictDoUpdate({
+        target: webPushSubscriptions.endpoint,
+        set: { tenantId: input.tenantId, userId: input.userId, p256dh: input.p256dh, auth: input.auth, userAgent: input.userAgent ?? null, updatedAt: new Date() },
+      }).returning()
+      if (!row) throw new Error('Push subscription was not visible after upsert')
+      return row
+    },
+    async find(input: { tenantId: string; userId: string; subscriptionId: string }) {
+      const [row] = await db.select().from(webPushSubscriptions).where(and(eq(webPushSubscriptions.id, input.subscriptionId), eq(webPushSubscriptions.tenantId, input.tenantId), eq(webPushSubscriptions.userId, input.userId))).limit(1)
+      return row ?? null
+    },
+    async remove(input: { tenantId: string; userId: string; subscriptionId?: string; endpoint?: string }) {
+      if (!input.subscriptionId && !input.endpoint) throw new Error('A subscription id or endpoint is required')
+      await db.delete(webPushSubscriptions).where(and(eq(webPushSubscriptions.tenantId, input.tenantId), eq(webPushSubscriptions.userId, input.userId), input.subscriptionId ? eq(webPushSubscriptions.id, input.subscriptionId) : eq(webPushSubscriptions.endpoint, input.endpoint!)))
+    },
+  }
+}
+
 function toRecord(row: typeof notifications.$inferSelect, event: NotificationEvent): NotificationRecord { return { ...event, id: row.id, userId: row.userId, body: row.body ?? undefined, linkPath: row.linkPath ?? undefined, data: row.data, critical: row.isCritical, occurredAt: row.occurredAt, readAt: row.readAt, snoozedUntil: row.snoozedUntil } }
 
 export {
   notifications,
   notificationPreferences,
   webPushSubscriptions,
+  tenantNotificationPolicies,
+  tenantNotificationSettings,
   NOTIFICATION_TENANT_TABLES,
 } from './schema'

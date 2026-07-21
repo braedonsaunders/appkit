@@ -21,6 +21,21 @@ export type DashboardLibraryItem = {
 }
 
 export type DashboardActionResult = { ok: true } | { ok: false; error: string }
+export type DashboardStatus = 'draft' | 'published'
+export type DashboardDraft = {
+  id?: string
+  name: string
+  description?: string | null
+  status: DashboardStatus
+  pinned?: boolean
+  layout: DashboardLayout
+}
+export type DashboardStudioAdapter = {
+  save(draft: DashboardDraft): Promise<DashboardActionResult>
+  publish?(published: boolean, draft: DashboardDraft): Promise<DashboardActionResult>
+  pin?(pinned: boolean, draft: DashboardDraft): Promise<DashboardActionResult>
+  remove?(draft: DashboardDraft): Promise<DashboardActionResult>
+}
 export type InsightCardStatus = 'draft' | 'published'
 export type InsightCardDraft = {
   id?: string

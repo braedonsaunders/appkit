@@ -13,6 +13,7 @@ export type FieldDefinition = {
   sample?: Scalar
   note?: string
 }
+export type FieldDef = FieldDefinition
 export type TriggerDefinition = {
   key: string
   label: string
@@ -24,6 +25,7 @@ export type TriggerDefinition = {
   fields: FieldDefinition[]
   dynamicFieldsNote?: string
 }
+export type TriggerDef = TriggerDefinition
 export type ConfigField = {
   key: string
   label: string

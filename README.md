@@ -145,12 +145,12 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@appkit/tokens`        | Semantic light/dark brand, shape, elevation, and motion tokens surfaced through Tailwind v4.                                                                                  |
 | `@appkit/ui`            | Accessible primitives, topbar/sidebar app shell, account launcher, search, notifications, settings, lists, drawers, uploads, signatures, page layouts, and route transitions. |
-| `@appkit/dashboard`     | Responsive drag/resize dashboards, reusable insight cards, a card library, query studio, visualizations, and optional Drizzle persistence.                                    |
+| `@appkit/dashboard`     | Responsive drag/resize dashboards, reusable insight cards, a card library, query studio, visualizations, lifecycle controls, and optional Drizzle persistence.                 |
 | `@appkit/forms-core`    | Versioned schemas, field registry, formulas, conditional logic, validation, scoring, and source-compatible business and safety automation contracts.                          |
-| `@appkit/forms`         | Composable form authoring and fill UI for the shared schema, with host adapters for application-owned field runtimes.                                                         |
+| `@appkit/forms`         | Production form authoring and fill UI: field/section inspectors, tables, matrices, formulas, data binding, pages, guided workflows, record configuration, and typed host adapters. |
 | `@appkit/editor`        | Optional controlled TipTap rich-text authoring.                                                                                                                               |
 | `@appkit/customization` | Versioned form layouts, editable line columns, saved list views, custom-field authoring, validation, linting, and a complete production studio behind app-owned persistence.              |
-| `@appkit/design-studio` | Bounded multi-artboard print design, safe HTML output, and an optional interactive Fabric workspace.                                                                          |
+| `@appkit/design-studio` | Bounded multi-artboard print design, safe HTML/print output, and an interactive Fabric workspace with transforms, layers, zoom, and full property editing.                     |
 | `@appkit/i18n`          | Tenant locale policy, request negotiation, user overrides, and localized authored content.                                                                                    |
 
 ### Data, access, and extension
@@ -160,21 +160,21 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 | `@appkit/db`        | Tenant-scoped Postgres execution, BYPASSRLS system access, identity schema, API keys, schema helpers, and RLS installation. |
 | `@appkit/tenant`    | Request context, wildcard RBAC, read tiers, visibility scopes, grant/deny overrides, and super-admin behavior.              |
 | `@appkit/auth`      | Optional scrypt passwords and stateless HMAC sessions.                                                                      |
-| `@appkit/events`    | Structured audit records, before/after diffs, and a transactional outbox.                                                   |
+| `@appkit/events`    | Structured audit records, transactional outbox, recipient resolution, leased relay, durable retries, and effects ledger.      |
 | `@appkit/api`       | API-key authorization, idempotent writes, typed public errors, and OpenAPI descriptions.                                    |
 | `@appkit/endpoints` | Resource-bounded QuickJS handlers with app-governed capabilities.                                                           |
-| `@appkit/ai`        | Provider-neutral, bounded multi-step agents with streaming React UI and request-scoped tools.                               |
+| `@appkit/ai`        | Provider-neutral bounded agents, streaming React UI, and production analysis, extraction, document, vision, writing, digest, and model helpers. |
 
 ### Analytics, workflows, and connectivity
 
 | Package                 | What it gives your app                                                                                                                                                |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@appkit/analytics`     | App-owned semantic catalogues, parsed formulas, tenant-bound parameterized SQL, result contracts, and a visualization registry.                                       |
-| `@appkit/reports`       | Fiscal periods plus framework-neutral report definition, result, layout, execution, and schedule contracts.                                                        |
+| `@appkit/reports`       | Governed SQL, relationship refinement, custom fields, fiscal/grouped results, document output, DST-safe cadence, durable run claims, and a full report studio.     |
 | `@appkit/workflows`     | Multi-flow visual studio, compatible templates, typed inspectors, bounded graphs, durable replay-safe actions, pause/resume approval gates, any/all quorum, HMAC email decisions, and optional Drizzle storage. |
 | `@appkit/sync`          | Connector registry, cursors, record caps, dry runs, crosswalks, fail-closed authoritative snapshots, CSV/transforms, hardened egress, and optional SQL drivers.       |
 | `@appkit/integrations`  | Trigger/destination registry, token mapping, send-once policy, partial retry ledgers, and optional HTTP, Slack/Teams, Sheets, email, SQL, and Drizzle adapters.       |
-| `@appkit/notifications` | Inbox records, preferences, digest/quiet-hour policy, channel planning, stable delivery keys, and optional React/Drizzle entries.                                     |
+| `@appkit/notifications` | Inbox, preferences, digest/quiet-hour policy, push lifecycle, provider-neutral dispatch, stable delivery keys, and optional React/Drizzle entries.                    |
 
 ### Documents, communications, and infrastructure
 
@@ -185,7 +185,7 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 | `@appkit/sms`             | Twilio, Vonage, MessageBird, Plivo, and Telnyx with strict addressing and credential-safe failures.                                |
 | `@appkit/pdf`             | Pure-JS PDFKit reports/statements plus optional authored-template and hardened Chromium rendering entries.                         |
 | `@appkit/forms-documents` | Localized form companion fields, print styles, and bounded authored PDF templates.                                                 |
-| `@appkit/forms-pdf`       | Form summaries, repeating tables, photos, authored templates, and full-bleed design documents.                                     |
+| `@appkit/forms-pdf`       | Form summaries, repeating tables, photos, hardened browser/resource rendering, record/report templates, and full-bleed design documents. |
 | `@appkit/crypto`          | AES-256-GCM sealed secrets with configurable HKDF-derived application keys.                                                        |
 | `@appkit/jobs`            | BullMQ/Redis producers and workers, lazy connections, bounded readiness, payload guards, rate limits, and hardened Web Push.      |
 | `@appkit/storage`         | Tenant-owned S3 objects, multipart upload, streams/ranges, verified promotion, lifecycle/readiness, and strict environment config. |

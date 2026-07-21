@@ -1,0 +1,7 @@
+@import 'react-grid-layout/css/styles.css';
+
+.react-grid-item.react-grid-placeholder {
+  border-radius: var(--radius-md);
+  background: var(--color-primary-subtle);
+  opacity: 0.7;
+}

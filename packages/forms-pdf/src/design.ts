@@ -21,7 +21,7 @@ export async function renderDesignDocumentsPdf(pages: { document: DesignDocument
   if (!pages.length) throw new Error('renderDesignDocumentsPdf requires at least one page')
   const first = pages[0]!.document.artboards[0]
   return renderHtmlDocumentPdf({
-    bodyHtml: renderDesignDocumentsHtml(pages, title),
+    bodyHtml: renderDesignDocumentsHtml(pages, { title }),
     paperSize: pageSize(first?.width, first?.height),
     orientation: (first?.width ?? 11) >= (first?.height ?? 8.5) ? 'landscape' : 'portrait',
     marginMm: 0,

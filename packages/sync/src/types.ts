@@ -1,8 +1,54 @@
 export type SyncEntityKey = string
+export interface CanonicalPerson extends Record<string, unknown> {
+  fullName?: string | null
+  firstName: string
+  lastName: string
+  employeeNo?: string | null
+  externalEmployeeId?: string | null
+  email?: string | null
+  phone?: string | null
+  jobTitle?: string | null
+  departmentName?: string | null
+  tradeName?: string | null
+  hireDate?: string | null
+  status?: 'active' | 'inactive' | 'terminated'
+  metadata?: Record<string, unknown>
+}
+export interface CanonicalOrgUnit extends Record<string, unknown> {
+  name: string
+  code?: string | null
+  level?: string | null
+  parentCode?: string | null
+  lat?: number | null
+  lng?: number | null
+  geofenceMeters?: number | null
+  address?: Record<string, string | undefined> | null
+  metadata?: Record<string, unknown>
+}
+export interface CanonicalEquipment extends Record<string, unknown> {
+  name: string
+  assetTag: string
+  serialNumber?: string | null
+  description?: string | null
+  typeName?: string | null
+  status?: string | null
+  metadata?: Record<string, unknown>
+}
+export interface CanonicalContact extends Record<string, unknown> {
+  name: string
+  role?: string | null
+  email?: string | null
+  phone?: string | null
+  notes?: string | null
+  isPrimary?: boolean
+  customerExternalId: string
+  metadata?: Record<string, unknown>
+}
 export type SyncRecord<
   TEntity extends SyncEntityKey = SyncEntityKey,
   TData extends Record<string, unknown> = Record<string, unknown>,
 > = { entity: TEntity; externalId: string; data: TData }
+export type CanonicalRecord = SyncRecord
 export type SyncLogger = (
   level: 'info' | 'warn' | 'error',
   message: string,
@@ -16,6 +62,8 @@ export interface ConnectorRunContext {
   config: Record<string, unknown>
   secrets: ResolvedSecrets
   cursor?: Record<string, unknown> | null
+  /** Source-compatible alias for cursor. */
+  since?: Record<string, unknown> | null
   log: SyncLogger
   signal?: AbortSignal
 }
@@ -31,6 +79,11 @@ export interface IntrospectColumn {
 }
 export interface ConnectorTestResult {
   ok: boolean
+  message?: string
+}
+export interface ConnectStartResult {
+  kind: string
+  sessionToken?: string
   message?: string
 }
 export interface ConfigField {
@@ -59,9 +112,12 @@ export interface SyncConnector {
   name: string
   description: string
   kind: 'native' | 'provider'
+  iconKey?: string
   entities: SyncEntityKey[]
   configFields?: ConfigField[]
   secretFields?: SecretField[]
+  supportsIntrospection?: boolean
+  supportsConnect?: boolean
   test?(context: ConnectorRunContext): Promise<ConnectorTestResult>
   introspect?(
     context: ConnectorRunContext,
@@ -73,8 +129,10 @@ export interface SyncConnector {
   pull(
     context: ConnectorRunContext,
   ): Promise<SyncRecord[] | ConnectorPullResult>
+  startConnect?(context: ConnectorRunContext): Promise<ConnectStartResult>
   push?(context: ConnectorRunContext, records: SyncRecord[]): Promise<void>
 }
+export type Connector = SyncConnector
 export type ConnectorSummary = Omit<
   SyncConnector,
   'test' | 'introspect' | 'introspectTable' | 'pull' | 'push'
@@ -83,6 +141,7 @@ export type ConnectorSummary = Omit<
   secretFields: SecretField[]
   supportsIntrospection: boolean
   supportsPush: boolean
+  supportsConnect: boolean
 }
 export function toConnectorSummary(connector: SyncConnector): ConnectorSummary {
   return {
@@ -95,6 +154,7 @@ export function toConnectorSummary(connector: SyncConnector): ConnectorSummary {
     secretFields: connector.secretFields ?? [],
     supportsIntrospection: Boolean(connector.introspect),
     supportsPush: Boolean(connector.push),
+    supportsConnect: Boolean(connector.startConnect),
   }
 }
 

@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { CalendarClock, Columns3, Filter, GripVertical, Loader2, Play, Plus, Save, Sigma, Trash2 } from 'lucide-react'
+import { CalendarClock, Columns3, Filter, GripVertical, Loader2, Play, Plus, Save, Settings2, Sigma, Table2, Trash2 } from 'lucide-react'
 import { Badge, Button, Checkbox, Input, Label, SearchSelect, cn } from '@appkit/ui'
 import type { CustomReportQuery, ReportAggregate } from './custom-query'
 import { REPORT_AGGREGATES, REPORT_TEMPORAL_BINS } from './custom-query'
@@ -12,6 +12,7 @@ import { REPORT_FILTER_OPERATORS, type ReportFilterOperator, type ReportRule } f
 import type { ReportRunResult, ReportSchedule } from './types'
 
 export type ReportStudioValue = { definition: CustomReportDefinition; schedule?: ReportSchedule | null }
+type StudioTab = 'data' | 'filter' | 'format'
 
 export function ReportStudio({ value, catalog, result, onChange, onPreview, onSave, className }: {
   value: ReportStudioValue
@@ -26,6 +27,7 @@ export function ReportStudio({ value, catalog, result, onChange, onPreview, onSa
   const [running, setRunning] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [tab, setTab] = React.useState<StudioTab>('data')
   React.useEffect(() => setPreview(result), [result])
   const definition = value.definition
   const query = definition.query
@@ -44,18 +46,31 @@ export function ReportStudio({ value, catalog, result, onChange, onPreview, onSa
     finally { setSaving(false) }
   }
 
-  return <div className={cn('app-scroll grid h-full min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(20rem,1fr)_minmax(0,2fr)] lg:overflow-hidden', className)}>
-    <aside className="app-scroll min-h-0 space-y-5 border-b border-border bg-surface p-4 lg:overflow-y-auto lg:border-b-0 lg:border-r lg:p-5">
-      <section className="grid gap-3">
-        <Field label="Name"><Input value={definition.name} onChange={(event) => updateDefinition({ name: event.target.value, slug: slug(event.target.value) })} /></Field>
-        <Field label="Source"><SearchSelect value={query.entity} onChange={(entityKey) => { const next = reportEntity(catalog, entityKey); if (next) updateQuery({ entity: next.key, mode: 'rows', columns: next.defaultColumns, filters: null, groupBy: null, sorts: next.defaultSort ? [next.defaultSort] : [] }) }} options={catalog.entities.map((item) => ({ value: item.key, label: item.label, hint: item.description }))} /></Field>
-        <div className="grid grid-cols-2 gap-2"><ModeButton active={query.mode === 'rows'} icon={<Columns3 />} label="Rows" onClick={() => updateQuery({ ...query, mode: 'rows' })} /><ModeButton active={query.mode === 'summarize'} icon={<Sigma />} label="Summarize" onClick={() => updateQuery({ ...query, mode: 'summarize' })} /></div>
-      </section>
+  const tabs: { key: StudioTab; label: string; icon: typeof Table2 }[] = [
+    { key: 'data', label: 'Data', icon: Table2 },
+    { key: 'filter', label: 'Filter', icon: Filter },
+    { key: 'format', label: 'Format', icon: Settings2 },
+  ]
 
-      {entity && query.mode === 'rows' ? <RowsBuilder entity={entity} query={query} onChange={updateQuery} /> : null}
-      {entity && query.mode === 'summarize' ? <SummaryBuilder entity={entity} query={query} onChange={updateQuery} /> : null}
-      {entity ? <FiltersBuilder entity={entity} query={query} onChange={updateQuery} /> : null}
-      <LayoutBuilder value={value} onChange={onChange} />
+  return <div className={cn('app-scroll grid h-full min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(20rem,1fr)_minmax(0,2fr)] lg:overflow-hidden', className)}>
+    <aside className="flex min-h-0 flex-col border-b border-border bg-surface lg:border-r lg:border-b-0">
+      <div className="shrink-0 space-y-3 border-b border-border p-4 lg:p-5">
+        <Field label="Name"><Input value={definition.name} onChange={(event) => updateDefinition({ name: event.target.value, slug: slug(event.target.value) })} /></Field>
+        <div className="grid grid-cols-3 gap-1 rounded-lg border border-border p-0.5">{tabs.map((item) => <button key={item.key} type="button" onClick={() => setTab(item.key)} className={cn('flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium transition-colors', tab === item.key ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:bg-surface-hover hover:text-fg')}><item.icon size={14} />{item.label}</button>)}</div>
+      </div>
+      <div className="app-scroll min-h-0 flex-1 space-y-5 overflow-y-auto p-4 lg:p-5">
+        {tab === 'data' ? <>
+          <section className="grid gap-3">
+            <Field label="Source"><SearchSelect value={query.entity} onChange={(entityKey) => { const next = reportEntity(catalog, entityKey); if (next) updateQuery({ entity: next.key, mode: 'rows', columns: next.defaultColumns, filters: null, groupBy: null, sorts: next.defaultSort ? [next.defaultSort] : [], limit: query.limit ?? 1000 }) }} options={catalog.entities.map((item) => ({ value: item.key, label: item.label, hint: item.description }))} /></Field>
+            <div className="grid grid-cols-2 gap-2"><ModeButton active={query.mode === 'rows'} icon={<Columns3 />} label="Rows" onClick={() => updateQuery({ ...query, mode: 'rows' })} /><ModeButton active={query.mode === 'summarize'} icon={<Sigma />} label="Summarize" onClick={() => updateQuery({ ...query, mode: 'summarize', measures: query.measures?.length ? query.measures : [{ aggregate: 'count' }] })} /></div>
+          </section>
+          {entity && query.mode === 'rows' ? <RowsBuilder entity={entity} query={query} onChange={updateQuery} /> : null}
+          {entity && query.mode === 'summarize' ? <SummaryBuilder entity={entity} query={query} onChange={updateQuery} /> : null}
+          {entity ? <SortLimitBuilder entity={entity} query={query} onChange={updateQuery} /> : null}
+        </> : null}
+        {tab === 'filter' && entity ? <FiltersBuilder entity={entity} query={query} onChange={updateQuery} /> : null}
+        {tab === 'format' ? <LayoutBuilder value={value} onChange={onChange} /> : null}
+      </div>
     </aside>
 
     <main className="flex min-h-0 flex-col bg-bg-subtle">
@@ -87,10 +102,15 @@ function FiltersBuilder({ entity, query, onChange }: { entity: NonNullable<Retur
   return <BuilderSection title="Filters" icon={<Filter />} action={() => { const column = entity.columns[0]; if (column) setRules([...rules, { field: column.key, operator: 'eq', value: '' }]) }}>{rules.map((rule, index) => <div key={index} className="space-y-2 rounded-lg border border-border bg-bg-subtle p-2"><div className="flex gap-2"><SearchSelect className="min-w-0 flex-1" value={rule.field} onChange={(field) => setRules(rules.map((item, itemIndex) => itemIndex === index ? { ...item, field } : item))} options={entity.columns.map((column) => ({ value: column.key, label: column.label }))} /><RemoveButton onClick={() => setRules(rules.filter((_, itemIndex) => itemIndex !== index))} /></div><div className="grid grid-cols-2 gap-2"><SearchSelect value={rule.operator} onChange={(operator) => setRules(rules.map((item, itemIndex) => itemIndex === index ? { ...item, operator: operator as ReportFilterOperator } : item))} options={REPORT_FILTER_OPERATORS.map((operator) => ({ value: operator, label: operator.replaceAll('_', ' ') }))} /><Input value={Array.isArray(rule.value) ? rule.value.join(', ') : String(rule.value ?? '')} disabled={['is_null', 'is_not_null', 'is_true', 'is_false', 'since_today', 'this_week', 'this_month', 'this_year', 'before_now'].includes(rule.operator)} onChange={(event) => setRules(rules.map((item, itemIndex) => itemIndex === index ? { ...item, value: event.target.value } : item))} /></div></div>)}</BuilderSection>
 }
 
+function SortLimitBuilder({ entity, query, onChange }: { entity: NonNullable<ReturnType<typeof reportEntity>>; query: CustomReportQuery; onChange: (query: CustomReportQuery) => void }) {
+  const sort = query.sorts?.[0]
+  return <BuilderSection title="Rows" icon={<Table2 />}><div className="grid grid-cols-2 gap-2"><Field label="Sort by"><SearchSelect value={sort?.column ?? ''} onChange={(column) => onChange({ ...query, sorts: column ? [{ column, direction: sort?.direction ?? 'desc' }] : [] })} options={[{ value: '', label: 'Default order' }, ...entity.columns.map((column) => ({ value: column.key, label: column.label }))]} /></Field><Field label="Direction"><SearchSelect value={sort?.direction ?? 'desc'} onChange={(direction) => sort && onChange({ ...query, sorts: [{ ...sort, direction: direction as 'asc' | 'desc' }] })} options={[{ value: 'desc', label: 'Descending' }, { value: 'asc', label: 'Ascending' }]} /></Field></div><Field label="Row limit"><Input type="number" min={1} max={10_000} value={query.limit ?? 1000} onChange={(event) => onChange({ ...query, limit: Math.min(10_000, Math.max(1, Number(event.currentTarget.value) || 1)) })} /></Field><p className="text-xs text-fg-muted">The preview and exports enforce the same bounded query plan.</p></BuilderSection>
+}
+
 function LayoutBuilder({ value, onChange }: { value: ReportStudioValue; onChange: (value: ReportStudioValue) => void }) {
   const layout = value.definition.layout, schedule = value.schedule
   const changeLayout = (next: Partial<typeof layout>) => onChange({ ...value, definition: { ...value.definition, layout: { ...layout, ...next } } })
-  return <BuilderSection title="Page and delivery" icon={<CalendarClock />}><div className="grid grid-cols-2 gap-2"><Field label="Paper"><SearchSelect value={layout.paperSize} onChange={(paperSize) => changeLayout({ paperSize: paperSize as typeof layout.paperSize })} options={['letter', 'a4', 'legal'].map((item) => ({ value: item, label: item.toUpperCase() }))} /></Field><Field label="Orientation"><SearchSelect value={layout.orientation} onChange={(orientation) => changeLayout({ orientation: orientation as typeof layout.orientation })} options={[{ value: 'portrait', label: 'Portrait' }, { value: 'landscape', label: 'Landscape' }]} /></Field></div>{schedule ? <label className="flex items-center gap-2 text-sm text-fg"><Checkbox checked={schedule.enabled} onChange={(event) => onChange({ ...value, schedule: { ...schedule, enabled: event.target.checked } })} />Scheduled delivery enabled</label> : null}</BuilderSection>
+  return <BuilderSection title="Page and delivery" icon={<CalendarClock />}><div className="grid grid-cols-2 gap-2"><Field label="Paper"><SearchSelect value={layout.paperSize} onChange={(paperSize) => changeLayout({ paperSize: paperSize as typeof layout.paperSize })} options={['letter', 'a4', 'legal'].map((item) => ({ value: item, label: item.toUpperCase() }))} /></Field><Field label="Orientation"><SearchSelect value={layout.orientation} onChange={(orientation) => changeLayout({ orientation: orientation as typeof layout.orientation })} options={[{ value: 'portrait', label: 'Portrait' }, { value: 'landscape', label: 'Landscape' }]} /></Field><Field label="Density"><SearchSelect value={layout.density} onChange={(density) => changeLayout({ density: density as typeof layout.density })} options={[{ value: 'standard', label: 'Standard' }, { value: 'compact', label: 'Compact' }]} /></Field><Field label="Margin (mm)"><Input type="number" min={5} max={30} value={layout.marginMm} onChange={(event) => changeLayout({ marginMm: Math.min(30, Math.max(5, Number(event.currentTarget.value) || 15)) })} /></Field></div><label className="flex items-center gap-2 text-sm text-fg"><Checkbox checked={layout.showSummary} onChange={(event) => changeLayout({ showSummary: event.currentTarget.checked })} />Show summary band</label>{schedule ? <label className="flex items-center gap-2 text-sm text-fg"><Checkbox checked={schedule.enabled} onChange={(event) => onChange({ ...value, schedule: { ...schedule, enabled: event.target.checked } })} />Scheduled delivery enabled</label> : null}</BuilderSection>
 }
 
 export function ReportResultView({ result }: { result: ReportRunResult }) {

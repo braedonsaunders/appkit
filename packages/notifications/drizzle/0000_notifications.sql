@@ -28,6 +28,34 @@ CREATE TABLE "notifications" (
 	"occurred_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "tenant_notification_policies" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"tenant_id" uuid NOT NULL,
+	"digest_mode" text DEFAULT 'off' NOT NULL,
+	"digest_hour_utc" integer DEFAULT 7 NOT NULL,
+	"quiet_hours" jsonb DEFAULT 'null'::jsonb,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"created_by" uuid,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_by" uuid
+);
+--> statement-breakpoint
+CREATE TABLE "tenant_notification_settings" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"tenant_id" uuid NOT NULL,
+	"category" text NOT NULL,
+	"enabled" boolean DEFAULT true NOT NULL,
+	"role_keys" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"user_ids" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"group_ids" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"channels" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"escalation" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"created_by" uuid,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_by" uuid
+);
+--> statement-breakpoint
 CREATE TABLE "webpush_subscriptions" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"tenant_id" uuid NOT NULL,
@@ -46,5 +74,7 @@ CREATE UNIQUE INDEX "notification_preferences_uniq" ON "notification_preferences
 CREATE INDEX "notifications_user_idx" ON "notifications" USING btree ("tenant_id","user_id","occurred_at");--> statement-breakpoint
 CREATE INDEX "notifications_unread_idx" ON "notifications" USING btree ("tenant_id","user_id","read_at");--> statement-breakpoint
 CREATE UNIQUE INDEX "notifications_source_job_user_ux" ON "notifications" USING btree ("tenant_id","source_job_id","user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "tenant_notification_policies_tenant_ux" ON "tenant_notification_policies" USING btree ("tenant_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "tenant_notification_settings_category_ux" ON "tenant_notification_settings" USING btree ("tenant_id","category");--> statement-breakpoint
 CREATE INDEX "webpush_subscriptions_user_idx" ON "webpush_subscriptions" USING btree ("tenant_id","user_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "webpush_subscriptions_endpoint_ux" ON "webpush_subscriptions" USING btree ("endpoint");

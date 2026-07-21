@@ -22,7 +22,7 @@
   "scripts": {
     "build": "node ../../scripts/build-package.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test src/*.test.ts",
+    "test": "node --import tsx --test src/*.test.ts && vitest run src/*.spec.ts",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
@@ -62,7 +62,8 @@
     "react": "^19",
     "react-dom": "^19",
     "tsx": "^4.19.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.9"
   },
   "author": "Braedon Saunders",
   "repository": {

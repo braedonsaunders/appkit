@@ -23,10 +23,10 @@ test('generateApiKey → parse → hash round-trips', () => {
 })
 
 test('generateApiKey honors a custom prefix', () => {
-  const { token } = generateApiKey({ prefix: 'bhs' })
-  assert.match(token, /^bhs_live_/)
+  const { token } = generateApiKey({ prefix: 'acme' })
+  assert.match(token, /^acme_live_/)
   const req = new Request('https://x', { headers: { authorization: `Bearer ${token}` } })
-  assert.equal(parseBearerToken(req, { prefix: 'bhs' }), token)
+  assert.equal(parseBearerToken(req, { prefix: 'acme' }), token)
 })
 
 test('parseBearerToken rejects malformed / oversized headers', () => {

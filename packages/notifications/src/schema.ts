@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { boolean, index, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { auditColumns, id, tenantRef } from '@appkit/db'
 import type { NotificationChannel } from './index'
 
@@ -45,4 +45,32 @@ export const webPushSubscriptions = pgTable('webpush_subscriptions', {
   ...auditColumns,
 }, (table) => [index('webpush_subscriptions_user_idx').on(table.tenantId, table.userId), uniqueIndex('webpush_subscriptions_endpoint_ux').on(table.endpoint)])
 
-export const NOTIFICATION_TENANT_TABLES = ['notifications', 'notification_preferences', 'webpush_subscriptions'] as const
+export const tenantNotificationPolicies = pgTable('tenant_notification_policies', {
+  id: id(),
+  tenantId: tenantRef(),
+  digestMode: text('digest_mode').$type<'off' | 'daily' | 'weekly'>().notNull().default('off'),
+  digestHourUtc: integer('digest_hour_utc').notNull().default(7),
+  quietHours: jsonb('quiet_hours').$type<{ start: number; end: number } | null>().default(null),
+  ...auditColumns,
+}, (table) => [uniqueIndex('tenant_notification_policies_tenant_ux').on(table.tenantId)])
+
+export const tenantNotificationSettings = pgTable('tenant_notification_settings', {
+  id: id(),
+  tenantId: tenantRef(),
+  category: text('category').notNull(),
+  enabled: boolean('enabled').notNull().default(true),
+  roleKeys: jsonb('role_keys').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  userIds: jsonb('user_ids').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  groupIds: jsonb('group_ids').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  channels: jsonb('channels').$type<NotificationChannel[]>().notNull().default(sql`'[]'::jsonb`),
+  escalation: jsonb('escalation').$type<{ afterDays: number; roleKeys: string[] }[]>().notNull().default(sql`'[]'::jsonb`),
+  ...auditColumns,
+}, (table) => [uniqueIndex('tenant_notification_settings_category_ux').on(table.tenantId, table.category)])
+
+export const NOTIFICATION_TENANT_TABLES = [
+  'notifications',
+  'notification_preferences',
+  'webpush_subscriptions',
+  'tenant_notification_policies',
+  'tenant_notification_settings',
+] as const

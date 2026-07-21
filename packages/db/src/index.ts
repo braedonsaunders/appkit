@@ -12,7 +12,13 @@ export {
   IDENTITY_TENANT_TABLES,
   type RoleScope,
 } from './schema/identity'
-export { auditLog, domainEventOutbox, PLATFORM_TENANT_TABLES } from './schema/platform'
+export {
+  auditLog,
+  domainEventEffects,
+  domainEventOutbox,
+  domainEventOutboxStatus,
+  PLATFORM_TENANT_TABLES,
+} from './schema/platform'
 export { apiKeys, apiIdempotencyKeys, API_TENANT_TABLES } from './schema/api'
 export {
   createTenant,
