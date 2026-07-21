@@ -437,10 +437,22 @@ runtime cycles and forbidden foundation dependencies; `pnpm test:isolation`
 walks each package root's complete source import graph and fails if an optional
 adapter peer leaks into it. Both run as part of `pnpm lint`.
 
-`@appkit/customization` turns an app-supplied record catalogue into consistent
-custom fields, form layouts, list views, filters, defaults, and lint output.
-Product record types stay in the consuming app. The working references are
-`/workflows`, `/admin/integrations`, `/notifications`, and `/customization`.
+`@appkit/customization` owns the production customization contracts: versioned
+form layouts, ordered header groups, editable line-item columns, record actions,
+saved list views, structured filters, defaults, parse/lint/refresh behavior, and
+custom-field definitions. `@appkit/customization/react` exports the extracted
+`CustomizationStudio`, `FormDesigner`, `ListViewDesigner`, and
+`CustomFieldDesigner`. `CustomizationStudio` is the complete one-third
+library / two-thirds editor composition; the individual editors remain
+available for embedded use. Routing, tenant-scoped persistence, authorization,
+record labels, and roles are injected; the complete authoring interaction stays
+in the package. Import
+`@appkit/customization/styles.css` wherever the React editors are used so
+Tailwind scans the optional package. The database-free `/customization`
+reference supplies browser-local persistence to that same packaged studio.
+
+The working references are `/workflows`, `/admin/integrations`,
+`/notifications`, and `/customization`.
 
 For the rules any app on this foundation must follow, see
 [`building-applications.md`](building-applications.md).

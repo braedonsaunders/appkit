@@ -246,15 +246,15 @@ const GROUPS: AdminHubGroup[] = [
       },
       {
         title: '@appkit/customization',
-        description: 'Let each application define configurable record screens without hardcoding product entities.',
+        description: 'Ship record customization as a native application capability instead of rebuilding an admin editor.',
         icon: <Paintbrush />,
         features: [
-          'Application-supplied record, field, column, filter, and action catalogues',
-          'Custom fields that extend forms, lists, filters, reports, and APIs together',
-          'Form-layout and list-view defaults, validation, and linting',
+          'Production form designer with ordered header groups, editable line columns, and record actions',
+          'Saved list-view designer with column widths, filters, sort, scope, and defaults',
+          'Custom-field authoring plus versioned schemas, parsing, validation, linting, and refresh behavior',
         ],
         href: '/customization',
-        linkLabel: 'Configure project screens',
+        linkLabel: 'Open customization studio',
       },
       {
         title: '@appkit/i18n',

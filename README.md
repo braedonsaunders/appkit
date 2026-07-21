@@ -149,7 +149,7 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 | `@appkit/forms-core`    | Versioned schemas, field registry, formulas, conditional logic, validation, scoring, and source-compatible business and safety automation contracts.                          |
 | `@appkit/forms`         | Composable form authoring and fill UI for the shared schema, with host adapters for application-owned field runtimes.                                                         |
 | `@appkit/editor`        | Optional controlled TipTap rich-text authoring.                                                                                                                               |
-| `@appkit/customization` | App-defined record catalogues, custom fields, form layouts, list views, filters, defaults, and linting.                                                                        |
+| `@appkit/customization` | Versioned form layouts, editable line columns, saved list views, custom-field authoring, validation, linting, and a complete production studio behind app-owned persistence.              |
 | `@appkit/design-studio` | Bounded multi-artboard print design, safe HTML output, and an optional interactive Fabric workspace.                                                                          |
 | `@appkit/i18n`          | Tenant locale policy, request negotiation, user overrides, and localized authored content.                                                                                    |
 

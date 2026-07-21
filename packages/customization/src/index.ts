@@ -1,3 +1,3 @@
-export * from './types'
-export * from './registry'
-export * from './layouts'
+export * from "./types";
+export * from "./registry";
+export * from "./schema";
