@@ -193,7 +193,7 @@ product’s record names, routes, queries, or permissions inside AppKit.
 | `@appkit/analytics`     | App-owned semantic catalogues, parsed formulas, tenant-bound parameterized SQL, result contracts, and a visualization registry.                                       |
 | `@appkit/reports`       | Production-shaped query plans and catalogues, governed SQL, recursive filters, fiscal/grouped results, a 1/3–2/3 report studio, full paper/statement viewers, drilldown drawers, print/export, schedules, and durable run claims. |
 | `@appkit/workflows`     | Multi-flow visual studio, compatible templates, typed inspectors, bounded graphs, durable replay-safe actions, pause/resume approval gates, record approve/reject controls and history, any/all quorum, HMAC email decisions, and optional Drizzle storage. |
-| `@appkit/sync`          | Connector registry, cursors, record caps, dry runs, crosswalks, fail-closed authoritative snapshots, CSV/transforms, hardened egress, and optional SQL drivers.       |
+| `@appkit/sync`          | Production connector registry and orchestration: transactional batches/savepoints, run and record-change ledgers, clean-run cursors, previews, ownership conflicts, fail-closed snapshots, CSV/transforms, hardened egress, and optional SQL drivers. |
 | `@appkit/integrations`  | Trigger/destination registry, token mapping, send-once policy, partial retry ledgers, and optional HTTP, Slack/Teams, Sheets, email, SQL, and Drizzle adapters.       |
 | `@appkit/notifications` | Responsive three-pane inbox, production preference matrix and device-push enrollment, tenant routing cockpit, audiences, escalation, digest/quiet-hour/scan policy, dispatch, and React/Drizzle entries. |
 

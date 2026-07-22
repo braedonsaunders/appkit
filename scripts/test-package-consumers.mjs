@@ -81,6 +81,7 @@ import { assertPdfJobData, pdfJobId } from '@appkit/jobs/pdf'
 import { PRODUCTION_SCHEDULES, scheduledJobOptions } from '@appkit/jobs/scheduled'
 import { assertOutboundDispatchJob } from '@appkit/jobs/outbound'
 import { NotificationSettings, ProductionNotificationPreferences, PushDeviceNotifications } from '@appkit/notifications/react'
+import { createMemorySyncPersistence, createMemorySyncTarget, runSync as runDataSync } from '@appkit/sync'
 
 assert.equal(parseFormula('count()', { resolveField: () => null }).ok, true)
 assert.equal(color('primary').startsWith('rgb('), true)
@@ -137,6 +138,12 @@ assert.match(pdfJobId(packedPdfJob), /^pdf\|/)
 assert.equal(PRODUCTION_SCHEDULES.length, 11)
 assert.equal(scheduledJobOptions({ kind: 'sync_run', tenantId: '11111111-1111-4111-8111-111111111111', connectionId: '22222222-2222-4222-8222-222222222222', trigger: 'manual' }).jobId, 'sync-run|11111111-1111-4111-8111-111111111111|22222222-2222-4222-8222-222222222222')
 assert.doesNotThrow(() => assertOutboundDispatchJob({ tenantId: '11111111-1111-4111-8111-111111111111', automationId: '22222222-2222-4222-8222-222222222222', event: { type: 'record.created', tenantId: '11111111-1111-4111-8111-111111111111', subjectId: 'record-one', items: [] } }))
+const syncPersistence = createMemorySyncPersistence([{ id: 'connection-1', tenantId: 'tenant-1', connectorKey: 'fixture', name: 'Fixture', status: 'connected', enabled: true, config: {}, secrets: {}, cursor: { page: 1 } }])
+const packedSyncConnector = { key: 'fixture', name: 'Fixture', description: '', kind: 'native', entities: ['record'], async pull() { return { records: [{ entity: 'record', externalId: 'one', data: { name: 'Ready' } }], nextCursor: { page: 2 }, mode: 'full', authoritativeEntities: ['record'] } } }
+const syncResult = await runDataSync({ tenantId: 'tenant-1', connectionId: 'connection-1', trigger: 'manual', connectors: { get: key => key === 'fixture' ? packedSyncConnector : null }, persistence: syncPersistence, target: createMemorySyncTarget() })
+assert.equal(syncResult.status, 'success')
+assert.equal(syncPersistence.changes[0]?.action, 'created')
+assert.deepEqual(syncPersistence.connections[0]?.cursor, { page: 2 })
 assert.equal(compileCustomReport({ entity: 'entries', columns: ['status'], filters: { combinator: 'and', rules: [{ field: 'status', op: 'eq', value: 'posted' }] } }, 'org-1', { entities: [{ key: 'entries', label: 'Entries', category: 'ledger', description: 'Entries', from: 'entries e', orgColumn: 'e.org_id', columns: [{ key: 'status', label: 'Status', kind: 'enum', expr: 'e.status', options: ['draft', 'posted'] }] }] }).sql.includes('e.org_id = $1'), true)
 assert.equal(compileCustomReport({ entity: 'incidents', mode: 'summarize', columns: [], measures: [{ fn: 'count' }] }, 'tenant-1', { entities: [{ key: 'incidents', label: 'Incidents', category: 'operations', description: 'Incidents', table: 'incidents', columns: [{ key: 'reference', label: 'Reference', kind: 'text' }] }] }).sql.includes('"incidents"."tenant_id" = $1'), true)
 assert.match(renderToStaticMarkup(React.createElement(Button, null, 'Ready')), /Ready/)
@@ -207,6 +214,8 @@ import type { ScriptJobData } from '@appkit/jobs/scripts'
 import type { SandboxJobData } from '@appkit/jobs/sandbox'
 import type { MigrationJobData } from '@appkit/jobs/migration'
 import type { CaptureJobData } from '@appkit/jobs/capture'
+import { createSyncOrchestrator } from '@appkit/sync'
+import type { RunSyncArgs, RunSyncResult, SyncConnectionRecord, SyncPersistence, SyncRecordChange, SyncTarget } from '@appkit/sync'
 import { createMembershipAccessResolver, resolveMembershipAccess } from '@appkit/tenant'
 import type { MembershipAccessDatabase, RequestContext, RequestContextArgs, TenantDatabase } from '@appkit/tenant'
 ${typePackages.map((_, index) => `type PackageContract${index} = typeof Package${index}`).join('\n')}
@@ -263,6 +272,14 @@ void (null as unknown as ScriptJobData)
 void (null as unknown as SandboxJobData)
 void (null as unknown as MigrationJobData)
 void (null as unknown as CaptureJobData)
+void (null as unknown as RunSyncArgs)
+void (null as unknown as RunSyncResult)
+void (null as unknown as SyncConnectionRecord)
+void (null as unknown as SyncPersistence<unknown>)
+void (null as unknown as SyncRecordChange)
+void (null as unknown as SyncTarget<unknown, unknown>)
+const sourceShapedSync = createSyncOrchestrator({ connectors: { get() { return null } }, persistence: null as unknown as SyncPersistence<unknown>, target: null as unknown as SyncTarget<unknown, unknown> })
+void sourceShapedSync({ tenantId: 'tenant-1', connectionId: 'connection-1', trigger: 'manual' })
 const organizationScriptJob: ScriptJobData = { orgId: '10000000-0000-4000-8000-000000000001', scriptId: 'script-one', kind: 'bulk', actorId: 'user-one' }
 const tenantScriptJob: ScriptJobData = { tenantId: '10000000-0000-4000-8000-000000000001', scriptId: 'script-one', kind: 'scheduled' }
 const organizationMigrationJob: MigrationJobData = { orgId: '10000000-0000-4000-8000-000000000001', connectionId: 'connection-one', mode: 'full_migration' }

@@ -74,6 +74,10 @@ imports it improves.
   rich-text and document/print layers over their dependency-light contracts.
 - `packages/workflows` — dependency-free workflow graphs at the root, with the
   shared React Flow authoring shell under `/react`.
+- `packages/sync` — the production inbound connector spine: transactional
+  batches/savepoints, run and per-record ledgers, clean-run cursor advancement,
+  fail-closed snapshots, ownership conflict policy, connector families, and
+  memory/Drizzle persistence around an application-owned canonical target.
 - `packages/notifications` — dependency-free notification policy at the root,
   with the production inbox, preference and push surfaces, tenant routing
   cockpit, Drizzle stores, and feature-owned schema adapter entry points.

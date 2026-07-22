@@ -1,4 +1,31 @@
 export type SyncEntityKey = string
+export type SyncConnectionStatus = 'draft' | 'connected' | 'error' | 'disabled'
+export type SyncRunTrigger = 'scheduled' | 'manual' | 'preview'
+export type SyncRunStatus = 'running' | 'success' | 'partial' | 'error'
+export type SyncRecordAction =
+  | 'created'
+  | 'updated'
+  | 'unchanged'
+  | 'skipped'
+  | 'failed'
+  | 'archived'
+  | 'conflict'
+export type SyncRecordDiff = Record<string, { before: unknown; after: unknown }>
+export type SyncEntityStat = {
+  pulled: number
+  created: number
+  updated: number
+  unchanged: number
+  skipped: number
+  failed: number
+  archived: number
+  conflict: number
+}
+export type SyncRunLogLine = {
+  at: string
+  level: 'info' | 'warn' | 'error'
+  msg: string
+}
 export interface CanonicalPerson extends Record<string, unknown> {
   fullName?: string | null
   firstName: string
@@ -149,12 +176,13 @@ export function toConnectorSummary(connector: SyncConnector): ConnectorSummary {
     name: connector.name,
     description: connector.description,
     kind: connector.kind,
+    iconKey: connector.iconKey,
     entities: connector.entities,
     configFields: connector.configFields ?? [],
     secretFields: connector.secretFields ?? [],
-    supportsIntrospection: Boolean(connector.introspect),
+    supportsIntrospection: connector.supportsIntrospection ?? false,
     supportsPush: Boolean(connector.push),
-    supportsConnect: Boolean(connector.startConnect),
+    supportsConnect: connector.supportsConnect ?? false,
   }
 }
 

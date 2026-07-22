@@ -177,6 +177,7 @@ const DEMO_ROUTES: Record<string, string> = {
   '@appkit/scripts': '/admin/scripts',
   '@appkit/workflows': '/workflows',
   '@appkit/integrations': '/admin/integrations',
+  '@appkit/sync': '/admin/integrations',
 }
 
 const categoryByName = new Map(

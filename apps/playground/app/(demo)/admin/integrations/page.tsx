@@ -27,8 +27,16 @@ import { INTEGRATION_DESTINATION_CATALOG } from '@appkit/integrations/destinatio
 import {
   createConnectorRegistry,
   type SyncConnector,
+  type SyncRecord,
 } from '@appkit/sync/catalog'
-import { createMemorySyncRunStore, parseCsv, runSync, type SyncRecord } from '@appkit/sync'
+import {
+  createMemorySyncPersistence,
+  createMemorySyncTarget,
+  runSync,
+  type MemorySyncTransaction,
+  type SyncTarget,
+} from '@appkit/sync/runtime'
+import { parseCsv } from '@appkit/sync/csv'
 import {
   Badge,
   Button,
@@ -62,7 +70,12 @@ const csvDemoConnector: SyncConnector = {
       data: { name: row.name ?? '', status: row.status ?? '' },
     }))
     context.log('info', `Parsed ${records.length} project records`, { headers: parsed.headers })
-    return { records, mode: 'full', authoritativeEntities: ['project'] }
+    return {
+      records,
+      nextCursor: { importedRows: records.length },
+      mode: 'full',
+      authoritativeEntities: ['project'],
+    }
   },
 }
 
@@ -121,28 +134,57 @@ export default function IntegrationsPage() {
 }
 
 function Inbound() {
-  const [result, setResult] = React.useState<{ status: string; pulled: number; applied: number; records: SyncRecord[] } | null>(null)
+  const [result, setResult] = React.useState<{
+    status: string
+    pulled: number
+    applied: number
+    ledgerRows: number
+    cursor: string
+    records: SyncRecord[]
+  } | null>(null)
   const [running, setRunning] = React.useState(false)
 
   async function runCsvDemo() {
     setRunning(true)
     const records: SyncRecord[] = []
-    const store = createMemorySyncRunStore()
+    const persistence = createMemorySyncPersistence([
+      {
+        id: 'csv-projects',
+        tenantId: 'demo',
+        connectorKey: csvDemoConnector.key,
+        name: csvDemoConnector.name,
+        status: 'connected',
+        enabled: true,
+        config: { csv: SAMPLE_CSV },
+        secrets: {},
+        cursor: {},
+      },
+    ])
+    const memoryTarget = createMemorySyncTarget()
+    const target: SyncTarget<MemorySyncTransaction, undefined> = {
+      async apply(transaction, record, context) {
+        records.push(record)
+        return memoryTarget.apply(transaction, record, context)
+      },
+    }
     try {
       const run = await runSync({
         tenantId: 'demo',
         connectionId: 'csv-projects',
-        connector: csvDemoConnector,
-        connectorContext: { config: { csv: SAMPLE_CSV }, secrets: {}, log: () => undefined },
-        target: {
-          async apply(record) {
-            records.push(record)
-            return { targetId: record.externalId, changed: true }
-          },
-        },
-        store,
+        trigger: 'manual',
+        connectors: { get: (key) => key === csvDemoConnector.key ? csvDemoConnector : null },
+        persistence,
+        target,
       })
-      setResult({ status: run.status, pulled: run.pulled, applied: run.applied, records })
+      const stats = Object.values(run.stats)
+      setResult({
+        status: run.status,
+        pulled: stats.reduce((total, stat) => total + stat.pulled, 0),
+        applied: stats.reduce((total, stat) => total + stat.created + stat.updated + stat.unchanged, 0),
+        ledgerRows: persistence.changes.length,
+        cursor: JSON.stringify(persistence.connections[0]?.cursor ?? {}),
+        records,
+      })
     } finally {
       setRunning(false)
     }
@@ -171,10 +213,10 @@ function Inbound() {
         ))}
         {result ? (
           <SettingsRow
-            title={`${result.applied} records applied`}
-            description={result.records.map((record) => `${record.externalId}: ${String(record.data.name)}`).join(' · ')}
+            title={`${result.applied} of ${result.pulled} records applied`}
+            description={`${result.ledgerRows} audited changes · cursor ${result.cursor} · ${result.records.map((record) => `${record.externalId}: ${String(record.data.name)}`).join(' · ')}`}
           >
-            <Badge variant={result.status === 'completed' ? 'success' : 'warning'}>{result.status}</Badge>
+            <Badge variant={result.status === 'success' ? 'success' : 'warning'}>{result.status}</Badge>
           </SettingsRow>
         ) : null}
       </SettingsSection>

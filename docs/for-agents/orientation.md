@@ -589,11 +589,23 @@ adapt either schema through `WorkflowPlanner` and inject their action handlers.
 `@appkit/sync` is the inbound connector spine: app-defined and built-in CSV,
 database, HTTPS JSON, managed-provider, and ERP connectors emit a
 generic `{entity, externalId, data}` envelope into an injected target adapter.
-The runtime owns cursors, record caps, dry runs, error accounting, and
-authoritative snapshots that refuse to archive when a pull is empty or any row
-failed. `/egress` is the DNS-pinned SSRF-safe HTTPS implementation;
+The production orchestrator loads the configured connection, resolves secrets
+through an application adapter, pulls outside a transaction, prepares the
+target once, then applies records in 250-row tenant-scoped transactions with a
+savepoint per record. It owns scheduled/manual/preview triggers, source/manual
+ownership modes, complete per-entity counters, durable run logs, per-record
+before/after/diff/failure ledgers, and cursor advancement only after a clean
+run. Partial and failed runs retain the old cursor so the next pull covers every
+failed row again. Authoritative snapshots refuse to archive when a pull is
+empty, authority is missing, or any row failed; archive changes share the same
+ledger. The exact production people convergence/natural-adoption policy is
+available under `/person-sync-policy`. `/egress` is the DNS-pinned SSRF-safe HTTPS implementation;
 `/db-drivers` adds TLS-only PostgreSQL, MySQL, MariaDB, and SQL Server; `/schema`
-and `/drizzle` own connections, runs, cursor state, and the crosswalk.
+and `/drizzle` own connections, crosswalks, full run state, and record changes.
+The memory adapter runs the same state machine for local-first applications,
+tests, and the database-free playground. Canonical tables, natural-key lookup,
+field ownership, and archive writes remain the application's typed target
+adapter because those schemas are product-owned.
 
 `@appkit/integrations` is the outbound trigger-to-destination spine. Product
 modules emit already-authorized item namespaces; the dispatcher maps tokens,
