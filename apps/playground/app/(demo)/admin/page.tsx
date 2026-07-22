@@ -33,7 +33,7 @@ const HUB_GROUPS: AdminHubGroup[] = [
     label: 'Workspace',
     accent: 'amber',
     cards: [
-      { href: '/admin/settings?s=general', title: 'Company setup', description: 'Organization defaults', icon: <Settings size={18} /> },
+      { href: '/admin/settings?s=general', title: 'Setup', description: 'Organization defaults', icon: <Settings size={18} /> },
       { href: '/admin/settings?s=navigation', title: 'Navigation', description: 'Sidebar items', icon: <PanelLeft size={18} /> },
       { href: '/admin/settings?s=notifications', title: 'Notifications', description: 'Alerts and digests', icon: <Bell size={18} /> },
     ],

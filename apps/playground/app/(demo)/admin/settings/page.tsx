@@ -71,7 +71,7 @@ export default function SettingsPage() {
   return (
     <div className="h-full">
       <SettingsShell
-        title="Company setup"
+        title="Setup"
         description="Configure workspace defaults, access, navigation, and notifications."
         back={{ href: '/admin', label: 'Administration' }}
         nav={NAV}
@@ -99,7 +99,7 @@ function GeneralSettings() {
 
   React.useEffect(() => {
     try {
-      const stored = window.localStorage.getItem('appkit-demo:company-settings:v1')
+      const stored = window.localStorage.getItem('appkit-demo:workspace-settings:v1')
       if (!stored) return
       const parsed = JSON.parse(stored) as { name?: unknown; timezone?: unknown; currency?: unknown }
       if (typeof parsed.name === 'string') setName(parsed.name)
@@ -112,7 +112,7 @@ function GeneralSettings() {
 
   function save() {
     try {
-      window.localStorage.setItem('appkit-demo:company-settings:v1', JSON.stringify({ name, timezone, currency }))
+      window.localStorage.setItem('appkit-demo:workspace-settings:v1', JSON.stringify({ name, timezone, currency }))
       setSaved(true)
     } catch {
       setSaved(false)
@@ -121,7 +121,7 @@ function GeneralSettings() {
 
   function reset() {
     try {
-      window.localStorage.removeItem('appkit-demo:company-settings:v1')
+      window.localStorage.removeItem('appkit-demo:workspace-settings:v1')
     } finally {
       setName('Acme Inc')
       setTimezone('America/Toronto')
@@ -166,7 +166,7 @@ function GeneralSettings() {
         </SettingsRow>
       </SettingsSection>
       <SettingsSection title="Reset">
-        <SettingsRow title="Reset company settings" description="Restore the browser demo defaults.">
+        <SettingsRow title="Reset workspace settings" description="Restore the browser demo defaults.">
           <Button variant="destructive" onClick={reset}>Reset</Button>
         </SettingsRow>
       </SettingsSection>

@@ -80,7 +80,7 @@ const NAV: SidebarNavGroup[] = [
       },
       {
         href: '/admin/settings',
-        label: 'Company setup',
+        label: 'Setup',
         iconKey: 'wrench',
         subgroup: 'Organization',
       },
