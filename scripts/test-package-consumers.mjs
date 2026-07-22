@@ -61,6 +61,7 @@ import { compileCustomReport, parseReportScheduleForm } from '@appkit/reports'
 import { color } from '@appkit/tokens'
 import { Button, PagedTable, PromptRoot, SubtabNav } from '@appkit/ui'
 import { emptyFormSchema, validateFormSchema } from '@appkit/forms-core'
+import { ProductionFormRenderer } from '@appkit/forms'
 import { createDesignDocument } from '@appkit/design-studio'
 import { DesignStudioEditor } from '@appkit/design-studio/react'
 import { ReportFilterBar, ReportPaper, ReportRunHistory, ReportScheduleForm, ReportScheduleList, StatementMatrixTable, Table, TableBody, TableCell, TableRow, reportStudioTemplates } from '@appkit/reports/react'
@@ -78,6 +79,18 @@ import { AuditAdmin, RolesAdmin, UsersAdmin } from '@appkit/iam/react'
 assert.equal(parseFormula('count()', { resolveField: () => null }).ok, true)
 assert.equal(color('primary').startsWith('rgb('), true)
 assert.equal(validateFormSchema(emptyFormSchema('Smoke')).title, 'Smoke')
+const productionFormSchema = { schemaVersion: 1, title: 'Equipment inspection', workflow: { steps: [{ key: 'inspect', title: 'Inspection', assignee: { type: 'expression', expr: '$submitter' } }] }, sections: [{ id: 'details', title: 'Inspection details', step: 'inspect', fields: [{ id: 'serial', type: 'text', label: 'Serial number', required: true }] }] }
+const productionFormAdapter = {
+  async createDraft() { return { ok: true, responseId: 'response-1' } },
+  async saveDraft(input) { return { ok: true, savedAt: '2026-07-22T12:00:00.000Z', revision: input.baseRevision + 1, sequence: input.clientSequence } },
+  async submit() { return { ok: true, responseId: 'response-1' } },
+  async updateField() { return { ok: true } },
+  async fetchEntityAttributes() { return { ok: true, attrs: {} } },
+  async listHierarchyOptions() { return [] },
+  async queryData(input) { return { columns: [], rows: [], total: 0, page: input.page ?? 1, pageSize: input.pageSize ?? 25, selectedRow: null } },
+  async aggregateData() { return { value: null, total: 0 } },
+}
+assert.match(renderToStaticMarkup(React.createElement(ProductionFormRenderer, { adapter: productionFormAdapter, templateId: 'template-1', templateName: 'Equipment inspection', version: 3, schema: productionFormSchema, sites: [], people: [], entitiesByField: {}, currentUser: { personId: null, name: 'Inspector' }, recordsHref: '/records', readOnly: true, responseStatus: 'submitted', initialValues: { serial: 'EQ-1042' } })), /EQ-1042/)
 const tenantContextFactory = createTenantContextFactory({
   async withTenant(database, tenantId, fn) { assert.equal(tenantId, 'tenant-1'); return fn(database) },
   async withSuperAdmin(database, fn) { return fn(database) },
@@ -145,6 +158,7 @@ import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { createDrizzleIamService } from '@appkit/iam/drizzle'
 import type { BulkRoleAssignmentInput, IamAdminService, MemberRecord, RoleRecord } from '@appkit/iam'
 import type { MemberAdminAction, MemberAdminExtension, RoleAdminExtension } from '@appkit/iam/react'
+import type { ProductionFormRendererProps, ProductionFormRuntimeAdapter } from '@appkit/forms'
 import { createMembershipAccessResolver, resolveMembershipAccess } from '@appkit/tenant'
 import type { MembershipAccessDatabase, RequestContext, RequestContextArgs, TenantDatabase } from '@appkit/tenant'
 ${typePackages.map((_, index) => `type PackageContract${index} = typeof Package${index}`).join('\n')}
@@ -175,6 +189,8 @@ void (null as unknown as RecordApprovalState)
 void (null as unknown as ApprovalActionsProps)
 void (null as unknown as ApprovalHistoryProps)
 void (null as unknown as RecordApprovalProviderProps)
+void (null as unknown as ProductionFormRendererProps)
+void (null as unknown as ProductionFormRuntimeAdapter)
 type ApplicationRequestContext = RequestContext<{ personId: string | null; terminology?: { authority: string } }>
 type ApplicationRequestArgs = RequestContextArgs<{ personId: string | null; terminology?: { authority: string } }>
 declare const applicationContext: ApplicationRequestContext

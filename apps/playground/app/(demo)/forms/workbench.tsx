@@ -2,9 +2,9 @@
 
 import * as React from 'react'
 import { Download, Eye, FileJson, LayoutGrid, RotateCcw, Save, Upload } from 'lucide-react'
-import { FormDesigner, FormRenderer, type FormDataSource, type FormFieldAdapter, type FormValues, type RecordActionFlow, type RecordActionFlowAdapter, type RecordConfig } from '@appkit/forms'
-import { parseFormSchema, type FieldType, type FormSchemaV1 } from '@appkit/forms-core'
-import { Badge, Button, Checkbox, Input, Select, TabContent, Textarea, toast } from '@appkit/ui'
+import { FormDesigner, ProductionFormRenderer, type FormDataSource, type ProductionFormRuntimeAdapter, type RecordActionFlow, type RecordActionFlowAdapter, type RecordConfig } from '@appkit/forms'
+import { parseFormSchema, type FormSchemaV1 } from '@appkit/forms-core'
+import { Badge, Button, TabContent, Textarea, toast } from '@appkit/ui'
 import { SUPPLIER_QUALIFICATION_SCHEMA } from '../../../lib/forms/example-schema'
 
 const STORAGE_KEY = 'appkit.forms.workbench.schema.v1'
@@ -25,7 +25,6 @@ export function FormWorkbench() {
   const [schema, setSchema] = React.useState<FormSchemaV1>(STARTER_SCHEMA)
   const [mode, setMode] = React.useState<Mode>('design')
   const [json, setJson] = React.useState(() => JSON.stringify(STARTER_SCHEMA, null, 2))
-  const [values, setValues] = React.useState<FormValues>({})
   const [recordConfig, setRecordConfig] = React.useState<RecordConfig>({ editingMode: 'both', locking: { enabled: true, trigger: 'on_finalize', lockRoles: ['manager'], unlockRoles: ['admin'] }, tabs: { review: true, comments: true, audit: true } })
   const [flows, setFlows] = React.useState<RecordActionFlow[]>([])
   const fileRef = React.useRef<HTMLInputElement>(null)
@@ -36,17 +35,59 @@ export function FormWorkbench() {
     async remove(id) { setFlows((current) => current.filter((flow) => flow.id !== id)) },
     open() { toast.info('Open the Workflow page to expand this button into a multi-step graph.') },
   }), [])
-  const fieldAdapters = React.useMemo<Partial<Record<FieldType, FormFieldAdapter>>>(() => ({
-    photo: AttachmentField,
-    photo_upload: AttachmentField,
-    photo_ai: CompoundPhotoField,
-    photo_annotated: CompoundPhotoField,
-    file: AttachmentField,
-    video: AttachmentField,
-    audio: AttachmentField,
-    lookup: DataLookupField,
-    data_table: DataTableField,
-    metric: DataMetricField,
+  const productionSchema = React.useMemo(() => ({
+    ...schema,
+    workflow: schema.workflow ?? {
+      steps: [{ key: 'submit', title: 'Submit', assignee: { type: 'expression' as const, expr: '$submitter' } }],
+    },
+  }), [schema])
+  const revision = React.useRef(0)
+  const runtimeAdapter = React.useMemo<ProductionFormRuntimeAdapter>(() => ({
+    async createDraft() { return { ok: true, responseId: 'demo-response' } },
+    async saveDraft(input) {
+      revision.current += 1
+      window.localStorage.setItem('appkit.forms.workbench.response.v1', JSON.stringify({ values: input.values, rows: input.rows, stepIndex: input.stepIndex, revision: revision.current }))
+      return { ok: true, savedAt: new Date().toISOString(), revision: revision.current, sequence: input.clientSequence }
+    },
+    async submit() {
+      toast.success('Response validated.')
+      return { ok: true, responseId: 'demo-response' }
+    },
+    async updateField(input) {
+      const key = 'appkit.forms.workbench.inline-response.v1'
+      const current = JSON.parse(window.localStorage.getItem(key) ?? '{}') as Record<string, unknown>
+      window.localStorage.setItem(key, JSON.stringify({ ...current, [input.fieldId]: input.value }))
+      return { ok: true }
+    },
+    async fetchEntityAttributes() { return { ok: true, attrs: {} } },
+    async listHierarchyOptions(level) {
+      return level === 'customer'
+        ? [{ id: 'customer-1', name: 'Northwind Materials', code: 'NW' }]
+        : level === 'project'
+          ? (DEMO_ROWS.projects ?? []).map((row) => ({ id: row.id, name: String(row.name), code: null }))
+          : [{ id: `${level}-1`, name: `Primary ${level}`, code: null }]
+    },
+    async queryData(input) {
+      const source = DEMO_ROWS[input.sourceKey] ?? []
+      const search = input.search?.trim().toLocaleLowerCase() ?? ''
+      const filtered = source.filter((row) => !search || Object.values(row).some((value) => String(value).toLocaleLowerCase().includes(search)))
+      const page = input.page ?? 1
+      const pageSize = input.pageSize ?? 25
+      const rows = filtered.slice((page - 1) * pageSize, page * pageSize).map((row) => ({ ...row, __rowId: row.id }))
+      const selectedRow = input.selectedValue == null ? null : source.find((row) => Object.values(row).some((value) => String(value) === String(input.selectedValue))) ?? null
+      const definition = DEMO_DATA_SOURCES.find((candidate) => candidate.key === input.sourceKey)
+      return { columns: definition?.columns ?? [], rows, total: filtered.length, page, pageSize, selectedRow }
+    },
+    async aggregateData(input) {
+      const rows = DEMO_ROWS[input.sourceKey] ?? []
+      const numbers = input.column ? rows.map((row) => Number(row[input.column!])).filter(Number.isFinite) : []
+      const value = input.fn === 'count' ? rows.length
+        : input.fn === 'sum' ? numbers.reduce((sum, number) => sum + number, 0)
+          : input.fn === 'avg' ? numbers.reduce((sum, number) => sum + number, 0) / Math.max(1, numbers.length)
+            : input.fn === 'min' ? Math.min(...numbers)
+              : numbers.length ? Math.max(...numbers) : null
+      return { value, total: rows.length }
+    },
   }), [])
 
   React.useEffect(() => {
@@ -116,7 +157,6 @@ export function FormWorkbench() {
   function reset() {
     window.localStorage.removeItem(STORAGE_KEY)
     updateSchema(STARTER_SCHEMA)
-    setValues({})
     toast.success('Starter schema restored.')
   }
 
@@ -159,15 +199,17 @@ export function FormWorkbench() {
         {mode === 'preview' ? (
           <div className="app-scroll h-full overflow-y-auto p-4 sm:p-8">
             <div className="mx-auto max-w-4xl rounded-xl border border-border bg-surface p-4 shadow-sm sm:p-8">
-              <FormRenderer
-                schema={schema}
-                values={values}
-                onChange={setValues}
-                fieldAdapters={fieldAdapters}
-                onSubmit={async () => {
-                  toast.success('Response validated.')
-                }}
-                submitLabel="Validate response"
+              <ProductionFormRenderer
+                adapter={runtimeAdapter}
+                templateId="demo-form"
+                templateName={titleText(schema.title)}
+                version={1}
+                schema={productionSchema}
+                sites={[]}
+                people={[]}
+                entitiesByField={{}}
+                currentUser={{ personId: null, name: 'Demo user' }}
+                recordsHref="/forms"
               />
             </div>
           </div>
@@ -187,45 +229,6 @@ export function FormWorkbench() {
       </TabContent>
     </div>
   )
-}
-
-function attachmentValue(file: File) {
-  const attachmentId = crypto.randomUUID()
-  return { attachmentId, filename: file.name, contentType: file.type || 'application/octet-stream', url: `/api/attachments/${attachmentId}?cap=${'A'.repeat(43)}` }
-}
-
-const AttachmentField: FormFieldAdapter = ({ field, value, onChange, disabled }) => {
-  const attachments = Array.isArray(value) ? value as ReturnType<typeof attachmentValue>[] : []
-  const accept = field.type === 'photo' || field.type === 'photo_upload' ? 'image/*' : field.type === 'video' ? 'video/*' : field.type === 'audio' ? 'audio/*' : undefined
-  return <div className="space-y-2"><Input type="file" accept={accept} disabled={disabled} onChange={(event) => { const file = event.target.files?.[0]; if (file) onChange([...attachments, attachmentValue(file)]) }} />{attachments.map((attachment) => <div key={attachment.attachmentId} className="flex items-center justify-between rounded-md border border-border bg-bg-subtle px-3 py-2 text-xs"><span className="truncate text-fg">{attachment.filename}</span><Button type="button" size="sm" variant="ghost" disabled={disabled} onClick={() => onChange(attachments.filter((candidate) => candidate.attachmentId !== attachment.attachmentId))}>Remove</Button></div>)}</div>
-}
-
-const CompoundPhotoField: FormFieldAdapter = (props) => {
-  const current = typeof props.value === 'object' && props.value !== null ? props.value as { attachments?: ReturnType<typeof attachmentValue>[] } : {}
-  return <AttachmentField {...props} value={current.attachments ?? []} onChange={(attachments) => props.onChange({ ...current, attachments })} />
-}
-
-const DataLookupField: FormFieldAdapter = ({ field, value, onChange, disabled }) => {
-  const rows = DEMO_ROWS[field.binding?.sourceKey ?? ''] ?? []
-  const labelKey = field.binding?.labelColumn ?? 'name'
-  const valueKey = field.binding?.valueColumn ?? 'id'
-  return <Select value={typeof value === 'string' ? value : ''} disabled={disabled} onChange={(event) => onChange(event.target.value || undefined)}><option value="">Select…</option>{rows.map((row) => <option key={row.id} value={String(row[valueKey] ?? row.id)}>{String(row[labelKey] ?? row.id)}</option>)}</Select>
-}
-
-const DataTableField: FormFieldAdapter = ({ field, value, onChange, disabled }) => {
-  const rows = DEMO_ROWS[field.binding?.sourceKey ?? ''] ?? []
-  const selected = Array.isArray(value) ? value as string[] : []
-  const columns = field.binding?.columns?.length ? field.binding.columns : Object.keys(rows[0] ?? {}).filter((key) => key !== 'id')
-  return <div className="app-scroll overflow-x-auto rounded-md border border-border"><table className="w-full text-sm"><thead className="bg-bg-subtle"><tr>{field.binding?.selectable !== 'none' ? <th className="w-10 px-3 py-2" /> : null}{columns.map((column) => <th key={column} className="px-3 py-2 text-left text-xs font-semibold text-fg-muted">{column}</th>)}</tr></thead><tbody className="divide-y divide-border">{rows.map((row) => <tr key={row.id}>{field.binding?.selectable !== 'none' ? <td className="px-3 py-2"><Checkbox checked={selected.includes(row.id)} disabled={disabled} onChange={(event) => onChange(event.currentTarget.checked ? field.binding?.selectable === 'single' ? [row.id] : [...selected, row.id] : selected.filter((id) => id !== row.id))} /></td> : null}{columns.map((column) => <td key={column} className="px-3 py-2 text-fg">{String(row[column] ?? '—')}</td>)}</tr>)}</tbody></table></div>
-}
-
-const DataMetricField: FormFieldAdapter = ({ field }) => {
-  const rows = DEMO_ROWS[field.binding?.sourceKey ?? ''] ?? []
-  const aggregate = field.binding?.aggregate
-  const column = aggregate?.column
-  const values = column ? rows.map((row) => Number(row[column]) || 0) : []
-  const metric = aggregate?.fn === 'sum' ? values.reduce((sum, value) => sum + value, 0) : aggregate?.fn === 'avg' ? values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1) : aggregate?.fn === 'min' ? Math.min(...values) : aggregate?.fn === 'max' ? Math.max(...values) : rows.length
-  return <output className="block rounded-lg border border-border bg-bg-subtle p-4 text-3xl font-semibold tabular-nums text-fg">{new Intl.NumberFormat('en-CA', { maximumFractionDigits: 2 }).format(metric)}</output>
 }
 
 function ModeButton({ active, onClick, icon, children }: { active: boolean; onClick: () => void; icon: React.ReactNode; children: React.ReactNode }) {

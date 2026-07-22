@@ -226,23 +226,29 @@ lifecycle contract. Both retain their complete upstream automation tests. The
 payloads intentionally remain separate where same-named actions mean different
 things.
 
-`@appkit/forms` is controlled UI over that contract. Its `LogicBuilder` is the
-production template-designer implementation with labels and theme values
-injected. `FormDesigner` preserves the source shell's independently scrolling
-field library, sortable build surface, one-third/two-thirds layout, and
-drawer-based properties interaction. The package owns formula/default/logic/
-validation authoring; table, matrix, slider, and data-source configuration;
-section grid, canvas, repeating, and page assignment; guided workflow steps and
-assignees; record editing/locking; list columns; and workflow-backed record
-actions. `FormDesigner` receives a schema and `onChange`; `FormRenderer` receives
-the same schema plus controlled or uncontrolled response values. Native controls
-include tables, matrices, risk selection, signatures, sketches, formulas,
-repetition, workflow navigation, and submit validation. Entity/data pickers,
-media upload, camera/scanner, address lookup, and tenant queries use typed
-`fieldAdapters`, because their services must remain inside the consuming
-application's trust and RLS boundary. The live `/forms` reference exercises the
-production designer, validated fill preview, JSON editing, data-bound fields,
-import/export, and browser persistence.
+`@appkit/forms` now has two explicitly different runtime surfaces. Use
+`ProductionFormRenderer` for production parity: it is the complete source fill
+runtime with revision-safe and unload-safe drafts, inline field saves, lazy
+draft creation, server validation, guided steps, formulas/defaults/conditional
+logic, entity refresh, hierarchy and data-source queries, repeating sections,
+tables, matrices, ratings, attestations, media/photo analysis and annotation,
+signatures, sketches, responsive columns/canvas layouts, read-only records, and
+submission handling. The renderer binds locale/copy and a
+`ProductionFormRuntimeAdapter`; the host retains routing, persistence, uploads,
+authorized data access, and optional photo analysis inside its trust boundary.
+The source English copy catalogue is complete and consumers can replace it with
+their own generated-copy translator.
+
+`FormRenderer` remains the smaller controlled renderer for applications that
+want to own every field value and service callback. It is not the production
+parity surface. `LogicBuilder` is a faithful generalized source extraction, but
+`FormDesigner` is still only the portable controlled authoring composition; the
+complete source designer shell and its overview, workflow, assignment,
+permissions, publishing, and assisted-authoring surfaces have not yet been
+ported and must not be described as drop-in compatible. The live `/forms`
+reference uses the full production runtime for Fill preview while retaining the
+controlled authoring workbench, JSON editing, import/export, and browser-local
+persistence.
 
 `@appkit/editor` owns the optional TipTap authoring control used by rich-text
 fields. `@appkit/forms-documents` owns localized companion-field generation,
