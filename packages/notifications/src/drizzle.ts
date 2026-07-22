@@ -1,6 +1,12 @@
 import { and, desc, eq, ilike, inArray, isNull, lt, lte, or, sql, type SQL } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
-import { notificationPreferences, notifications, webPushSubscriptions } from './schema'
+import {
+  notificationPreferences,
+  notifications,
+  tenantNotificationPolicy,
+  tenantNotificationSettings,
+  webPushSubscriptions,
+} from './schema'
 import type {
   NotificationChannel,
   NotificationEvent,
@@ -12,6 +18,12 @@ import type {
   NotificationStore,
   NotificationTodoItem,
 } from './index'
+import type {
+  NotificationConfigurationAdapter,
+  NotificationConfigurationAllowedValues,
+  NotificationConfigurationInput,
+} from './configuration'
+import { normalizeNotificationConfiguration } from './configuration'
 
 type Db = NodePgDatabase<Record<string, never>>
 
@@ -198,6 +210,78 @@ export function createDrizzlePushSubscriptionStore(db: Db) {
   }
 }
 
+export function createDrizzleNotificationPreferencesAdapter(
+  db: Db,
+  options: { tenantId: string; userId: string },
+) {
+  return {
+    async load() {
+      return db.select({ category: notificationPreferences.category, channel: notificationPreferences.channel, enabled: notificationPreferences.enabled })
+        .from(notificationPreferences)
+        .where(and(eq(notificationPreferences.tenantId, options.tenantId), eq(notificationPreferences.userId, options.userId)))
+    },
+    async save(preferences: { category: string; channel: NotificationChannel; enabled: boolean }[]) {
+      const unique = new Map(preferences.map((preference) => [`${preference.category}\0${preference.channel}`, preference]))
+      if (unique.size !== preferences.length || preferences.length > 1_000) throw new Error('Notification preferences contain duplicate or excessive cells.')
+      await db.transaction(async (tx) => {
+        for (const preference of preferences) {
+          await tx.insert(notificationPreferences).values({ ...preference, tenantId: options.tenantId, userId: options.userId }).onConflictDoUpdate({
+            target: [notificationPreferences.tenantId, notificationPreferences.userId, notificationPreferences.category, notificationPreferences.channel],
+            set: { enabled: preference.enabled, updatedAt: new Date() },
+          })
+        }
+      })
+    },
+  }
+}
+
+export function createDrizzleNotificationConfigurationAdapter(
+  db: Db,
+  options: {
+    tenantId: string
+    allowedValues: NotificationConfigurationAllowedValues | (() => Promise<NotificationConfigurationAllowedValues>)
+    onSaved?: (input: NotificationConfigurationInput) => Promise<void> | void
+  },
+): NotificationConfigurationAdapter & { load(): Promise<NotificationConfigurationInput> } {
+  return {
+    async load() {
+      const [settings, policies] = await Promise.all([
+        db.select().from(tenantNotificationSettings).where(eq(tenantNotificationSettings.tenantId, options.tenantId)),
+        db.select().from(tenantNotificationPolicy).where(eq(tenantNotificationPolicy.tenantId, options.tenantId)).limit(1),
+      ])
+      const policy = policies[0]
+      return {
+        settings: settings.map((row) => ({ category: row.category, enabled: row.enabled, roleKeys: row.roleKeys, userIds: row.userIds, groupIds: row.groupIds, channels: row.channels, escalation: row.escalation })),
+        policy: {
+          digestMode: policy?.digestMode ?? 'off',
+          digestHourUtc: policy?.digestHourUtc ?? 7,
+          quietHours: policy?.quietHours ?? null,
+          scanEnabled: policy?.scanEnabled ?? true,
+          scanCron: policy?.scanCron ?? '0 6 * * *',
+          scanTimezone: policy?.scanTimezone ?? 'UTC',
+        },
+      }
+    },
+    async save(input) {
+      const allowedValues = typeof options.allowedValues === 'function' ? await options.allowedValues() : options.allowedValues
+      const normalized = normalizeNotificationConfiguration(input, allowedValues)
+      await db.transaction(async (tx) => {
+        for (const setting of normalized.settings) {
+          await tx.insert(tenantNotificationSettings).values({ tenantId: options.tenantId, ...setting }).onConflictDoUpdate({
+            target: [tenantNotificationSettings.tenantId, tenantNotificationSettings.category],
+            set: { enabled: setting.enabled, roleKeys: setting.roleKeys, userIds: setting.userIds, groupIds: setting.groupIds, channels: setting.channels, escalation: setting.escalation, updatedAt: new Date() },
+          })
+        }
+        await tx.insert(tenantNotificationPolicy).values({ tenantId: options.tenantId, ...normalized.policy }).onConflictDoUpdate({
+          target: tenantNotificationPolicy.tenantId,
+          set: { ...normalized.policy, updatedAt: new Date() },
+        })
+      })
+      await options.onSaved?.(normalized)
+    },
+  }
+}
+
 function toRecord(row: typeof notifications.$inferSelect, event: NotificationEvent): NotificationRecord { return { ...event, id: row.id, userId: row.userId, body: row.body ?? undefined, linkPath: row.linkPath ?? undefined, data: row.data, critical: row.isCritical, occurredAt: row.occurredAt, readAt: row.readAt, snoozedUntil: row.snoozedUntil } }
 
 function toInboxItem(row: typeof notifications.$inferSelect): NotificationInboxItem {
@@ -217,7 +301,7 @@ export {
   notifications,
   notificationPreferences,
   webPushSubscriptions,
-  tenantNotificationPolicies,
+  tenantNotificationPolicy,
   tenantNotificationSettings,
   NOTIFICATION_TENANT_TABLES,
 } from './schema'

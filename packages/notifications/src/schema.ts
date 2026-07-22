@@ -20,6 +20,7 @@ export const notifications = pgTable('notifications', {
   occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index('notifications_user_idx').on(table.tenantId, table.userId, table.occurredAt),
+  index('notifications_tenant_idx').on(table.tenantId, table.occurredAt),
   index('notifications_unread_idx').on(table.tenantId, table.userId, table.readAt),
   uniqueIndex('notifications_source_job_user_ux').on(table.tenantId, table.sourceJobId, table.userId),
 ])
@@ -45,14 +46,17 @@ export const webPushSubscriptions = pgTable('webpush_subscriptions', {
   ...auditColumns,
 }, (table) => [index('webpush_subscriptions_user_idx').on(table.tenantId, table.userId), uniqueIndex('webpush_subscriptions_endpoint_ux').on(table.endpoint)])
 
-export const tenantNotificationPolicies = pgTable('tenant_notification_policies', {
+export const tenantNotificationPolicy = pgTable('tenant_notification_policy', {
   id: id(),
   tenantId: tenantRef(),
   digestMode: text('digest_mode').$type<'off' | 'daily' | 'weekly'>().notNull().default('off'),
   digestHourUtc: integer('digest_hour_utc').notNull().default(7),
   quietHours: jsonb('quiet_hours').$type<{ start: number; end: number } | null>().default(null),
+  scanEnabled: boolean('scan_enabled').notNull().default(true),
+  scanCron: text('scan_cron').notNull().default('0 6 * * *'),
+  scanTimezone: text('scan_timezone').notNull().default('UTC'),
   ...auditColumns,
-}, (table) => [uniqueIndex('tenant_notification_policies_tenant_ux').on(table.tenantId)])
+}, (table) => [uniqueIndex('tenant_notification_policy_uniq').on(table.tenantId)])
 
 export const tenantNotificationSettings = pgTable('tenant_notification_settings', {
   id: id(),
@@ -71,6 +75,6 @@ export const NOTIFICATION_TENANT_TABLES = [
   'notifications',
   'notification_preferences',
   'webpush_subscriptions',
-  'tenant_notification_policies',
+  'tenant_notification_policy',
   'tenant_notification_settings',
 ] as const

@@ -236,6 +236,27 @@
           "method": "btree",
           "with": {}
         },
+        "notifications_tenant_idx": {
+          "name": "notifications_tenant_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "occurred_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "notifications_unread_idx": {
           "name": "notifications_unread_idx",
           "columns": [
@@ -298,8 +319,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.tenant_notification_policies": {
-      "name": "tenant_notification_policies",
+    "public.tenant_notification_policy": {
+      "name": "tenant_notification_policy",
       "schema": "",
       "columns": {
         "id": {
@@ -336,6 +357,27 @@
           "notNull": false,
           "default": "'null'::jsonb"
         },
+        "scan_enabled": {
+          "name": "scan_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "scan_cron": {
+          "name": "scan_cron",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0 6 * * *'"
+        },
+        "scan_timezone": {
+          "name": "scan_timezone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'UTC'"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -364,8 +406,8 @@
         }
       },
       "indexes": {
-        "tenant_notification_policies_tenant_ux": {
-          "name": "tenant_notification_policies_tenant_ux",
+        "tenant_notification_policy_uniq": {
+          "name": "tenant_notification_policy_uniq",
           "columns": [
             {
               "expression": "tenant_id",

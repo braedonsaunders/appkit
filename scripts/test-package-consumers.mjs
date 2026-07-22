@@ -75,6 +75,8 @@ import { ApprovalActions, ApprovalHistory, RecordApprovalProvider } from '@appki
 import { createTenantContextFactory } from '@appkit/tenant'
 import { createMemoryIamService } from '@appkit/iam/memory'
 import { AuditAdmin, RolesAdmin, UsersAdmin } from '@appkit/iam/react'
+import { buildNotifyQueueJobs } from '@appkit/jobs/notifications'
+import { NotificationSettings, ProductionNotificationPreferences, PushDeviceNotifications } from '@appkit/notifications/react'
 
 assert.equal(parseFormula('count()', { resolveField: () => null }).ok, true)
 assert.equal(color('primary').startsWith('rgb('), true)
@@ -118,6 +120,12 @@ const iamService = createMemoryIamService()
 assert.match(renderToStaticMarkup(React.createElement(RolesAdmin, { service: iamService, permissionGroups: [] })), /Roles/)
 assert.match(renderToStaticMarkup(React.createElement(UsersAdmin, { service: iamService, permissionGroups: [] })), /Users/)
 assert.match(renderToStaticMarkup(React.createElement(AuditAdmin, { service: iamService })), /Audit log/)
+const notificationCatalog = { categories: [{ key: 'records', label: 'Records', description: 'Record updates', defaultChannels: ['in_app', 'email'] }] }
+const notificationPolicy = { digestMode: 'off', digestHourUtc: 7, quietHours: null, scanEnabled: true, scanCron: '0 6 * * *', scanTimezone: 'UTC' }
+assert.match(renderToStaticMarkup(React.createElement(NotificationSettings, { categories: [{ key: 'records', label: 'Records', description: 'Record updates', defaultRoles: ['manager'] }], roles: [{ key: 'manager', name: 'Manager' }], members: [], groups: [], initial: {}, policy: notificationPolicy, adapter: { async save() {} } })), /Automatic scan schedule/)
+assert.match(renderToStaticMarkup(React.createElement(ProductionNotificationPreferences, { catalog: notificationCatalog, initial: [], adapter: { async save() {} } })), /Save preferences/)
+assert.match(renderToStaticMarkup(React.createElement(PushDeviceNotifications, { vapidPublicKey: null, adapter: { async save() {}, async remove() {}, async test() { return { sent: 1 } } } })), /Push notifications on this device/)
+assert.deepEqual(buildNotifyQueueJobs({ tenantId: '11111111-1111-4111-8111-111111111111', userIds: Array.from({ length: 251 }, (_, index) => 'user-' + index), category: 'records', type: 'record.updated', title: 'Updated' }, { jobId: 'record-updated' }).map(job => job.data.userIds.length), [250, 1])
 assert.equal(compileCustomReport({ entity: 'entries', columns: ['status'], filters: { combinator: 'and', rules: [{ field: 'status', op: 'eq', value: 'posted' }] } }, 'org-1', { entities: [{ key: 'entries', label: 'Entries', category: 'ledger', description: 'Entries', from: 'entries e', orgColumn: 'e.org_id', columns: [{ key: 'status', label: 'Status', kind: 'enum', expr: 'e.status', options: ['draft', 'posted'] }] }] }).sql.includes('e.org_id = $1'), true)
 assert.equal(compileCustomReport({ entity: 'incidents', mode: 'summarize', columns: [], measures: [{ fn: 'count' }] }, 'tenant-1', { entities: [{ key: 'incidents', label: 'Incidents', category: 'operations', description: 'Incidents', table: 'incidents', columns: [{ key: 'reference', label: 'Reference', kind: 'text' }] }] }).sql.includes('"incidents"."tenant_id" = $1'), true)
 assert.match(renderToStaticMarkup(React.createElement(Button, null, 'Ready')), /Ready/)
@@ -175,6 +183,9 @@ import { createDrizzleIamService } from '@appkit/iam/drizzle'
 import type { BulkRoleAssignmentInput, IamAdminService, MemberRecord, RoleRecord } from '@appkit/iam'
 import type { MemberAdminAction, MemberAdminExtension, RoleAdminExtension } from '@appkit/iam/react'
 import type { ProductionFormDesignerAdapter, ProductionFormDesignerProps, ProductionFormRendererProps, ProductionFormRuntimeAdapter } from '@appkit/forms'
+import type { NotificationConfigurationAdapter, NotificationPolicyInput } from '@appkit/notifications'
+import type { NotificationPreferencesAdapter, NotificationSettingsProps, ProductionNotificationPreferencesProps, PushDeviceAdapter } from '@appkit/notifications/react'
+import type { NotifyJobData, PushJobData } from '@appkit/jobs/notifications'
 import { createMembershipAccessResolver, resolveMembershipAccess } from '@appkit/tenant'
 import type { MembershipAccessDatabase, RequestContext, RequestContextArgs, TenantDatabase } from '@appkit/tenant'
 ${typePackages.map((_, index) => `type PackageContract${index} = typeof Package${index}`).join('\n')}
@@ -209,6 +220,14 @@ void (null as unknown as ProductionFormRendererProps)
 void (null as unknown as ProductionFormRuntimeAdapter)
 void (null as unknown as ProductionFormDesignerProps)
 void (null as unknown as ProductionFormDesignerAdapter)
+void (null as unknown as NotificationConfigurationAdapter)
+void (null as unknown as NotificationPolicyInput)
+void (null as unknown as NotificationSettingsProps)
+void (null as unknown as NotificationPreferencesAdapter)
+void (null as unknown as ProductionNotificationPreferencesProps)
+void (null as unknown as PushDeviceAdapter)
+void (null as unknown as NotifyJobData)
+void (null as unknown as PushJobData)
 type ApplicationRequestContext = RequestContext<{ personId: string | null; terminology?: { authority: string } }>
 type ApplicationRequestArgs = RequestContextArgs<{ personId: string | null; terminology?: { authority: string } }>
 declare const applicationContext: ApplicationRequestContext

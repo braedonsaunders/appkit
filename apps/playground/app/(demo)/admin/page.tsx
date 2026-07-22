@@ -35,7 +35,7 @@ const HUB_GROUPS: AdminHubGroup[] = [
     cards: [
       { href: '/admin/settings?s=general', title: 'Setup', description: 'Organization defaults', icon: <Settings size={18} /> },
       { href: '/admin/settings?s=navigation', title: 'Navigation', description: 'Sidebar items', icon: <PanelLeft size={18} /> },
-      { href: '/admin/settings?s=notifications', title: 'Notifications', description: 'Alerts and digests', icon: <Bell size={18} /> },
+      { href: '/admin/notifications', title: 'Notifications', description: 'Routing, audiences, schedules, and escalation', icon: <Bell size={18} /> },
     ],
   },
   {

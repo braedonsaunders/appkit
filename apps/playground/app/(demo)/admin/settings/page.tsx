@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Bell, GripVertical, Settings } from 'lucide-react'
+import { GripVertical, Settings } from 'lucide-react'
 import {
   Button,
   Input,
@@ -30,7 +30,6 @@ const NAV: SettingsNavGroup[] = [
     items: [
       { key: 'general', label: 'General', icon: <Settings /> },
       { key: 'navigation', label: 'Navigation', icon: <GripVertical /> },
-      { key: 'notifications', label: 'Notifications', icon: <Bell /> },
     ],
   },
 ]
@@ -48,7 +47,7 @@ export default function SettingsPage() {
     <div className="h-full">
       <SettingsShell
         title="Setup"
-        description="Configure workspace defaults, access, navigation, and notifications."
+        description="Configure workspace defaults and navigation."
         back={{ href: '/admin', label: 'Administration' }}
         nav={NAV}
         activeKey={active}
@@ -60,7 +59,6 @@ export default function SettingsPage() {
       >
         {active === 'general' ? <GeneralSettings /> : null}
         {active === 'navigation' ? <NavigationSettings /> : null}
-        {active === 'notifications' ? <NotificationSettings /> : null}
       </SettingsShell>
     </div>
   )
@@ -166,23 +164,6 @@ function NavigationSettings() {
           <Switch checked={!!visible[item]} onChange={(e) => setVisible((v) => ({ ...v, [item]: e.target.checked }))} />
         </SettingsRow>
       ))}
-    </SettingsSection>
-  )
-}
-
-function NotificationSettings() {
-  const [channels, setChannels] = React.useState({ email: true, push: false, weekly: true })
-  return (
-    <SettingsSection title="Notifications" description="How you'd like to be notified.">
-      <SettingsRow title="Email notifications" description="Product updates and account activity.">
-        <Switch checked={channels.email} onChange={(event) => setChannels((current) => ({ ...current, email: event.target.checked }))} />
-      </SettingsRow>
-      <SettingsRow title="Push notifications" description="Real-time alerts in your browser.">
-        <Switch checked={channels.push} onChange={(event) => setChannels((current) => ({ ...current, push: event.target.checked }))} />
-      </SettingsRow>
-      <SettingsRow title="Weekly summary" description="A digest every Monday morning.">
-        <Switch checked={channels.weekly} onChange={(event) => setChannels((current) => ({ ...current, weekly: event.target.checked }))} />
-      </SettingsRow>
     </SettingsSection>
   )
 }

@@ -1,7 +1,7 @@
 {
   "name": "@appkit/notifications",
   "version": "0.1.0",
-  "description": "Dependency-free multi-channel notification policy with optional React and Drizzle adapters.",
+  "description": "Production inbox, preferences, push enrollment, tenant routing cockpit, multi-channel runtime, and optional Drizzle adapters.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {

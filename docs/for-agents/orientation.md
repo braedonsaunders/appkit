@@ -542,6 +542,10 @@ tests, demos, and local tools. Selecting the `storage` capability in
 `create-appkit` installs this package without pulling it into unrelated apps.
 `@appkit/jobs` supplies lazy BullMQ producer/worker connections, bounded Redis
 readiness, source payload validators, and an atomic fixed-window rate limiter.
+Its `/notifications` entry preserves the production notify/push job contracts,
+queue names, validation limits, deterministic 250-recipient batching, stable
+batch ids, retry/backoff profiles, and retention windows behind an
+application-owned `createJobs` runtime.
 Its `/web-push` entry includes subscription validation, public-DNS
 checks, bounded encrypted payloads, and terminal provider status handling.
 
@@ -602,13 +606,23 @@ aggregation and push subscription lifecycle are package-owned. Its root has no
 dependencies. `@appkit/notifications/schema` owns its feature tables,
 `@appkit/notifications/drizzle` provides the RLS-aware delivery store and a
 tenant/user-bound inbox adapter with search, cursor paging, folder counts, and
-mutations, while domain to-dos remain one injected query. The React entry
+mutations. It also owns source-shaped atomic preference and tenant-configuration
+adapters, including the singular `tenant_notification_policy` table and its
+digest, quiet-hour, scan-enabled, cron, and timezone fields. Domain to-dos and
+recipient catalogue queries remain injected. The React entry
 `@appkit/notifications/react` provides the complete responsive three-pane inbox:
 smart and category folders, search, optimistic read/unread/delete/snooze,
 to-dos, cursor paging, a reading pane, mobile drawers, recoverable errors, and
 the matching loading shell. Applications inject the tenant/user-scoped
 `NotificationInboxAdapter`, category/to-do visuals, routes, and localized copy.
-The same entry provides the per-category/channel preference matrix.
+The same entry preserves both production settings surfaces: the user
+category/channel matrix plus browser/OS Web Push enrollment, and the tenant
+routing cockpit with transport readiness, digest delivery, quiet hours,
+automatic scan schedule, roles, people, groups, channels, escalation ladders,
+dirty state, and atomic save. Applications inject their category/recipient
+catalogues, authorized persistence, transport links, VAPID credentials, and
+delivery providers. The working routes are `/notifications`,
+`/notifications/preferences`, and `/admin/notifications`.
 
 Package boundaries are executable architecture. `pnpm check:boundaries` rejects
 runtime cycles and forbidden foundation dependencies; `pnpm test:isolation`

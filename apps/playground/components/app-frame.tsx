@@ -102,6 +102,12 @@ function createNavigation(packages: PackageNavigationItem[]): SidebarNavGroup[] 
         subgroup: 'Organization',
       },
       {
+        href: '/admin/notifications',
+        label: 'Notification rules',
+        iconKey: 'bell',
+        subgroup: 'Organization',
+      },
+      {
         href: '/api-docs',
         label: 'API Docs',
         iconKey: 'code',

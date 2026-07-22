@@ -195,7 +195,7 @@ product’s record names, routes, queries, or permissions inside AppKit.
 | `@appkit/workflows`     | Multi-flow visual studio, compatible templates, typed inspectors, bounded graphs, durable replay-safe actions, pause/resume approval gates, record approve/reject controls and history, any/all quorum, HMAC email decisions, and optional Drizzle storage. |
 | `@appkit/sync`          | Connector registry, cursors, record caps, dry runs, crosswalks, fail-closed authoritative snapshots, CSV/transforms, hardened egress, and optional SQL drivers.       |
 | `@appkit/integrations`  | Trigger/destination registry, token mapping, send-once policy, partial retry ledgers, and optional HTTP, Slack/Teams, Sheets, email, SQL, and Drizzle adapters.       |
-| `@appkit/notifications` | Responsive three-pane inbox, smart folders, search, to-dos, optimistic actions, preferences, digest/quiet-hour policy, push lifecycle, dispatch, and React/Drizzle entries. |
+| `@appkit/notifications` | Responsive three-pane inbox, production preference matrix and device-push enrollment, tenant routing cockpit, audiences, escalation, digest/quiet-hour/scan policy, dispatch, and React/Drizzle entries. |
 
 ### Documents, communications, and infrastructure
 
@@ -208,7 +208,7 @@ product’s record names, routes, queries, or permissions inside AppKit.
 | `@appkit/forms-documents` | Form print styles and bounded authored PDF templates over the canonical forms-core companion-value contract.                       |
 | `@appkit/forms-pdf`       | Form summaries, repeating tables, photos, hardened browser/resource rendering, record/report templates, and full-bleed design documents. |
 | `@appkit/crypto`          | AES-256-GCM sealed secrets with configurable HKDF-derived application keys.                                                        |
-| `@appkit/jobs`            | BullMQ/Redis producers and workers, lazy connections, bounded readiness, payload guards, rate limits, and hardened Web Push.      |
+| `@appkit/jobs`            | BullMQ/Redis producers and workers, lazy connections, source-compatible notification/push queues, deterministic batching, bounded readiness, payload guards, rate limits, and hardened Web Push. |
 | `@appkit/storage`         | Tenant-owned S3 objects plus the optional production attachment workspace: upload, search, type filters, paging, preview, download, expansion, removal, HTTP adapters, and database-free memory adapters. |
 
 ## Modular by construction

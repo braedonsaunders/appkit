@@ -1,13 +1,14 @@
 {
   "name": "@appkit/jobs",
   "version": "0.1.0",
-  "description": "Production BullMQ runtime with lazy producer/worker connections, readiness, validation, and atomic Redis rate limits.",
+  "description": "Production BullMQ runtime with lazy connections, notification queue profiles, readiness, validation, rate limits, and Web Push.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
     "./health": "./src/health.ts",
     "./rate-limit": "./src/rate-limit.ts",
+    "./notifications": "./src/notifications.ts",
     "./web-push": "./src/web-push.ts",
     "./package.json": "./package.json"
   },

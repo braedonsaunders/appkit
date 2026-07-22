@@ -30,6 +30,32 @@ export type {
   NotificationInboxPage,
   NotificationTodoItem,
 } from './inbox'
+export {
+  assertNotificationPolicy,
+  normalizeEscalation,
+  normalizeNotificationConfiguration,
+} from './configuration'
+export type {
+  NotificationCategorySetting,
+  NotificationConfigurationAdapter,
+  NotificationConfigurationAllowedValues,
+  NotificationConfigurationInput,
+  NotificationEscalationStep,
+  NotificationPolicyInput,
+  NotificationRecipientOption,
+  NotificationRoleOption,
+  NotificationRoutingCategory,
+} from './configuration'
+export {
+  compileCron,
+  decompileCron,
+  DEFAULT_SCAN_CRON,
+  isValidCron,
+  isValidTimezone,
+  SCHEDULE_PRESETS,
+  WEEKDAYS,
+} from './schedule'
+export type { SchedulePreset } from './schedule'
 
 export function planNotificationDeliveries(event: NotificationEvent, recipients: readonly NotificationRecipient[], preferences: Map<string, Map<NotificationChannel, boolean>>, policy: NotificationTenantPolicy = {}, now = new Date()): NotificationDelivery[] {
   const configured = policy.categoryChannels?.[event.category]
