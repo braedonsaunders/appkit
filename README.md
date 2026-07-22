@@ -165,8 +165,8 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 | `@appkit/api`       | API-key authorization, idempotent writes, typed public errors, and OpenAPI descriptions.                                    |
 | `@appkit/sandbox`   | Shared QuickJS isolation with memory, stack, deadline, governance, frozen-input, host-function, log, and structured-fault contracts. |
 | `@appkit/endpoints` | Resource-bounded `handler(request)` programs with storage, records, and application-governed host capabilities.             |
-| `@appkit/scripts`   | Event, scheduled, endpoint, bulk, and opaque-origin client scripts with vetoes, allowed mutations, cron, jobs, auditing, React authoring, Drizzle storage, and a bound cutover runtime for existing authored globals and context shapes. |
-| `@appkit/apps`      | Installable app manifests and ZIPs, immutable versions, files, storage, capabilities, QuickJS backends, opaque-origin frontends, bridge SDK, authoring, marketplace, React, memory, Drizzle, and bound lifecycle adapters. |
+| `@appkit/scripts`   | Event, scheduled, endpoint, bulk, and opaque-origin client scripts with a production CodeMirror editor, run/log inspection, vetoes, allowed mutations, cron, jobs, auditing, Drizzle storage, and a bound cutover runtime. |
+| `@appkit/apps`      | Installable app manifests and ZIPs, a nested file browser and syntax editors, immutable versions, storage, capabilities, QuickJS backends, opaque-origin preview, bridge SDK, run inspection, marketplace, memory, Drizzle, and bound lifecycle adapters. |
 | `@appkit/ai`        | Provider-neutral bounded agents, streaming React UI, and production analysis, extraction, document, vision, writing, digest, and model helpers. |
 
 ### Analytics, workflows, and connectivity

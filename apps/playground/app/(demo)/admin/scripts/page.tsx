@@ -11,7 +11,7 @@ export default function ScriptsPage() {
       <PageHeader
         back={{ href: '/admin', label: 'Administration' }}
         title="Scripts"
-        description="Author governed event, scheduled, endpoint, bulk, and browser-validation scripts."
+        description="Run JavaScript at application trigger points — validate input, change allowed fields, or veto execution. Every run is recorded."
       />
       <ScriptsWorkbench initial={scriptsSnapshot()} />
     </div>

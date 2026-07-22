@@ -29,7 +29,12 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
+    "@codemirror/lang-css": "^6.3.1",
+    "@codemirror/lang-html": "^6.4.11",
+    "@codemirror/lang-javascript": "^6.2.5",
+    "@codemirror/lang-json": "^6.0.2",
     "@appkit/endpoints": "workspace:*",
+    "@uiw/react-codemirror": "^4.25.11",
     "fflate": "^0.8.2",
     "zod": "^4.4.3"
   },

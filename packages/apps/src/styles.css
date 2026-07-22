@@ -1,1 +1,11 @@
-/* Apps authoring uses shared semantic tokens through @appkit/ui. */
+/* Register the optional app authoring source with Tailwind v4. */
+@source '../src';
+
+.appkit-code-editor,
+.appkit-code-editor .cm-editor {
+  height: 100%;
+}
+
+.appkit-code-editor .cm-scroller {
+  overflow: auto;
+}

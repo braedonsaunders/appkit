@@ -5,6 +5,8 @@
 @import '@appkit/forms/styles.css';
 @import '@appkit/workflows/styles.css';
 @import '@appkit/customization/styles.css';
+@import '@appkit/apps/styles.css';
+@import '@appkit/scripts/styles.css';
 
 /* Scan the playground and shared component sources for class usage. */
 @source '../app';

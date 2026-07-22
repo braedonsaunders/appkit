@@ -12,7 +12,7 @@ export default async function AppsPage() {
       <PageHeader
         back={{ href: '/admin', label: 'Administration' }}
         title="Apps"
-        description="Build, install, permission, run, inspect, and publish sandboxed applications."
+        description="Build and install app packages — a sandboxed frontend plus a governed backend, isolated per app."
       />
       <AppsWorkbench initial={snapshot} capabilities={[...APP_CAPABILITIES]} />
     </div>

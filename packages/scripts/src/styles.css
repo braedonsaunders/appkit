@@ -1,2 +1,2 @@
-/* Script authoring is tokenized through @appkit/ui. This entry is reserved for
-   consumer-level editor themes without making the dependency-light root CSS-aware. */
+/* Register the optional script authoring source with Tailwind v4. */
+@source '../src';

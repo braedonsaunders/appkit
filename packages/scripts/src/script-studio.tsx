@@ -1,6 +1,8 @@
 'use client'
 
 import * as React from 'react'
+import CodeMirror from '@uiw/react-codemirror'
+import { javascript } from '@codemirror/lang-javascript'
 import { Check, Code2, History, Play, Plus, Search, Settings2, Trash2 } from 'lucide-react'
 import {
   Badge,
@@ -163,10 +165,11 @@ export function ScriptEditorDrawer({
   onDelete: ScriptStudioProps['onDelete']
   onRun: ScriptStudioProps['onRun']
 }) {
-  const [tab, setTab] = React.useState<'general' | 'code' | 'runs'>('general')
+  const [tab, setTab] = React.useState<'general' | 'code' | 'runs' | 'log'>(script ? 'code' : 'general')
   const [value, setValue] = React.useState<ScriptEditorValue>(() => toEditorValue(script, triggerOptions))
   const [busy, setBusy] = React.useState(false)
   const [runResult, setRunResult] = React.useState<ScriptRun | null>(null)
+  const [selectedRun, setSelectedRun] = React.useState(0)
   const activeRuns = runResult && !runs.some((run) => sameRun(run, runResult)) ? [runResult, ...runs] : runs
   const change = <K extends keyof ScriptEditorValue>(key: K, next: ScriptEditorValue[K]) => setValue((current) => ({ ...current, [key]: next }))
   const supportsSubject = value.kind === 'event' || value.kind === 'client'
@@ -181,8 +184,11 @@ export function ScriptEditorDrawer({
     setBusy(true)
     try {
       const result = await onRun(script.id)
-      if (result) setRunResult(result)
-      setTab('runs')
+      if (result) {
+        setRunResult(result)
+        setSelectedRun(0)
+      }
+      setTab('log')
     } finally { setBusy(false) }
   }
 
@@ -194,19 +200,21 @@ export function ScriptEditorDrawer({
       initialFullscreen
       title={script ? script.name : 'New script'}
       description="Governed JavaScript executed in an isolated QuickJS runtime."
-      headerActions={script && (script.kind === 'scheduled' || script.kind === 'bulk') ? <Button size="sm" variant="outline" onClick={run} disabled={busy}><Play className="size-4" /> Run now</Button> : null}
+      headerActions={<>
+        {script && (script.kind === 'scheduled' || script.kind === 'bulk') ? <Button size="sm" variant="outline" onClick={run} disabled={busy}><Play className="size-4" /> Run now</Button> : null}
+        {script ? <Button variant="ghost" size="sm" onClick={() => onDelete(script.id)} disabled={busy} className="text-danger hover:text-danger"><Trash2 className="size-4" /> Delete</Button> : null}
+        <Button onClick={save} disabled={busy || !value.name.trim() || !value.source.includes('function main')}><Check className="size-4" /> {script ? 'Save script' : 'Create script'}</Button>
+      </>}
       bodyClassName="flex min-h-0 flex-col overflow-hidden p-0"
       footer={
-        <div className="flex w-full items-center justify-between gap-3">
-          <div>{script ? <Button variant="destructive" onClick={() => onDelete(script.id)} disabled={busy}><Trash2 className="size-4" /> Delete</Button> : null}</div>
-          <div className="flex gap-2"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={save} disabled={busy || !value.name.trim()}><Check className="size-4" /> Save script</Button></div>
-        </div>
+        <label className="flex w-full items-center gap-2 text-sm"><input type="checkbox" checked={value.isActive} onChange={(event) => change('isActive', event.currentTarget.checked)} className="size-4 accent-primary" /> Active</label>
       }
     >
       <div className="flex shrink-0 border-b border-border px-5">
         <EditorTab active={tab === 'general'} icon={<Settings2 />} onClick={() => setTab('general')}>General</EditorTab>
         <EditorTab active={tab === 'code'} icon={<Code2 />} onClick={() => setTab('code')}>Code</EditorTab>
         <EditorTab active={tab === 'runs'} icon={<History />} onClick={() => setTab('runs')}>Runs <span className="tabular-nums">{activeRuns.length}</span></EditorTab>
+        <EditorTab active={tab === 'log'} icon={<History />} onClick={() => setTab('log')}>Log</EditorTab>
       </div>
       <div className="min-h-0 flex-1 overflow-auto p-6">
         {tab === 'general' ? (
@@ -228,44 +236,49 @@ export function ScriptEditorDrawer({
             <Field label="Timeout (ms)"><Input type="number" min={1} max={15000} value={value.timeoutMs} onChange={(event) => change('timeoutMs', Number(event.currentTarget.value))} /></Field>
             <Field label="Governance units"><Input type="number" min={1} value={value.unitBudget} onChange={(event) => change('unitBudget', Number(event.currentTarget.value))} /></Field>
             <Field label="Execution order"><Input type="number" value={value.sortOrder} onChange={(event) => change('sortOrder', Number(event.currentTarget.value))} /></Field>
-            <label className="flex items-center gap-3 self-end rounded-lg border border-border bg-bg-subtle px-4 py-3 text-sm"><input type="checkbox" checked={value.isActive} onChange={(event) => change('isActive', event.currentTarget.checked)} className="size-4 accent-primary" /> Active</label>
           </div>
         ) : null}
         {tab === 'code' ? (
           <div className="flex min-h-[32rem] flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-fg-muted"><span>Define <code className="rounded bg-bg-subtle px-1.5 py-0.5 text-fg">function main(ctx)</code>.</span><span>QuickJS · no ambient network, filesystem, process, or database</span></div>
-            <textarea
-              aria-label="Script source"
-              spellCheck={false}
+            <div className="min-h-[30rem] flex-1 overflow-hidden rounded-lg border border-border">
+            <CodeMirror
               value={value.source}
-              onChange={(event) => change('source', event.currentTarget.value)}
-              className="min-h-[30rem] flex-1 resize-none rounded-lg border border-border bg-bg p-4 font-mono text-[13px] leading-6 text-fg outline-none transition-shadow focus:ring-2 focus:ring-ring"
+              onChange={(source) => change('source', source)}
+              extensions={[javascript()]}
+              theme="dark"
+              minHeight="480px"
+              maxHeight="calc(100vh - 16rem)"
+              basicSetup={{ lineNumbers: true, foldGutter: true, autocompletion: true }}
             />
+            </div>
           </div>
         ) : null}
-        {tab === 'runs' ? <RunHistory runs={activeRuns} /> : null}
+        {tab === 'runs' ? <RunList runs={activeRuns} selected={selectedRun} onSelect={(index) => { setSelectedRun(index); setTab('log') }} /> : null}
+        {tab === 'log' ? <RunLog run={activeRuns[selectedRun]} hasRuns={activeRuns.length > 0} /> : null}
       </div>
     </Drawer>
   )
 }
 
-function RunHistory({ runs }: { runs: ScriptRun[] }) {
-  const [selected, setSelected] = React.useState(0)
-  const run = runs[selected]
+function RunList({ runs, selected, onSelect }: { runs: ScriptRun[]; selected: number; onSelect: (index: number) => void }) {
   if (!runs.length) return <div className="grid min-h-80 place-items-center text-sm text-fg-muted">This script has not run yet.</div>
   return (
-    <div className="grid min-h-[30rem] gap-4 lg:grid-cols-[minmax(16rem,1fr)_2fr]">
-      <div className="overflow-hidden rounded-lg border border-border">
-        {runs.map((item, index) => <button key={`${item.at.toISOString()}-${index}`} type="button" onClick={() => setSelected(index)} className={cn('flex w-full items-center justify-between gap-3 border-b border-border-subtle px-4 py-3 text-left text-sm last:border-0', selected === index ? 'bg-primary-subtle' : 'hover:bg-surface-hover')}><span><span className="block font-medium text-fg">{formatDate(item.at)}</span><span className="text-xs text-fg-muted">{item.durationMs} ms · {item.units} units</span></span><Badge variant={item.status === 'ok' ? 'success' : item.status === 'aborted' ? 'warning' : 'destructive'}>{item.status}</Badge></button>)}
-      </div>
-      <div className="min-w-0 space-y-4 rounded-lg border border-border bg-bg p-4">
-        {run?.errorMessage ? <div className="rounded-md border border-danger bg-danger-subtle p-3 text-sm text-danger">{run.errorMessage}</div> : null}
-        <LogBlock title="Console" value={run?.logs.join('\n') || 'No log output.'} />
-        {run?.returned !== undefined ? <LogBlock title="Return value" value={JSON.stringify(run.returned, null, 2)} /> : null}
-        {run?.changes ? <LogBlock title="Proposed changes" value={JSON.stringify(run.changes, null, 2)} /> : null}
-      </div>
+    <div className="divide-y divide-border-subtle overflow-hidden rounded-lg border border-border">
+      {runs.map((item, index) => <button key={`${item.at.toISOString()}-${index}`} type="button" onClick={() => onSelect(index)} className={cn('flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-surface-hover', selected === index && 'bg-primary-subtle')}><Badge variant={item.status === 'ok' ? 'success' : item.status === 'aborted' ? 'warning' : 'destructive'}>{item.status}</Badge><span className="text-xs text-fg-muted">{formatDate(item.at)} · {item.durationMs} ms · {item.units} units</span>{item.errorMessage ? <span className="min-w-0 flex-1 truncate text-xs text-danger">{item.errorMessage}</span> : null}</button>)}
     </div>
   )
+}
+
+function RunLog({ run, hasRuns }: { run: ScriptRun | undefined; hasRuns: boolean }) {
+  if (!run) return <div className="grid min-h-80 place-items-center text-sm text-fg-muted">{hasRuns ? 'Select a run to inspect its log.' : 'This script has not run yet.'}</div>
+  return <div className="space-y-4">
+    <div className="flex flex-wrap items-center gap-3"><Badge variant={run.status === 'ok' ? 'success' : run.status === 'aborted' ? 'warning' : 'destructive'}>{run.status}</Badge><span className="text-xs text-fg-muted">{formatDate(run.at)} · {run.durationMs} ms · {run.units} units</span></div>
+    {run.errorMessage ? <div className="rounded-md border border-danger bg-danger-subtle p-3 text-sm text-danger">{run.errorMessage}</div> : null}
+    <LogBlock title="Console" value={run.logs.join('\n') || 'No log output.'} />
+    {run.returned !== undefined ? <LogBlock title="Return value" value={JSON.stringify(run.returned, null, 2)} /> : null}
+    {run.changes ? <LogBlock title="Proposed changes" value={JSON.stringify(run.changes, null, 2)} /> : null}
+  </div>
 }
 
 function EditorTab({ active, icon, onClick, children }: { active: boolean; icon: React.ReactNode; onClick: () => void; children: React.ReactNode }) {

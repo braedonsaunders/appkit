@@ -268,7 +268,10 @@ mutable subject fields, tenant-bound read adapters, governed write functions,
 identity, routes, and authorization. `/client` preserves the production
 fail-open opaque-iframe validation gate; `/jobs` supplies a queue-neutral worker
 handler; `/react`, `/schema`, and `/drizzle` add the complete authoring and
-persistence layers.
+persistence layers. The React editor preserves the source CodeMirror authoring
+surface with line numbers, folding, JavaScript completion, trigger-aware starter
+source, keyboard editing, separate run selection and log inspection, and the
+general/code/runs/log drawer flow.
 
 `@appkit/scripts/bound` is the cutover seam for an application that already
 has authored scripts. Configure its existing sandbox global, native context,
@@ -282,7 +285,9 @@ manifests and ZIPs, install/upgrade lifecycle, capability intersection, frontend
 assembly, backend dispatch, files, storage, run history, publishing, and object
 provisioning boundaries. `/runtime` preserves the source-shaped backend import;
 `/bridge` owns the CSP and message protocol; `/react` provides the app manager,
-file/endpoint editor, live opaque-origin preview, run inspector, and library;
+the source nested/collapsible file tree, CodeMirror syntax editors for
+JavaScript/HTML/CSS/JSON, binary file inspection, create/upload/delete/save
+controls, endpoint authoring, live opaque-origin preview, run inspector, and library;
 `/memory` and `/drizzle` are complete database-free and Postgres persistence
 adapters. The iframe must retain `sandbox="allow-scripts"` without
 `allow-same-origin`, and its CSP must keep `connect-src 'none'`. Effective
