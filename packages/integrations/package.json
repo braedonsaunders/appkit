@@ -1,7 +1,7 @@
 {
   "name": "@appkit/integrations",
   "version": "0.1.0",
-  "description": "Trigger-to-destination automation with durable delivery ledgers and optional HTTP, chat, Sheets, email, and SQL adapters.",
+  "description": "Production outbound automation with authoring UI, durable publication, retry ledgers, and optional HTTP, chat, Sheets, email, SQL, and Drizzle adapters.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {
@@ -18,6 +18,7 @@
     "./sql-catalog": "./src/sql-catalog.ts",
     "./schema": "./src/schema.ts",
     "./drizzle": "./src/drizzle.ts",
+    "./react": "./src/react.tsx",
     "./package.json": "./package.json"
   },
   "main": "./src/index.ts",
@@ -36,7 +37,11 @@
     "@appkit/email-render": "^0.1.0",
     "@appkit/db": "^0.1.0",
     "@appkit/sync": "^0.1.0",
-    "drizzle-orm": "^0.45.2"
+    "drizzle-orm": "^0.45.2",
+    "@appkit/ui": "^0.1.0",
+    "lucide-react": "^1.24.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
     "@appkit/email-render": {
@@ -50,13 +55,31 @@
     },
     "drizzle-orm": {
       "optional": true
+    },
+    "@appkit/ui": {
+      "optional": true
+    },
+    "lucide-react": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
     }
   },
   "devDependencies": {
     "@appkit/email-render": "workspace:*",
     "@appkit/db": "workspace:*",
     "@appkit/sync": "workspace:*",
+    "@appkit/ui": "workspace:*",
     "drizzle-orm": "^0.45.2",
+    "lucide-react": "^1.24.0",
+    "react": "^19",
+    "react-dom": "^19",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "@types/node": "^22",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3"

@@ -18,8 +18,8 @@ export type TriggerDefinition = {
   key: string
   label: string
   description: string
-  group: string
-  iconKey?: string
+  module: string
+  iconKey: string
   subjectLabel: string
   itemScope: 'single' | 'collection'
   fields: FieldDefinition[]
@@ -53,6 +53,8 @@ export type DeliveryResult = {
 }
 export type DestinationTestContext = {
   tenantId: string
+  /** Optional application-owned data access available to custom destinations. */
+  data?: unknown
   config: Record<string, unknown>
   secrets: Record<string, string>
   signal?: AbortSignal
@@ -71,8 +73,8 @@ export type DestinationDefinition = {
   key: string
   name: string
   description: string
-  iconKey?: string
-  mappingKind: string
+  iconKey: string
+  mappingKind: 'sql' | 'http' | 'slack' | 'sheets' | 'email' | (string & {})
   configFields: ConfigField[]
   secretFields: SecretField[]
   reversible: boolean
@@ -88,13 +90,15 @@ export type IntegrationResult = DeliveryResult
 export type IntegrationDefinition = {
   id: string
   tenantId: string
-  name: string
+  name: string | null
   enabled: boolean
-  triggerKey: string
-  destinationKey: string
+  triggerKey: string | null
+  destinationKey: string | null
   config: Record<string, unknown>
-  sealedSecrets?: Record<string, unknown>
-  oncePerRecord?: boolean
+  secrets?: Record<string, unknown>
+  status?: 'draft' | 'ready' | 'error' | 'disabled'
+  lastError?: string | null
+  lastRunAt?: Date | null
 }
 
 export function createIntegrationRegistry(options: {

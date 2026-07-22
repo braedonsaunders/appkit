@@ -25,6 +25,24 @@ export type IntegrationEmail = {
 export type IntegrationEmailSender = (
   message: IntegrationEmail,
 ) => Promise<void>
+
+export const emailDestinationAuthoring = {
+  ...EMAIL_DESTINATION_SUMMARY,
+  configFields: [
+    {
+      key: 'to',
+      label: 'Recipients',
+      type: 'text',
+      required: true,
+      placeholder: 'ops@example.com, {{ownerEmail}}',
+      help: 'Comma-separated; tokens are supported.',
+    },
+    { key: 'subject', label: 'Subject', type: 'text' },
+    { key: 'combine', label: 'Combine collection items', type: 'boolean' },
+  ],
+  secretFields: [],
+} as const satisfies Omit<DestinationDef, 'test' | 'deliver'>
+
 function recipients(raw: string, item: Item): string[] {
   return renderTemplate(raw, item, { allowRawValues: false })
     .split(/[,;\s]+/)
@@ -129,20 +147,7 @@ export function createEmailDestination(
         }
   }
   return {
-    ...EMAIL_DESTINATION_SUMMARY,
-    configFields: [
-      {
-        key: 'to',
-        label: 'Recipients',
-        type: 'text',
-        required: true,
-        placeholder: 'ops@example.com, {{ownerEmail}}',
-        help: 'Comma-separated; tokens are supported.',
-      },
-      { key: 'subject', label: 'Subject', type: 'text' },
-      { key: 'combine', label: 'Combine collection items', type: 'boolean' },
-    ],
-    secretFields: [],
+    ...emailDestinationAuthoring,
     test,
     deliver,
   }

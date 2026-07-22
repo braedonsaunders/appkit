@@ -610,11 +610,21 @@ adapter because those schemas are product-owned.
 `@appkit/integrations` is the outbound trigger-to-destination spine. Product
 modules emit already-authorized item namespaces; the dispatcher maps tokens,
 unseals through an app adapter, consults the delivery ledger, and records refs.
+A source-shaped publisher selects every enabled matching automation and emits
+one deterministic durable job per automation. The production React entry
+contains the connected hub, searchable inbound/outbound catalogue, and complete
+automation builder: trigger/destination selection, declared connection and
+secret fields, destination-specific mappings, token insertion, testing, enable
+and send-once policy, and save callbacks.
 A failed multi-item delivery resumes known successes, while send-once suppresses
 only a completely pushed delivery. HTTP, Slack/Teams, Google Sheets, email, and
-SQL are optional entries. Email receives the app's transport, SQL requires an
-identity column for reversible retries, and HTTP/chat/Sheets use sync's hardened
-egress entry. The working settings-shell reference is `/admin/integrations`.
+SQL are optional entries. Email receives the app's transport. SQL preserves the
+production row and weekly fan-out modes, required-field filtering, value maps,
+and identity-based reversal. HTTP/chat/Sheets use sync's hardened egress entry.
+The source-shaped `tenant_integrations` and `integration_export_log` schema,
+clean migration, RLS-required Drizzle store, and database-free memory store run
+the same publisher/dispatcher contract. The working reference is
+`/admin/integrations`.
 
 `@appkit/notifications` applies tenant category policy, per-user channel
 preferences, digest/quiet-hour behavior, critical delivery rules, and stable

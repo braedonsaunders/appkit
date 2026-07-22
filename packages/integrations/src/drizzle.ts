@@ -1,25 +1,35 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import type { IntegrationStore } from './runtime'
-import { integrationDeliveryLedger, integrations } from './schema'
+import { integrationExportLog, tenantIntegrations } from './schema'
+
 type Db = NodePgDatabase<Record<string, never>>
+export type IntegrationTenantRunner = <T>(
+  tenantId: string,
+  operation: () => Promise<T>,
+) => Promise<T>
+
+/** RLS-aware persistence for production automation definitions and ledgers. */
 export function createDrizzleIntegrationStore(
   db: Db,
-  tenantId: string,
+  withTenant: IntegrationTenantRunner,
 ): IntegrationStore {
   return {
-    async getDefinition(requestTenantId, integrationId) {
-      if (requestTenantId !== tenantId) return null
-      const [row] = await db
-        .select()
-        .from(integrations)
-        .where(
-          and(
-            eq(integrations.tenantId, tenantId),
-            eq(integrations.id, integrationId),
-          ),
-        )
-        .limit(1)
+    async getDefinition(tenantId, automationId) {
+      const row = await withTenant(tenantId, async () => {
+        const [found] = await db
+          .select()
+          .from(tenantIntegrations)
+          .where(
+            and(
+              eq(tenantIntegrations.tenantId, tenantId),
+              eq(tenantIntegrations.id, automationId),
+              isNull(tenantIntegrations.deletedAt),
+            ),
+          )
+          .limit(1)
+        return found
+      })
       return row
         ? {
             id: row.id,
@@ -29,89 +39,118 @@ export function createDrizzleIntegrationStore(
             triggerKey: row.triggerKey,
             destinationKey: row.destinationKey,
             config: row.config,
-            sealedSecrets: row.sealedSecrets,
-            oncePerRecord: row.oncePerRecord,
+            secrets: row.secrets,
+            status: row.status,
+            lastError: row.lastError,
+            lastRunAt: row.lastRunAt,
           }
         : null
     },
-    async priorDelivery(integrationId, triggerKey, subjectId) {
-      return db
-        .select({
-          externalRef: integrationDeliveryLedger.externalRef,
-          status: integrationDeliveryLedger.status,
-          detail: integrationDeliveryLedger.detail,
-        })
-        .from(integrationDeliveryLedger)
-        .where(
-          and(
-            eq(integrationDeliveryLedger.tenantId, tenantId),
-            eq(integrationDeliveryLedger.integrationId, integrationId),
-            eq(integrationDeliveryLedger.triggerKey, triggerKey),
-            eq(integrationDeliveryLedger.subjectId, subjectId),
-          ),
-        )
-        .then((rows) =>
-          rows.map((row) => ({
-            externalRef: row.externalRef,
-            status: row.status,
-            ...(row.detail ? { detail: row.detail } : {}),
-          })),
-        )
+    async listMatching(tenantId, triggerKey) {
+      return withTenant(tenantId, async () => {
+        const rows = await db
+          .select({ id: tenantIntegrations.id })
+          .from(tenantIntegrations)
+          .where(
+            and(
+              eq(tenantIntegrations.tenantId, tenantId),
+              eq(tenantIntegrations.enabled, true),
+              eq(tenantIntegrations.triggerKey, triggerKey),
+              isNull(tenantIntegrations.deletedAt),
+            ),
+          )
+        return rows.map((row) => row.id)
+      })
+    },
+    async priorDelivery(
+      tenantId,
+      automationId,
+      subjectType,
+      subjectId,
+    ) {
+      return withTenant(tenantId, async () => {
+        const rows = await db
+          .select({
+            externalRef: integrationExportLog.externalRef,
+            status: integrationExportLog.status,
+            detail: integrationExportLog.detail,
+          })
+          .from(integrationExportLog)
+          .where(
+            and(
+              eq(integrationExportLog.tenantId, tenantId),
+              eq(integrationExportLog.automationId, automationId),
+              eq(integrationExportLog.subjectType, subjectType),
+              eq(integrationExportLog.subjectId, subjectId),
+            ),
+          )
+        return rows.map((row) => ({
+          externalRef: row.externalRef,
+          status: row.status,
+          ...(row.detail ? { detail: row.detail } : {}),
+        }))
+      })
     },
     async replaceDelivery(
-      integrationId,
-      triggerKey,
+      tenantId,
+      automationId,
+      subjectType,
       subjectId,
-      destinationKey,
+      externalSystem,
       refs,
       status,
     ) {
-      await db.transaction(async (tx) => {
-        await tx
-          .delete(integrationDeliveryLedger)
+      await withTenant(tenantId, () =>
+        db.transaction(async (transaction) => {
+          await transaction
+            .delete(integrationExportLog)
+            .where(
+              and(
+                eq(integrationExportLog.tenantId, tenantId),
+                eq(integrationExportLog.automationId, automationId),
+                eq(integrationExportLog.subjectType, subjectType),
+                eq(integrationExportLog.subjectId, subjectId),
+              ),
+            )
+          if (refs.length)
+            await transaction.insert(integrationExportLog).values(
+              refs.map((ref) => ({
+                tenantId,
+                automationId,
+                subjectType,
+                subjectId,
+                externalSystem,
+                externalRef: ref.externalRef,
+                status,
+                detail: ref.detail,
+              })),
+            )
+        }),
+      )
+    },
+    async recordStatus(tenantId, automationId, result) {
+      await withTenant(tenantId, () =>
+        db
+          .update(tenantIntegrations)
+          .set({
+            status: result.ok ? 'ready' : 'error',
+            lastError: result.ok ? null : (result.error ?? 'Unknown error'),
+            lastRunAt: new Date(),
+            updatedAt: new Date(),
+          })
           .where(
             and(
-              eq(integrationDeliveryLedger.tenantId, tenantId),
-              eq(integrationDeliveryLedger.integrationId, integrationId),
-              eq(integrationDeliveryLedger.triggerKey, triggerKey),
-              eq(integrationDeliveryLedger.subjectId, subjectId),
+              eq(tenantIntegrations.tenantId, tenantId),
+              eq(tenantIntegrations.id, automationId),
             ),
-          )
-        if (refs.length)
-          await tx.insert(integrationDeliveryLedger).values(
-            refs.map((ref) => ({
-              tenantId,
-              integrationId,
-              triggerKey,
-              subjectId,
-              destinationKey,
-              externalRef: ref.externalRef,
-              status,
-              detail: ref.detail,
-            })),
-          )
-      })
-    },
-    async recordStatus(integrationId, result) {
-      await db
-        .update(integrations)
-        .set({
-          status: result.ok ? 'ready' : 'error',
-          lastError: result.error,
-          lastRunAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(integrations.tenantId, tenantId),
-            eq(integrations.id, integrationId),
           ),
-        )
+      )
     },
   }
 }
+
 export {
-  integrations,
-  integrationDeliveryLedger,
+  tenantIntegrations,
+  integrationExportLog,
   INTEGRATION_TENANT_TABLES,
 } from './schema'
