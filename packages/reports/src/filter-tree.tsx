@@ -4,7 +4,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { Button, Input, Select } from '@appkit/ui'
 import { operatorsForKind, type ReportFilterOperator, type ReportRule, type ReportRuleGroup } from './filters'
 import { PERIOD_PRESETS, PERIOD_PRESET_GROUP_LABELS, type PeriodPresetGroup } from './period-presets'
-import type { ReportEntity } from './entities'
+import { reportColumnOptions, type ReportEntity } from './entities'
 
 const GROUP_ORDER: PeriodPresetGroup[] = ['fiscal_year', 'fiscal_quarter', 'fiscal_half', 'period', 'calendar', 'rolling', 'days']
 type Node = ReportRule | ReportRuleGroup
@@ -16,7 +16,7 @@ export function ReportFilterTree({ entity, group, onChange, depth = 0 }: { entit
   const remove = (index: number) => onChange({ ...group, rules: group.rules.filter((_, current) => current !== index) })
   const addRule = () => {
     const column = entity.columns[0]
-    if (column) onChange({ ...group, rules: [...group.rules, { field: column.key, operator: operatorsForKind(column.kind)[0]?.key ?? 'eq', value: '' }] })
+    if (column) onChange({ ...group, rules: [...group.rules, { field: column.key, op: operatorsForKind(column.kind)[0]?.key ?? 'eq', value: '' }] })
   }
   return <div className={depth === 0 ? 'space-y-2 rounded-lg border border-border p-3' : 'space-y-2 rounded-lg border border-border bg-bg-subtle p-3'}>
     <div className="flex items-center gap-2"><span className="text-xs text-fg-muted">Match</span><Select className="h-8 w-48" value={group.combinator} onChange={(event) => onChange({ ...group, combinator: event.target.value as 'and' | 'or' })}><option value="and">all conditions</option><option value="or">any condition</option></Select></div>
@@ -25,21 +25,24 @@ export function ReportFilterTree({ entity, group, onChange, depth = 0 }: { entit
   </div>
 }
 
+/** Source-compatible export for a direct report-builder import cutover. */
+export const FilterTree = ReportFilterTree
+
 function RuleRow({ entity, rule, onChange, onRemove }: { entity: ReportEntity; rule: ReportRule; onChange: (rule: ReportRule) => void; onRemove: () => void }) {
   const column = entity.columns.find((item) => item.key === rule.field) ?? entity.columns[0]
   const operators = column ? operatorsForKind(column.kind) : []
-  const operator = operators.find((item) => item.key === rule.operator) ?? operators[0]
-  const options = column?.enumOptions ?? []
+  const operator = operators.find((item) => item.key === rule.op) ?? operators[0]
+  const options = column ? reportColumnOptions(column) : []
   const changeField = (field: string) => {
     const nextColumn = entity.columns.find((item) => item.key === field)
     const available = nextColumn ? operatorsForKind(nextColumn.kind) : []
-    const nextOperator = available.some((item) => item.key === rule.operator) ? rule.operator : available[0]?.key ?? 'eq'
-    onChange({ field, operator: nextOperator, value: '' })
+    const nextOperator = available.some((item) => item.key === rule.op) ? rule.op : available[0]?.key ?? 'eq'
+    onChange({ field, op: nextOperator, value: '' })
   }
   return <div className="flex flex-wrap items-center gap-2">
     <Select className="h-8 min-w-40" value={rule.field} onChange={(event) => changeField(event.target.value)}>{entity.columns.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</Select>
-    <Select className="h-8 min-w-36" value={rule.operator} onChange={(event) => onChange({ ...rule, operator: event.target.value as ReportFilterOperator })}>{operators.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</Select>
-    {rule.operator === 'period_preset' ? <Select className="h-8 w-52" value={typeof rule.value === 'string' ? rule.value : 'this_fiscal_year'} onChange={(event) => onChange({ ...rule, value: event.target.value })}>{GROUP_ORDER.map((group) => <optgroup key={group} label={PERIOD_PRESET_GROUP_LABELS[group]}>{PERIOD_PRESETS.filter((preset) => preset.group === group).map((preset) => <option key={preset.id} value={preset.id}>{preset.label}</option>)}</optgroup>)}</Select>
+    <Select className="h-8 min-w-36" value={rule.op} onChange={(event) => onChange({ ...rule, op: event.target.value as ReportFilterOperator })}>{operators.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</Select>
+    {rule.op === 'period_preset' ? <Select className="h-8 w-52" value={typeof rule.value === 'string' ? rule.value : 'this_fiscal_year'} onChange={(event) => onChange({ ...rule, value: event.target.value })}>{GROUP_ORDER.map((group) => <optgroup key={group} label={PERIOD_PRESET_GROUP_LABELS[group]}>{PERIOD_PRESETS.filter((preset) => preset.group === group).map((preset) => <option key={preset.id} value={preset.id}>{preset.label}</option>)}</optgroup>)}</Select>
       : operator?.needsValue === 'one' && options.length ? <Select className="h-8 w-44" value={typeof rule.value === 'string' ? rule.value : ''} onChange={(event) => onChange({ ...rule, value: event.target.value })}><option value="">Choose a value</option>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</Select>
       : operator?.needsValue === 'one' ? <Input className="h-8 w-40" type={column?.kind === 'date' ? 'date' : column?.kind === 'number' ? 'number' : 'text'} value={typeof rule.value === 'string' || typeof rule.value === 'number' ? String(rule.value) : ''} placeholder="Value" onChange={(event) => onChange({ ...rule, value: event.target.value })} />
       : operator?.needsValue === 'list' && options.length ? <div className="flex max-w-md flex-wrap gap-1">{options.map((option) => { const selected = Array.isArray(rule.value) && rule.value.map(String).includes(option.value); return <button key={option.value} type="button" onClick={() => { const current = Array.isArray(rule.value) ? rule.value.map(String) : []; onChange({ ...rule, value: selected ? current.filter((value) => value !== option.value) : [...current, option.value] }) }} className={selected ? 'rounded-full border border-primary bg-primary-subtle px-2 py-0.5 text-xs text-primary' : 'rounded-full border border-border px-2 py-0.5 text-xs text-fg-muted hover:border-border-strong'}>{option.label}</button> })}</div>

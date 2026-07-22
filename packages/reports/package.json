@@ -1,7 +1,7 @@
 {
   "name": "@appkit/reports",
   "version": "0.1.0",
-  "description": "Composable saved-report, scheduling, execution, and document-rendering contracts.",
+  "description": "Production report studio, governed query engine, paper and statement viewers, drill-through, exports, schedules, and durable runs.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "sideEffects": [
@@ -63,7 +63,12 @@
   "keywords": [
     "appkit",
     "application-framework",
-    "typescript"
+    "typescript",
+    "report-builder",
+    "reporting",
+    "business-intelligence",
+    "pdf",
+    "scheduling"
   ],
   "publishConfig": {
     "access": "public",

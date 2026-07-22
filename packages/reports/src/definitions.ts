@@ -1,4 +1,4 @@
-import type { CustomReportQuery } from './custom-query'
+import type { ReportCustomQuery } from './custom-query'
 import type { ReportLayout } from './types'
 
 export type CustomReportDefinition = {
@@ -7,7 +7,7 @@ export type CustomReportDefinition = {
   slug: string
   name: string
   description?: string
-  query: CustomReportQuery
+  query: ReportCustomQuery
   layout: ReportLayout
   state: 'draft' | 'published' | 'archived'
   tags?: string[]
@@ -39,5 +39,5 @@ export function assertCustomReportDefinition(value: CustomReportDefinition): voi
   if (!value.id.trim() || !value.name.trim()) throw new Error('Report id and name are required')
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.slug)) throw new Error('Report slug must use kebab case')
   if (!value.query.entity.trim()) throw new Error('Report query entity is required')
-  if (value.query.mode === 'rows' && !value.query.columns.length) throw new Error('A row report requires at least one column')
+  if ((value.query.mode ?? 'rows') === 'rows' && !value.query.columns.length) throw new Error('A row report requires at least one column')
 }

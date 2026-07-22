@@ -12,7 +12,7 @@ const entity: ReportEntity = {
 
 test('fiscal period filters resolve to bound inclusive dates', () => {
   const parameters = new SqlParameters()
-  const sql = compileReportRuleGroup(entity, { combinator: 'and', rules: [{ field: 'created_on', operator: 'period_preset', value: 'this_fiscal_year' }] }, parameters, { now: new Date('2026-07-21T12:00:00Z'), fiscalStartMonth: 4 })
+  const sql = compileReportRuleGroup(entity, { combinator: 'and', rules: [{ field: 'created_on', op: 'period_preset', value: 'this_fiscal_year' }] }, parameters, { now: new Date('2026-07-21T12:00:00Z'), fiscalStartMonth: 4 })
   assert.equal(sql, '(r.created_on >= $1 AND r.created_on <= $2)')
   assert.deepEqual(parameters.values, ['2026-04-01', '2027-03-31'])
 })

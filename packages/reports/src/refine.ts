@@ -59,8 +59,9 @@ function displayExprFor(target: ReportEntity): string | null {
   const physical = new Map<string, string>()
   for (const c of target.columns) {
     const name = c.sql ?? c.key
-    const plain = c.expression === name || c.expression === c.key
-    const qualified = new RegExp(`^(?:"?[a-z_][a-z0-9_]*"?\\.)?"?${name}"?$`, 'i').test(c.expression)
+    const expression = c.expression ?? c.expr ?? name
+    const plain = expression === name || expression === c.key
+    const qualified = new RegExp(`^(?:"?[a-z_][a-z0-9_]*"?\\.)?"?${name}"?$`, 'i').test(expression)
     if (!plain && !qualified) continue
     if (IDENT_RE.test(name)) physical.set(name, name)
   }
@@ -81,6 +82,7 @@ export function refineReportEntityForDocuments(
   resolveTarget: (key: string) => ReportEntity | undefined,
 ): ReportEntity {
   const e = entity as RefinableEntity
+  const sourceTable = e.table ?? e.from
   const relationByVia = new Map<string, RelationLike>()
   for (const r of e.relations ?? []) relationByVia.set(r.via, r)
 
@@ -92,12 +94,12 @@ export function refineReportEntityForDocuments(
       continue
     }
     const rel = col.kind === 'uuid' ? relationByVia.get(col.sql ?? col.key) : undefined
-    if (!rel || !IDENT_RE.test(rel.via) || !IDENT_RE.test(rel.foreignColumn) || !IDENT_RE.test(e.from)) {
+    if (!rel || !sourceTable || !IDENT_RE.test(rel.via) || !IDENT_RE.test(rel.foreignColumn) || !IDENT_RE.test(sourceTable)) {
       columns.push(col)
       continue
     }
     const target = resolveTarget(rel.target)
-    const targetTable = target?.from
+    const targetTable = target?.table ?? target?.from
     const display = target && targetTable && IDENT_RE.test(targetTable) ? displayExprFor(target) : null
     if (!display) {
       columns.push(col)
@@ -108,7 +110,7 @@ export function refineReportEntityForDocuments(
       key: col.key,
       label: rel.label,
       kind: 'text',
-      expression: `(SELECT ${display} FROM ${q(targetTable!)} "_ref" WHERE "_ref".${q(rel.foreignColumn)} = ${q(e.from)}.${q(rel.via)})`,
+      expression: `(SELECT ${display} FROM ${q(targetTable!)} "_ref" WHERE "_ref".${q(rel.foreignColumn)} = ${q(sourceTable)}.${q(rel.via)})`,
     })
   }
   return changed ? { ...entity, columns } : entity

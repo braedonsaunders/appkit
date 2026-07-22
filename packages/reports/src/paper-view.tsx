@@ -58,6 +58,7 @@ function DrillValue<T>({
  */
 export function PaperView<TDrillTarget>({
   organization,
+  company,
   data,
   emptyLabel = 'No data.',
   currency = '',
@@ -65,7 +66,9 @@ export function PaperView<TDrillTarget>({
   onDrill,
   renderLink,
 }: {
-  organization: string
+  organization?: string
+  /** Source-compatible alias for applications cutting over their report pages. */
+  company?: string
   data: ReportPaperData<TDrillTarget>
   emptyLabel?: string
   currency?: string
@@ -75,7 +78,7 @@ export function PaperView<TDrillTarget>({
 }) {
   const wide = data.groups.some((group) => group.columns.length > 5)
   return <ReportPaper
-    organization={organization}
+    organization={organization ?? company}
     title={data.title}
     periodPhrase={data.periodPhrase}
     note={data.note}

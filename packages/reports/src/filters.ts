@@ -9,7 +9,7 @@ export const REPORT_FILTER_OPERATORS = [
   'period_preset',
 ] as const
 export type ReportFilterOperator = (typeof REPORT_FILTER_OPERATORS)[number]
-export type ReportRule = { field: string; operator: ReportFilterOperator; value?: string | number | boolean | string[] | number[] | null }
+export type ReportRule = { field: string; op: ReportFilterOperator; value?: string | number | boolean | string[] | number[] | null }
 export type ReportRuleGroup = { combinator: 'and' | 'or'; not?: boolean; rules: (ReportRule | ReportRuleGroup)[] }
 
 export type ReportFilterOperatorMeta = { key: ReportFilterOperator; label: string; needsValue: 'none' | 'one' | 'list' }
@@ -52,13 +52,13 @@ export function compileReportRule(
   if (!column) return null
   const value = rule.value
   const present = value !== null && value !== undefined && value !== ''
-  switch (rule.operator) {
+  switch (rule.op) {
     case 'eq': return present ? `${column} = ${parameters.add(value)}` : null
     case 'neq': return present ? `${column} <> ${parameters.add(value)}` : null
     case 'in': case 'not_in': {
       if (!Array.isArray(value) || !value.length) return null
       const list = value.map((entry) => parameters.add(entry)).join(', ')
-      return `${column} ${rule.operator === 'not_in' ? 'NOT ' : ''}IN (${list})`
+      return `${column} ${rule.op === 'not_in' ? 'NOT ' : ''}IN (${list})`
     }
     case 'gte': return present ? `${column} >= ${parameters.add(value)}` : null
     case 'lte': return present ? `${column} <= ${parameters.add(value)}` : null

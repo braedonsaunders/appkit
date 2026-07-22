@@ -11,6 +11,7 @@ const PAPER_WIDTH: Record<ReportLayout['paperSize'], string> = {
 /** The shared in-app paper surface used by report previews and result pages. */
 export function ReportPaper({
   organization,
+  company,
   title,
   periodPhrase,
   note,
@@ -19,7 +20,10 @@ export function ReportPaper({
   children,
   className,
 }: {
-  organization: string
+  /** Application-neutral organization name. */
+  organization?: string
+  /** Source-compatible alias retained for a zero-rewrite report-view cutover. */
+  company?: string
   title: string
   periodPhrase?: string
   note?: string
@@ -29,6 +33,7 @@ export function ReportPaper({
   className?: string
 }) {
   const resolved = resolveReportLayout(layout)
+  const organizationName = organization ?? company ?? ''
   return <article
     data-report-paper
     data-paper-size={resolved.paperSize}
@@ -42,7 +47,7 @@ export function ReportPaper({
     )}
   >
     <header className="mb-6 space-y-0.5 text-center">
-      <div className="text-base font-semibold">{organization}</div>
+      {organizationName ? <div className="text-base font-semibold">{organizationName}</div> : null}
       <h2 className="text-xl font-bold tracking-tight">{title}</h2>
       {periodPhrase ? <div className="text-sm text-fg-muted">{periodPhrase}</div> : null}
       {note ? <div className="text-xs text-fg-subtle italic">{note}</div> : null}

@@ -3,11 +3,11 @@
 import * as React from 'react'
 import { CalendarClock, ChevronDown, ChevronUp, Columns3, Filter, GripVertical, Loader2, Play, Plus, Save, Settings2, Sigma, Table2, Trash2, X } from 'lucide-react'
 import { Button, Checkbox, Input, Label, SearchSelect, cn } from '@appkit/ui'
-import type { CustomReportQuery, ReportAggregate } from './custom-query'
-import { REPORT_AGGREGATES, REPORT_TEMPORAL_BINS } from './custom-query'
+import type { ReportCustomQuery, ReportAggFn } from './custom-query'
+import { REPORT_AGG_FNS, REPORT_TEMPORAL_BINS } from './custom-query'
 import type { CustomReportDefinition } from './definitions'
 import type { ReportEntityCatalog } from './entities'
-import { reportColumn, reportEntity } from './entities'
+import { defaultColumnsFor, reportColumn, reportEntity } from './entities'
 import { ReportFilterTree } from './filter-tree'
 import type { ReportRunResult, ReportSchedule } from './types'
 import { PaperView } from './paper-view'
@@ -47,7 +47,7 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
   const query = definition.query
   const entity = reportEntity(catalog, query.entity) ?? catalog.entities[0] ?? null
   const updateDefinition = (next: Partial<CustomReportDefinition>) => onChange({ ...value, definition: { ...definition, ...next } })
-  const updateQuery = (next: CustomReportQuery) => updateDefinition({ query: next })
+  const updateQuery = (next: ReportCustomQuery) => updateDefinition({ query: next })
 
   async function run() {
     setRunning(true); setError(null)
@@ -75,10 +75,10 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
       <div className="app-scroll min-h-0 flex-1 space-y-5 overflow-y-auto p-4 lg:p-5">
         {tab === 'data' ? <>
           <section className="grid gap-3">
-            <Field label="Source"><SearchSelect value={query.entity} onChange={(entityKey) => { const next = reportEntity(catalog, entityKey); if (next) updateQuery({ entity: next.key, mode: 'rows', columns: next.defaultColumns, filters: null, groupBy: null, sorts: next.defaultSort ? [next.defaultSort] : [], limit: query.limit ?? 1000 }) }} options={catalog.entities.map((item) => ({ value: item.key, label: item.label, hint: item.description }))} /></Field>
-            <div className="grid grid-cols-2 gap-2"><ModeButton active={query.mode === 'rows'} icon={<Columns3 />} label="Rows" onClick={() => updateQuery({ ...query, mode: 'rows' })} /><ModeButton active={query.mode === 'summarize'} icon={<Sigma />} label="Summarize" onClick={() => updateQuery({ ...query, mode: 'summarize', measures: query.measures?.length ? query.measures : [{ aggregate: 'count' }] })} /></div>
+            <Field label="Source"><SearchSelect value={query.entity} onChange={(entityKey) => { const next = reportEntity(catalog, entityKey); if (next) updateQuery({ entity: next.key, mode: 'rows', columns: defaultColumnsFor(next), filters: null, groupBy: null, sort: next.defaultSort ?? null, sorts: next.defaultSort ? [next.defaultSort] : [], limit: query.limit ?? 1000 }) }} options={catalog.entities.map((item) => ({ value: item.key, label: item.label, hint: item.description }))} /></Field>
+            <div className="grid grid-cols-2 gap-2"><ModeButton active={(query.mode ?? 'rows') === 'rows'} icon={<Columns3 />} label="Rows" onClick={() => updateQuery({ ...query, mode: 'rows' })} /><ModeButton active={query.mode === 'summarize'} icon={<Sigma />} label="Summarize" onClick={() => updateQuery({ ...query, mode: 'summarize', measures: query.measures?.length ? query.measures : [{ fn: 'count' }] })} /></div>
           </section>
-          {entity && query.mode === 'rows' ? <RowsBuilder entity={entity} query={query} onChange={updateQuery} /> : null}
+          {entity && (query.mode ?? 'rows') === 'rows' ? <RowsBuilder entity={entity} query={query} onChange={updateQuery} /> : null}
           {entity && query.mode === 'summarize' ? <SummaryBuilder entity={entity} query={query} onChange={updateQuery} /> : null}
           {entity ? <SortLimitBuilder entity={entity} query={query} onChange={updateQuery} /> : null}
         </> : null}
@@ -101,7 +101,7 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
   </div>
 }
 
-function RowsBuilder({ entity, query, onChange }: { entity: NonNullable<ReturnType<typeof reportEntity>>; query: CustomReportQuery; onChange: (query: CustomReportQuery) => void }) {
+function RowsBuilder({ entity, query, onChange }: { entity: NonNullable<ReturnType<typeof reportEntity>>; query: ReportCustomQuery; onChange: (query: ReportCustomQuery) => void }) {
   const selected = query.columns
   const labels = query.columnLabels ?? {}
   const available = entity.columns.filter((column) => !selected.includes(column.key))
@@ -115,20 +115,23 @@ function RowsBuilder({ entity, query, onChange }: { entity: NonNullable<ReturnTy
   </BuilderSection>
 }
 
-function SummaryBuilder({ entity, query, onChange }: { entity: NonNullable<ReturnType<typeof reportEntity>>; query: CustomReportQuery; onChange: (query: CustomReportQuery) => void }) {
+function SummaryBuilder({ entity, query, onChange }: { entity: NonNullable<ReturnType<typeof reportEntity>>; query: ReportCustomQuery; onChange: (query: ReportCustomQuery) => void }) {
   const breakouts = query.breakouts ?? [], measures = query.measures ?? []
   return <><BuilderSection title="Group by" icon={<GripVertical />} action={() => onChange({ ...query, breakouts: [...breakouts, { column: entity.columns[0]?.key ?? '' }] })}>{breakouts.map((breakout, index) => { const column = reportColumn(entity, breakout.column); const temporal = column?.kind === 'date' || column?.kind === 'timestamp'; return <div key={index} className="flex gap-2"><SearchSelect className="min-w-0 flex-1" value={breakout.column} onChange={(columnKey) => onChange({ ...query, breakouts: breakouts.map((item, itemIndex) => itemIndex === index ? { ...item, column: columnKey, bin: undefined } : item) })} options={entity.columns.map((item) => ({ value: item.key, label: item.label }))} />{temporal ? <SearchSelect className="w-32" value={breakout.bin ?? ''} onChange={(bin) => onChange({ ...query, breakouts: breakouts.map((item, itemIndex) => itemIndex === index ? { ...item, bin: bin ? bin as typeof item.bin : undefined } : item) })} options={[{ value: '', label: 'Exact' }, ...REPORT_TEMPORAL_BINS.map((bin) => ({ value: bin, label: bin.replace('_', ' ') }))]} /> : null}<RemoveButton onClick={() => onChange({ ...query, breakouts: breakouts.filter((_, itemIndex) => itemIndex !== index) })} /></div> })}</BuilderSection>
-    <BuilderSection title="Measures" icon={<Sigma />} action={() => onChange({ ...query, measures: [...measures, { aggregate: 'count' }] })}>{measures.map((measure, index) => <div key={index} className="flex gap-2"><SearchSelect className="w-32" value={measure.aggregate} onChange={(aggregate) => onChange({ ...query, measures: measures.map((item, itemIndex) => itemIndex === index ? { ...item, aggregate: aggregate as ReportAggregate, column: aggregate === 'count' ? undefined : item.column ?? entity.columns.find((column) => column.kind === 'number')?.key } : item) })} options={REPORT_AGGREGATES.map((aggregate) => ({ value: aggregate, label: aggregate.replace('_', ' ') }))} />{measure.aggregate !== 'count' ? <SearchSelect className="min-w-0 flex-1" value={measure.column ?? ''} onChange={(column) => onChange({ ...query, measures: measures.map((item, itemIndex) => itemIndex === index ? { ...item, column } : item) })} options={entity.columns.filter((column) => !['sum', 'avg'].includes(measure.aggregate) || column.kind === 'number').map((column) => ({ value: column.key, label: column.label }))} /> : <div className="flex flex-1 items-center rounded-md border border-border bg-bg-subtle px-3 text-sm text-fg-muted">Rows</div>}<RemoveButton onClick={() => onChange({ ...query, measures: measures.filter((_, itemIndex) => itemIndex !== index) })} /></div>)}</BuilderSection></>
+    <BuilderSection title="Measures" icon={<Sigma />} action={() => onChange({ ...query, measures: [...measures, { fn: 'count' }] })}>{measures.map((measure, index) => <div key={index} className="flex gap-2"><SearchSelect className="w-32" value={measure.fn} onChange={(fn) => onChange({ ...query, measures: measures.map((item, itemIndex) => itemIndex === index ? { ...item, fn: fn as ReportAggFn, column: fn === 'count' ? undefined : item.column ?? entity.columns.find((column) => column.kind === 'number')?.key } : item) })} options={REPORT_AGG_FNS.map((fn) => ({ value: fn, label: fn.replace('_', ' ') }))} />{measure.fn !== 'count' ? <SearchSelect className="min-w-0 flex-1" value={measure.column ?? ''} onChange={(column) => onChange({ ...query, measures: measures.map((item, itemIndex) => itemIndex === index ? { ...item, column } : item) })} options={entity.columns.filter((column) => !['sum', 'avg'].includes(measure.fn) || column.kind === 'number').map((column) => ({ value: column.key, label: column.label }))} /> : <div className="flex flex-1 items-center rounded-md border border-border bg-bg-subtle px-3 text-sm text-fg-muted">Rows</div>}<RemoveButton onClick={() => onChange({ ...query, measures: measures.filter((_, itemIndex) => itemIndex !== index) })} /></div>)}</BuilderSection></>
 }
 
-function FiltersBuilder({ entity, query, onChange }: { entity: NonNullable<ReturnType<typeof reportEntity>>; query: CustomReportQuery; onChange: (query: CustomReportQuery) => void }) {
+function FiltersBuilder({ entity, query, onChange }: { entity: NonNullable<ReturnType<typeof reportEntity>>; query: ReportCustomQuery; onChange: (query: ReportCustomQuery) => void }) {
   const filters = query.filters ?? { combinator: 'and' as const, rules: [] }
   return <BuilderSection title="Filters" icon={<Filter />}><ReportFilterTree entity={entity} group={filters} onChange={(next) => onChange({ ...query, filters: next.rules.length ? next : null })} /></BuilderSection>
 }
 
-function SortLimitBuilder({ entity, query, onChange }: { entity: NonNullable<ReturnType<typeof reportEntity>>; query: CustomReportQuery; onChange: (query: CustomReportQuery) => void }) {
-  const sorts = query.sorts ?? []
-  const commit = (next: typeof sorts) => onChange({ ...query, sorts: next.filter((sort) => sort.column).slice(0, 3) })
+function SortLimitBuilder({ entity, query, onChange }: { entity: NonNullable<ReturnType<typeof reportEntity>>; query: ReportCustomQuery; onChange: (query: ReportCustomQuery) => void }) {
+  const sorts = query.sorts?.length ? query.sorts : query.sort ? [query.sort] : []
+  const commit = (next: typeof sorts) => {
+    const cleaned = next.filter((sort) => sort.column).slice(0, 3)
+    onChange({ ...query, sorts: cleaned.length ? cleaned : null, sort: cleaned[0] ?? null })
+  }
   const used = new Set(sorts.map((sort) => sort.column))
   return <BuilderSection title="Rows" icon={<Table2 />}>
     <div className="space-y-2"><div className="flex items-center justify-between"><Label>Sort by</Label>{sorts.length > 0 && sorts.length < 3 ? <Button type="button" variant="ghost" size="sm" onClick={() => { const first = entity.columns.find((column) => !used.has(column.key)); if (first) commit([...sorts, { column: first.key, direction: 'desc' }]) }}><Plus size={14} />Add level</Button> : null}</div>

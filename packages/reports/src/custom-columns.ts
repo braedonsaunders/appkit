@@ -42,8 +42,9 @@ export function buildCustomReportColumns(table: string, definitions: readonly Cu
 }
 
 export async function augmentReportEntityWithCustomFields(entity: ReportEntity, source: CustomReportFieldSource): Promise<ReportEntity> {
-  if (!IDENT_RE.test(entity.from)) return entity
-  const columns = buildCustomReportColumns(entity.from, await source.list(entity))
+  const table = entity.table ?? entity.from
+  if (!table || !IDENT_RE.test(table)) return entity
+  const columns = buildCustomReportColumns(table, await source.list(entity))
   const existing = new Set(entity.columns.map((column) => column.key))
   const added = columns.filter((column) => !existing.has(column.key))
   return added.length ? { ...entity, columns: [...entity.columns, ...added] } : entity

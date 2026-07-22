@@ -56,12 +56,13 @@ async function verifyNodeAndReactConsumer() {
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { parseFormula } from '@appkit/analytics'
+import { compileCustomReport } from '@appkit/reports'
 import { color } from '@appkit/tokens'
 import { Button, PagedTable, PromptRoot, SubtabNav } from '@appkit/ui'
 import { emptyFormSchema, validateFormSchema } from '@appkit/forms-core'
 import { createDesignDocument } from '@appkit/design-studio'
 import { DesignStudioEditor } from '@appkit/design-studio/react'
-import { ReportPaper, ReportTable, ReportTableBody, ReportTableCell, ReportTableRow } from '@appkit/reports/react'
+import { ReportFilterBar, ReportPaper, StatementMatrixTable, Table, TableBody, TableCell, TableRow } from '@appkit/reports/react'
 import { createCustomizationEngine } from '@appkit/customization'
 import { createMemoryListViewStore } from '@appkit/customization/memory'
 import { RecordListView } from '@appkit/customization/react'
@@ -73,10 +74,14 @@ import { ApprovalActions, ApprovalHistory, RecordApprovalProvider } from '@appki
 assert.equal(parseFormula('count()', { resolveField: () => null }).ok, true)
 assert.equal(color('primary').startsWith('rgb('), true)
 assert.equal(validateFormSchema(emptyFormSchema('Smoke')).title, 'Smoke')
+assert.equal(compileCustomReport({ entity: 'entries', columns: ['status'], filters: { combinator: 'and', rules: [{ field: 'status', op: 'eq', value: 'posted' }] } }, 'org-1', { entities: [{ key: 'entries', label: 'Entries', category: 'ledger', description: 'Entries', from: 'entries e', orgColumn: 'e.org_id', columns: [{ key: 'status', label: 'Status', kind: 'enum', expr: 'e.status', options: ['draft', 'posted'] }] }] }).sql.includes('e.org_id = $1'), true)
+assert.equal(compileCustomReport({ entity: 'incidents', mode: 'summarize', columns: [], measures: [{ fn: 'count' }] }, 'tenant-1', { entities: [{ key: 'incidents', label: 'Incidents', category: 'operations', description: 'Incidents', table: 'incidents', columns: [{ key: 'reference', label: 'Reference', kind: 'text' }] }] }).sql.includes('"incidents"."tenant_id" = $1'), true)
 assert.match(renderToStaticMarkup(React.createElement(Button, null, 'Ready')), /Ready/)
 const design = createDesignDocument({ name: 'Smoke', theme: { primary: '#0f766e', accent: '#d97706', paper: '#ffffff', ink: '#0f172a', muted: '#64748b' } })
 assert.match(renderToStaticMarkup(React.createElement(DesignStudioEditor, { document: design, onChange() {}, catalog: { fields: [] } })), /Smoke/)
-assert.match(renderToStaticMarkup(React.createElement(ReportPaper, { organization: 'Example', title: 'Report' }, React.createElement(ReportTable, null, React.createElement(ReportTableBody, null, React.createElement(ReportTableRow, null, React.createElement(ReportTableCell, null, 'Ready')))))), /data-report-paper/)
+assert.match(renderToStaticMarkup(React.createElement(ReportPaper, { company: 'Example', title: 'Report' }, React.createElement(Table, null, React.createElement(TableBody, null, React.createElement(TableRow, null, React.createElement(TableCell, null, 'Ready')))))), /data-report-paper/)
+assert.match(renderToStaticMarkup(React.createElement(StatementMatrixTable, { view: { columns: [{ key: 'actual', label: 'Actual', kind: 'amount' }, { key: 'variance', label: 'Variance', kind: 'variance_pct' }], lines: [{ key: 'revenue', kind: 'account', label: 'Revenue', depth: 0, accountId: 'account-1', values: [125000, 12.5] }] }, currency: 'USD', scale: 'thousands' })), /Revenue/)
+assert.match(renderToStaticMarkup(React.createElement(ReportFilterBar, { value: { period: 'this_month' }, onChange() {}, controls: { period: true, breakout: true, compare: true, basis: true, scale: true, showZero: true }, dimensions: { departments: [], projects: [], locations: [], classes: [] } })), /Breakout/)
 assert.match(renderToStaticMarkup(React.createElement(PagedTable, { rows: [{ id: '1', name: 'Ready' }], columns: [{ key: 'name', header: 'Name', cell: row => row.name }], empty: 'Empty', rowKey: row => row.id })), /Ready/)
 assert.match(renderToStaticMarkup(React.createElement(SubtabNav, { tabs: [{ key: 'details', label: 'Details' }], active: 'details' })), /aria-selected="true"/)
 assert.equal(renderToStaticMarkup(React.createElement(PromptRoot)), '')
@@ -100,7 +105,7 @@ import type { PagedColumn, SubtabNavProps } from '@appkit/ui'
 import type { AttachmentPanelProps } from '@appkit/storage/react'
 import type { MemoryAttachmentAdapterOptions } from '@appkit/storage/memory'
 import type { DesignStudioEditorProps } from '@appkit/design-studio/react'
-import type { ReportDrillLoader, ReportPaperData } from '@appkit/reports'
+import type { ReportCustomQuery, ReportDrillLoader, ReportPaperData } from '@appkit/reports'
 import type { ReportDrillDrawerText, ReportStudioValue, StatementMatrixView } from '@appkit/reports/react'
 import type { DrizzleListViewStoreOptions } from '@appkit/customization/drizzle'
 import type { MemoryListViewStoreOptions } from '@appkit/customization/memory'
@@ -117,6 +122,7 @@ void (null as unknown as AttachmentPanelProps)
 void (null as unknown as MemoryAttachmentAdapterOptions)
 void (null as unknown as DesignStudioEditorProps)
 void (null as unknown as ReportPaperData)
+void (null as unknown as ReportCustomQuery)
 void (null as unknown as ReportDrillLoader<unknown>)
 void (null as unknown as ReportDrillDrawerText)
 void (null as unknown as ReportStudioValue)

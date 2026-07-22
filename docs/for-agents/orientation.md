@@ -441,9 +441,13 @@ lease-based idempotent run claiming. `@appkit/reports/react` preserves the
 production report surface: `ReportStudio` has the one-third scrolling build rail
 and two-thirds live paper preview; `PaperView` and `ReportPaper` provide the
 shared document presentation; `StatementMatrixTable` keeps grouped headings,
-hierarchy, totals, collapse/expand, and amount drill-through; and
+hierarchy, accounting currency, actual/thousands/millions scaling, percentage
+variance semantics, totals, collapse/expand, account navigation, and amount
+drill-through; and
 `ReportDrillDrawer`, `ReportFilterBar`, and `ReportExportMenu` retain supporting
-rows, pagination, compact filters, PDF-backed print, and multi-format actions.
+rows, pagination, the complete compact period/date/breakout/compare/subsidiary/
+customer/dimension/basis/scale/section filter surface, PDF-backed print, and
+multi-format actions.
 The recursive filter editor, ordered/renamable columns, three-level sort, page
 setup, schedule, run, and save controls write the same contracts the compiler
 consumes. Applications inject their catalogue, tenant-scoped execution,
@@ -452,6 +456,14 @@ transport. Domain-specific built-in definitions remain in the consuming
 application rather than becoming framework defaults. Applications rendering
 these React surfaces import `@appkit/reports/styles.css` alongside
 `@appkit/ui/styles.css` so Tailwind v4 scans the packaged components.
+
+The stored query plan intentionally keeps the production contract names:
+`ReportCustomQuery`, filter leaf `op`, measure `fn`, `sort` plus `sorts`, and
+nullable `columnLabels`. The entity boundary accepts both production catalogue
+families directly: expression/from/org-scope catalogues (`expr`, `from`,
+`orgColumn`) and physical-table/RLS catalogues (`table`, optional `sql`). AppKit
+normalizes those server-authored surfaces internally without requiring saved
+query migrations.
 
 `@appkit/pdf` provides a pure-JS PDFKit report,
 table, and financial-statement renderer. Bounded template rendering is under

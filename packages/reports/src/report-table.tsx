@@ -28,3 +28,13 @@ export function ReportTableCell({ className, ...props }: React.TdHTMLAttributes<
 
 export const reportSubtotalRowClass = 'border-t border-border-strong'
 export const reportTotalRowClass = 'border-t border-b-[3px] border-double border-border-strong'
+
+// Source-compatible names let an application replace its local report table
+// import without rewriting every report renderer. The Report-prefixed exports
+// remain available when an application wants an unambiguous public name.
+export const Table = ReportTable
+export const TableHeader = ReportTableHeader
+export const TableBody = ReportTableBody
+export const TableRow = ReportTableRow
+export const TableHead = ReportTableHead
+export const TableCell = ReportTableCell

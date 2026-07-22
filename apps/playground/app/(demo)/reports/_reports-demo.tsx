@@ -1,8 +1,19 @@
 'use client'
 
 import * as React from 'react'
-import { resolvePreset, resolveReportLayout, type CustomReportQuery, type ReportCellContext, type ReportColumn, type ReportDrillResponse, type ReportEntityCatalog, type ReportRule, type ReportRuleGroup, type ReportRunResult, type ReportSchedule } from '@appkit/reports'
-import { ReportStudio, type ReportStudioValue } from '@appkit/reports/react'
+import { resolvePreset, resolveReportLayout, type ReportCustomQuery, type ReportCellContext, type ReportColumn, type ReportDrillResponse, type ReportEntityCatalog, type ReportRule, type ReportRuleGroup, type ReportRunResult, type ReportSchedule } from '@appkit/reports'
+import {
+  ReportDrillDrawer,
+  ReportFilterBar,
+  ReportPaper,
+  ReportStudio,
+  StatementMatrixTable,
+  type ReportFilterValue,
+  type ReportStudioValue,
+  type StatementMatrixView,
+  type StatementSectionVisibility,
+} from '@appkit/reports/react'
+import { cn } from '@appkit/ui'
 
 const catalog: ReportEntityCatalog = { entities: [{
   key: 'projects', label: 'Projects', category: 'Operations', description: 'Projects, owners, status, value, and key dates.', from: 'projects p', tenantColumn: 'p.tenant_id',
@@ -67,12 +78,22 @@ async function loadPortfolioDrill(target: PortfolioDrillTarget, page: number, si
 }
 
 export function ReportsDemo() {
+  const [surface, setSurface] = React.useState<'builder' | 'statement'>('builder')
+  return <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+    <div className="flex shrink-0 items-center gap-1 border-b border-border px-3 py-2">
+      {[{ key: 'builder' as const, label: 'Report builder' }, { key: 'statement' as const, label: 'Statement viewer' }].map((item) => <button key={item.key} type="button" onClick={() => setSurface(item.key)} className={cn('rounded-md px-3 py-1.5 text-sm font-medium transition-colors', surface === item.key ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:bg-surface-hover hover:text-fg')}>{item.label}</button>)}
+    </div>
+    {surface === 'builder' ? <CustomReportDemo /> : <StatementDemo />}
+  </div>
+}
+
+function CustomReportDemo() {
   const [value, setValue] = React.useState(initial)
   const [result, setResult] = React.useState<ReportRunResult>(() => execute(value.definition.query))
   React.useEffect(() => {
     try { const stored = window.localStorage.getItem('appkit-demo:report-studio:v2'); if (stored) { const parsed = JSON.parse(stored) as ReportStudioValue; setValue(parsed); setResult(execute(parsed.definition.query)) } } catch { /* browser persistence is optional */ }
   }, [])
-  return <div className="flex min-h-0 flex-1 overflow-hidden rounded-xl border border-border bg-surface shadow-sm"><ReportStudio
+  return <div className="flex min-h-0 flex-1 overflow-hidden"><ReportStudio
     value={value}
     catalog={catalog}
     result={result}
@@ -88,6 +109,78 @@ export function ReportsDemo() {
     onPreview={async (next) => { const output = execute(next.definition.query); setResult(output); return output }}
     onSave={async (next) => { try { window.localStorage.setItem('appkit-demo:report-studio:v2', JSON.stringify(next)); setValue(next); return { ok: true } } catch { return { ok: false, error: 'The browser could not save this report.' } } }}
   /></div>
+}
+
+type StatementDrillTarget = { account: string; label: string; column: string }
+
+const statementView: StatementMatrixView = {
+  columns: [
+    { key: 'actual', label: 'Actual', group: 'Current period', kind: 'amount' },
+    { key: 'budget', label: 'Budget', group: 'Current period', kind: 'amount' },
+    { key: 'variance', label: 'Variance', group: 'Current period', kind: 'variance_pct' },
+    { key: 'prior', label: 'Prior year', group: 'Comparison', kind: 'amount' },
+  ],
+  lines: [
+    { key: 'revenue', kind: 'section', label: 'Revenue', depth: 0 },
+    { key: 'services', kind: 'account', accountId: 'services', label: 'Services', number: '4100', depth: 0, values: [1_842_000, 1_760_000, 4.7, 1_611_000] },
+    { key: 'maintenance', kind: 'account', accountId: 'maintenance', label: 'Maintenance', number: '4200', depth: 0, values: [428_000, 455_000, -5.9, 398_000] },
+    { key: 'revenue-total', kind: 'subtotal', label: 'Total revenue', depth: 0, emphasis: true, values: [2_270_000, 2_215_000, 2.5, 2_009_000] },
+    { key: 'costs', kind: 'section', label: 'Operating costs', depth: 0 },
+    { key: 'delivery', kind: 'account', accountId: 'delivery', label: 'Project delivery', number: '5100', depth: 0, values: [-1_106_000, -1_084_000, -2, -982_000] },
+    { key: 'labour', kind: 'account', accountId: 'labour', label: 'Labour', number: '5110', depth: 1, values: [-712_000, -690_000, -3.2, -641_000] },
+    { key: 'materials', kind: 'account', accountId: 'materials', label: 'Materials', number: '5120', depth: 1, values: [-394_000, -394_000, 0, -341_000] },
+    { key: 'overhead', kind: 'account', accountId: 'overhead', label: 'Overhead', number: '5200', depth: 0, values: [-386_000, -401_000, 3.7, -372_000] },
+    { key: 'income', kind: 'total', label: 'Operating income', depth: 0, values: [778_000, 730_000, 6.6, 655_000] },
+  ],
+}
+
+function StatementDemo() {
+  const [filters, setFilters] = React.useState<ReportFilterValue>({ period: 'this_fiscal_year', breakout: 'none', compare: 'prior_year', basis: 'accrual', scale: 'actual' })
+  const [visibility, setVisibility] = React.useState<StatementSectionVisibility>('expand')
+  const [visibilityRevision, setVisibilityRevision] = React.useState(0)
+  const [drillTarget, setDrillTarget] = React.useState<StatementDrillTarget | null>(null)
+  const commandVisibility = (next: StatementSectionVisibility) => { setVisibility(next); setVisibilityRevision((current) => current + 1) }
+  return <div className="flex min-h-0 flex-1 flex-col bg-bg-subtle">
+    <div className="shrink-0 border-b border-border bg-surface p-3">
+      <ReportFilterBar
+        value={filters}
+        onChange={setFilters}
+        controls={{ period: true, breakout: true, compare: true, basis: true, scale: true, showZero: true, sections: true, dimensions: true }}
+        dimensions={{ departments: [{ id: 'delivery', name: 'Delivery' }, { id: 'operations', name: 'Operations' }], projects: [], locations: [], classes: [] }}
+        options={{ onExpandAll: () => commandVisibility('expand'), onCollapseAll: () => commandVisibility('collapse') }}
+      />
+    </div>
+    <div className="app-scroll min-h-0 flex-1 overflow-auto p-4 lg:p-6">
+      <ReportPaper company="Northstar Works" title="Income statement" periodPhrase="Fiscal year to date">
+        <StatementMatrixTable
+          view={statementView}
+          scale={filters.scale === 'thousands' || filters.scale === 'millions' ? filters.scale : 'actual'}
+          currency="USD"
+          visibility={visibility}
+          visibilityRevision={visibilityRevision}
+          drillTarget={({ line, column }) => line.accountId ? { account: line.accountId, label: `${line.label} · ${column.label}`, column: column.key } : null}
+          onDrill={setDrillTarget}
+          onOpenRow={(line) => line.accountId && setDrillTarget({ account: line.accountId, label: line.label, column: 'account' })}
+        />
+      </ReportPaper>
+    </div>
+    <ReportDrillDrawer target={drillTarget} load={loadStatementDrill} onClose={() => setDrillTarget(null)} />
+  </div>
+}
+
+async function loadStatementDrill(target: StatementDrillTarget, page: number, signal: AbortSignal): Promise<ReportDrillResponse> {
+  if (signal.aborted) throw new DOMException('Aborted', 'AbortError')
+  const activity = supportingActivity.slice((page - 1) * 3, page * 3)
+  return {
+    title: target.label,
+    description: `Supporting entries for account ${target.account}`,
+    summary: [{ label: 'Entries', value: String(supportingActivity.length) }, { label: 'Column', value: target.column }],
+    columns: [{ label: 'Date' }, { label: 'Entry' }, { label: 'Owner' }, { label: 'Amount', align: 'right' }],
+    rows: activity.map((item, index) => ({ key: `${page}-${index}`, cells: [item.date, item.type, item.owner, new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(item.amount)] })),
+    page,
+    perPage: 3,
+    total: supportingActivity.length,
+  }
 }
 
 function downloadCsv(result: ReportRunResult): void {
@@ -108,7 +201,7 @@ function downloadCsv(result: ReportRunResult): void {
 
 function csvCell(value: unknown): string { return `"${String(value ?? '').replaceAll('"', '""')}"` }
 
-function execute(query: CustomReportQuery): ReportRunResult {
+function execute(query: ReportCustomQuery): ReportRunResult {
   const entity = catalog.entities[0]!
   let selected = rows.filter((row) => query.filters ? matchesGroup(row, query.filters) : true)
   for (const sort of [...(query.sorts ?? [])].reverse()) selected = [...selected].sort((left, right) => compare(left[sort.column as keyof typeof left], right[sort.column as keyof typeof right]) * (sort.direction === 'asc' ? 1 : -1))
@@ -122,12 +215,12 @@ function execute(query: CustomReportQuery): ReportRunResult {
   return { groups: [{ kind: 'results', title: 'Results', columns, rows: selected, isEmpty: !selected.length }], summary: [], rowCount: selected.length, truncated: false, durationMs: 8 }
 }
 
-function summarize(query: CustomReportQuery, input: typeof rows): ReportRunResult {
-  const breakouts = query.breakouts ?? [], measures = query.measures?.length ? query.measures : [{ aggregate: 'count' as const }]
+function summarize(query: ReportCustomQuery, input: typeof rows): ReportRunResult {
+  const breakouts = query.breakouts ?? [], measures = query.measures?.length ? query.measures : [{ fn: 'count' as const }]
   const groups = new Map<string, typeof rows>()
   for (const row of input) { const values = breakouts.map((breakout) => bucket(row[breakout.column as keyof typeof row], breakout.bin)); const key = JSON.stringify(values); groups.set(key, [...(groups.get(key) ?? []), row]) }
-  const columns: ReportColumn[] = [...breakouts.map((breakout, index) => ({ key: `d${index}`, label: catalog.entities[0]!.columns.find((column) => column.key === breakout.column)?.label ?? breakout.column, semanticType: breakout.bin ? 'date' as const : 'category' as const })), ...measures.map((measure, index) => ({ key: `m${index}`, label: measure.label ?? (measure.aggregate === 'count' ? 'Count' : `${measure.aggregate} of ${measure.column}`), semanticType: measure.column === 'value' ? 'currency' as const : 'number' as const, align: 'right' as const }))]
-  const output = [...groups].map(([key, groupRows]) => { const dimensions = JSON.parse(key) as unknown[]; return Object.fromEntries([...dimensions.map((dimension, index) => [`d${index}`, dimension] as const), ...measures.map((measure, index) => [`m${index}`, aggregate(groupRows, measure.aggregate, measure.column)] as const)]) })
+  const columns: ReportColumn[] = [...breakouts.map((breakout, index) => ({ key: `d${index}`, label: catalog.entities[0]!.columns.find((column) => column.key === breakout.column)?.label ?? breakout.column, semanticType: breakout.bin ? 'date' as const : 'category' as const })), ...measures.map((measure, index) => ({ key: `m${index}`, label: measure.label ?? (measure.fn === 'count' ? 'Count' : `${measure.fn} of ${measure.column}`), semanticType: measure.column === 'value' ? 'currency' as const : 'number' as const, align: 'right' as const }))]
+  const output = [...groups].map(([key, groupRows]) => { const dimensions = JSON.parse(key) as unknown[]; return Object.fromEntries([...dimensions.map((dimension, index) => [`d${index}`, dimension] as const), ...measures.map((measure, index) => [`m${index}`, aggregate(groupRows, measure.fn, measure.column)] as const)]) })
   return { groups: [{ kind: 'summary', title: 'Summary', columns, rows: output, isEmpty: !output.length }], summary: [], rowCount: output.length, truncated: false, durationMs: 6 }
 }
 
@@ -140,28 +233,28 @@ function matchesGroup(row: typeof rows[number], group: ReportRuleGroup): boolean
 }
 function matches(row: typeof rows[number], rule: ReportRule): boolean {
   const value = row[rule.field as keyof typeof row], expected = rule.value
-  if (rule.operator === 'eq') return String(value) === String(expected)
-  if (rule.operator === 'neq') return String(value) !== String(expected)
-  if (rule.operator === 'contains') return String(value).toLowerCase().includes(String(expected).toLowerCase())
-  if (rule.operator === 'gte') return compare(value, expected) >= 0
-  if (rule.operator === 'lte') return compare(value, expected) <= 0
-  if (rule.operator === 'is_null') return value == null || value === ''
-  if (rule.operator === 'is_not_null') return value != null && value !== ''
-  if (rule.operator === 'is_true') return String(value) === 'true'
-  if (rule.operator === 'is_false') return String(value) === 'false'
-  if (rule.operator === 'in') return Array.isArray(expected) ? expected.map(String).includes(String(value)) : false
-  if (rule.operator === 'not_in') return !matches(row, { ...rule, operator: 'in' })
+  if (rule.op === 'eq') return String(value) === String(expected)
+  if (rule.op === 'neq') return String(value) !== String(expected)
+  if (rule.op === 'contains') return String(value).toLowerCase().includes(String(expected).toLowerCase())
+  if (rule.op === 'gte') return compare(value, expected) >= 0
+  if (rule.op === 'lte') return compare(value, expected) <= 0
+  if (rule.op === 'is_null') return value == null || value === ''
+  if (rule.op === 'is_not_null') return value != null && value !== ''
+  if (rule.op === 'is_true') return String(value) === 'true'
+  if (rule.op === 'is_false') return String(value) === 'false'
+  if (rule.op === 'in') return Array.isArray(expected) ? expected.map(String).includes(String(value)) : false
+  if (rule.op === 'not_in') return !matches(row, { ...rule, op: 'in' })
   const today = '2026-07-21'
-  if (rule.operator === 'period_preset' && typeof expected === 'string') { const range = resolvePreset(expected, { startMonth: 1, today }); return Boolean(range && String(value) >= range.from && String(value) <= range.to) }
+  if (rule.op === 'period_preset' && typeof expected === 'string') { const range = resolvePreset(expected, { startMonth: 1, today }); return Boolean(range && String(value) >= range.from && String(value) <= range.to) }
   const valueDate = new Date(String(value)), now = new Date(`${today}T12:00:00Z`)
   if (Number.isNaN(valueDate.valueOf())) return false
-  if (rule.operator === 'between_days_ago') return valueDate >= new Date(now.valueOf() - Number(expected ?? 30) * 86_400_000) && valueDate <= now
-  if (rule.operator === 'due_within_days') return valueDate <= new Date(now.valueOf() + Number(expected ?? 30) * 86_400_000)
-  if (rule.operator === 'before_now') return valueDate < now
-  if (rule.operator === 'since_today') return String(value).slice(0, 10) === today
-  if (rule.operator === 'this_month') return String(value).slice(0, 7) === today.slice(0, 7)
-  if (rule.operator === 'this_year') return String(value).slice(0, 4) === today.slice(0, 4)
-  if (rule.operator === 'this_week') { const day = now.getUTCDay() || 7; const from = new Date(now.valueOf() - (day - 1) * 86_400_000); const to = new Date(from.valueOf() + 7 * 86_400_000); return valueDate >= from && valueDate < to }
+  if (rule.op === 'between_days_ago') return valueDate >= new Date(now.valueOf() - Number(expected ?? 30) * 86_400_000) && valueDate <= now
+  if (rule.op === 'due_within_days') return valueDate <= new Date(now.valueOf() + Number(expected ?? 30) * 86_400_000)
+  if (rule.op === 'before_now') return valueDate < now
+  if (rule.op === 'since_today') return String(value).slice(0, 10) === today
+  if (rule.op === 'this_month') return String(value).slice(0, 7) === today.slice(0, 7)
+  if (rule.op === 'this_year') return String(value).slice(0, 4) === today.slice(0, 4)
+  if (rule.op === 'this_week') { const day = now.getUTCDay() || 7; const from = new Date(now.valueOf() - (day - 1) * 86_400_000); const to = new Date(from.valueOf() + 7 * 86_400_000); return valueDate >= from && valueDate < to }
   return false
 }
 function compare(left: unknown, right: unknown): number { if (typeof left === 'number' || typeof right === 'number') return Number(left) - Number(right); return String(left).localeCompare(String(right)) }

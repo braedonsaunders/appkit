@@ -21,7 +21,7 @@ const catalog: ReportEntityCatalog = { entities: [{
 }] }
 
 test('row report compiler scopes the tenant and binds every authored value', () => {
-  const compiled = compileCustomReport({ entity: 'records', mode: 'rows', columns: ['created_at', 'status'], filters: { combinator: 'and', rules: [{ field: 'status', operator: 'contains', value: 'open' }] }, sorts: [{ column: 'created_at', direction: 'desc' }] }, 'tenant-1', catalog)
+  const compiled = compileCustomReport({ entity: 'records', mode: 'rows', columns: ['created_at', 'status'], filters: { combinator: 'and', rules: [{ field: 'status', op: 'contains', value: 'open' }] }, sort: { column: 'created_at', direction: 'desc' } }, 'tenant-1', catalog)
   assert.deepEqual(compiled.params, ['tenant-1', '%open%'])
   assert.match(compiled.sql, /r\.tenant_id = \$1/)
   assert.match(compiled.sql, /r\.status::text ILIKE \$2/)
@@ -29,10 +29,10 @@ test('row report compiler scopes the tenant and binds every authored value', () 
 })
 
 test('summary compiler supports fiscal bins and validates numeric aggregates', () => {
-  const compiled = compileCustomReport({ entity: 'records', mode: 'summarize', columns: [], breakouts: [{ column: 'created_at', bin: 'fiscal_year' }], measures: [{ aggregate: 'sum', column: 'amount' }] }, 'tenant-1', catalog, { fiscalStartMonth: 4 })
+  const compiled = compileCustomReport({ entity: 'records', mode: 'summarize', columns: [], breakouts: [{ column: 'created_at', bin: 'fiscal_year' }], measures: [{ fn: 'sum', column: 'amount' }] }, 'tenant-1', catalog, { fiscalStartMonth: 4 })
   assert.match(compiled.sql, /make_interval\(months => 9\)/)
   assert.match(compiled.sql, /sum\(r\.amount\)/)
-  assert.throws(() => compileCustomReport({ entity: 'records', mode: 'summarize', columns: [], measures: [{ aggregate: 'sum', column: 'status' }] }, 'tenant-1', catalog), /numeric/)
+  assert.throws(() => compileCustomReport({ entity: 'records', mode: 'summarize', columns: [], measures: [{ fn: 'sum', column: 'status' }] }, 'tenant-1', catalog), /numeric/)
 })
 
 test('compiled rows become grouped document results and preserve truncation', () => {
