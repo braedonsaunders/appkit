@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import {
   Bell,
+  Boxes,
+  Braces,
   Cable,
   PanelLeft,
   ScrollText,
@@ -42,6 +44,14 @@ const HUB_GROUPS: AdminHubGroup[] = [
     cards: [
       { href: '/admin/audit', title: 'Audit log', description: 'Activity history', icon: <ScrollText size={18} /> },
       { href: '/admin/integrations', title: 'Integrations', description: 'Data connections and automations', icon: <Cable size={18} /> },
+    ],
+  },
+  {
+    label: 'Extend',
+    accent: 'violet',
+    cards: [
+      { href: '/admin/apps', title: 'Apps', description: 'Build and install sandboxed applications', icon: <Boxes size={18} /> },
+      { href: '/admin/scripts', title: 'Scripts', description: 'Governed event and scheduled code', icon: <Braces size={18} /> },
     ],
   },
 ]

@@ -96,6 +96,18 @@ const NAV: SidebarNavGroup[] = [
         iconKey: 'workflow',
         subgroup: 'Extend',
       },
+      {
+        href: '/admin/apps',
+        label: 'Apps',
+        iconKey: 'package',
+        subgroup: 'Extend',
+      },
+      {
+        href: '/admin/scripts',
+        label: 'Scripts',
+        iconKey: 'code',
+        subgroup: 'Extend',
+      },
     ],
   },
 ]

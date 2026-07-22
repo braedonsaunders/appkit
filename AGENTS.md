@@ -41,6 +41,16 @@ imports it improves.
 - `packages/ai` — the app-agnostic multi-step tool-agent runtime plus the
   streamed assistant thread/tool-use UI. Apps inject the resolved model,
   system prompt, tenant/RBAC-bound tools, persistence, and HTTP transport.
+- `packages/sandbox` — the shared governed QuickJS kernel: fresh WASM runtimes,
+  frozen input, async host capabilities, logs, structured faults, and bounded
+  memory, stack, time, and units.
+- `packages/scripts` — optional event, scheduled, endpoint, bulk, and
+  opaque-origin client scripting over the sandbox, with jobs, React authoring,
+  Drizzle persistence, and complete run auditing.
+- `packages/apps` — optional installable application platform: manifests/ZIPs,
+  versions/files, capability grants, storage, QuickJS backends, opaque-origin
+  iframe frontends, bridge SDK, app authoring, marketplace, and memory/Drizzle
+  adapters.
 - `packages/db` — the **multi-tenant data layer**: a Postgres RLS engine
   (`createDb` → tenant-scoped `db` + BYPASSRLS `superDb`, `withTenant` /
   `withSuperAdmin`), schema helpers, the RLS policy installer, and the canonical

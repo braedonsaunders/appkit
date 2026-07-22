@@ -15,6 +15,7 @@
   "dependencies": {
     "@appkit/ai": "workspace:*",
     "@appkit/analytics": "workspace:*",
+    "@appkit/apps": "workspace:*",
     "@appkit/crypto": "workspace:*",
     "@appkit/customization": "workspace:*",
     "@appkit/dashboard": "workspace:*",
@@ -30,6 +31,7 @@
     "@appkit/notifications": "workspace:*",
     "@appkit/pdf": "workspace:*",
     "@appkit/reports": "workspace:*",
+    "@appkit/scripts": "workspace:*",
     "@appkit/tenant": "workspace:*",
     "@appkit/tokens": "workspace:*",
     "@appkit/sms": "workspace:*",

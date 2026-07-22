@@ -1,7 +1,7 @@
 {
-  "name": "@appkit/endpoints",
+  "name": "@appkit/sandbox",
   "version": "0.1.0",
-  "description": "Programmable endpoints — run user-defined handler(request) scripts in a QuickJS sandbox with a governance budget and injected host adapters.",
+  "description": "Governed QuickJS isolation for user-authored JavaScript with async host capabilities, execution budgets, and structured faults.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {
@@ -10,9 +10,7 @@
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
-  "files": [
-    "src"
-  ],
+  "files": ["src"],
   "scripts": {
     "build": "node ../../scripts/build-package.mjs",
     "typecheck": "tsc --noEmit",
@@ -20,30 +18,23 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@appkit/sandbox": "workspace:*"
+    "quickjs-emscripten": "^0.31.0"
   },
   "devDependencies": {
     "@types/node": "^22",
-    "tsx": "^4.19.2"
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
   },
   "author": "Braedon Saunders",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/braedonsaunders/appkit.git",
-    "directory": "packages/endpoints"
+    "directory": "packages/sandbox"
   },
-  "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/endpoints#readme",
-  "bugs": {
-    "url": "https://github.com/braedonsaunders/appkit/issues"
-  },
-  "engines": {
-    "node": ">=22"
-  },
-  "keywords": [
-    "appkit",
-    "application-framework",
-    "typescript"
-  ],
+  "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/sandbox#readme",
+  "bugs": { "url": "https://github.com/braedonsaunders/appkit/issues" },
+  "engines": { "node": ">=22" },
+  "keywords": ["appkit", "quickjs", "sandbox", "user-code"],
   "publishConfig": {
     "access": "public",
     "directory": "dist",

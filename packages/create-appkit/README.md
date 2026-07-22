@@ -16,7 +16,7 @@ pnpm create appkit operations --features forms,tenancy,workflows --yes
 ```
 
 Available groups are `ai`, `analytics`, `communications`, `customization`,
-`documents`, `forms`, `integrations`, `platform`, `tenancy`, and `workflows`.
+`documents`, `extensions`, `forms`, `integrations`, `platform`, `tenancy`, and `workflows`.
 Use `--package-manager` to select pnpm, npm, Yarn, or Bun; `--no-install` and
 `--no-git` are available for automation.
 

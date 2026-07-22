@@ -26,6 +26,9 @@ importers:
       '@appkit/analytics':
         specifier: workspace:*
         version: link:../../packages/analytics
+      '@appkit/apps':
+        specifier: workspace:*
+        version: link:../../packages/apps
       '@appkit/crypto':
         specifier: workspace:*
         version: link:../../packages/crypto
@@ -71,6 +74,9 @@ importers:
       '@appkit/reports':
         specifier: workspace:*
         version: link:../../packages/reports
+      '@appkit/scripts':
+        specifier: workspace:*
+        version: link:../../packages/scripts
       '@appkit/sms':
         specifier: workspace:*
         version: link:../../packages/sms
@@ -235,6 +241,53 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.1
+    publishDirectory: dist
+
+  packages/apps:
+    dependencies:
+      '@appkit/endpoints':
+        specifier: workspace:*
+        version: link:../endpoints
+      fflate:
+        specifier: ^0.8.2
+        version: 0.8.3
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@appkit/db':
+        specifier: workspace:*
+        version: link:../db
+      '@appkit/ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@types/node':
+        specifier: ^22
+        version: 22.20.1
+      '@types/react':
+        specifier: ^19
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.2.3(@types/react@19.2.17)
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(gel@2.2.0)(mysql2@3.23.1(@types/node@22.20.1))(pg@8.22.0)(postgres@3.4.9)
+      lucide-react:
+        specifier: ^1.24.0
+        version: 1.25.0(react@19.2.7)
+      react:
+        specifier: ^19
+        version: 19.2.7
+      react-dom:
+        specifier: ^19
+        version: 19.2.7(react@19.2.7)
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
     publishDirectory: dist
 
   packages/auth:
@@ -497,9 +550,9 @@ importers:
 
   packages/endpoints:
     dependencies:
-      quickjs-emscripten:
-        specifier: ^0.31.0
-        version: 0.31.0
+      '@appkit/sandbox':
+        specifier: workspace:*
+        version: link:../sandbox
     devDependencies:
       '@types/node':
         specifier: ^22
@@ -817,6 +870,67 @@ importers:
       react:
         specifier: ^19
         version: 19.2.7
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+    publishDirectory: dist
+
+  packages/sandbox:
+    dependencies:
+      quickjs-emscripten:
+        specifier: ^0.31.0
+        version: 0.31.0
+    devDependencies:
+      '@types/node':
+        specifier: ^22
+        version: 22.20.1
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+    publishDirectory: dist
+
+  packages/scripts:
+    dependencies:
+      '@appkit/sandbox':
+        specifier: workspace:*
+        version: link:../sandbox
+      cron-parser:
+        specifier: ^4.9.0
+        version: 4.9.0
+    devDependencies:
+      '@appkit/db':
+        specifier: workspace:*
+        version: link:../db
+      '@appkit/ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@types/node':
+        specifier: ^22
+        version: 22.20.1
+      '@types/react':
+        specifier: ^19
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.2.3(@types/react@19.2.17)
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(gel@2.2.0)(mysql2@3.23.1(@types/node@22.20.1))(pg@8.22.0)(postgres@3.4.9)
+      lucide-react:
+        specifier: ^1.24.0
+        version: 1.25.0(react@19.2.7)
+      react:
+        specifier: ^19
+        version: 19.2.7
+      react-dom:
+        specifier: ^19
+        version: 19.2.7(react@19.2.7)
       tsx:
         specifier: ^4.19.2
         version: 4.23.1
@@ -3946,6 +4060,9 @@ packages:
     peerDependenciesMeta:
       picomatch:
         optional: true
+
+  fflate@0.8.3:
+    resolution: {integrity: sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA==}
 
   fill-range@7.1.1:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
@@ -8686,6 +8803,8 @@ snapshots:
   fdir@6.5.0(picomatch@4.0.5):
     optionalDependencies:
       picomatch: 4.0.5
+
+  fflate@0.8.3: {}
 
   fill-range@7.1.1:
     dependencies:

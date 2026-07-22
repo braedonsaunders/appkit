@@ -55,7 +55,8 @@ than a component gallery but do not want a rigid all-or-nothing framework.
   core and explicit optional adapters for React, Drizzle, providers, browser
   automation, editors, canvas engines, and database drivers.
 - **Secure defaults.** PostgreSQL RLS, wildcard RBAC, sealed secrets,
-  idempotent mutations, transactional outbox, bounded user code, SSRF-safe
+  idempotent mutations, transactional outbox, isolated user code, sandboxed
+  installable apps, SSRF-safe
   egress, and fail-closed sync snapshots are available as first-class packages.
 - **One design language.** Semantic tokens drive light and dark themes,
   Tailwind v4 utilities, radius, elevation, and motion. Rebrand the entire
@@ -162,7 +163,10 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 | `@appkit/auth`      | Optional scrypt passwords and stateless HMAC sessions.                                                                      |
 | `@appkit/events`    | Structured audit records, transactional outbox, recipient resolution, leased relay, durable retries, and effects ledger.      |
 | `@appkit/api`       | API-key authorization, idempotent writes, typed public errors, and OpenAPI descriptions.                                    |
-| `@appkit/endpoints` | Resource-bounded QuickJS handlers with app-governed capabilities.                                                           |
+| `@appkit/sandbox`   | Shared QuickJS isolation with memory, stack, deadline, governance, frozen-input, host-function, log, and structured-fault contracts. |
+| `@appkit/endpoints` | Resource-bounded `handler(request)` programs with storage, records, and application-governed host capabilities.             |
+| `@appkit/scripts`   | Event, scheduled, endpoint, bulk, and opaque-origin client scripts with vetoes, allowed mutations, cron, jobs, auditing, React authoring, Drizzle storage, and a bound cutover runtime for existing authored globals and context shapes. |
+| `@appkit/apps`      | Installable app manifests and ZIPs, immutable versions, files, storage, capabilities, QuickJS backends, opaque-origin frontends, bridge SDK, authoring, marketplace, React, memory, Drizzle, and bound lifecycle adapters. |
 | `@appkit/ai`        | Provider-neutral bounded agents, streaming React UI, and production analysis, extraction, document, vision, writing, digest, and model helpers. |
 
 ### Analytics, workflows, and connectivity
@@ -212,6 +216,21 @@ The core of each feature remains usable without its heaviest dependencies:
   ├─ /email /sql           optional render and database adapters
   ├─ /schema               definitions and delivery ledger
   └─ /drizzle              tenant-scoped persistence
+
+@appkit/apps               installable application platform
+  ├─ /manifest /bundle     validated manifests and ZIP packages
+  ├─ /runtime /bridge      governed QuickJS backend + opaque iframe SDK
+  ├─ /service              source-shaped lifecycle bound to host adapters
+  ├─ /react                app builder, runtime frame, and library
+  ├─ /memory               database-free complete adapter
+  └─ /schema /drizzle      tenant-scoped durable lifecycle
+
+@appkit/scripts            governed automation code
+  ├─ /bound                positional cutover runtime + context mapping
+  ├─ /client               opaque-origin browser validation gate
+  ├─ /jobs                 queue-neutral scheduled/bulk worker handler
+  ├─ /react                searchable list and full-screen authoring drawer
+  └─ /schema /drizzle      definitions, schedules, and run history
 ```
 
 The repository enforces this architecture. Boundary checks reject runtime

@@ -1,0 +1,68 @@
+{
+  "name": "@appkit/scripts",
+  "version": "0.1.0",
+  "description": "Governed event, scheduled, endpoint, bulk, and client scripting with QuickJS isolation, audit history, and optional React and Drizzle adapters.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "sideEffects": ["*.css"],
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts",
+    "./drizzle": "./src/drizzle.ts",
+    "./client": "./src/client.ts",
+    "./jobs": "./src/jobs.ts",
+    "./bound": "./src/bound.ts",
+    "./react": "./src/react.ts",
+    "./styles.css": "./src/styles.css",
+    "./package.json": "./package.json"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "files": ["src", "drizzle"],
+  "scripts": {
+    "build": "node ../../scripts/build-package.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@appkit/sandbox": "workspace:*",
+    "cron-parser": "^4.9.0"
+  },
+  "peerDependencies": {
+    "@appkit/db": "^0.1.0",
+    "@appkit/ui": "^0.1.0",
+    "drizzle-orm": "^0.45.2",
+    "lucide-react": "^1.24.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@appkit/db": { "optional": true },
+    "@appkit/ui": { "optional": true },
+    "drizzle-orm": { "optional": true },
+    "lucide-react": { "optional": true },
+    "react": { "optional": true },
+    "react-dom": { "optional": true }
+  },
+  "devDependencies": {
+    "@appkit/db": "workspace:*",
+    "@appkit/ui": "workspace:*",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "drizzle-orm": "^0.45.2",
+    "lucide-react": "^1.24.0",
+    "react": "^19",
+    "react-dom": "^19",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
+  },
+  "author": "Braedon Saunders",
+  "repository": { "type": "git", "url": "git+https://github.com/braedonsaunders/appkit.git", "directory": "packages/scripts" },
+  "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/scripts#readme",
+  "bugs": { "url": "https://github.com/braedonsaunders/appkit/issues" },
+  "engines": { "node": ">=22" },
+  "keywords": ["appkit", "quickjs", "scripts", "automation"],
+  "publishConfig": { "access": "public", "directory": "dist", "linkDirectory": false, "provenance": true }
+}

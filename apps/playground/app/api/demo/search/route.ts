@@ -13,6 +13,8 @@ const ROUTES = [
   { id: 'form-engine', title: 'Form engine', subtitle: 'Schemas, validation, and automation', href: '/forms/core', iconKey: 'code' },
   { id: 'admin', title: 'Administration', subtitle: 'Organization settings', href: '/admin', iconKey: 'settings' },
   { id: 'api', title: 'API Docs', subtitle: 'Interactive API reference', href: '/api-docs', iconKey: 'code' },
+  { id: 'apps', title: 'Apps', subtitle: 'Installable app builder and sandbox runtime', href: '/admin/apps', iconKey: 'package' },
+  { id: 'scripts', title: 'Scripts', subtitle: 'Governed automation code', href: '/admin/scripts', iconKey: 'code' },
 ] as const
 
 export async function GET(request: Request): Promise<Response> {

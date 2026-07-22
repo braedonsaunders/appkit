@@ -12,9 +12,10 @@ export const FEATURE_PACKAGES = {
   communications: ['@appkit/email-render', '@appkit/emails', '@appkit/notifications', '@appkit/sms'],
   customization: ['@appkit/customization'],
   documents: ['@appkit/design-studio', '@appkit/forms-documents', '@appkit/forms-pdf', '@appkit/pdf'],
+  extensions: ['@appkit/apps', '@appkit/endpoints', '@appkit/sandbox', '@appkit/scripts'],
   forms: ['@appkit/editor', '@appkit/forms', '@appkit/forms-core', '@appkit/i18n'],
   integrations: ['@appkit/integrations', '@appkit/sync'],
-  platform: ['@appkit/api', '@appkit/auth', '@appkit/crypto', '@appkit/endpoints', '@appkit/events'],
+  platform: ['@appkit/api', '@appkit/auth', '@appkit/crypto', '@appkit/events'],
   tenancy: ['@appkit/db', '@appkit/tenant'],
   workflows: ['@appkit/jobs', '@appkit/workflows'],
 } as const

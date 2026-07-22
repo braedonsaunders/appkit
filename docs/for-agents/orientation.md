@@ -253,12 +253,55 @@ store the AST in the card query, not the original string. Apps execute compiled
 SQL inside `withTenantContext`/`withTenant` and return the shared `QueryResult`
 contract to `InsightResultView`.
 
-## 7. Scaffolding a new app
+## 7. Governed scripts and installable apps
+
+`@appkit/sandbox` is the common QuickJS execution kernel. It creates a fresh
+WASM runtime per invocation, exposes no ambient host APIs, deep-freezes input,
+and enforces memory, stack, deadline, and governance-unit ceilings. Add host
+capabilities explicitly as synchronous-looking async functions. Do not expose a
+database client, fetch implementation, filesystem handle, or tenant-unscoped
+service to authored code.
+
+`@appkit/scripts` builds event, scheduled, endpoint, bulk, and browser-client
+automation on that kernel. The application supplies the trigger catalogue,
+mutable subject fields, tenant-bound read adapters, governed write functions,
+identity, routes, and authorization. `/client` preserves the production
+fail-open opaque-iframe validation gate; `/jobs` supplies a queue-neutral worker
+handler; `/react`, `/schema`, and `/drizzle` add the complete authoring and
+persistence layers.
+
+`@appkit/scripts/bound` is the cutover seam for an application that already
+has authored scripts. Configure its existing sandbox global, native context,
+tenant resolver, host values, reads, and governed writes once; the returned
+positional `runScript`, trigger, scheduled, endpoint, and bulk methods preserve
+the caller and authored-code contract without putting application vocabulary in
+AppKit.
+
+`@appkit/apps` is the installable application platform. Its root owns validated
+manifests and ZIPs, install/upgrade lifecycle, capability intersection, frontend
+assembly, backend dispatch, files, storage, run history, publishing, and object
+provisioning boundaries. `/runtime` preserves the source-shaped backend import;
+`/bridge` owns the CSP and message protocol; `/react` provides the app manager,
+file/endpoint editor, live opaque-origin preview, run inspector, and library;
+`/memory` and `/drizzle` are complete database-free and Postgres persistence
+adapters. The iframe must retain `sandbox="allow-scripts"` without
+`allow-same-origin`, and its CSP must keep `connect-src 'none'`. Effective
+capabilities are always `(administrator grants ∩ invoking user permissions)`.
+`@appkit/apps/service` similarly binds the complete positional lifecycle API to
+an application store and permission/runtime adapters, while
+`createAppEndpointRuntime` preserves an existing authored backend global and
+host-adapter shape.
+
+The runnable references are `/admin/scripts` and `/admin/apps`. They use the
+same server runtimes and database-free stores public consumers receive; the
+preview iframe and QuickJS backend are real, not a simulated gallery.
+
+## 8. Scaffolding a new app
 
 ```bash
 pnpm create appkit my-app
 # Optional groups: ai, analytics, communications, customization, documents,
-# forms, integrations, platform, tenancy, workflows
+# extensions, forms, integrations, platform, tenancy, workflows
 pnpm create appkit my-app --features forms,tenancy,workflows --yes
 ```
 

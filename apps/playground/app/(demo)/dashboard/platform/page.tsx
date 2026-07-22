@@ -351,6 +351,19 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Use the API reference',
       },
       {
+        title: '@appkit/sandbox',
+        description: 'Run authored JavaScript without granting it ambient access to the host process.',
+        icon: <ShieldCheck />,
+        features: [
+          'Fresh QuickJS WASM runtime with no Node, filesystem, module loader, network, or database globals',
+          'Bounded memory, stack, wall-clock execution, and governance units',
+          'Deep-frozen inputs, structured host faults, logs, and explicit async capability injection',
+          'One execution kernel shared by programmable endpoints, scripts, and installed app backends',
+        ],
+        href: '/admin/scripts',
+        linkLabel: 'Run a governed script',
+      },
+      {
         title: '@appkit/endpoints',
         description: 'Offer user-defined handlers while keeping host access and resource consumption under application control.',
         icon: <Workflow />,
@@ -359,6 +372,34 @@ const GROUPS: AdminHubGroup[] = [
           'Governed storage, record, and host-call capabilities',
           'Deterministic limits that stop over-budget programs',
         ],
+        href: '/admin/apps',
+        linkLabel: 'Call a live app backend',
+      },
+      {
+        title: '@appkit/scripts',
+        description: 'Give builders governed automation code without exposing the application process.',
+        icon: <Braces />,
+        features: [
+          'Ordered event hooks with explicit vetoes and application-whitelisted field changes',
+          'Scheduled, bulk, HTTP endpoint, and opaque-origin browser-validation runtimes',
+          'Read-only query, record, and governed host-function adapters supplied by the application',
+          'Timezone-aware cron scheduling, queue-neutral jobs, durable results, logs, units, and timing',
+        ],
+        href: '/admin/scripts',
+        linkLabel: 'Open script authoring',
+      },
+      {
+        title: '@appkit/apps',
+        description: 'Add an installable app platform with a real builder, runtime, permissions, and distribution lifecycle.',
+        icon: <Puzzle />,
+        features: [
+          'Validated manifests and ZIPs, immutable versions, editable files, app storage, and declared object provisioning',
+          'Opaque-origin iframe frontends with CSP, inlined assets, and a permission-checked message bridge',
+          'QuickJS backend endpoints whose effective capabilities are the app grant intersected with the invoking user',
+          'Install, upgrade, enable, author, preview, audit, publish, browse, and reinstall marketplace snapshots',
+        ],
+        href: '/admin/apps',
+        linkLabel: 'Build and run an app',
       },
       {
         title: '@appkit/ai',
@@ -509,7 +550,7 @@ export default function PlatformPage() {
       description="AppKit gives TypeScript teams a production-shaped application foundation—complete enough to start fast, modular enough to adopt without a rewrite."
       actions={
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="success">32 modular packages</Badge>
+          <Badge variant="success">35 modular packages</Badge>
           <Button asChild variant="outline" size="sm">
             <a href="https://github.com/braedonsaunders/appkit" target="_blank" rel="noreferrer">View on GitHub</a>
           </Button>
