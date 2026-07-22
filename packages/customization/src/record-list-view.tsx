@@ -15,6 +15,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  SubtabNav,
+  type SubtabItem,
   cn,
 } from '@appkit/ui'
 import type { ListColumnKind, ListViewConfig, RecordTypeMeta } from './types'
@@ -41,11 +43,7 @@ export interface RecordListQuickFilter {
   onChange: (value: string | undefined) => void
 }
 
-export interface RecordListSubtab {
-  key: string
-  label: string
-  count?: number
-}
+export interface RecordListSubtab extends Omit<SubtabItem, 'label'> { label: string }
 
 export interface RecordListViewProps<R extends Record<string, unknown>> {
   meta: RecordTypeMeta
@@ -133,7 +131,13 @@ export function RecordListView<R extends Record<string, unknown>>({
   )
   const pageCount = Math.max(1, Math.ceil(total / perPage))
   return <div className={cn('space-y-3', className)}>
-    {subtabs.length ? <RecordSubtabs tabs={subtabs} active={activeSubtab ?? subtabs[0]?.key ?? ''} onChange={onSubtabChange} /> : null}
+    {subtabs.length ? <SubtabNav
+      tabs={subtabs}
+      active={activeSubtab ?? subtabs[0]?.key ?? ''}
+      onSelect={onSubtabChange}
+      ariaLabel="Record sections"
+      className="border-b border-border"
+    /> : null}
     <div className="flex flex-wrap items-center gap-2">
       <ControlledSearch value={search} placeholder={searchPlaceholder} onChange={onSearchChange} />
       {quickFilters.map((filter) => <QuickFilterMenu key={filter.key} filter={filter} />)}
@@ -170,17 +174,6 @@ export function RecordListView<R extends Record<string, unknown>>({
       <RecordPagination total={total} page={page} perPage={perPage} pageCount={pageCount} onChange={onPageChange} />
     </>}
   </div>
-}
-
-function RecordSubtabs({ tabs, active, onChange }: { tabs: RecordListSubtab[]; active: string; onChange?: (key: string) => void }) {
-  return <div className="flex gap-1 overflow-x-auto border-b border-border" role="tablist">{tabs.map((tab) => <button
-    key={tab.key}
-    type="button"
-    role="tab"
-    aria-selected={active === tab.key}
-    onClick={() => onChange?.(tab.key)}
-    className={cn('-mb-px flex shrink-0 items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors', active === tab.key ? 'border-primary text-primary' : 'border-transparent text-fg-muted hover:text-fg')}
-  >{tab.label}{typeof tab.count === 'number' ? <span className="rounded-full bg-bg-subtle px-1.5 text-[11px] text-fg-muted">{tab.count}</span> : null}</button>)}</div>
 }
 
 function ControlledSearch({ value, placeholder, onChange }: { value: string; placeholder: string; onChange?: (value: string) => void }) {

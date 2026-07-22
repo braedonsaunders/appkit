@@ -145,7 +145,7 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 | Package                 | What it gives your app                                                                                                                                                        |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@appkit/tokens`        | Semantic light/dark brand, shape, elevation, and motion tokens surfaced through Tailwind v4.                                                                                  |
-| `@appkit/ui`            | Accessible primitives, topbar/sidebar app shell, account launcher, search, notifications, settings, lists, drawers, uploads, signatures, page layouts, and route transitions. |
+| `@appkit/ui`            | Accessible primitives, topbar/sidebar app shell, account launcher, search, notifications, settings, record and paged tables, subtabs, drawers, uploads, signatures, page layouts, and route transitions. |
 | `@appkit/dashboard`     | Responsive drag/resize dashboards, reusable insight cards, a card library, query studio, visualizations, lifecycle controls, and optional Drizzle persistence.                 |
 | `@appkit/forms-core`    | Versioned schemas, field registry, formulas, conditional logic, validation, scoring, and source-compatible business and safety automation contracts.                          |
 | `@appkit/forms`         | Production form authoring and fill UI: field/section inspectors, tables, matrices, formulas, data binding, pages, guided workflows, record configuration, and typed host adapters. |

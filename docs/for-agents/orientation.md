@@ -132,12 +132,18 @@ tenant selection, and any post-acceptance domain effect.
   close-navigation via `DrawerNavigateContext` (so `UrlDrawer` closes by routing).
 - **Database list pages** use the URL list kit: parse the page's `searchParams`
   with `parseListParams`, apply search/filter/sort/limit/offset in the RLS-scoped
-  server query, and render `SearchInput` + `FilterChips` + `SortableTh` +
-  `Pagination`. Wire `ListNavProvider` once to the app router so controls soft-
+  server query, and render `SearchInput`, `FilterChips` or
+  `SearchSelectFilter`, `SortableTh`, and `Pagination`. Wire `ListNavProvider`
+  once to the app router so controls soft-
   navigate without full reloads. Use prefixed keys when several lists share a
   route. `RecordList` remains the controlled choice for bounded, already-loaded
   data; the IAM React package uses its paginated service boundary instead of
   owning framework routes. Never render an unbounded or unsearchable table.
+- **Bounded detail/setup tables** use `PagedTable` for rows already loaded into
+  a drawer, detail tab, or setup page. It owns client search and pagination but
+  does not imitate a server-backed list. Use `SubtabNav` in `Drawer.subtabs` and
+  `DetailPageLayout.subtabs` so those surfaces retain the source navigation
+  grammar.
 - **Line-item editors** use `LineGrid` — columns are data (`text`/`amount`/
   `select`/`readonly`+`render`); it's controlled (rows in, rows out).
 - **Menus** use `useContextMenu()` + `<ContextMenu>` (kebab button →

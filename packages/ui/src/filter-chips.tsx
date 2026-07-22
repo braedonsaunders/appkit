@@ -3,8 +3,9 @@
 import * as React from 'react'
 import { Check, ChevronDown } from 'lucide-react'
 import { Popover } from './popover'
+import { SearchSelect } from './search-select'
 import { mergeHref, pickString, type ListSearchParams } from './list-params'
-import { useListNavClick } from './list-nav'
+import { useListNav, useListNavClick } from './list-nav'
 import { cn } from './utils'
 
 export type FilterOption = { value: string; label: string; count?: number }
@@ -105,6 +106,62 @@ export function FilterChips({
       </div>
     </Popover>
   )
+}
+
+/**
+ * Searchable URL-backed filter for long option lists. This preserves the
+ * production reference call surface while replacing framework router hooks
+ * with AppKit's injectable list-navigation bridge.
+ */
+export function SearchSelectFilter({
+  paramKey,
+  label,
+  options,
+  allLabel = 'All',
+  pageParamKey = 'page',
+  className,
+}: {
+  paramKey: string
+  label: string
+  options: { value: string; label: string; hint?: string }[]
+  allLabel?: string
+  pageParamKey?: string
+  className?: string
+}) {
+  const nav = useListNav()
+  const value = React.useMemo(
+    () => new URLSearchParams(nav?.search ?? '').get(paramKey) ?? '',
+    [nav?.search, paramKey],
+  )
+
+  function onChange(nextValue: string) {
+    if (!nav) return
+    const next = new URLSearchParams(nav.search)
+    if (nextValue) next.set(paramKey, nextValue)
+    else next.delete(paramKey)
+    next.delete(pageParamKey)
+    const query = next.toString()
+    nav.replace(query ? `${nav.pathname}?${query}` : nav.pathname)
+  }
+
+  return <SearchSelect
+    value={value}
+    onChange={onChange}
+    options={options}
+    clearable
+    emptyLabel={allLabel}
+    placeholder={label}
+    ariaLabel={label}
+    sheetTitle={label}
+    searchable
+    className={cn('w-52', className)}
+    triggerClassName={cn(
+      'h-8 rounded-md px-3 shadow-none',
+      value
+        ? 'border-primary/40 bg-primary-subtle [&>span]:font-semibold [&>span]:text-primary'
+        : 'border-border hover:border-border-strong hover:bg-surface-hover [&>span]:text-fg',
+    )}
+  />
 }
 
 function FilterItem({

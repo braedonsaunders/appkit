@@ -110,9 +110,11 @@ export {
 } from './list-params'
 export { ListNavProvider, useListNav, useListNavClick, type ListNav } from './list-nav'
 export { SearchInput } from './list-search-input'
-export { FilterChips, type FilterOption } from './filter-chips'
+export { FilterChips, SearchSelectFilter, type FilterOption } from './filter-chips'
 export { SortableTh, SortTh } from './sortable-th'
 export { Pagination, type PaginationLabels } from './list-pagination'
+export { PagedTable, type PagedColumn, type PagedTableLabels, type PagedTableProps } from './paged-table'
+export { SubtabNav, type SubtabItem, type SubtabNavProps } from './subtab-nav'
 export {
   AdminHub,
   SettingsShell,

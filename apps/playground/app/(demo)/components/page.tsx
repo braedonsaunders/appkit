@@ -33,14 +33,18 @@ import {
   Label,
   LineGrid,
   type LineGridColumn,
+  PagedTable,
+  type PagedColumn,
   Progress,
   RecordList,
   type RecordColumn,
   SearchSelect,
+  SearchSelectFilter,
   Separator,
   Skeleton,
   Spinner,
   Switch,
+  SubtabNav,
   Tabs,
   Textarea,
   toast,
@@ -134,6 +138,27 @@ const INVOICE_COLUMNS: RecordColumn<Invoice>[] = [
   { key: 'amount', label: 'Amount', kind: 'amount', sortable: true, format: usd },
 ]
 
+type ActivityRow = { id: string; section: 'recent' | 'archived'; action: string; actor: string; date: string }
+const ACTIVITY_ROWS: ActivityRow[] = [
+  { id: '1', section: 'recent', action: 'Invoice approved', actor: 'Ada Lovelace', date: 'Jul 21' },
+  { id: '2', section: 'recent', action: 'Payment recorded', actor: 'Grace Hopper', date: 'Jul 21' },
+  { id: '3', section: 'recent', action: 'Vendor updated', actor: 'Alan Turing', date: 'Jul 20' },
+  { id: '4', section: 'recent', action: 'Report published', actor: 'Katherine Johnson', date: 'Jul 20' },
+  { id: '5', section: 'recent', action: 'Project created', actor: 'Ada Lovelace', date: 'Jul 19' },
+  { id: '6', section: 'recent', action: 'Credit applied', actor: 'Grace Hopper', date: 'Jul 19' },
+  { id: '7', section: 'recent', action: 'Budget revised', actor: 'Alan Turing', date: 'Jul 18' },
+  { id: '8', section: 'recent', action: 'Period closed', actor: 'Katherine Johnson', date: 'Jul 18' },
+  { id: '9', section: 'archived', action: 'Import completed', actor: 'Ada Lovelace', date: 'Jun 30' },
+  { id: '10', section: 'archived', action: 'Rate changed', actor: 'Grace Hopper', date: 'Jun 28' },
+  { id: '11', section: 'archived', action: 'Account merged', actor: 'Alan Turing', date: 'Jun 27' },
+  { id: '12', section: 'archived', action: 'Export generated', actor: 'Katherine Johnson', date: 'Jun 25' },
+]
+const ACTIVITY_COLUMNS: PagedColumn<ActivityRow>[] = [
+  { key: 'action', header: 'Activity', cell: (row) => row.action, search: (row) => row.action },
+  { key: 'actor', header: 'By', cell: (row) => row.actor, search: (row) => row.actor },
+  { key: 'date', header: 'Date', align: 'right', cell: (row) => row.date },
+]
+
 type LineRow = { item: string; qty: string; rate: string; account: string }
 const ACCOUNTS = [
   { value: 'services', label: 'Services income' },
@@ -162,6 +187,7 @@ export default function ComponentGallery() {
   const [open, setOpen] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
   const [tab, setTab] = React.useState('overview')
+  const [tableTab, setTableTab] = React.useState('recent')
   const [progress, setProgress] = React.useState(12)
 
   React.useEffect(() => {
@@ -422,6 +448,15 @@ export default function ComponentGallery() {
                 searchPlaceholder="Search people…"
               />
             </div>
+            <div className="space-y-1.5">
+              <Label>URL-backed filter</Label>
+              <SearchSelectFilter
+                paramKey="person"
+                label="Person"
+                options={PEOPLE.map(({ value, label, hint }) => ({ value, label, hint }))}
+                allLabel="All people"
+              />
+            </div>
             <Button variant="outline" onClick={(e) => menu.openBelow(e.currentTarget)}>
               <MoreHorizontal className="size-4" /> Actions
             </Button>
@@ -474,11 +509,36 @@ export default function ComponentGallery() {
           />
         </Section>
 
+        <Section
+          title="Paged tables & subtabs"
+          description="Bounded in-memory tables with search, pagination, row renderers, and detail-style subtab navigation."
+          i={9}
+        >
+          <SubtabNav
+            tabs={[
+              { key: 'recent', label: 'Recent', count: ACTIVITY_ROWS.filter((row) => row.section === 'recent').length },
+              { key: 'archived', label: 'Archived', count: ACTIVITY_ROWS.filter((row) => row.section === 'archived').length },
+            ]}
+            active={tableTab}
+            onSelect={setTableTab}
+            ariaLabel="Activity sections"
+            className="border-b border-border"
+          />
+          <PagedTable
+            rows={ACTIVITY_ROWS.filter((row) => row.section === tableTab)}
+            columns={ACTIVITY_COLUMNS}
+            pageSize={5}
+            searchable
+            empty={<p className="text-sm text-fg-muted">No activity</p>}
+            rowKey={(row) => row.id}
+          />
+        </Section>
+
         {/* Line editor */}
         <Section
           title="Line editor"
           description="A spreadsheet-grade line-item grid. Enter adds a row, Alt+↑/↓ moves, ⌘D duplicates, ⌘⌫ removes."
-          i={9}
+          i={10}
         >
           <LineGrid
             columns={LINE_COLUMNS}

@@ -55,6 +55,13 @@ Faithful or generalized extractions:
   faithful default.
 - `RecordList` and URL-driven search/filter/sort/pagination are generalized from
   reference A production list pages and navigation helpers.
+- `PagedTable` is copied from reference A `web/components/paged-table.tsx` with
+  localized copy moved to props and raw palette values tokenized. Its bounded
+  search, clamped pages, aligned cells, row classes, and source caller signature
+  are retained. `SearchSelectFilter` is the corresponding long-option URL
+  filter from `filter-bar.tsx`, routed through AppKit's injectable list-nav
+  provider. `SubtabNav` is the source `documents/DrawerTabs.tsx` detail/drawer
+  grammar with optional counts and disabled states as additive generalizations.
 - `Select` is the reference B native-`<select>`-API implementation from
   `packages/ui/src/select.tsx` and `select-options.ts`, copied
   at source parity with its upstream tests. It preserves `<option>`/
