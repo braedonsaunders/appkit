@@ -69,23 +69,28 @@ export type ReportDefinition = {
 export type ReportFormat = 'screen' | 'csv' | 'xlsx' | 'pdf'
 
 export type ReportSchedule = {
-  schemaVersion: 1
+  schemaVersion?: 1
   id: string
-  reportId: string
+  definitionId: string
   name: string
-  enabled: boolean
+  active: boolean
   cadence: 'daily' | 'weekly' | 'monthly'
   timezone: string
   hour: number
   minute: number
-  dayOfWeek?: number
-  dayOfMonth?: number
-  weekOfMonth?: 1 | 2 | 3 | 4 | 5
-  repeatEvery?: number
-  startsOn?: string
-  endsOn?: string
-  format: Exclude<ReportFormat, 'screen'>
-  recipients: string[]
+  dayOfWeek?: number | null
+  dayOfMonth?: number | null
+  weekOfMonth?: 1 | 2 | 3 | 4 | 5 | null
+  repeatEvery: number
+  startsOn?: string | null
+  endsOn?: string | null
+  recipientUserIds: string[]
+  recipientEmails: string[]
+  filters: Record<string, unknown>
+  emailSubject?: string | null
+  emailMessage?: string | null
+  nextRunAt?: string | Date | null
+  lastRunAt?: string | Date | null
 }
 
 export function resolveReportLayout(value?: Partial<ReportLayout> | null): ReportLayout {

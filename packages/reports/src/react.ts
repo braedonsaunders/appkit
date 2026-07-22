@@ -1,4 +1,16 @@
 export { ReportStudio, ReportResultView, reportStudioTemplates, type ReportStudioTemplate, type ReportStudioValue } from './report-studio'
+export {
+  ReportRunDetail,
+  ReportRunHistory,
+  ReportScheduleForm,
+  ReportScheduleList,
+  type ReportRunHistoryProps,
+  type ReportScheduleDefinitionOption,
+  type ReportScheduleFormProps,
+  type ReportScheduleListProps,
+  type ReportScheduleMemberOption,
+  type ReportScheduleRun,
+} from './report-schedules'
 export { ReportPaper } from './report-paper'
 export { PaperView } from './paper-view'
 export {

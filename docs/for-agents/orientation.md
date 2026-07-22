@@ -441,6 +441,12 @@ lease-based idempotent run claiming. `@appkit/reports/react` preserves the
 production report surface: `ReportStudio` has the one-third scrolling build rail
 and two-thirds live paper preview, grouped searchable sources, catalogue-derived
 templates, ordered/searchable columns, and debounced preview/autosave adapters;
+`ReportScheduleForm` preserves the production create/edit contract for daily,
+weekly, day-of-month, and nth-weekday delivery, member and external recipients,
+date bounds, timezone, report filters, and custom email copy;
+`ReportScheduleList`, `ReportRunHistory`, and `ReportRunDetail` preserve the
+searchable schedule register, pause/resume and run-now actions, paged execution
+history, failure output, and generated-artifact seam;
 `PaperView` and `ReportPaper` provide the
 shared document presentation; `StatementMatrixTable` keeps grouped headings,
 hierarchy, accounting currency, actual/thousands/millions scaling, percentage
@@ -452,11 +458,14 @@ customer/dimension/basis/scale/section filter surface, PDF-backed print, and
 multi-format actions.
 The recursive filter editor, ordered/renamable columns, three-level sort, page
 setup, schedule, run, and save controls write the same contracts the compiler
-consumes. Applications inject their catalogue, tenant-scoped execution,
-persistence, typed drill target/loader, native record opener, and export/delivery
-transport. Domain-specific built-in definitions remain in the consuming
-application rather than becoming framework defaults. Applications rendering
-these React surfaces import `@appkit/reports/styles.css` alongside
+consumes. Schedule create and update adapters share
+`parseReportScheduleForm`, so cadence, bounded filters, recipient policy, and
+delivery copy cannot drift between mutations. Applications inject their
+catalogue, tenant-scoped execution, persistence, member lookup, typed drill
+target/loader, native record opener, and export/delivery transport.
+Domain-specific built-in definitions remain in the consuming application rather
+than becoming framework defaults. Applications rendering these React surfaces
+import `@appkit/reports/styles.css` alongside
 `@appkit/ui/styles.css` so Tailwind v4 scans the packaged components.
 
 The stored query plan intentionally keeps the production contract names:

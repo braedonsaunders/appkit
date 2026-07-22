@@ -56,13 +56,13 @@ async function verifyNodeAndReactConsumer() {
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { parseFormula } from '@appkit/analytics'
-import { compileCustomReport } from '@appkit/reports'
+import { compileCustomReport, parseReportScheduleForm } from '@appkit/reports'
 import { color } from '@appkit/tokens'
 import { Button, PagedTable, PromptRoot, SubtabNav } from '@appkit/ui'
 import { emptyFormSchema, validateFormSchema } from '@appkit/forms-core'
 import { createDesignDocument } from '@appkit/design-studio'
 import { DesignStudioEditor } from '@appkit/design-studio/react'
-import { ReportFilterBar, ReportPaper, StatementMatrixTable, Table, TableBody, TableCell, TableRow, reportStudioTemplates } from '@appkit/reports/react'
+import { ReportFilterBar, ReportPaper, ReportRunHistory, ReportScheduleForm, ReportScheduleList, StatementMatrixTable, Table, TableBody, TableCell, TableRow, reportStudioTemplates } from '@appkit/reports/react'
 import { createCustomizationEngine } from '@appkit/customization'
 import { createMemoryListViewStore } from '@appkit/customization/memory'
 import { RecordListView } from '@appkit/customization/react'
@@ -83,6 +83,16 @@ assert.match(renderToStaticMarkup(React.createElement(ReportPaper, { company: 'E
 assert.match(renderToStaticMarkup(React.createElement(StatementMatrixTable, { view: { columns: [{ key: 'actual', label: 'Actual', kind: 'amount' }, { key: 'variance', label: 'Variance', kind: 'variance_pct' }], lines: [{ key: 'revenue', kind: 'account', label: 'Revenue', depth: 0, accountId: 'account-1', values: [125000, 12.5] }] }, currency: 'USD', scale: 'thousands' })), /Revenue/)
 assert.match(renderToStaticMarkup(React.createElement(ReportFilterBar, { value: { period: 'this_month' }, onChange() {}, controls: { period: true, breakout: true, compare: true, basis: true, scale: true, showZero: true }, dimensions: { departments: [], projects: [], locations: [], classes: [] } })), /Breakout/)
 assert.equal(reportStudioTemplates({ key: 'entries', label: 'Entries', category: 'ledger', description: 'Entries', from: 'entries e', orgColumn: 'e.org_id', columns: [{ key: 'posted_on', label: 'Posted on', kind: 'date', expr: 'e.posted_on' }, { key: 'status', label: 'Status', kind: 'enum', expr: 'e.status' }, { key: 'amount', label: 'Amount', kind: 'number', expr: 'e.amount' }] }).length, 4)
+const scheduleFormData = new FormData()
+for (const [key, value] of Object.entries({ definitionId: 'report-1', name: 'Weekly ledger', cadence: 'weekly', repeatEvery: '1', dayOfWeek: '1', hour: '7', minute: '30', timezone: 'America/Toronto', recipientUserIds: 'user-1', recipientEmails: 'finance@example.com', filters: '{"days":30}' })) scheduleFormData.set(key, value)
+const parsedSchedule = parseReportScheduleForm(scheduleFormData)
+assert.deepEqual(parsedSchedule.recipientUserIds, ['user-1'])
+assert.deepEqual(parsedSchedule.filters, { days: 30 })
+const sourceSchedule = { id: 'schedule-1', definitionId: 'report-1', name: 'Weekly ledger', active: true, cadence: 'weekly', timezone: 'America/Toronto', hour: 7, minute: 30, dayOfWeek: 1, dayOfMonth: null, weekOfMonth: null, repeatEvery: 1, startsOn: null, endsOn: null, recipientUserIds: ['user-1'], recipientEmails: ['finance@example.com'], filters: { days: 30 }, emailSubject: null, emailMessage: null, nextRunAt: '2026-07-27T11:30:00.000Z', lastRunAt: null }
+const scheduleDefinitions = [{ id: 'report-1', name: 'General ledger', category: 'Financial statements', kind: 'built_in' }]
+assert.match(renderToStaticMarkup(React.createElement(ReportScheduleForm, { definitions: scheduleDefinitions, members: [{ userId: 'user-1', name: 'Ada', email: 'ada@example.com' }], initial: sourceSchedule, onSubmit() {} })), /Weekly ledger/)
+assert.match(renderToStaticMarkup(React.createElement(ReportScheduleList, { schedules: [sourceSchedule], definitions: scheduleDefinitions })), /Every Monday/)
+assert.match(renderToStaticMarkup(React.createElement(ReportRunHistory, { runs: [{ id: 'run-1', scheduleId: sourceSchedule.id, trigger: 'scheduled', status: 'succeeded', rowCount: 12, startedAt: '2026-07-20T11:30:00.000Z', finishedAt: '2026-07-20T11:30:04.000Z', artifact: { filename: 'ledger.pdf', sizeBytes: 1024, contentType: 'application/pdf', createdAt: '2026-07-20T11:30:04.000Z' } }] })), /ledger\.pdf/)
 assert.match(renderToStaticMarkup(React.createElement(PagedTable, { rows: [{ id: '1', name: 'Ready' }], columns: [{ key: 'name', header: 'Name', cell: row => row.name }], empty: 'Empty', rowKey: row => row.id })), /Ready/)
 assert.match(renderToStaticMarkup(React.createElement(SubtabNav, { tabs: [{ key: 'details', label: 'Details' }], active: 'details' })), /aria-selected="true"/)
 assert.equal(renderToStaticMarkup(React.createElement(PromptRoot)), '')
@@ -106,8 +116,8 @@ import type { PagedColumn, SubtabNavProps } from '@appkit/ui'
 import type { AttachmentPanelProps } from '@appkit/storage/react'
 import type { MemoryAttachmentAdapterOptions } from '@appkit/storage/memory'
 import type { DesignStudioEditorProps } from '@appkit/design-studio/react'
-import type { ReportCustomQuery, ReportDrillLoader, ReportPaperData } from '@appkit/reports'
-import type { ReportDrillDrawerText, ReportStudioValue, StatementMatrixView } from '@appkit/reports/react'
+import type { ParsedReportScheduleForm, ReportCustomQuery, ReportDrillLoader, ReportPaperData, ReportSchedule } from '@appkit/reports'
+import type { ReportDrillDrawerText, ReportScheduleFormProps, ReportScheduleListProps, ReportScheduleRun, ReportStudioValue, StatementMatrixView } from '@appkit/reports/react'
 import type { DrizzleListViewStoreOptions } from '@appkit/customization/drizzle'
 import type { MemoryListViewStoreOptions } from '@appkit/customization/memory'
 import type { RecordListViewProps } from '@appkit/customization/react'
@@ -128,6 +138,11 @@ void (null as unknown as ReportDrillLoader<unknown>)
 void (null as unknown as ReportDrillDrawerText)
 void (null as unknown as ReportStudioValue)
 void (null as unknown as StatementMatrixView)
+void (null as unknown as ParsedReportScheduleForm)
+void (null as unknown as ReportSchedule)
+void (null as unknown as ReportScheduleFormProps)
+void (null as unknown as ReportScheduleListProps)
+void (null as unknown as ReportScheduleRun)
 void (null as unknown as DrizzleListViewStoreOptions)
 void (null as unknown as MemoryListViewStoreOptions)
 void (null as unknown as RecordListViewProps<{ id: string; number: string }>)
