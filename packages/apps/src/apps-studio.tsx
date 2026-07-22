@@ -6,7 +6,7 @@ import { javascript } from '@codemirror/lang-javascript'
 import { html } from '@codemirror/lang-html'
 import { css } from '@codemirror/lang-css'
 import { json } from '@codemirror/lang-json'
-import { Box, Braces, Check, ChevronDown, ChevronRight, Eye, File, FileArchive, FileCode2, FileImage, FilePlus2, FileText, Folder, FolderOpen, Globe2, History, PackagePlus, Palette, Plus, Search, ShieldCheck, Store, Trash2, Upload } from 'lucide-react'
+import { Box, Braces, Check, ChevronDown, ChevronRight, File, FileArchive, FileCode2, FileImage, FilePlus2, FileText, Folder, FolderOpen, Globe2, PackagePlus, Palette, Plus, Search, ShieldCheck, Store, Trash2, Upload } from 'lucide-react'
 import { Badge, Button, Drawer, Input, Label, Select, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Textarea, cn } from '@appkit/ui'
 import type { AppFile, AppListing, AppMetaUpdate, AppRun, AppStatus, InstalledApp } from './index'
 import type { AppBundleFile } from './bundle'
@@ -251,22 +251,21 @@ function AppEditorDrawer({ app, files, runs, capabilities, context, onClose, onS
     onClose={onClose}
     title={app.name}
     description={`${app.key} · v${app.version}`}
-    size="2xl"
-    initialFullscreen
-    bodyClassName="flex min-h-0 flex-col overflow-hidden p-0"
+    size="xl"
+    bodyClassName="flex min-h-0 flex-col overflow-hidden px-6 py-5"
     headerActions={<>
       {tab === 'overview' ? <Button size="sm" onClick={saveMeta} disabled={busy || !meta.name.trim()}><Check className="size-4" /> Save settings</Button> : null}
       {tab === 'files' ? <Button size="sm" onClick={saveFile} disabled={busy || !selectedFile || selectedFile.isBinary || !dirtyPaths.has(selectedFile.path)}><Check className="size-4" /> {dirtyPaths.has(selectedFile?.path ?? '') ? 'Save file' : 'Saved'}</Button> : null}
     </>}
   >
-    <div className="flex shrink-0 gap-1 overflow-x-auto border-b border-border px-5">
+    <div className="flex shrink-0 gap-1 overflow-x-auto border-b border-border px-1">
       <Tab active={tab === 'overview'} onClick={() => setTab('overview')}>Overview</Tab>
-      <Tab active={tab === 'files'} onClick={() => setTab('files')}>Files <span>{fileList.length}</span></Tab>
-      <Tab active={tab === 'preview'} icon={<Eye />} onClick={() => setTab('preview')}>Preview</Tab>
-      <Tab active={tab === 'runs'} icon={<History />} onClick={() => setTab('runs')}>Runs <span>{runs.length}</span></Tab>
+      <Tab active={tab === 'files'} onClick={() => setTab('files')}>Files</Tab>
+      <Tab active={tab === 'preview'} onClick={() => setTab('preview')}>Preview</Tab>
+      <Tab active={tab === 'runs'} onClick={() => setTab('runs')}>Runs{runs.length ? <span className="ml-1.5 rounded-full bg-bg-subtle px-1.5 text-[11px] text-fg-muted">{runs.length}</span> : null}</Tab>
     </div>
-    <div className="min-h-0 flex-1 overflow-hidden">
-      {tab === 'overview' ? <div className="h-full overflow-auto p-6"><div className="mx-auto max-w-3xl space-y-6">
+    <div key={tab} className="min-h-0 flex-1 overflow-y-auto p-1 pt-4">
+      {tab === 'overview' ? <div className="mx-auto max-w-3xl space-y-6">
         <div className="grid gap-5 sm:grid-cols-2">
           <Field label="Name"><Input value={meta.name} onChange={(event) => setMeta((current) => ({ ...current, name: event.currentTarget.value }))} /></Field>
           <Field label="Version"><Input value={meta.version} onChange={(event) => setMeta((current) => ({ ...current, version: event.currentTarget.value }))} /></Field>
@@ -277,19 +276,19 @@ function AppEditorDrawer({ app, files, runs, capabilities, context, onClose, onS
         <section className="space-y-3"><div><h3 className="font-semibold text-fg">Capabilities</h3><p className="text-sm text-fg-muted">Requested capabilities are granted explicitly and intersected with the invoking user.</p></div><div className="grid gap-2 sm:grid-cols-2">{capabilities.map((capability) => { const requested = meta.requestedPermissions.includes(capability.key); const granted = meta.grantedPermissions.includes(capability.key); return <div key={capability.key} className={cn('rounded-lg border p-3', requested ? 'border-border bg-surface' : 'border-border-subtle bg-bg-subtle')}><span className="block text-sm font-medium text-fg">{capability.label}</span><span className="block text-xs leading-5 text-fg-muted">{capability.description}</span><span className="mt-3 flex gap-4 text-xs text-fg-muted"><label className="flex items-center gap-2"><input type="checkbox" className="size-4 accent-primary" checked={requested} onChange={(event) => setMeta((current) => ({ ...current, requestedPermissions: event.currentTarget.checked ? [...current.requestedPermissions, capability.key] : current.requestedPermissions.filter((key) => key !== capability.key), grantedPermissions: event.currentTarget.checked ? current.grantedPermissions : current.grantedPermissions.filter((key) => key !== capability.key) }))} /> Requested</label><label className={cn('flex items-center gap-2', !requested && 'opacity-50')}><input type="checkbox" className="size-4 accent-primary" disabled={!requested} checked={granted} onChange={(event) => setMeta((current) => ({ ...current, grantedPermissions: event.currentTarget.checked ? [...current.grantedPermissions, capability.key] : current.grantedPermissions.filter((key) => key !== capability.key) }))} /> Granted</label></span></div> })}</div></section>
         <EndpointEditor endpoints={endpoints} files={fileList} onChange={setEndpoints} />
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5"><div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => void onPublish(app.key)}><Globe2 className="size-4" /> Publish</Button><Button size="sm" variant="outline" onClick={() => void onStatusChange(app.key, app.status === 'installed' ? 'disabled' : 'installed')}>{app.status === 'installed' ? 'Disable' : 'Enable'}</Button></div><Button size="sm" variant="destructive" onClick={() => void onDelete(app.key)}><Trash2 className="size-4" /> Delete app</Button></div>
-      </div></div> : null}
-      {tab === 'files' ? <div className="grid h-full min-h-[34rem] grid-cols-[15rem_minmax(0,1fr)]">
-        <aside className="flex min-h-0 flex-col border-r border-border bg-bg-subtle">
+      </div> : null}
+      {tab === 'files' ? <div className="flex h-[calc(100vh-16rem)] min-h-[420px] overflow-hidden rounded-lg border border-border">
+        <aside className="flex w-60 shrink-0 flex-col border-r border-border bg-bg-subtle">
           <div className="flex items-center gap-1 border-b border-border px-2 py-1.5"><input ref={uploadRef} type="file" className="hidden" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) void uploadFile(file); event.currentTarget.value = '' }} /><Button size="sm" variant="ghost" title="New file" onClick={() => setNewPath((current) => current || `${selectedPath.split('/').slice(0, -1).join('/')}/`)}><FilePlus2 className="size-4" /></Button><Button size="sm" variant="ghost" title="Upload file" onClick={() => uploadRef.current?.click()}><Upload className="size-4" /></Button><Button size="sm" variant="ghost" title="Delete file" disabled={!selectedFile || selectedFile.path === app.manifest?.frontend.entry || endpoints.some((endpoint) => endpoint.file === selectedFile.path)} onClick={removeFile}><Trash2 className="size-4" /></Button></div>
           {newPath ? <div className="flex gap-1 border-b border-border p-2"><Input autoFocus value={newPath} onChange={(event) => setNewPath(event.currentTarget.value)} placeholder="frontend/file.js" className="h-8 text-xs" onKeyDown={(event) => { if (event.key === 'Enter') void addFile(); if (event.key === 'Escape') setNewPath('') }} /><Button size="sm" onClick={addFile}>Add</Button></div> : null}
           <div className="min-h-0 flex-1 overflow-y-auto p-1">{renderFolder(tree, 0)}</div>
         </aside>
-        <section className="flex min-h-0 min-w-0 flex-col bg-bg">{selectedFile ? <>
+        <section className="min-w-0 flex-1 bg-bg">{selectedFile ? <div className="flex h-full flex-col">
           <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-1.5"><span className="truncate font-mono text-xs text-fg-muted">{selectedFile.path}{dirtyPaths.has(selectedFile.path) ? <span className="ml-1 text-warning">●</span> : null}</span><span className="text-[11px] text-fg-subtle">{selectedFile.kind}</span></div>
-          {selectedFile.isBinary ? <div className="grid flex-1 place-items-center"><div className="text-center text-sm text-fg-muted"><FileImage className="mx-auto mb-2 size-8 text-fg-subtle" /><p className="font-mono text-xs">{selectedFile.path}</p><p className="mt-1 text-xs">Binary file · {selectedFile.contentType} · {selectedFile.size.toLocaleString()} bytes</p></div></div> : <div className="min-h-0 flex-1 overflow-hidden"><CodeMirror className="appkit-code-editor" value={selectedFile.content} onChange={(value) => { setDraftFiles((current) => { const next = new Map(current); next.set(selectedFile.path, { ...selectedFile, content: value, size: value.length }); return next }); setDirtyPaths((current) => new Set(current).add(selectedFile.path)) }} extensions={editorExtensions(selectedFile.path)} theme="dark" height="100%" basicSetup={{ lineNumbers: true, foldGutter: true, autocompletion: true }} onKeyDown={(event) => { if ((event.metaKey || event.ctrlKey) && event.key === 's') { event.preventDefault(); void saveFile() } }} /></div>}
-        </> : <div className="grid flex-1 place-items-center text-sm text-fg-muted">Select or create a file.</div>}</section>
+          {selectedFile.isBinary ? <div className="grid flex-1 place-items-center"><div className="text-center text-sm text-fg-muted"><FileImage className="mx-auto mb-2 size-8 text-fg-subtle" /><p className="font-mono text-xs">{selectedFile.path}</p><p className="mt-1 text-xs">Binary file · {selectedFile.contentType} · {selectedFile.size.toLocaleString()} bytes</p></div></div> : <div className="min-h-0 flex-1 overflow-auto"><CodeMirror className="appkit-code-editor" value={selectedFile.content} onChange={(value) => { setDraftFiles((current) => { const next = new Map(current); next.set(selectedFile.path, { ...selectedFile, content: value, size: value.length }); return next }); setDirtyPaths((current) => new Set(current).add(selectedFile.path)) }} extensions={editorExtensions(selectedFile.path)} theme="dark" height="100%" basicSetup={{ lineNumbers: true, foldGutter: true, autocompletion: true }} onKeyDown={(event) => { if ((event.metaKey || event.ctrlKey) && event.key === 's') { event.preventDefault(); void saveFile() } }} /></div>}
+        </div> : <div className="grid h-full place-items-center text-sm text-fg-muted">Select or create a file.</div>}</section>
       </div> : null}
-      {tab === 'preview' ? <div className="h-full overflow-auto bg-bg-subtle p-4">{preview ? <div className="mx-auto max-w-6xl overflow-hidden rounded-xl border border-border bg-surface shadow-lg"><div className="flex items-center justify-between border-b border-border px-4 py-2 text-xs text-fg-muted"><span className="flex items-center gap-2"><ShieldCheck className="size-3.5 text-success" /> Opaque-origin sandbox</span><span>No cookies · no parent DOM · no ambient network</span></div><AppFrame appKey={app.key} context={context} bundle={preview} onBridgeCall={onBridgeCall} /></div> : <div className="grid min-h-80 place-items-center text-sm text-fg-muted">The frontend entry file is missing.</div>}</div> : null}
+      {tab === 'preview' ? <div className="rounded-lg bg-bg-subtle p-4">{preview ? <div className="mx-auto max-w-6xl overflow-hidden rounded-xl border border-border bg-surface shadow-lg"><div className="flex items-center justify-between border-b border-border px-4 py-2 text-xs text-fg-muted"><span className="flex items-center gap-2"><ShieldCheck className="size-3.5 text-success" /> Opaque-origin sandbox</span><span>No cookies · no parent DOM · no ambient network</span></div><AppFrame appKey={app.key} context={context} bundle={preview} onBridgeCall={onBridgeCall} /></div> : <div className="grid min-h-80 place-items-center text-sm text-fg-muted">The frontend entry file is missing.</div>}</div> : null}
       {tab === 'runs' ? <AppRuns runs={runs} /> : null}
     </div>
   </Drawer>
@@ -313,7 +312,7 @@ export function AppLibrary({ listings, installedKeys = new Set(), onInstall, cla
   return <div className={cn('grid gap-4 sm:grid-cols-2 xl:grid-cols-3', className)}>{listings.map((listing) => { const installed = installedKeys.has(listing.key); return <article key={listing.id} className="flex min-h-56 flex-col rounded-xl border border-border bg-surface p-5 shadow-sm"><div className="flex items-start justify-between gap-3"><span className="grid size-11 place-items-center rounded-xl bg-primary-subtle text-primary"><Store className="size-5" /></span><Badge variant="outline">v{listing.version}</Badge></div><h3 className="mt-4 text-lg font-semibold text-fg">{listing.name}</h3><p className="mt-1 line-clamp-3 flex-1 text-sm leading-6 text-fg-muted">{listing.description || 'No description provided.'}</p><div className="mt-4 flex items-center justify-between gap-3"><span className="text-xs text-fg-subtle">{listing.manifest.permissions.length} capabilities requested</span><Button size="sm" disabled={installed} onClick={() => void onInstall(listing)}>{installed ? <Check className="size-4" /> : <FileArchive className="size-4" />}{installed ? 'Installed' : 'Install'}</Button></div></article> })}</div>
 }
 
-function Tab({ active, icon, onClick, children }: { active: boolean; icon?: React.ReactNode; onClick: () => void; children: React.ReactNode }) { return <button type="button" onClick={onClick} className={cn('flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium [&>svg]:size-4', active ? 'border-primary text-primary' : 'border-transparent text-fg-muted hover:text-fg')}>{icon}{children}</button> }
+function Tab({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) { return <button type="button" onClick={onClick} className={cn('-mb-px flex shrink-0 items-center border-b-2 px-3 py-2 text-sm font-medium transition-colors', active ? 'border-primary text-primary' : 'border-transparent text-fg-muted hover:text-fg')}>{children}</button> }
 function Field({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) { return <div className={cn('space-y-2', className)}><Label>{label}</Label>{children}</div> }
 function Log({ title, value }: { title: string; value: string }) { return <section className="space-y-2"><h3 className="text-xs font-semibold tracking-wide text-fg-muted uppercase">{title}</h3><pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-lg bg-bg-subtle p-4 font-mono text-xs leading-5 text-fg">{value}</pre></section> }
 function replaceAt<T>(values: T[], index: number, value: T): T[] { return values.map((current, candidate) => candidate === index ? value : current) }
