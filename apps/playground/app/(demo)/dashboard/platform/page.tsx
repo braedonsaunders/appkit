@@ -250,8 +250,9 @@ const GROUPS: AdminHubGroup[] = [
         description: 'Ship record customization as a native application capability instead of rebuilding an admin editor.',
         icon: <Paintbrush />,
         features: [
+          'Application-bound record catalogue shared by defaults, designers, runtime tables, API validation, and persistence',
           'Production form designer with ordered header groups, editable line columns, and record actions',
-          'Saved list-view designer with column widths, filters, sort, scope, and defaults',
+          'Saved list-view designer and runtime record table with views, subtabs, search, filters, sorting, paging, and drill-through',
           'Custom-field authoring plus versioned schemas, parsing, validation, linting, and refresh behavior',
         ],
         href: '/customization',

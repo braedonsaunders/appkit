@@ -3,8 +3,10 @@ import type {
   SavedListView,
 } from './list-runtime'
 import { assertListViewWriteAllowed, normalizeSavedListViewInput } from './list-runtime'
+import type { CustomizationRegistry } from './registry'
 
 export interface MemoryListViewStoreOptions {
+  registry: CustomizationRegistry
   views?: SavedListView[]
   preferences?: Iterable<readonly [string, string | null]>
   createId?: () => string
@@ -15,7 +17,7 @@ export interface MemoryListViewStoreOptions {
  * tests, and local-first applications. Its authorization and default rules
  * match the Drizzle repository.
  */
-export function createMemoryListViewStore(options: MemoryListViewStoreOptions = {}): MutableListViewStore {
+export function createMemoryListViewStore(options: MemoryListViewStoreOptions): MutableListViewStore {
   let views = structuredClone(options.views ?? [])
   const preferences = new Map(options.preferences ?? [])
   const createId = options.createId ?? (() => crypto.randomUUID())
@@ -39,7 +41,7 @@ export function createMemoryListViewStore(options: MemoryListViewStoreOptions = 
       preferences.set(preferenceKey(recordType, userId), viewId)
     },
     async save(input) {
-      const validated = normalizeSavedListViewInput(input)
+      const validated = normalizeSavedListViewInput(input, options.registry)
       const existing = input.id ? views.find((view) => view.id === input.id) : undefined
       assertListViewWriteAllowed(existing ?? validated, input.actor)
       if (existing && (existing.recordType !== input.recordType || existing.scope !== input.scope)) {

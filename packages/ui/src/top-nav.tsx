@@ -280,7 +280,10 @@ function GroupMenu({
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
       onClick={onSelect}
-      className={cn(sectioned && 'grid w-[32rem] grid-cols-2 gap-x-2 gap-y-1 p-1')}
+      className={cn(
+        'app-scroll max-h-[min(36rem,calc(100vh-5rem))] overflow-y-auto',
+        sectioned && 'grid w-[32rem] grid-cols-2 gap-x-2 gap-y-1 p-1',
+      )}
     >
       {blocks.map((block, blockIndex) =>
         block.kind === 'item' ? (

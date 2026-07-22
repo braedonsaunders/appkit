@@ -5,6 +5,7 @@ import { getDemoEnvironment } from '../../lib/server/demo-context'
 import { DEMO_AUDIT_EVENTS } from '../../lib/server/demo-data'
 import { isDatabaseConfigured } from '../../lib/server/platform'
 import { AppFrame } from '../../components/app-frame'
+import { PACKAGE_CATALOG, PACKAGE_CATEGORIES } from '../../lib/server/package-catalog'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,6 +43,11 @@ export default async function DemoLayout({ children }: { children: React.ReactNo
         createdAt: item.createdAt.toISOString(),
       }))}
       initialNavigationMode={storedNavigationMode === 'sidebar' ? 'sidebar' : 'topbar'}
+      packageNavigation={PACKAGE_CATALOG.map((item) => ({
+        href: `/packages/${item.slug}`,
+        label: item.name,
+        subgroup: PACKAGE_CATEGORIES.find((category) => category.key === item.category)?.label ?? 'Packages',
+      }))}
     >
       {children}
     </AppFrame>

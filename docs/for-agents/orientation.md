@@ -571,6 +571,10 @@ custom-field definitions. The framework-free root also resolves explicit,
 personal, organization, and system views in production order; merges newly
 registered/custom columns without losing user order; and executes the same
 search, filter, sort, and pagination contract in database-free applications.
+Applications bind their record metadata once with `createCustomizationEngine`;
+the returned key-based defaults, parse/lint/refresh helpers, and registry keep
+call sites source-shaped while preventing application records, storage tables,
+action vocabularies, and translation keys from leaking into AppKit.
 `@appkit/customization/react` exports the extracted `RecordListView`,
 `CustomizationStudio`, `FormDesigner`, `ListViewDesigner`, and
 `CustomFieldDesigner`. `RecordListView` is the consuming record surface: saved
@@ -579,7 +583,8 @@ record drill-through, actions, empty state, and controlled pagination. Currency,
 status semantics, labels, routing, and domain cell renderers are injected.
 
 `@appkit/customization/memory` supplies the complete authorization-aware saved
-view repository for database-free and local-first apps.
+view repository for database-free and local-first apps. Both memory and Drizzle
+stores require that bound registry and validate every write against it.
 `@appkit/customization/persistence-schema` owns the four extracted tenant tables
 for layouts/views and their per-user preferences, while
 `@appkit/customization/drizzle` supplies the RLS-compatible saved-view repository
@@ -595,6 +600,12 @@ browser-local persistence.
 
 The working references are `/workflows`, `/admin/integrations`,
 `/notifications`, and `/customization`.
+
+The playground top navigation separates **Demonstration** from **Packages**.
+`/packages` is generated from the committed workspace manifests and links to a
+detail page for every publishable package, including its real exports,
+dependencies, optional peers, tags, source, and available live reference. The
+catalogue inventory test fails when a package manifest is added without a page.
 
 For the rules any app on this foundation must follow, see
 [`building-applications.md`](building-applications.md).

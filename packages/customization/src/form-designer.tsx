@@ -15,8 +15,6 @@ import {
 import { Badge, Button, Checkbox, Input, Label, Select, cn } from '@appkit/ui'
 import {
   customFieldDefKey,
-  fieldMetaFor,
-  getRecordType,
   isCustomFieldKey,
 } from './registry'
 import { defaultFormLayout, mergeRegisteredFieldsIntoLayout } from './schema'
@@ -27,6 +25,7 @@ import type {
   HeaderFieldPlacement,
   HeaderGroup,
   LineColumnPlacement,
+  RecordTypeMeta,
 } from './types'
 import type {
   CustomFieldDefinition,
@@ -84,10 +83,11 @@ function reorder<T>(items: T[], from: number, to: number): T[] {
 
 function ensureFieldsPlaced(
   layout: FormLayoutConfig,
+  meta: RecordTypeMeta,
   headerFields: CustomFieldDefinition[],
   lineFields: CustomFieldDefinition[],
 ): FormLayoutConfig {
-  mergeRegisteredFieldsIntoLayout(layout)
+  mergeRegisteredFieldsIntoLayout(layout, meta)
   const placedHeader = new Set(layout.header.groups.flatMap((group) => group.fields.map((field) => field.key)))
   const firstGroup = layout.header.groups[0]
   if (firstGroup) {
@@ -131,20 +131,9 @@ const KIND_LABELS: Record<string, string> = {
   text: 'Text',
 }
 
-const ACTION_LABELS: Record<string, string> = {
-  customize: 'Customize',
-  pdf: 'PDF',
-  workflow: 'Workflow actions',
-  approval: 'Approval actions',
-  edit: 'Edit',
-  submit: 'Submit for approval',
-  post: 'Post',
-  gl_impact: 'Ledger impact',
-  delete: 'Delete',
-}
-
 export interface FormDesignerProps {
   recordType: string
+  meta: RecordTypeMeta
   form?: FormDefinition
   fields?: CustomFieldDefinition[]
   adapter: Pick<CustomizationDesignerAdapter, 'saveForm' | 'deleteForm' | 'saveField'>
@@ -157,6 +146,7 @@ export interface FormDesignerProps {
 
 export function FormDesigner({
   recordType,
+  meta,
   form,
   fields = [],
   adapter,
@@ -166,19 +156,19 @@ export function FormDesigner({
   onDeleted,
   className,
 }: FormDesignerProps) {
-  const meta = getRecordType(recordType)
-  if (!meta) throw new Error(`Unknown record type: ${recordType}`)
+  if (meta.key !== recordType) throw new Error('FormDesigner record type does not match metadata')
 
   const headerDefinitions = fields.filter((field) => field.level === 'header' && field.isActive)
   const lineDefinitions = fields.filter((field) => field.level === 'line' && field.isActive)
   const initial = useMemo(
     () =>
       ensureFieldsPlaced(
-        structuredClone(form?.layout ?? defaultFormLayout(recordType)),
+        structuredClone(form?.layout ?? defaultFormLayout(meta)),
+        meta,
         headerDefinitions,
         lineDefinitions,
       ),
-    [form, recordType],
+    [form, headerDefinitions, lineDefinitions, meta],
   )
   const [name, setName] = useState(form?.name ?? `${humanize(recordType)} form`)
   const [isDefault, setIsDefault] = useState(form?.isDefault ?? true)
@@ -205,13 +195,15 @@ export function FormDesigner({
 
   const fieldLabel = (key: string): string => {
     if (isCustomFieldKey(key)) return customByKey.get(customFieldDefKey(key))?.label ?? humanize(key)
-    const field = fieldMetaFor(recordType, key)
+    const field = meta.headerFields.find((candidate) => candidate.key === key)
+      ?? meta.lineFields.find((candidate) => candidate.key === key)
     return field ? resolveLabel(field.labelKey, humanize(key)) : humanize(key)
   }
   const fieldKind = (key: string): FieldKind | string | undefined =>
     isCustomFieldKey(key)
       ? customByKey.get(customFieldDefKey(key))?.fieldType
-      : fieldMetaFor(recordType, key)?.kind
+      : (meta.headerFields.find((candidate) => candidate.key === key)
+        ?? meta.lineFields.find((candidate) => candidate.key === key))?.kind
 
   const updateField = (groupIndex: number, fieldIndex: number, patch: Partial<HeaderFieldPlacement>) =>
     setLayout((current) => {
@@ -482,7 +474,9 @@ export function FormDesigner({
               {layout.actions.map((action, actionIndex) => (
                 <div key={action.key} className={cn('flex items-center gap-2 px-3 py-2', !action.visible && 'opacity-60')}>
                   <GripVertical className="size-4 text-fg-subtle" />
-                  <span className="flex-1 text-sm font-medium text-fg">{ACTION_LABELS[action.key] ?? humanize(action.key)}</span>
+                  <span className="flex-1 text-sm font-medium text-fg">
+                    {resolveLabel(meta.formActions?.find((candidate) => candidate.key === action.key)?.labelKey ?? action.key, humanize(action.key))}
+                  </span>
                   <IconControl label="Move action up" onClick={() =>
                     setLayout((current) => ({ ...current, actions: reorder(current.actions, actionIndex, actionIndex - 1) }))
                   }>

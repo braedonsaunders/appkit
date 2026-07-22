@@ -7,15 +7,10 @@
 
 import { z } from "zod";
 import {
-  RECORD_TYPE_BY_KEY,
-  isBuiltInColumn,
-  isBuiltInField,
-  isBuiltInFilter,
   isCustomFieldKey,
-  listColumnMeta,
-  listFilterMeta,
   OPERATORS_BY_KIND,
 } from "./registry";
+import type { CustomizationRegistry } from './registry'
 import type {
   FilterOperator,
   FormActionPlacement,
@@ -24,7 +19,7 @@ import type {
   LineColumnPlacement,
   ListColumnPlacement,
   ListViewConfig,
-  RecordTypeKey,
+  RecordTypeMeta,
 } from "./types";
 import { DEFAULT_PER_PAGE } from "./types";
 
@@ -38,7 +33,7 @@ const recordTypeSchema = z
   .string()
   .min(1)
   .max(60)
-  .refine((k) => k in RECORD_TYPE_BY_KEY, { message: "unknown record type" });
+  .regex(/^[a-z0-9_]+$/, "record type must be snake_case");
 
 const headerFieldPlacementSchema = z.object({
   key: fieldKeySchema,
@@ -61,20 +56,8 @@ const lineColumnPlacementSchema = z.object({
   labelOverride: z.string().max(120).nullable().optional(),
 });
 
-export const FORM_ACTION_KEYS = [
-  "customize",
-  "pdf",
-  "workflow",
-  "approval",
-  "edit",
-  "submit",
-  "post",
-  "gl_impact",
-  "delete",
-] as const;
-
 const formActionPlacementSchema = z.object({
-  key: z.enum(FORM_ACTION_KEYS),
+  key: fieldKeySchema,
   visible: z.boolean(),
 });
 
@@ -85,7 +68,7 @@ export const formLayoutConfigSchema = z.object({
   recordType: recordTypeSchema,
   header: z.object({ groups: z.array(headerGroupSchema).min(1).max(20) }),
   lines: z.object({ columns: z.array(lineColumnPlacementSchema).max(200) }),
-  actions: z.array(formActionPlacementSchema).length(FORM_ACTION_KEYS.length),
+  actions: z.array(formActionPlacementSchema).max(40),
 });
 
 const filterOperatorSchema = z.enum([
@@ -143,9 +126,9 @@ export interface LintIssue {
  * flags only on overridable fields. Custom field existence is checked at the
  * API layer (the def set is per-org + dynamic).
  */
-export function lintFormLayout(config: FormLayoutConfig): LintIssue[] {
+export function lintFormLayout(config: FormLayoutConfig, registry: CustomizationRegistry): LintIssue[] {
   const issues: LintIssue[] = []
-  const meta = RECORD_TYPE_BY_KEY[config.recordType]
+  const meta = registry.getRecordType(config.recordType)
   if (!meta) {
     issues.push({ path: "recordType", message: "unknown record type" })
     return issues
@@ -217,9 +200,15 @@ export function lintFormLayout(config: FormLayoutConfig): LintIssue[] {
       issues.push({ path: `actions[${ai}]`, message: `duplicate action "${action.key}"` })
     seenActions.add(action.key)
   })
-  for (const key of FORM_ACTION_KEYS) {
+  for (const { key } of meta.formActions ?? []) {
     if (!seenActions.has(key)) issues.push({ path: "actions", message: `action "${key}" is missing` })
   }
+  const actionKeys = new Set((meta.formActions ?? []).map((action) => action.key))
+  config.actions.forEach((action, ai) => {
+    if (!actionKeys.has(action.key)) {
+      issues.push({ path: `actions[${ai}]`, message: `unknown action "${action.key}"` })
+    }
+  })
 
   return issues
 }
@@ -230,9 +219,9 @@ export function lintFormLayout(config: FormLayoutConfig): LintIssue[] {
  * field kind; sort column is a known sortable; required values present per
  * operator. Custom-field columns/filters existence is checked at the API layer.
  */
-export function lintListView(config: ListViewConfig): LintIssue[] {
+export function lintListView(config: ListViewConfig, registry: CustomizationRegistry): LintIssue[] {
   const issues: LintIssue[] = []
-  const meta = RECORD_TYPE_BY_KEY[config.recordType]
+  const meta = registry.getRecordType(config.recordType)
   if (!meta) {
     issues.push({ path: "recordType", message: "unknown record type" })
     return issues
@@ -248,7 +237,7 @@ export function lintListView(config: ListViewConfig): LintIssue[] {
       seenCol.add(c.key)
       return
     }
-    const cm = listColumnMeta(config.recordType, c.key)
+    const cm = registry.listColumnMeta(config.recordType, c.key)
     if (!cm) {
       issues.push({ path, message: `unknown column "${c.key}"` })
       return
@@ -266,7 +255,7 @@ export function lintListView(config: ListViewConfig): LintIssue[] {
   config.filters.forEach((f, fi) => {
     const path = `filters[${fi}]`
     if (isCustomFieldKey(f.key)) return
-    const fm = listFilterMeta(config.recordType, f.key)
+    const fm = registry.listFilterMeta(config.recordType, f.key)
     if (!fm) {
       issues.push({ path, message: `unknown filter "${f.key}"` })
       return
@@ -293,7 +282,7 @@ export function lintListView(config: ListViewConfig): LintIssue[] {
   // Sort column must be a known sortable built-in (custom-field sort is not
   // supported — they live in jsonb and aren't indexed for sort).
   if (config.sort) {
-    const cm = listColumnMeta(config.recordType, config.sort.column)
+    const cm = registry.listColumnMeta(config.recordType, config.sort.column)
     if (!cm || !cm.sortable || isCustomFieldKey(config.sort.column))
       issues.push({ path: "sort", message: `"${config.sort.column}" is not sortable` })
   }
@@ -305,28 +294,6 @@ export function lintListView(config: ListViewConfig): LintIssue[] {
 /* Defaults — the system layout/view (used when no org/user config)    */
 /* ------------------------------------------------------------------ */
 
-/** Header col-spans reproduce the existing BillDrawer layout exactly. */
-const VENDOR_BILL_HEADER_SPAN: Record<string, number> = {
-  party_id: 2,
-  memo: 3,
-}
-
-/** Per-record-type header col-span defaults so a fresh baseline reads well.
- *  Falls back to VENDOR_BILL_HEADER_SPAN for transaction kinds. */
-const HEADER_SPAN_BY_TYPE: Record<string, Record<string, number>> = {
-  project: {
-    name: 3,
-    project_type_id: 2,
-    customer_id: 2,
-    foreman_id: 2,
-    manager_id: 2,
-    starts_on: 2,
-    ends_on: 2,
-    subsidiary_id: 4,
-    notes: 4,
-  },
-}
-
 /**
  * The system-default form layout for a record type — the form as it renders
  * today (before customization). Used when neither the org nor the user has a
@@ -334,10 +301,8 @@ const HEADER_SPAN_BY_TYPE: Record<string, Record<string, number>> = {
  * order. Custom fields are appended at render time by the web layer (they are
  * dynamic per org).
  */
-export function defaultFormLayout(recordType: RecordTypeKey): FormLayoutConfig {
-  const meta = RECORD_TYPE_BY_KEY[recordType]
-  if (!meta) throw new Error(`unknown record type: ${recordType}`)
-  const spanMap = HEADER_SPAN_BY_TYPE[recordType] ?? VENDOR_BILL_HEADER_SPAN
+export function defaultFormLayout(meta: RecordTypeMeta): FormLayoutConfig {
+  const recordType = meta.key
   return {
     schemaVersion: 1,
     defaultVisibilityVersion: 1,
@@ -353,7 +318,7 @@ export function defaultFormLayout(recordType: RecordTypeKey): FormLayoutConfig {
             visible: true,
             required: f.required ? true : null,
             labelOverride: null,
-            colSpan: spanMap[f.key] ?? null,
+            colSpan: f.defaultColSpan ?? null,
           })),
         },
       ],
@@ -366,7 +331,7 @@ export function defaultFormLayout(recordType: RecordTypeKey): FormLayoutConfig {
         labelOverride: null,
       })),
     },
-    actions: FORM_ACTION_KEYS.map<FormActionPlacement>((key) => ({ key, visible: true })),
+    actions: (meta.formActions ?? []).map<FormActionPlacement>(({ key }) => ({ key, visible: true })),
   }
 }
 
@@ -378,11 +343,13 @@ export function defaultFormLayout(recordType: RecordTypeKey): FormLayoutConfig {
  * system-default placement, so adding a native field never strands saved
  * forms on an obsolete shape.
  */
-export function mergeRegisteredFieldsIntoLayout(layout: FormLayoutConfig): FormLayoutConfig {
-  const meta = RECORD_TYPE_BY_KEY[layout.recordType]
-  if (!meta) return layout
+export function mergeRegisteredFieldsIntoLayout(
+  layout: FormLayoutConfig,
+  meta: RecordTypeMeta,
+): FormLayoutConfig {
+  if (meta.key !== layout.recordType) throw new Error('layout record type does not match catalogue metadata')
 
-  const defaults = defaultFormLayout(layout.recordType)
+  const defaults = defaultFormLayout(meta)
   const defaultHeader = new Map(defaults.header.groups.flatMap((group) => group.fields).map((field) => [field.key, field]))
   const placedHeader = new Set(layout.header.groups.flatMap((group) => group.fields).map((field) => field.key))
   if (layout.header.groups.length === 0) layout.header.groups.push({ id: "primary", label: null, fields: [] })
@@ -442,8 +409,9 @@ export function mergeRegisteredFieldsIntoLayout(layout: FormLayoutConfig): FormL
  * label, and required overrides survive. Custom fields remain in their chosen
  * groups. Named custom forms never pass through this baseline-only migration.
  */
-export function refreshDefaultFormLayout(layout: FormLayoutConfig): FormLayoutConfig {
-  const defaults = defaultFormLayout(layout.recordType)
+export function refreshDefaultFormLayout(layout: FormLayoutConfig, meta: RecordTypeMeta): FormLayoutConfig {
+  if (meta.key !== layout.recordType) throw new Error('layout record type does not match catalogue metadata')
+  const defaults = defaultFormLayout(meta)
   const defaultBuiltIns = defaults.header.groups.flatMap((group) => group.fields)
   const existingByKey = new Map(
     layout.header.groups.flatMap((group) => group.fields).map((field) => [field.key, field]),
@@ -464,13 +432,12 @@ export function refreshDefaultFormLayout(layout: FormLayoutConfig): FormLayoutCo
 
   layout.header.groups = customOnlyGroups.filter((group, index) => index === 0 || group.fields.length > 0)
   layout.defaultLayoutVersion = 1
-  return mergeRegisteredFieldsIntoLayout(layout)
+  return mergeRegisteredFieldsIntoLayout(layout, meta)
 }
 
 /** The system-default list view: all columns (registry order), no filters. */
-export function defaultListView(recordType: RecordTypeKey): ListViewConfig {
-  const meta = RECORD_TYPE_BY_KEY[recordType]
-  if (!meta) throw new Error(`unknown record type: ${recordType}`)
+export function defaultListView(meta: RecordTypeMeta): ListViewConfig {
+  const recordType = meta.key
   // Prefer date-desc (transaction date or created-at) for lists; otherwise the
   // first sortable column.
   const sortable =
@@ -501,7 +468,7 @@ export interface ParseResult<T> {
   issues: LintIssue[]
 }
 
-export function parseFormLayout(input: unknown): ParseResult<FormLayoutConfig> {
+export function parseFormLayout(input: unknown, registry: CustomizationRegistry): ParseResult<FormLayoutConfig> {
   const parsed = formLayoutConfigSchema.safeParse(input)
   if (!parsed.success) {
     return {
@@ -512,12 +479,12 @@ export function parseFormLayout(input: unknown): ParseResult<FormLayoutConfig> {
       })),
     }
   }
-  const lint = lintFormLayout(parsed.data)
+  const lint = lintFormLayout(parsed.data, registry)
   if (lint.length) return { success: false, issues: lint }
   return { success: true, data: parsed.data, issues: [] }
 }
 
-export function parseListView(input: unknown): ParseResult<ListViewConfig> {
+export function parseListView(input: unknown, registry: CustomizationRegistry): ParseResult<ListViewConfig> {
   const parsed = listViewConfigSchema.safeParse(input)
   if (!parsed.success) {
     return {
@@ -528,10 +495,9 @@ export function parseListView(input: unknown): ParseResult<ListViewConfig> {
       })),
     }
   }
-  const lint = lintListView(parsed.data)
+  const lint = lintListView(parsed.data, registry)
   if (lint.length) return { success: false, issues: lint }
   return { success: true, data: parsed.data, issues: [] }
 }
 
-/** Is `key` a known built-in field/column/filter for `recordType`? */
-export { isBuiltInField, isBuiltInColumn, isBuiltInFilter, isCustomFieldKey, OPERATORS_BY_KIND, type FilterOperator }
+export { isCustomFieldKey, OPERATORS_BY_KIND, type FilterOperator }

@@ -62,8 +62,9 @@ import { emptyFormSchema, validateFormSchema } from '@appkit/forms-core'
 import { createDesignDocument } from '@appkit/design-studio'
 import { DesignStudioEditor } from '@appkit/design-studio/react'
 import { ReportPaper, ReportTable, ReportTableBody, ReportTableCell, ReportTableRow } from '@appkit/reports/react'
-import { defaultListView } from '@appkit/customization'
+import { createCustomizationEngine } from '@appkit/customization'
 import { createMemoryListViewStore } from '@appkit/customization/memory'
+import { RecordListView } from '@appkit/customization/react'
 import { createMemoryAttachmentAdapter } from '@appkit/storage/memory'
 import { AttachmentPanel } from '@appkit/storage/react'
 import { createMemoryRecordApprovalAdapter } from '@appkit/workflows'
@@ -83,9 +84,13 @@ const approvalAdapter = createMemoryRecordApprovalAdapter()
 assert.equal(renderToStaticMarkup(React.createElement(RecordApprovalProvider, { adapter: approvalAdapter }, React.createElement(React.Fragment, null, React.createElement(ApprovalActions, { subjectKind: 'record', subjectId: 'one' }), React.createElement(ApprovalHistory, { subjectKind: 'record', subjectId: 'one' })))), '')
 const attachmentAdapter = createMemoryAttachmentAdapter()
 assert.match(renderToStaticMarkup(React.createElement(AttachmentPanel, { targetTable: 'records', targetId: 'one', canEdit: true, adapter: attachmentAdapter })), /Attachments/)
-const listStore = createMemoryListViewStore({ createId: () => 'view-1' })
-const savedView = await listStore.save({ recordType: 'vendor_bill', name: 'Mine', scope: 'user', config: defaultListView('vendor_bill'), actor: { userId: 'user-1' } })
-assert.equal((await listStore.list('vendor_bill', 'user-1'))[0]?.id, savedView.id)
+const recordMeta = { key: 'record', labelKey: 'records.record', category: 'entity', headerFields: [], lineFields: [], listColumns: [{ key: 'number', labelKey: 'fields.number', kind: 'reference', sortable: true, locked: true }], listFilters: [] }
+const customization = createCustomizationEngine([recordMeta])
+const listStore = createMemoryListViewStore({ registry: customization.registry, createId: () => 'view-1' })
+const recordView = customization.defaultListView('record')
+const savedView = await listStore.save({ recordType: 'record', name: 'Mine', scope: 'user', config: recordView, actor: { userId: 'user-1' } })
+assert.equal((await listStore.list('record', 'user-1'))[0]?.id, savedView.id)
+assert.match(renderToStaticMarkup(React.createElement(RecordListView, { meta: recordMeta, view: recordView, rows: [{ id: 'one', number: 'R-100' }], total: 1, page: 1, perPage: 25, views: [savedView], currentViewId: savedView.id, subtabs: [{ key: 'all', label: 'All', count: 1 }], activeSubtab: 'all', rowKey: row => row.id })), /R-100/)
 `,
   )
   await writeFile(
@@ -99,6 +104,7 @@ import type { ReportDrillLoader, ReportPaperData } from '@appkit/reports'
 import type { ReportDrillDrawerText, ReportStudioValue, StatementMatrixView } from '@appkit/reports/react'
 import type { DrizzleListViewStoreOptions } from '@appkit/customization/drizzle'
 import type { MemoryListViewStoreOptions } from '@appkit/customization/memory'
+import type { RecordListViewProps } from '@appkit/customization/react'
 import type { PersistedListViewScope } from '@appkit/customization/persistence-schema'
 import type { PromptDialogOptions } from '@appkit/ui'
 import type { RecordApprovalAdapter, RecordApprovalState } from '@appkit/workflows'
@@ -117,6 +123,7 @@ void (null as unknown as ReportStudioValue)
 void (null as unknown as StatementMatrixView)
 void (null as unknown as DrizzleListViewStoreOptions)
 void (null as unknown as MemoryListViewStoreOptions)
+void (null as unknown as RecordListViewProps<{ id: string; number: string }>)
 void (null as unknown as PersistedListViewScope)
 void (null as unknown as PromptDialogOptions)
 void (null as unknown as RecordApprovalAdapter)

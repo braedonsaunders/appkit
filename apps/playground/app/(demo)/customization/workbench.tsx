@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { defaultFormLayout, defaultListView, getRecordType, mergeListViewColumns, queryRecordList, type SavedListView } from '@appkit/customization'
+import { defaultListView, mergeListViewColumns, queryRecordList, type SavedListView } from '@appkit/customization'
 import {
   CustomizationStudio,
   RecordListView,
@@ -11,6 +11,7 @@ import {
   type ListViewDefinition,
 } from '@appkit/customization/react'
 import { Badge, Button, Drawer, Spinner } from '@appkit/ui'
+import { DEMO_CUSTOMIZATION, DEMO_RECORD_TYPES, DEMO_VENDOR_BILL } from './catalogue'
 
 const STORAGE_KEY = 'appkit-customization-studio-v2'
 
@@ -55,6 +56,15 @@ const SOURCE_LABELS: Record<string, string> = {
   'common.status.approved': 'Approved',
   'common.status.posted': 'Posted',
   'common.status.voided': 'Voided',
+  'actions.customize': 'Customize',
+  'actions.pdf': 'PDF',
+  'actions.workflow': 'Workflow actions',
+  'actions.approval': 'Approval actions',
+  'actions.edit': 'Edit',
+  'actions.submit': 'Submit for approval',
+  'actions.post': 'Post',
+  'actions.glImpact': 'Ledger impact',
+  'actions.delete': 'Delete',
 }
 
 const INITIAL_FORMS: FormDefinition[] = [
@@ -64,7 +74,7 @@ const INITIAL_FORMS: FormDefinition[] = [
     name: 'Standard vendor bill',
     isDefault: true,
     isActive: true,
-    layout: defaultFormLayout('vendor_bill'),
+    layout: DEMO_CUSTOMIZATION.defaultFormLayout('vendor_bill'),
   },
 ]
 
@@ -77,7 +87,7 @@ const INITIAL_VIEWS: ListViewDefinition[] = [
     isDefault: true,
     isActive: true,
     config: {
-      ...defaultListView('vendor_bill'),
+      ...DEMO_CUSTOMIZATION.defaultListView('vendor_bill'),
       filters: [{ key: 'status', operator: 'in', value: ['draft', 'pending_approval', 'approved'] }],
     },
   },
@@ -202,6 +212,7 @@ export function CustomizationWorkbench() {
         forms={forms}
         views={views}
         fields={fields}
+        recordTypes={DEMO_RECORD_TYPES}
         initialRecordType="vendor_bill"
         initialMode="views"
         resolveLabel={(messageKey, fallback) => SOURCE_LABELS[messageKey] ?? fallback}
@@ -232,12 +243,12 @@ const RECORD_ROWS = [
 ]
 
 function RecordListDemo({ views, fields, onCustomize, setViews }: { views: ListViewDefinition[]; fields: CustomFieldDefinition[]; onCustomize: () => void; setViews: React.Dispatch<React.SetStateAction<ListViewDefinition[]>> }) {
-  const meta = getRecordType('vendor_bill')!
+  const meta = DEMO_VENDOR_BILL
   const available = views.filter((view) => view.recordType === 'vendor_bill')
   const [viewId, setViewId] = React.useState(available.find((view) => view.isDefault)?.id ?? available[0]?.id ?? '')
   const selected = available.find((view) => view.id === viewId) ?? available[0]
   const dynamicColumns = fields.filter((field) => field.recordType === 'vendor_bill' && field.config.showInList).map((field) => ({ key: `cf_${field.key}`, label: field.label, kind: 'custom' as const }))
-  const baseView = mergeListViewColumns(selected?.config ?? defaultListView('vendor_bill'), meta, dynamicColumns)
+  const baseView = mergeListViewColumns(selected?.config ?? defaultListView(meta), meta, dynamicColumns)
   const [sort, setSort] = React.useState(baseView.sort)
   const [search, setSearch] = React.useState('')
   const [status, setStatus] = React.useState<string | undefined>()

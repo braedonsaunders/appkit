@@ -1,0 +1,90 @@
+import {
+  OPERATORS_BY_KIND,
+  createCustomizationEngine,
+  type RecordTypeMeta,
+} from '@appkit/customization'
+
+/** Demo-owned catalogue. Production applications supply the same contract. */
+export const DEMO_RECORD_TYPES: RecordTypeMeta[] = [{
+  key: 'vendor_bill',
+  labelKey: 'customization.recordTypes.vendor_bill',
+  category: 'transaction',
+  customFieldTable: 'documents',
+  customFieldKind: 'vendor_bill',
+  customFieldLineTable: 'document_lines',
+  customFieldLineKind: 'vendor_bill',
+  headerFields: [
+    { key: 'party_id', labelKey: 'common.labels.vendor', level: 'header', kind: 'entity_ref', required: true, locked: true, defaultColSpan: 2 },
+    { key: 'document_date', labelKey: 'ap.drawer.dateLabel', level: 'header', kind: 'date' },
+    { key: 'due_date', labelKey: 'ap.drawer.dueDate', level: 'header', kind: 'date' },
+    { key: 'reference_number', labelKey: 'ap.drawer.reference', level: 'header', kind: 'text' },
+    { key: 'memo', labelKey: 'common.labels.memo', level: 'header', kind: 'long_text', defaultColSpan: 3 },
+    { key: 'posting_date', labelKey: 'common.labels.postingDate', level: 'header', kind: 'date' },
+    { key: 'department_id', labelKey: 'common.labels.department', level: 'header', kind: 'dimension' },
+    { key: 'project_id', labelKey: 'common.labels.project', level: 'header', kind: 'dimension' },
+    { key: 'location_id', labelKey: 'common.labels.location', level: 'header', kind: 'dimension' },
+    { key: 'class_id', labelKey: 'common.labels.class', level: 'header', kind: 'dimension' },
+    { key: 'subsidiary_id', labelKey: 'common.labels.subsidiary', level: 'header', kind: 'entity_ref' },
+    { key: 'internal_notes', labelKey: 'common.labels.internalNotes', level: 'header', kind: 'long_text' },
+    { key: 'expected_pay_date', labelKey: 'common.labels.expectedPayDate', level: 'header', kind: 'date' },
+    { key: 'payment_hold_reason', labelKey: 'common.labels.paymentHold', level: 'header', kind: 'text' },
+  ],
+  lineFields: [
+    { key: 'account_id', labelKey: 'common.labels.account', level: 'line', kind: 'entity_ref', required: true, locked: true },
+    { key: 'item_id', labelKey: 'common.labels.item', level: 'line', kind: 'entity_ref' },
+    { key: 'description', labelKey: 'common.labels.description', level: 'line', kind: 'text' },
+    { key: 'quantity', labelKey: 'common.labels.quantity', level: 'line', kind: 'number' },
+    { key: 'unit', labelKey: 'common.labels.unit', level: 'line', kind: 'text' },
+    { key: 'unit_price', labelKey: 'common.labels.unitPrice', level: 'line', kind: 'currency' },
+    { key: 'department_id', labelKey: 'common.labels.department', level: 'line', kind: 'dimension' },
+    { key: 'project_id', labelKey: 'common.labels.project', level: 'line', kind: 'dimension' },
+    { key: 'location_id', labelKey: 'common.labels.location', level: 'line', kind: 'dimension' },
+    { key: 'class_id', labelKey: 'common.labels.class', level: 'line', kind: 'dimension' },
+    { key: 'tax_code_id', labelKey: 'common.labels.tax', level: 'line', kind: 'entity_ref' },
+    { key: 'amount', labelKey: 'common.labels.amount', level: 'line', kind: 'amount', required: true },
+    { key: 'tax_amount', labelKey: 'ap.drawer.taxAmountColumn', level: 'line', kind: 'tax' },
+  ],
+  listColumns: [
+    { key: 'document_number', labelKey: 'ap.list.columns.bill', kind: 'reference', sortable: true, sortKey: 'number', locked: true },
+    { key: 'party_name', labelKey: 'common.labels.vendor', kind: 'text', sortable: true, sortKey: 'vendor' },
+    { key: 'document_date', labelKey: 'common.labels.date', kind: 'date', sortable: true, sortKey: 'date' },
+    { key: 'reference_number', labelKey: 'ap.list.columns.ref', kind: 'text' },
+    { key: 'total', labelKey: 'common.labels.total', kind: 'amount', sortable: true, sortKey: 'total', defaultWidth: 120 },
+    { key: 'open_balance', labelKey: 'common.labels.openBalance', kind: 'amount', sortable: true, sortKey: 'balance', defaultWidth: 130 },
+    { key: 'status', labelKey: 'common.labels.status', kind: 'status', sortable: true, sortKey: 'status', defaultWidth: 120 },
+    { key: '_actions', labelKey: 'common.labels.actions', kind: 'actions', defaultWidth: 44 },
+  ],
+  listFilters: [
+    {
+      key: 'status',
+      labelKey: 'common.labels.status',
+      kind: 'select',
+      operators: OPERATORS_BY_KIND.select,
+      options: [
+        { value: 'draft', labelKey: 'common.status.draft' },
+        { value: 'pending_approval', labelKey: 'common.status.pendingApproval' },
+        { value: 'approved', labelKey: 'common.status.approved' },
+        { value: 'posted', labelKey: 'common.status.posted' },
+        { value: 'voided', labelKey: 'common.status.voided' },
+      ],
+    },
+    { key: 'party_id', labelKey: 'common.labels.vendor', kind: 'entity_ref', operators: OPERATORS_BY_KIND.entity_ref, entitySource: 'vendor' },
+    { key: 'document_date', labelKey: 'common.labels.date', kind: 'date', operators: OPERATORS_BY_KIND.date },
+    { key: 'reference_number', labelKey: 'ap.list.columns.ref', kind: 'text', operators: OPERATORS_BY_KIND.text },
+  ],
+  formActions: [
+    { key: 'customize', labelKey: 'actions.customize' },
+    { key: 'pdf', labelKey: 'actions.pdf' },
+    { key: 'workflow', labelKey: 'actions.workflow' },
+    { key: 'approval', labelKey: 'actions.approval' },
+    { key: 'edit', labelKey: 'actions.edit' },
+    { key: 'submit', labelKey: 'actions.submit' },
+    { key: 'post', labelKey: 'actions.post' },
+    { key: 'gl_impact', labelKey: 'actions.glImpact' },
+    { key: 'delete', labelKey: 'actions.delete' },
+  ],
+}]
+
+export const DEMO_CUSTOMIZATION = createCustomizationEngine(DEMO_RECORD_TYPES)
+export const DEMO_CUSTOMIZATION_REGISTRY = DEMO_CUSTOMIZATION.registry
+export const DEMO_VENDOR_BILL = DEMO_CUSTOMIZATION.getRecordType('vendor_bill')!

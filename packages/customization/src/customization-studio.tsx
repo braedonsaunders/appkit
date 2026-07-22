@@ -3,7 +3,6 @@
 import { useState, type ReactElement, type ReactNode } from 'react'
 import { Columns3, FileInput, ListFilter, Plus } from 'lucide-react'
 import { Badge, Button, Select, cn } from '@appkit/ui'
-import { RECORD_TYPES } from './registry'
 import type { RecordTypeMeta } from './types'
 import type {
   CustomFieldDefinition,
@@ -36,7 +35,7 @@ export interface CustomizationStudioProps {
   forms: FormDefinition[]
   views: ListViewDefinition[]
   fields: CustomFieldDefinition[]
-  recordTypes?: RecordTypeMeta[]
+  recordTypes: readonly RecordTypeMeta[]
   initialRecordType?: string
   initialMode?: CustomizationStudioMode
   resolveLabel?: CustomizationLabelResolver
@@ -51,7 +50,7 @@ export function CustomizationStudio({
   forms,
   views,
   fields,
-  recordTypes = RECORD_TYPES,
+  recordTypes,
   initialRecordType,
   initialMode = 'forms',
   resolveLabel = (_messageKey, fallback) => fallback,
@@ -211,6 +210,7 @@ export function CustomizationStudio({
           <FormDesigner
             key={selectedForm?.id ?? `new-${recordType}`}
             recordType={recordType}
+            meta={recordMeta}
             form={selectedForm}
             fields={recordFields}
             adapter={adapter}
@@ -228,6 +228,7 @@ export function CustomizationStudio({
           <ListViewDesigner
             key={selectedView?.id ?? `new-${recordType}`}
             recordType={recordType}
+            meta={recordMeta}
             view={selectedView}
             fields={recordFields}
             adapter={adapter}

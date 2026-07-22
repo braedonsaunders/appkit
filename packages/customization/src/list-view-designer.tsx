@@ -6,7 +6,6 @@ import { Button, Checkbox, Input, Label, Select, cn } from '@appkit/ui'
 import {
   OPERATORS_BY_KIND,
   customFieldDefKey,
-  getRecordType,
   isCustomFieldKey,
 } from './registry'
 import { defaultListView } from './schema'
@@ -15,6 +14,7 @@ import type {
   FilterOperator,
   ListColumnPlacement,
   ListViewConfig,
+  RecordTypeMeta,
 } from './types'
 import type {
   CustomFieldDefinition,
@@ -41,10 +41,9 @@ function reorder<T>(items: T[], from: number, to: number): T[] {
   return next
 }
 
-function ensureColumns(view: ListViewConfig, fields: CustomFieldDefinition[]): ListViewConfig {
-  const meta = getRecordType(view.recordType)
+function ensureColumns(view: ListViewConfig, meta: RecordTypeMeta, fields: CustomFieldDefinition[]): ListViewConfig {
   const placed = new Set(view.columns.map((column) => column.key))
-  for (const column of meta?.listColumns ?? []) {
+  for (const column of meta.listColumns) {
     if (!placed.has(column.key)) {
       view.columns.push({
         key: column.key,
@@ -77,6 +76,7 @@ const OPERATOR_LABELS: Record<FilterOperator, string> = {
 
 export interface ListViewDesignerProps {
   recordType: string
+  meta: RecordTypeMeta
   view?: ListViewDefinition
   fields?: CustomFieldDefinition[]
   adapter: Pick<CustomizationDesignerAdapter, 'saveListView' | 'deleteListView'>
@@ -90,6 +90,7 @@ export interface ListViewDesignerProps {
 
 export function ListViewDesigner({
   recordType,
+  meta,
   view: definition,
   fields = [],
   adapter,
@@ -100,12 +101,11 @@ export function ListViewDesigner({
   onDeleted,
   className,
 }: ListViewDesignerProps) {
-  const meta = getRecordType(recordType)
-  if (!meta) throw new Error(`Unknown record type: ${recordType}`)
+  if (meta.key !== recordType) throw new Error('ListViewDesigner record type does not match metadata')
 
   const initial = useMemo(
-    () => ensureColumns(structuredClone(definition?.config ?? defaultListView(recordType)), fields),
-    [definition, fields, recordType],
+    () => ensureColumns(structuredClone(definition?.config ?? defaultListView(meta)), meta, fields),
+    [definition, fields, meta],
   )
   const [name, setName] = useState(definition?.name ?? `${humanize(recordType)} list`)
   const [scope, setScope] = useState<'organization' | 'user'>(definition?.scope ?? 'organization')

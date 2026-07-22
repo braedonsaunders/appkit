@@ -6,6 +6,7 @@ import type {
   RecordTypeMeta,
 } from './types'
 import { parseListView } from './schema'
+import type { CustomizationRegistry } from './registry'
 
 export interface SavedListView {
   id: string
@@ -46,11 +47,14 @@ export interface MutableListViewStore extends ListViewStore {
   remove(id: string, actor: ListViewActor): Promise<void>
 }
 
-export function normalizeSavedListViewInput(input: SaveListViewInput): Omit<SavedListView, 'id'> {
+export function normalizeSavedListViewInput(
+  input: SaveListViewInput,
+  registry: CustomizationRegistry,
+): Omit<SavedListView, 'id'> {
   const name = input.name.trim()
   if (!name) throw new Error('A view name is required')
   if (input.config.recordType !== input.recordType) throw new Error('View config record type does not match')
-  const parsed = parseListView(input.config)
+  const parsed = parseListView(input.config, registry)
   if (!parsed.success || !parsed.data) {
     throw new Error(`Invalid view config: ${parsed.issues.map((issue) => `${issue.path}: ${issue.message}`).join('; ')}`)
   }

@@ -10,7 +10,7 @@
 <p align="center">
   <a href="https://appkit-demo-braedonsaunders-projects.vercel.app/dashboard/platform"><strong>See what you can build</strong></a> ·
   <a href="#start-small-or-take-the-whole-stack">Quick start</a> ·
-  <a href="#what-you-can-build-with">Packages</a> ·
+  <a href="https://appkit-demo-braedonsaunders-projects.vercel.app/packages">Packages</a> ·
   <a href="#modular-by-construction">Architecture</a> ·
   <a href="#running-reference-app">Demo app</a> ·
   <a href="docs/for-agents/orientation.md">Documentation</a>
@@ -150,9 +150,25 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 | `@appkit/forms-core`    | Versioned schemas, field registry, formulas, conditional logic, validation, scoring, and source-compatible business and safety automation contracts.                          |
 | `@appkit/forms`         | Production form authoring and fill UI: field/section inspectors, tables, matrices, formulas, data binding, pages, guided workflows, record configuration, and typed host adapters. |
 | `@appkit/editor`        | Optional controlled TipTap rich-text authoring.                                                                                                                               |
-| `@appkit/customization` | Versioned form layouts, custom fields, and the production record-list system: saved views, subtabs, search, filters, sorting, paging, drill-through, designers, plus optional memory and tenant-scoped Drizzle persistence. |
+| `@appkit/customization` | Versioned form layouts, custom fields, and the production record-list system: saved views, subtabs, search, filters, sorting, paging, drill-through, designers, plus optional memory and tenant-scoped Drizzle persistence. Your app supplies its record catalogue once; AppKit keeps every editor, validator, and store on that contract. |
 | `@appkit/design-studio` | Bounded multi-artboard print design, safe HTML/print output, and an interactive Fabric workspace with transforms, layers, zoom, and full property editing.                     |
 | `@appkit/i18n`          | Tenant locale policy, request negotiation, user overrides, and localized authored content.                                                                                    |
+
+Bind customization to your records once and retain key-based calls throughout
+the application:
+
+```ts
+import { createCustomizationEngine } from '@appkit/customization'
+import { createMemoryListViewStore } from '@appkit/customization/memory'
+
+const customization = createCustomizationEngine(recordTypes)
+const listStore = createMemoryListViewStore({ registry: customization.registry })
+const systemView = customization.defaultListView('work_order')
+```
+
+The same catalogue drives the form designer, list-view designer, runtime record
+table, API validation, and memory or Postgres persistence—without putting your
+product’s record names, routes, queries, or permissions inside AppKit.
 
 ### Data, access, and extension
 
@@ -244,7 +260,8 @@ inflate a client bundle.
 `apps/playground` is a real Next.js 16 application, not a static component
 catalogue. Authentication is intentionally disabled throughout the public demo;
 one built-in identity exercises tenant context and permissions without a login.
-The [hosted demo](https://appkit-demo-braedonsaunders-projects.vercel.app/dashboard/platform) runs
+The [hosted demo](https://appkit-demo-braedonsaunders-projects.vercel.app/dashboard/platform) and its
+[manifest-backed package catalogue](https://appkit-demo-braedonsaunders-projects.vercel.app/packages) run
 without a database. Its sample tenant data is deterministic, analytics queries
 execute in memory, and editable dashboard and insight-card state persists in the
 browser.
@@ -252,8 +269,8 @@ browser.
 It includes the topbar/sidebar shell, admin hub and settings shell, configurable
 dashboard, insight-card studio, form designer and runtime, workflow canvas,
 reports, notifications, design studio, customization, integrations, API
-reference, searchable/paginated tenant data, activity inbox, and the complete
-package inventory.
+reference, searchable/paginated tenant data, activity inbox, and one detail
+page for every publishable package manifest.
 
 ```bash
 pnpm install

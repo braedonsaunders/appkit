@@ -12,7 +12,7 @@
  * that registry — it references custom fields by their stable `cf_<key>`.
  */
 
-/** Stable record-type key: a document kind or an entity key. e.g. 'vendor_bill'. */
+/** Stable record-type key supplied by the application. */
 export type RecordTypeKey = string
 
 /** A built-in field key (snake_case, matches the data model) or `cf_<customKey>`. */
@@ -59,13 +59,12 @@ export interface HeaderFieldPlacement {
    */
   required?: boolean | null
   /**
-   * Width in a 4-column header grid (1–4). null/undefined = 1. NetSuite custom
-   * forms control field width/positioning; this reproduces the existing layout.
+   * Width in a four-column header grid (1–4). null/undefined = 1.
    */
   colSpan?: number | null
 }
 
-/** An ordered, optionally-labelled group of header fields (NetSuite "tab"). */
+/** An ordered, optionally-labelled group of header fields. */
 export interface HeaderGroup {
   /** Stable id within this layout. */
   id: string
@@ -163,6 +162,14 @@ export interface FieldMeta {
   locked?: boolean
   /** The form designer may toggle `required` for this field. */
   requiredOverridable?: boolean
+  /** Default width in the four-column form header grid. */
+  defaultColSpan?: 1 | 2 | 3 | 4
+}
+
+/** An application-owned action exposed by a record editor. */
+export interface FormActionMeta {
+  key: string
+  labelKey: string
 }
 export type ListColumnKind =
   | 'text'
@@ -221,6 +228,8 @@ export interface RecordTypeMeta {
   lineFields: FieldMeta[]
   listColumns: ListColumnMeta[]
   listFilters: ListFilterMeta[]
+  /** Ordered actions available to the form designer for this record type. */
+  formActions?: FormActionMeta[]
   /**
    * Whether this record type has a customizable transaction FORM (header/line
    * layout). Defaults to true. Set false for record types whose list views are
@@ -229,17 +238,17 @@ export interface RecordTypeMeta {
    */
   supportsForms?: boolean
   /**
-   * The table whose `custom` jsonb + custom_field_defs back this record type's
-   * custom fields. Defaults to 'documents' (transactions). Entity record types
-   * point at their own table (e.g. 'projects'). Custom-field defs for entity
-   * tables use a null `target_kind`; documents defs use the record type as kind.
+   * Optional host table whose extensible value column backs header fields.
    */
   customFieldTable?: string
+  /** Optional discriminator stored with header custom-field definitions. */
+  customFieldKind?: string | null
   /**
-   * The table backing LINE custom fields, or null for header-only record types
-   * (all 'entity' types, plus payments/transfer). Defaults to 'document_lines'.
+   * Optional host table backing line fields, or null for header-only records.
    */
   customFieldLineTable?: string | null
+  /** Optional discriminator stored with line custom-field definitions. */
+  customFieldLineKind?: string | null
 }
 
 export const DEFAULT_PER_PAGE = 25

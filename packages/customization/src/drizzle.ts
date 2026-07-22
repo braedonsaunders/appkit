@@ -7,11 +7,13 @@ import {
   type SavedListView,
 } from './list-runtime'
 import { listViews, userListPreferences } from './persistence-schema'
+import type { CustomizationRegistry } from './registry'
 
 type Db = NodePgDatabase<Record<string, never>>
 
 export interface DrizzleListViewStoreOptions {
   tenantId: string
+  registry: CustomizationRegistry
 }
 
 /**
@@ -68,7 +70,7 @@ export function createDrizzleListViewStore(
       })
     },
     async save(input) {
-      const normalized = normalizeSavedListViewInput(input)
+      const normalized = normalizeSavedListViewInput(input, options.registry)
       return db.transaction(async (tx) => {
         const [existing] = input.id
           ? await tx.select().from(listViews).where(and(

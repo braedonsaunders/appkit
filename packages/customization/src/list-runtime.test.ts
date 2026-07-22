@@ -10,6 +10,7 @@ import {
 } from './list-runtime'
 import { createMemoryListViewStore } from './memory'
 import { defaultListView } from './schema'
+import { createCustomizationRegistry } from './registry'
 import type { ListViewConfig, RecordTypeMeta } from './types'
 
 const meta: RecordTypeMeta = {
@@ -27,6 +28,7 @@ const meta: RecordTypeMeta = {
   ],
   listFilters: [],
 }
+const registry = createCustomizationRegistry([meta])
 
 const systemView: ListViewConfig = {
   schemaVersion: 1,
@@ -113,9 +115,9 @@ test('compares numeric strings numerically', () => {
 })
 
 test('memory repository enforces source ownership, defaults, preferences, and deletion', async () => {
-  const store = createMemoryListViewStore({ createId: (() => { let id = 0; return () => `view-${++id}` })() })
-  const recordType = 'vendor_bill'
-  const config = defaultListView(recordType)
+  const store = createMemoryListViewStore({ registry, createId: (() => { let id = 0; return () => `view-${++id}` })() })
+  const recordType = meta.key
+  const config = defaultListView(meta)
   const personal = await store.save({
     recordType,
     name: 'Mine',

@@ -46,31 +46,47 @@ const nextLink: LinkRender = ({
   </Link>
 )
 
-const NAV: SidebarNavGroup[] = [
-  {
-    id: 'foundation',
-    label: 'Foundation',
-    iconKey: 'layers',
-    items: [
-      { href: '/dashboard', label: 'Dashboard', iconKey: 'gauge', exact: true, mobile: true },
-      { href: '/insights', label: 'Insight cards', iconKey: 'library', mobile: true },
-      { href: '/forms', label: 'Form builder', iconKey: 'clipboard', mobile: true },
-      { href: '/forms/core', label: 'Form engine', iconKey: 'code' },
-      { href: '/workflows', label: 'Workflows', iconKey: 'workflow' },
-      { href: '/reports', label: 'Reports', iconKey: 'library' },
-      { href: '/design-studio', label: 'Design studio', iconKey: 'sparkles' },
-      { href: '/customization', label: 'Customization', iconKey: 'wrench' },
-      { href: '/attachments', label: 'Attachments', iconKey: 'file' },
-      { href: '/notifications', label: 'Notifications', iconKey: 'bell' },
-      { href: '/dashboard/platform', label: 'Platform', iconKey: 'package', mobile: true },
-      { href: '/components', label: 'Components', iconKey: 'sparkles' },
-    ],
-  },
-  {
-    id: 'settings',
-    label: 'Settings',
-    iconKey: 'settings',
-    items: [
+export interface PackageNavigationItem {
+  href: string
+  label: string
+  subgroup: string
+}
+
+function createNavigation(packages: PackageNavigationItem[]): SidebarNavGroup[] {
+  return [
+    {
+      id: 'demonstration',
+      label: 'Demonstration',
+      iconKey: 'layers',
+      items: [
+        { href: '/dashboard', label: 'Dashboard', iconKey: 'gauge', exact: true, mobile: true },
+        { href: '/insights', label: 'Insight cards', iconKey: 'library', mobile: true },
+        { href: '/forms', label: 'Form builder', iconKey: 'clipboard', mobile: true },
+        { href: '/forms/core', label: 'Form engine', iconKey: 'code' },
+        { href: '/workflows', label: 'Workflows', iconKey: 'workflow' },
+        { href: '/reports', label: 'Reports', iconKey: 'library' },
+        { href: '/design-studio', label: 'Design studio', iconKey: 'sparkles' },
+        { href: '/customization', label: 'Customization', iconKey: 'wrench' },
+        { href: '/attachments', label: 'Attachments', iconKey: 'file' },
+        { href: '/notifications', label: 'Notifications', iconKey: 'bell' },
+        { href: '/dashboard/platform', label: 'Platform', iconKey: 'package', mobile: true },
+        { href: '/components', label: 'Components', iconKey: 'sparkles' },
+      ],
+    },
+    {
+      id: 'packages',
+      label: 'Packages',
+      iconKey: 'package',
+      items: [
+        { href: '/packages', label: 'All packages', iconKey: 'package', exact: true, subgroup: 'Catalogue', mobile: true },
+        ...packages.map((item) => ({ ...item, iconKey: 'package' as const })),
+      ],
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      iconKey: 'settings',
+      items: [
       {
         href: '/admin',
         label: 'Administration',
@@ -109,9 +125,10 @@ const NAV: SidebarNavGroup[] = [
         iconKey: 'code',
         subgroup: 'Extend',
       },
-    ],
-  },
-]
+      ],
+    },
+  ]
+}
 
 export type AppFrameProps = {
   tenantName: string
@@ -121,6 +138,7 @@ export type AppFrameProps = {
   isSuperAdmin: boolean
   activity: NotificationItem[]
   initialNavigationMode: AppShellNavigationMode
+  packageNavigation: PackageNavigationItem[]
   children: React.ReactNode
 }
 
@@ -143,12 +161,14 @@ function AppFrameContent({
   userEmail,
   isSuperAdmin,
   activity,
+  packageNavigation,
   children,
 }: AppFrameProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const router = useRouter()
   const navigation = useNavigationMode()
+  const navigationGroups = React.useMemo(() => createNavigation(packageNavigation), [packageNavigation])
   const navigate = React.useCallback((href: string) => router.push(href, { scroll: false }), [router])
   const listNav = React.useMemo(
     () => ({
@@ -169,7 +189,7 @@ function AppFrameContent({
     <DrawerNavigateContext.Provider value={navigate}>
       <ListNavProvider value={listNav}>
         <AppShell
-          groups={NAV}
+          groups={navigationGroups}
           pathname={pathname}
           brand={
             <Link href="/dashboard" aria-label="appkit home" className="inline-flex rounded-md focus-visible:ring-2 focus-visible:ring-ring">
