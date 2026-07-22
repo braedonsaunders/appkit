@@ -1,5 +1,5 @@
 export { PermissionMatrix, type PermissionMatrixProps } from './permission-matrix'
 export { ScopePicker } from './scope-picker'
-export { RolesAdmin, type RolesAdminProps } from './roles-admin'
-export { UsersAdmin, type UsersAdminProps } from './users-admin'
+export { RolesAdmin, type RoleAdminExtension, type RolesAdminProps } from './roles-admin'
+export { UsersAdmin, type MemberAdminAction, type MemberAdminExtension, type UsersAdminProps } from './users-admin'
 export { AuditAdmin, AuditEventDrawer } from './audit-admin'

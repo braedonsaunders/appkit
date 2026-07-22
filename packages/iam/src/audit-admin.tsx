@@ -17,6 +17,7 @@ import {
 } from '@appkit/ui'
 import { Braces, ChevronRight, Clock3, Database, Fingerprint, History, Search, ScrollText, UserRound } from 'lucide-react'
 import type { AuditEventRecord, IamAdminService } from './types'
+import { ServicePagination, SortButton } from './admin-list'
 
 type DrawerTab = 'changes' | 'before' | 'after'
 type JsonObject = Record<string, unknown>
@@ -32,25 +33,37 @@ export function AuditAdmin({
   title = 'Audit log',
   description = 'Search activity and inspect field-level changes, snapshots, and request context.',
   onError,
+  actions: actionOptions,
+  recordTypes: recordTypeOptions,
 }: {
   service: IamAdminService
   title?: string
   description?: string
   onError?: (error: unknown) => void
+  actions?: string[]
+  recordTypes?: string[]
 }) {
   const [events, setEvents] = React.useState<AuditEventRecord[]>([])
   const [query, setQuery] = React.useState('')
+  const deferredQuery = React.useDeferredValue(query)
   const [action, setAction] = React.useState('')
   const [recordType, setRecordType] = React.useState('')
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
+  const [sort, setSort] = React.useState<'at' | 'actor' | 'action' | 'record'>('at')
+  const [direction, setDirection] = React.useState<'asc' | 'desc'>('desc')
+  const [page, setPage] = React.useState(1)
+  const [total, setTotal] = React.useState(0)
+  const [facets, setFacets] = React.useState({ actions: [] as string[], recordTypes: [] as string[] })
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
 
   const load = React.useCallback(async () => {
     setLoading(true)
     try {
-      const result = await service.listAuditEvents({ perPage: 100, sort: 'at', direction: 'desc' })
+      const result = await service.listAuditEvents({ q: deferredQuery || undefined, action: action || undefined, recordType: recordType || undefined, page, perPage: 25, sort, direction })
       setEvents(result.rows)
+      setTotal(result.total)
+      setFacets(result.facets)
       setError(null)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to load audit events.')
@@ -58,27 +71,29 @@ export function AuditAdmin({
     } finally {
       setLoading(false)
     }
-  }, [onError, service])
+  }, [action, deferredQuery, direction, onError, page, recordType, service, sort])
 
   React.useEffect(() => { void load() }, [load])
-  const actions = [...new Set(events.map((event) => event.action))].sort()
-  const recordTypes = [...new Set(events.map((event) => event.recordType))].sort()
-  const normalized = query.trim().toLocaleLowerCase()
-  const visible = events.filter((event) => {
-    if (action && event.action !== action) return false
-    if (recordType && event.recordType !== recordType) return false
-    return !normalized || `${event.actorName ?? ''} ${event.action} ${event.recordType} ${event.summary ?? ''} ${event.recordId ?? ''}`.toLocaleLowerCase().includes(normalized)
-  })
+  const actions = actionOptions ?? facets.actions
+  const recordTypes = recordTypeOptions ?? facets.recordTypes
   const selected = events.find((event) => event.id === selectedId) ?? null
+  React.useEffect(() => { setPage(1) }, [action, deferredQuery, recordType])
+
+  function changeSort(next: typeof sort) {
+    if (sort === next) setDirection((value) => value === 'asc' ? 'desc' : 'asc')
+    else { setSort(next); setDirection(next === 'at' ? 'desc' : 'asc') }
+    setPage(1)
+  }
 
   return <div className="flex min-h-0 flex-1 flex-col gap-5">
     <div><h1 className="text-2xl font-semibold tracking-tight text-fg">{title}</h1><p className="mt-1 max-w-3xl text-sm text-fg-muted">{description}</p></div>
     <div className="flex flex-wrap gap-2"><div className="relative min-w-64 flex-1 sm:max-w-md"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-subtle" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search actor, action, record, or reference…" className="pl-9" /></div><div className="w-40"><SearchSelect value={action} onChange={setAction} options={[{ value: '', label: 'All actions' }, ...actions.map((value) => ({ value, label: humanize(value) }))]} /></div><div className="w-48"><SearchSelect value={recordType} onChange={setRecordType} options={[{ value: '', label: 'All record types' }, ...recordTypes.map((value) => ({ value, label: humanize(value) }))]} /></div></div>
     {error ? <div role="alert" className="rounded-lg border border-danger/30 bg-danger-subtle px-4 py-3 text-sm text-danger">{error}</div> : null}
-    <div className="overflow-hidden rounded-xl border border-border bg-surface"><Table><TableHeader><TableRow noAnimate><TableHead>When</TableHead><TableHead>Actor</TableHead><TableHead>Action</TableHead><TableHead>Record</TableHead><TableHead>Reference</TableHead><TableHead>Changes</TableHead></TableRow></TableHeader><TableBody>
-      {visible.map((event) => { const count = collectDiffs(event.before, event.after).length; return <TableRow key={event.id} role="button" tabIndex={0} className="group cursor-pointer" onClick={() => setSelectedId(event.id)} onKeyDown={(keyEvent) => { if (keyEvent.key === 'Enter' || keyEvent.key === ' ') { keyEvent.preventDefault(); setSelectedId(event.id) } }}><TableCell className="whitespace-nowrap">{event.at.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</TableCell><TableCell>{event.actorName ?? <span className="text-fg-subtle">System</span>}</TableCell><TableCell><Badge variant={ACTION_VARIANT[event.action] ?? 'secondary'}>{humanize(event.action)}</Badge></TableCell><TableCell className="font-medium text-fg">{humanize(event.recordType)}</TableCell><TableCell className="font-mono text-xs text-fg-muted">{event.recordId ? `${event.recordId.slice(0, 8)}…` : '—'}</TableCell><TableCell><span className="flex items-center justify-between gap-3 text-sm text-fg-muted"><span>{event.summary ?? `${count} ${count === 1 ? 'field' : 'fields'}`}</span><ChevronRight size={16} className="shrink-0 text-fg-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary" /></span></TableCell></TableRow> })}
-      {!loading && visible.length === 0 ? <TableRow noAnimate><TableCell colSpan={6}><EmptyState icon={<ScrollText />} title="No audit events found" description="Try a different search or filter." className="border-0 bg-transparent py-10 shadow-none" /></TableCell></TableRow> : null}
+    <div className="overflow-x-auto rounded-xl border border-border bg-surface"><Table><TableHeader><TableRow noAnimate><TableHead><SortButton label="When" active={sort === 'at'} direction={direction} onClick={() => changeSort('at')} /></TableHead><TableHead><SortButton label="Actor" active={sort === 'actor'} direction={direction} onClick={() => changeSort('actor')} /></TableHead><TableHead><SortButton label="Action" active={sort === 'action'} direction={direction} onClick={() => changeSort('action')} /></TableHead><TableHead><SortButton label="Record" active={sort === 'record'} direction={direction} onClick={() => changeSort('record')} /></TableHead><TableHead>Reference</TableHead><TableHead>Changes</TableHead></TableRow></TableHeader><TableBody>
+      {events.map((event) => { const count = collectDiffs(event.before, event.after).length; return <TableRow key={event.id} role="button" tabIndex={0} className="group cursor-pointer" onClick={() => setSelectedId(event.id)} onKeyDown={(keyEvent) => { if (keyEvent.key === 'Enter' || keyEvent.key === ' ') { keyEvent.preventDefault(); setSelectedId(event.id) } }}><TableCell className="whitespace-nowrap">{event.at.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</TableCell><TableCell>{event.actorName ?? <span className="text-fg-subtle">System</span>}</TableCell><TableCell><Badge variant={ACTION_VARIANT[event.action] ?? 'secondary'}>{humanize(event.action)}</Badge></TableCell><TableCell className="font-medium text-fg">{humanize(event.recordType)}</TableCell><TableCell className="font-mono text-xs text-fg-muted">{event.recordId ? `${event.recordId.slice(0, 8)}…` : '—'}</TableCell><TableCell><span className="flex items-center justify-between gap-3 text-sm text-fg-muted"><span>{event.summary ?? `${count} ${count === 1 ? 'field' : 'fields'}`}</span><ChevronRight size={16} className="shrink-0 text-fg-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary" /></span></TableCell></TableRow> })}
+      {!loading && events.length === 0 ? <TableRow noAnimate><TableCell colSpan={6}><EmptyState icon={<ScrollText />} title="No audit events found" description="Try a different search or filter." className="border-0 bg-transparent py-10 shadow-none" /></TableCell></TableRow> : null}
     </TableBody></Table></div>
+    <ServicePagination page={page} perPage={25} total={total} onPage={setPage} />
     {selected ? <AuditEventDrawer event={selected} onClose={() => setSelectedId(null)} /> : null}
   </div>
 }

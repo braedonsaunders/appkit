@@ -30,6 +30,17 @@ export type RoleRecord = {
   memberCount: number
   createdAt: Date
   updatedAt: Date
+  /** Actor-aware mutation policy. Adapters enforce this as well as the UI. */
+  capabilities?: RoleCapabilities
+}
+
+export type RoleCapabilities = {
+  updateKey: boolean
+  updateDetails: boolean
+  updatePermissions: boolean
+  duplicate: boolean
+  delete: boolean
+  reason?: string
 }
 
 export type PermissionOverride = {
@@ -62,6 +73,18 @@ export type MemberRecord = {
   createdAt: Date
   assignments: RoleAssignmentRecord[]
   overrides: PermissionOverride[]
+  /** Actor-aware mutation policy. Adapters enforce this as well as the UI. */
+  capabilities?: MemberCapabilities
+}
+
+export type MemberCapabilities = {
+  updateProfile: boolean
+  changeStatus: boolean
+  remove: boolean
+  manageRoles: boolean
+  manageOverrides: boolean
+  resendInvite: boolean
+  reason?: string
 }
 
 export type AuditEventRecord = {
@@ -94,6 +117,18 @@ export type ListResult<T> = {
   perPage: number
 }
 
+export type MemberListResult = ListResult<MemberRecord> & {
+  facets: { statusCounts: Record<MembershipStatus, number> }
+}
+
+export type RoleListResult = ListResult<RoleRecord> & {
+  facets: { typeCounts: { built_in: number; custom: number } }
+}
+
+export type AuditListResult = ListResult<AuditEventRecord> & {
+  facets: { actions: string[]; recordTypes: string[] }
+}
+
 export type CreateRoleInput = {
   key?: string
   name: string
@@ -110,21 +145,39 @@ export type InviteMemberInput = {
   assignments: Array<{ roleId: string; scope: RoleScope }>
 }
 
+export type BulkRoleAssignmentOperation = 'add' | 'replace' | 'remove'
+
+export type BulkRoleAssignmentInput = {
+  operation: BulkRoleAssignmentOperation
+  roleId: string
+  membershipIds: string[]
+  scope: RoleScope
+}
+
+export type BulkRoleAssignmentResult = {
+  operation: BulkRoleAssignmentOperation
+  roleId: string
+  changedIds: string[]
+  skippedIds: string[]
+}
+
 /**
  * Complete IAM administration boundary. Database, HTTP, RPC, and in-memory
  * implementations all satisfy the same tenant-bound contract.
  */
 export interface IamAdminService {
-  listRoles(query?: ListQuery<'name' | 'permissions' | 'members' | 'updated'>): Promise<ListResult<RoleRecord>>
+  listRoles(query?: ListQuery<'name' | 'permissions' | 'members' | 'updated'> & { type?: 'built_in' | 'custom' }): Promise<RoleListResult>
   getRole(roleId: string): Promise<RoleRecord | null>
   createRole(input: CreateRoleInput): Promise<RoleRecord>
   updateRole(roleId: string, input: UpdateRoleInput): Promise<RoleRecord>
   duplicateRole(roleId: string, name?: string): Promise<RoleRecord>
   deleteRole(roleId: string): Promise<void>
+  bulkUpdateRoleAssignments(input: BulkRoleAssignmentInput): Promise<BulkRoleAssignmentResult>
 
-  listMembers(query?: ListQuery<'name' | 'email' | 'status' | 'joined'> & { roleId?: string; status?: MembershipStatus }): Promise<ListResult<MemberRecord>>
+  listMembers(query?: ListQuery<'name' | 'email' | 'status' | 'joined'> & { roleId?: string; status?: MembershipStatus }): Promise<MemberListResult>
   getMember(membershipId: string): Promise<MemberRecord | null>
   inviteMember(input: InviteMemberInput): Promise<MemberRecord>
+  resendInvite(membershipId: string): Promise<MemberRecord>
   updateMember(membershipId: string, input: { name?: string; status?: MembershipStatus; localeOverride?: string | null }): Promise<MemberRecord>
   removeMember(membershipId: string): Promise<void>
 
@@ -134,7 +187,7 @@ export interface IamAdminService {
   setPermissionOverride(membershipId: string, override: PermissionOverride): Promise<void>
   removePermissionOverride(membershipId: string, permission: string): Promise<void>
 
-  listAuditEvents(query?: ListQuery<'at' | 'actor' | 'action' | 'record'> & { action?: string; recordType?: string }): Promise<ListResult<AuditEventRecord>>
+  listAuditEvents(query?: ListQuery<'at' | 'actor' | 'action' | 'record'> & { action?: string; recordType?: string; recordId?: string }): Promise<AuditListResult>
   getAuditEvent(eventId: string): Promise<AuditEventRecord | null>
 }
 

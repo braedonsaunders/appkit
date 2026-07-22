@@ -54,8 +54,10 @@ out of applications that do not author rich text.
 **Feedback** — `Alert` + `AlertTitle` + `AlertDescription` (variants default/
 destructive/warning/success/info) · `toast` + `Toaster` (**sonner-compatible**:
 `toast.success/error/warning/info/loading/message/promise/custom/dismiss`) ·
-`Dialog` (centered modal) · `promptDialog` + `PromptRoot` (one imperative,
-promise-based text prompt for rename/reason flows) · `Progress` (determinate + indeterminate) · `Skeleton`
+`Dialog` (centered modal) · `confirmDialog` + `ConfirmRoot` (one imperative,
+promise-based source confirmation flow for destructive actions) · `promptDialog`
++ `PromptRoot` (one imperative, promise-based text prompt for rename/reason
+flows) · `Progress` (determinate + indeterminate) · `Skeleton`
 (shimmer) · `Spinner`.
 
 **Overlays & menus** — `Drawer` / `UrlDrawer` (the flyout: spring slide-in,
@@ -103,18 +105,22 @@ the tenant-scoped query and navigation. `NotificationsBell`, `ThemeProvider` /
 `UiBackLinkProvider` complete the shared shell runtime.
 
 **Identity administration (`@appkit/iam/react`)** — `RolesAdmin` provides the
-production searchable role list, complete create/edit/duplicate/delete drawer,
-grouped permission matrix, role detail tabs, member assignment, and record-data
-scope authoring. `UsersAdmin` adds invitation, lifecycle state, locale override,
-multi-role assignment, per-assignment scope, protected-member behavior, and
-per-user grant/deny exceptions. `AuditAdmin` provides actor/action/record
-search, a navigable event list, before/after field diffs, structured snapshots,
-request metadata, and a fullscreen detail drawer. The application injects its
-permission catalogue and hierarchy options; `@appkit/iam/drizzle` persists the
-same service contract against the canonical RLS identity/audit schema, while
-`@appkit/iam/http` carries the full contract across an application-owned auth
-gate and `@appkit/iam/memory` supports browser-only, local-first, and test
-consumers.
+production paged/searchable/sortable role register with full-dataset type
+facets, keys and descriptions, complete create/edit/duplicate/delete drawer,
+grouped permission matrix, activity, member assignment, record-data scopes,
+and the source bulk add/replace/remove flow. `UsersAdmin` adds full-dataset
+status facets, independent name/email sorting, responsive cards, invitation
+and resend lifecycle, locale override, multi-role assignment, per-assignment
+scope, protected-member behavior, activity, and per-user grant/deny exceptions.
+`AuditAdmin` provides stable action/record facets, actor/action/record search,
+paging and sorting, before/after field diffs, structured snapshots, request
+metadata, and a fullscreen detail drawer. Actor-aware capabilities are enforced
+again in every adapter. The application injects its permission catalogue,
+hierarchy options, invitation delivery, and optional member actions/detail
+tabs; `@appkit/iam/drizzle` supports both Drizzle Postgres drivers and runs
+application projection hooks inside IAM transactions. `@appkit/iam/http`
+carries the full contract across an application-owned auth gate and
+`@appkit/iam/memory` supports browser-only, local-first, and test consumers.
 
 **Authentication (`@appkit/auth`)** — `createAppkitAuth` owns persisted Better
 Auth sessions, password accounts and resets, hashed magic links, provider

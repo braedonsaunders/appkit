@@ -3,7 +3,9 @@ import { IamConflictError, IamNotFoundError, IamProtectedRecordError } from './m
 
 const METHODS = [
   'listRoles', 'getRole', 'createRole', 'updateRole', 'duplicateRole', 'deleteRole',
+  'bulkUpdateRoleAssignments',
   'listMembers', 'getMember', 'inviteMember', 'updateMember', 'removeMember',
+  'resendInvite',
   'assignRole', 'updateAssignmentScope', 'removeAssignment',
   'setPermissionOverride', 'removePermissionOverride',
   'listAuditEvents', 'getAuditEvent',
@@ -100,9 +102,11 @@ export function createHttpIamService(options: IamHttpClientOptions): IamAdminSer
     updateRole: (roleId, input) => request('updateRole', [roleId, input]),
     duplicateRole: (roleId, name) => request('duplicateRole', [roleId, name]),
     deleteRole: (roleId) => request('deleteRole', [roleId]),
+    bulkUpdateRoleAssignments: (input) => request('bulkUpdateRoleAssignments', [input]),
     listMembers: (query) => request('listMembers', [query]),
     getMember: (membershipId) => request('getMember', [membershipId]),
     inviteMember: (input) => request('inviteMember', [input]),
+    resendInvite: (membershipId) => request('resendInvite', [membershipId]),
     updateMember: (membershipId, input) => request('updateMember', [membershipId, input]),
     removeMember: (membershipId) => request('removeMember', [membershipId]),
     assignRole: (membershipId, roleId, scope) => request('assignRole', [membershipId, roleId, scope]),

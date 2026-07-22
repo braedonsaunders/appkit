@@ -140,6 +140,14 @@ export { SearchSelect, type SearchSelectProps, type SelectOption } from './searc
 export { Select, type SelectProps } from './select'
 export { Dialog, type DialogProps, type DialogSize } from './dialog'
 export {
+  ConfirmRoot,
+  cancelConfirmDialog,
+  confirmDialog,
+  type ConfirmDialogOptions,
+  type ConfirmRootProps,
+  type ConfirmTone,
+} from './confirm-dialog'
+export {
   PromptRoot,
   promptDialog,
   cancelPromptDialog,

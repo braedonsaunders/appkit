@@ -17,9 +17,13 @@ import {
   TableHeader,
   TableRow,
   cn,
+  confirmDialog,
+  type ConfirmDialogOptions,
 } from '@appkit/ui'
 import { Plus, Search, Shield, Trash2, UserPlus, Users, X } from 'lucide-react'
 import { ScopePicker } from './scope-picker'
+import { ActivityList } from './activity-list'
+import { collectAll, ServicePagination, SortButton } from './admin-list'
 import type {
   IamAdminService,
   MemberRecord,
@@ -30,7 +34,22 @@ import type {
   ScopeOptions,
 } from './types'
 
-type MemberTab = 'profile' | 'roles' | 'permissions'
+type MemberTab = 'profile' | 'roles' | 'permissions' | 'activity' | string
+
+export type MemberAdminAction = {
+  key: string
+  label: string
+  variant?: 'default' | 'secondary' | 'outline' | 'ghost' | 'destructive'
+  available?: (member: MemberRecord) => boolean
+  confirm?: string | ((member: MemberRecord) => ConfirmDialogOptions)
+  run: (context: { member: MemberRecord; service: IamAdminService; refresh: () => Promise<void> }) => Promise<void>
+}
+
+export type MemberAdminExtension = {
+  key: string
+  label: string
+  render: (context: { member: MemberRecord; service: IamAdminService; refresh: () => Promise<void> }) => React.ReactNode
+}
 
 export type UsersAdminProps = {
   service: IamAdminService
@@ -38,6 +57,8 @@ export type UsersAdminProps = {
   scopeOptions?: ScopeOptions
   locales?: Array<{ value: string; label: string }>
   canManage?: boolean
+  memberActions?: MemberAdminAction[]
+  detailTabs?: MemberAdminExtension[]
   title?: string
   description?: string
   onError?: (error: unknown) => void
@@ -50,15 +71,25 @@ export function UsersAdmin({
   scopeOptions = {},
   locales = [{ value: 'en', label: 'English' }],
   canManage = true,
+  memberActions = [],
+  detailTabs = [],
   title = 'Users',
   description = 'Invite members, assign scoped roles, and manage individual permission exceptions.',
   onError,
 }: UsersAdminProps) {
+  assertUniqueExtensions(detailTabs, ['profile', 'roles', 'permissions', 'activity'], 'member')
+  assertUniqueActionKeys(memberActions)
   const [members, setMembers] = React.useState<MemberRecord[]>([])
   const [roles, setRoles] = React.useState<RoleRecord[]>([])
   const [query, setQuery] = React.useState('')
+  const deferredQuery = React.useDeferredValue(query)
   const [status, setStatus] = React.useState<MembershipStatus | ''>('')
   const [roleId, setRoleId] = React.useState('')
+  const [sort, setSort] = React.useState<'name' | 'email' | 'status' | 'joined'>('name')
+  const [direction, setDirection] = React.useState<'asc' | 'desc'>('asc')
+  const [page, setPage] = React.useState(1)
+  const [total, setTotal] = React.useState(0)
+  const [statusCounts, setStatusCounts] = React.useState<Record<MembershipStatus, number>>({ active: 0, invited: 0, suspended: 0 })
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
   const [inviting, setInviting] = React.useState(false)
   const [loading, setLoading] = React.useState(true)
@@ -68,11 +99,13 @@ export function UsersAdmin({
     setLoading(true)
     try {
       const [memberResult, roleResult] = await Promise.all([
-        service.listMembers({ perPage: 100, sort: 'name' }),
-        service.listRoles({ perPage: 100, sort: 'name' }),
+        service.listMembers({ q: deferredQuery || undefined, status: status || undefined, roleId: roleId || undefined, page, perPage: 25, sort, direction }),
+        collectAll((nextPage, perPage) => service.listRoles({ page: nextPage, perPage, sort: 'name' })),
       ])
       setMembers(memberResult.rows)
-      setRoles(roleResult.rows)
+      setTotal(memberResult.total)
+      setStatusCounts(memberResult.facets.statusCounts)
+      setRoles(roleResult)
       setError(null)
     } catch (cause) {
       setError(errorMessage(cause))
@@ -80,29 +113,31 @@ export function UsersAdmin({
     } finally {
       setLoading(false)
     }
-  }, [onError, service])
+  }, [deferredQuery, direction, onError, page, roleId, service, sort, status])
 
   React.useEffect(() => { void load() }, [load])
 
-  async function mutate(operation: () => Promise<unknown>) {
+  async function mutate(operation: () => Promise<unknown>): Promise<boolean> {
     try {
       setError(null)
       await operation()
       await load()
+      return true
     } catch (cause) {
       setError(errorMessage(cause))
       onError?.(cause)
-      throw cause
+      return false
     }
   }
 
-  const normalized = query.trim().toLocaleLowerCase()
-  const visibleMembers = members.filter((member) => {
-    if (normalized && !`${member.name} ${member.email}`.toLocaleLowerCase().includes(normalized)) return false
-    if (status && member.status !== status) return false
-    return !roleId || member.assignments.some((assignment) => assignment.roleId === roleId)
-  })
   const selected = members.find((member) => member.id === selectedId) ?? null
+  React.useEffect(() => { setPage(1) }, [deferredQuery, roleId, status])
+
+  function changeSort(next: typeof sort) {
+    if (sort === next) setDirection((value) => value === 'asc' ? 'desc' : 'asc')
+    else { setSort(next); setDirection('asc') }
+    setPage(1)
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-5">
@@ -111,30 +146,37 @@ export function UsersAdmin({
         {canManage ? <Button onClick={() => setInviting(true)}><UserPlus size={16} />Invite member</Button> : null}
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-64 flex-1 sm:max-w-md"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-subtle" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name or email…" className="pl-9" /></div>
-        <div className="w-40"><SearchSelect value={status} onChange={(value) => setStatus(value as MembershipStatus | '')} options={[{ value: '', label: 'All statuses' }, { value: 'active', label: 'Active' }, { value: 'invited', label: 'Invited' }, { value: 'suspended', label: 'Suspended' }]} /></div>
         <div className="w-48"><SearchSelect value={roleId} onChange={setRoleId} options={[{ value: '', label: 'All roles' }, ...roles.map((role) => ({ value: role.id, label: role.name }))]} /></div>
+        <StatusFilters value={status} counts={statusCounts} onChange={setStatus} />
       </div>
 
       {error ? <div role="alert" className="rounded-lg border border-danger/30 bg-danger-subtle px-4 py-3 text-sm text-danger">{error}</div> : null}
 
-      <div className="overflow-hidden rounded-xl border border-border bg-surface">
+      <div className="space-y-2 sm:hidden">
+        {members.map((member) => <MemberListCard key={member.id} member={member} onClick={() => setSelectedId(member.id)} />)}
+        {!loading && members.length === 0 ? <EmptyState icon={<Users />} title="No members found" description="Try a different search or filter." /> : null}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-xl border border-border bg-surface sm:block">
         <Table>
-          <TableHeader><TableRow noAnimate><TableHead>Member</TableHead><TableHead>Status</TableHead><TableHead>Roles</TableHead><TableHead>Joined</TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow noAnimate><TableHead><SortButton label="Name" active={sort === 'name'} direction={direction} onClick={() => changeSort('name')} /></TableHead><TableHead><SortButton label="Email" active={sort === 'email'} direction={direction} onClick={() => changeSort('email')} /></TableHead><TableHead><SortButton label="Status" active={sort === 'status'} direction={direction} onClick={() => changeSort('status')} /></TableHead><TableHead>Roles</TableHead><TableHead><SortButton label="Joined" active={sort === 'joined'} direction={direction} onClick={() => changeSort('joined')} /></TableHead></TableRow></TableHeader>
           <TableBody>
-            {visibleMembers.map((member) => (
+            {members.map((member) => (
               <TableRow key={member.id} role="button" tabIndex={0} className="cursor-pointer" onClick={() => setSelectedId(member.id)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedId(member.id) } }}>
-                <TableCell><div className="flex items-center gap-3"><Avatar name={member.name} src={member.image ?? undefined} size={32} /><div className="min-w-0"><div className="flex items-center gap-1.5"><span className="truncate font-medium text-fg">{member.name}</span>{member.isCurrentUser ? <Badge variant="outline">You</Badge> : null}</div><div className="truncate text-xs text-fg-muted">{member.email}</div></div></div></TableCell>
+                <TableCell><div className="flex items-center gap-3"><Avatar name={member.name} src={member.image ?? undefined} size={32} /><div className="flex min-w-0 items-center gap-1.5"><span className="truncate font-medium text-fg">{member.name}</span>{member.isCurrentUser ? <Badge variant="outline">You</Badge> : null}{member.isSuperAdmin ? <Badge variant="warning">Super-admin</Badge> : null}</div></div></TableCell>
+                <TableCell className="text-fg-muted">{member.email}</TableCell>
                 <TableCell><StatusBadge status={member.status} /></TableCell>
                 <TableCell><div className="flex flex-wrap gap-1">{member.assignments.map((assignment) => <Badge key={assignment.id} variant="secondary">{assignment.roleName}</Badge>)}{member.assignments.length === 0 ? <span className="text-fg-subtle">—</span> : null}</div></TableCell>
                 <TableCell className="whitespace-nowrap text-fg-muted">{formatDate(member.joinedAt ?? member.invitedAt ?? member.createdAt)}</TableCell>
               </TableRow>
             ))}
-            {!loading && visibleMembers.length === 0 ? <TableRow noAnimate><TableCell colSpan={4}><EmptyState icon={<Users />} title="No members found" description="Try a different search or filter." className="border-0 bg-transparent py-10 shadow-none" /></TableCell></TableRow> : null}
+            {!loading && members.length === 0 ? <TableRow noAnimate><TableCell colSpan={5}><EmptyState icon={<Users />} title="No members found" description="Try a different search or filter." className="border-0 bg-transparent py-10 shadow-none" /></TableCell></TableRow> : null}
           </TableBody>
         </Table>
       </div>
+      <ServicePagination page={page} perPage={25} total={total} onPage={setPage} />
 
       {selected ? (
         <MemberDrawer
@@ -144,9 +186,18 @@ export function UsersAdmin({
           scopeOptions={scopeOptions}
           locales={locales}
           canManage={canManage}
+          service={service}
+          memberActions={memberActions}
+          extensions={detailTabs}
+          refresh={load}
+          onAction={(action) => mutate(() => runMemberAction(action, selected, service, load))}
           onClose={() => setSelectedId(null)}
           onUpdate={(input) => mutate(() => service.updateMember(selected.id, input))}
-          onRemove={() => mutate(async () => { await service.removeMember(selected.id); setSelectedId(null) })}
+          onRemove={async () => {
+            if (!(await confirmDialog({ message: `Remove ${selected.name} from this workspace?`, confirmLabel: 'Remove member', tone: 'danger' }))) return
+            await mutate(async () => { await service.removeMember(selected.id); setSelectedId(null) })
+          }}
+          onResendInvite={() => mutate(() => service.resendInvite(selected.id))}
           onAssign={(nextRoleId, scope) => mutate(() => service.assignRole(selected.id, nextRoleId, scope))}
           onUpdateScope={(assignmentId, scope) => mutate(() => service.updateAssignmentScope(assignmentId, scope))}
           onRemoveAssignment={(assignmentId) => mutate(() => service.removeAssignment(assignmentId))}
@@ -155,21 +206,27 @@ export function UsersAdmin({
         />
       ) : null}
 
-      {inviting ? <InviteMemberDrawer roles={roles} scopeOptions={scopeOptions} locales={locales} onClose={() => setInviting(false)} onInvite={async (input) => { await mutate(() => service.inviteMember(input)); setInviting(false) }} /> : null}
+      {inviting ? <InviteMemberDrawer roles={roles} scopeOptions={scopeOptions} locales={locales} onClose={() => setInviting(false)} onInvite={async (input) => { if (await mutate(() => service.inviteMember(input))) setInviting(false) }} /> : null}
     </div>
   )
 }
 
 function MemberDrawer({
   member,
+  service,
   roles,
   permissionGroups,
   scopeOptions,
   locales,
   canManage,
+  memberActions,
+  extensions,
+  refresh,
+  onAction,
   onClose,
   onUpdate,
   onRemove,
+  onResendInvite,
   onAssign,
   onUpdateScope,
   onRemoveAssignment,
@@ -177,22 +234,33 @@ function MemberDrawer({
   onRemoveOverride,
 }: {
   member: MemberRecord
+  service: IamAdminService
   roles: RoleRecord[]
   permissionGroups: PermissionGroup[]
   scopeOptions: ScopeOptions
   locales: Array<{ value: string; label: string }>
   canManage: boolean
+  memberActions: MemberAdminAction[]
+  extensions: MemberAdminExtension[]
+  refresh: () => Promise<void>
+  onAction: (action: MemberAdminAction) => Promise<boolean>
   onClose: () => void
-  onUpdate: (input: { name?: string; status?: MembershipStatus; localeOverride?: string | null }) => Promise<unknown>
+  onUpdate: (input: { name?: string; status?: MembershipStatus; localeOverride?: string | null }) => Promise<boolean>
   onRemove: () => Promise<unknown>
-  onAssign: (roleId: string, scope: RoleScope) => Promise<unknown>
-  onUpdateScope: (assignmentId: string, scope: RoleScope) => Promise<unknown>
-  onRemoveAssignment: (assignmentId: string) => Promise<unknown>
-  onSetOverride: (permission: string, effect: 'grant' | 'deny') => Promise<unknown>
-  onRemoveOverride: (permission: string) => Promise<unknown>
+  onResendInvite: () => Promise<boolean>
+  onAssign: (roleId: string, scope: RoleScope) => Promise<boolean>
+  onUpdateScope: (assignmentId: string, scope: RoleScope) => Promise<boolean>
+  onRemoveAssignment: (assignmentId: string) => Promise<boolean>
+  onSetOverride: (permission: string, effect: 'grant' | 'deny') => Promise<boolean>
+  onRemoveOverride: (permission: string) => Promise<boolean>
 }) {
   const [tab, setTab] = React.useState<MemberTab>('profile')
-  const protectedMember = member.isCurrentUser || member.isSuperAdmin
+  const [activity, setActivity] = React.useState<Awaited<ReturnType<IamAdminService['listAuditEvents']>>['rows']>([])
+
+  React.useEffect(() => {
+    if (tab !== 'activity') return
+    void service.listAuditEvents({ recordType: 'membership', recordId: member.id, perPage: 25, sort: 'at', direction: 'desc' }).then((result) => setActivity(result.rows))
+  }, [member.id, service, tab])
 
   return (
     <Drawer
@@ -201,34 +269,36 @@ function MemberDrawer({
       size="xl"
       title={<span className="flex items-center gap-2">{member.name}<StatusBadge status={member.status} />{member.isSuperAdmin ? <Badge variant="warning">Super-admin</Badge> : null}</span>}
       description={member.email}
-      subtabs={<MemberTabs value={tab} onChange={setTab} />}
+      subtabs={<MemberTabs value={tab} onChange={setTab} extensions={extensions} />}
     >
-      {tab === 'profile' ? <MemberProfile member={member} locales={locales} canManage={canManage} protectedMember={protectedMember} onUpdate={onUpdate} onRemove={onRemove} /> : null}
-      {tab === 'roles' ? <MemberRoles member={member} roles={roles} options={scopeOptions} canManage={canManage} protectedMember={protectedMember} onAssign={onAssign} onUpdateScope={onUpdateScope} onRemoveAssignment={onRemoveAssignment} /> : null}
-      {tab === 'permissions' ? <PermissionOverrides member={member} roles={roles} groups={permissionGroups} canManage={canManage} onSet={onSetOverride} onRemove={onRemoveOverride} /> : null}
+      {tab === 'profile' ? <MemberProfile member={member} locales={locales} canManage={canManage} actions={memberActions} onAction={onAction} onUpdate={onUpdate} onRemove={onRemove} onResendInvite={onResendInvite} /> : null}
+      {tab === 'roles' ? <MemberRoles member={member} roles={roles} options={scopeOptions} canManage={canManage && memberCan(member, 'manageRoles')} onAssign={onAssign} onUpdateScope={onUpdateScope} onRemoveAssignment={onRemoveAssignment} /> : null}
+      {tab === 'permissions' ? <PermissionOverrides member={member} roles={roles} groups={permissionGroups} canManage={canManage && memberCan(member, 'manageOverrides')} onSet={onSetOverride} onRemove={onRemoveOverride} /> : null}
+      {tab === 'activity' ? <ActivityList events={activity} /> : null}
+      {extensions.map((extension) => tab === extension.key ? <React.Fragment key={extension.key}>{extension.render({ member, service, refresh })}</React.Fragment> : null)}
     </Drawer>
   )
 }
 
-function MemberProfile({ member, locales, canManage, protectedMember, onUpdate, onRemove }: { member: MemberRecord; locales: Array<{ value: string; label: string }>; canManage: boolean; protectedMember: boolean; onUpdate: (input: { name?: string; status?: MembershipStatus; localeOverride?: string | null }) => Promise<unknown>; onRemove: () => Promise<unknown> }) {
+function MemberProfile({ member, locales, canManage, actions, onAction, onUpdate, onRemove, onResendInvite }: { member: MemberRecord; locales: Array<{ value: string; label: string }>; canManage: boolean; actions: MemberAdminAction[]; onAction: (action: MemberAdminAction) => Promise<boolean>; onUpdate: (input: { name?: string; status?: MembershipStatus; localeOverride?: string | null }) => Promise<boolean>; onRemove: () => Promise<unknown>; onResendInvite: () => Promise<boolean> }) {
   const [name, setName] = React.useState(member.name)
   const [locale, setLocale] = React.useState(member.localeOverride ?? '')
   return <div className="space-y-6">
-    <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="iam-member-name">Display name</Label><Input id="iam-member-name" value={name} onChange={(event) => setName(event.target.value)} disabled={!canManage} /></div><div className="space-y-2"><Label>Language</Label><SearchSelect value={locale} onChange={setLocale} options={[{ value: '', label: 'Workspace default' }, ...locales]} disabled={!canManage} /></div></div>
+    <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="iam-member-name">Display name</Label><Input id="iam-member-name" value={name} onChange={(event) => setName(event.target.value)} disabled={!canManage || !memberCan(member, 'updateProfile')} /></div><div className="space-y-2"><Label>Language</Label><SearchSelect value={locale} onChange={setLocale} options={[{ value: '', label: 'Workspace default' }, ...locales]} disabled={!canManage || !memberCan(member, 'updateProfile')} /></div></div>
     <dl className="grid gap-4 rounded-xl border border-border bg-bg-subtle p-4 sm:grid-cols-2"><Metric label="Email" value={member.email} /><Metric label="Member since" value={formatDate(member.joinedAt ?? member.createdAt)} /><Metric label="Identity ID" value={member.userId} mono /><Metric label="Membership ID" value={member.id} mono /></dl>
-    {canManage ? <div className="flex flex-wrap gap-2"><Button onClick={() => void onUpdate({ name, localeOverride: locale || null })}>Save profile</Button>{member.status === 'active' ? <Button variant="outline" disabled={protectedMember} onClick={() => void onUpdate({ status: 'suspended' })}>Suspend</Button> : <Button variant="outline" onClick={() => void onUpdate({ status: 'active' })}>Activate</Button>}</div> : null}
-    {canManage ? <section className="rounded-xl border border-danger/30 bg-danger-subtle p-4"><h3 className="text-sm font-semibold text-danger">Remove member</h3><p className="mt-1 text-sm text-fg-muted">Removes the membership, role assignments, and permission overrides from this workspace.</p><Button variant="destructive" size="sm" className="mt-3" disabled={protectedMember} onClick={() => void onRemove()}><Trash2 size={14} />Remove member</Button></section> : null}
+    {canManage ? <div className="flex flex-wrap gap-2">{memberCan(member, 'updateProfile') ? <Button onClick={() => void onUpdate({ name, localeOverride: locale || null })}>Save profile</Button> : null}{member.status === 'active' ? <Button variant="outline" disabled={!memberCan(member, 'changeStatus')} onClick={() => void suspendMember(member, onUpdate)}>Suspend</Button> : member.status === 'suspended' ? <Button variant="outline" disabled={!memberCan(member, 'changeStatus')} onClick={() => void onUpdate({ status: 'active' })}>Reactivate</Button> : memberCan(member, 'resendInvite') ? <Button variant="outline" onClick={() => void onResendInvite()}>Resend invitation</Button> : null}{actions.filter((action) => action.available?.(member) ?? true).map((action) => <Button key={action.key} variant={action.variant ?? 'outline'} onClick={() => void onAction(action)}>{action.label}</Button>)}</div> : null}
+    {canManage ? <section className="rounded-xl border border-danger/30 bg-danger-subtle p-4"><h3 className="text-sm font-semibold text-danger">Remove member</h3><p className="mt-1 text-sm text-fg-muted">Removes the membership, role assignments, and permission overrides from this workspace.</p><Button variant="destructive" size="sm" className="mt-3" disabled={!memberCan(member, 'remove')} onClick={() => void onRemove()}><Trash2 size={14} />Remove member</Button>{member.capabilities?.reason && !memberCan(member, 'remove') ? <p className="mt-2 text-xs text-fg-muted">{member.capabilities.reason}</p> : null}</section> : null}
   </div>
 }
 
-function MemberRoles({ member, roles, options, canManage, protectedMember, onAssign, onUpdateScope, onRemoveAssignment }: { member: MemberRecord; roles: RoleRecord[]; options: ScopeOptions; canManage: boolean; protectedMember: boolean; onAssign: (roleId: string, scope: RoleScope) => Promise<unknown>; onUpdateScope: (assignmentId: string, scope: RoleScope) => Promise<unknown>; onRemoveAssignment: (assignmentId: string) => Promise<unknown> }) {
+function MemberRoles({ member, roles, options, canManage, onAssign, onUpdateScope, onRemoveAssignment }: { member: MemberRecord; roles: RoleRecord[]; options: ScopeOptions; canManage: boolean; onAssign: (roleId: string, scope: RoleScope) => Promise<boolean>; onUpdateScope: (assignmentId: string, scope: RoleScope) => Promise<boolean>; onRemoveAssignment: (assignmentId: string) => Promise<boolean> }) {
   const [roleId, setRoleId] = React.useState('')
   const [scope, setScope] = React.useState<RoleScope>({ type: 'tenant' })
   const [editing, setEditing] = React.useState<string | null>(null)
   const availableRoles = roles.filter((role) => !member.assignments.some((assignment) => assignment.roleId === role.id))
   return <div className="space-y-5">
-    {canManage && availableRoles.length > 0 ? <section className="space-y-4 rounded-lg border border-border bg-bg-subtle p-4"><div className="space-y-2"><Label>Add role</Label><SearchSelect value={roleId} onChange={setRoleId} options={availableRoles.map((role) => ({ value: role.id, label: role.name, hint: role.description ?? undefined }))} placeholder="Choose a role…" /></div><ScopePicker value={scope} onChange={setScope} options={options} /><div className="flex justify-end"><Button disabled={!roleId} onClick={() => void onAssign(roleId, scope).then(() => setRoleId(''))}><Plus size={14} />Assign role</Button></div></section> : null}
-    {member.assignments.length > 0 ? <ul className="divide-y divide-border rounded-lg border border-border">{member.assignments.map((assignment) => <li key={assignment.id} className="p-3"><div className="flex items-start justify-between gap-3"><div><div className="text-sm font-medium text-fg">{assignment.roleName}</div><div className="text-xs text-fg-muted">{scopeLabel(assignment.scope)}</div></div>{canManage ? <div className="flex gap-1"><Button variant="ghost" size="sm" onClick={() => setEditing(editing === assignment.id ? null : assignment.id)}>{editing === assignment.id ? 'Cancel' : 'Change scope'}</Button><Button variant="ghost" size="sm" className="text-danger" disabled={protectedMember && member.assignments.length === 1} onClick={() => void onRemoveAssignment(assignment.id)}>Remove</Button></div> : null}</div>{editing === assignment.id ? <AssignmentEditor initial={assignment.scope} options={options} onSave={async (next) => { await onUpdateScope(assignment.id, next); setEditing(null) }} /> : null}</li>)}</ul> : <EmptyState icon={<Shield />} title="No roles assigned" description="Assign a role before this member can access workspace features." />}
+    {canManage && availableRoles.length > 0 ? <section className="space-y-4 rounded-lg border border-border bg-bg-subtle p-4"><div className="space-y-2"><Label>Add role</Label><SearchSelect value={roleId} onChange={setRoleId} options={availableRoles.map((role) => ({ value: role.id, label: role.name, hint: role.description ?? undefined }))} placeholder="Choose a role…" /></div><ScopePicker value={scope} onChange={setScope} options={options} /><div className="flex justify-end"><Button disabled={!roleId} onClick={() => void onAssign(roleId, scope).then((saved) => { if (saved) setRoleId('') })}><Plus size={14} />Assign role</Button></div></section> : null}
+    {member.assignments.length > 0 ? <ul className="divide-y divide-border rounded-lg border border-border">{member.assignments.map((assignment) => <li key={assignment.id} className="p-3"><div className="flex items-start justify-between gap-3"><div><div className="text-sm font-medium text-fg">{assignment.roleName}</div><div className="text-xs text-fg-muted">{scopeLabel(assignment.scope)}</div></div>{canManage ? <div className="flex gap-1"><Button variant="ghost" size="sm" onClick={() => setEditing(editing === assignment.id ? null : assignment.id)}>{editing === assignment.id ? 'Cancel' : 'Change scope'}</Button><Button variant="ghost" size="sm" className="text-danger" onClick={() => void confirmDialog({ message: `Remove ${assignment.roleName} from ${member.name}?`, confirmLabel: 'Remove assignment', tone: 'danger' }).then((confirmed) => confirmed ? onRemoveAssignment(assignment.id) : false)}>Remove</Button></div> : null}</div>{editing === assignment.id ? <AssignmentEditor initial={assignment.scope} options={options} onSave={async (next) => { if (await onUpdateScope(assignment.id, next)) setEditing(null) }} /> : null}</li>)}</ul> : <EmptyState icon={<Shield />} title="No roles assigned" description="Assign a role before this member can access workspace features." />}
   </div>
 }
 
@@ -263,9 +333,16 @@ function InviteMemberDrawer({ roles, scopeOptions, locales, onClose, onInvite }:
 
 function AssignmentEditor({ initial, options, onSave }: { initial: RoleScope; options: ScopeOptions; onSave: (scope: RoleScope) => Promise<void> }) { const [scope, setScope] = React.useState(initial); return <div className="mt-3 space-y-3 rounded-lg border border-border bg-bg-subtle p-3"><ScopePicker value={scope} onChange={setScope} options={options} /><div className="flex justify-end"><Button size="sm" onClick={() => void onSave(scope)}>Save scope</Button></div></div> }
 
-function MemberTabs({ value, onChange }: { value: MemberTab; onChange: (tab: MemberTab) => void }) { const items: Array<{ value: MemberTab; label: string }> = [{ value: 'profile', label: 'Profile' }, { value: 'roles', label: 'Roles & scope' }, { value: 'permissions', label: 'Permission overrides' }]; return <nav className="-mb-px flex gap-1 overflow-x-auto" aria-label="Member sections">{items.map((item) => <button key={item.value} type="button" onClick={() => onChange(item.value)} className={cn('shrink-0 border-b-2 px-3 py-3 text-sm font-medium transition-colors', value === item.value ? 'border-primary text-primary' : 'border-transparent text-fg-muted hover:border-border-strong hover:text-fg')}>{item.label}</button>)}</nav> }
+function MemberTabs({ value, onChange, extensions }: { value: MemberTab; onChange: (tab: MemberTab) => void; extensions: MemberAdminExtension[] }) { const items: Array<{ value: MemberTab; label: string }> = [{ value: 'profile', label: 'Profile' }, { value: 'roles', label: 'Roles & scope' }, { value: 'permissions', label: 'Permission overrides' }, { value: 'activity', label: 'Activity' }, ...extensions.map((extension) => ({ value: extension.key, label: extension.label }))]; return <nav className="-mb-px flex gap-1 overflow-x-auto" aria-label="Member sections">{items.map((item) => <button key={item.value} type="button" onClick={() => onChange(item.value)} className={cn('shrink-0 border-b-2 px-3 py-3 text-sm font-medium transition-colors', value === item.value ? 'border-primary text-primary' : 'border-transparent text-fg-muted hover:border-border-strong hover:text-fg')}>{item.label}</button>)}</nav> }
 function StatusBadge({ status }: { status: MembershipStatus }) { return <Badge variant={status === 'active' ? 'success' : status === 'invited' ? 'warning' : 'secondary'}>{status.charAt(0).toUpperCase() + status.slice(1)}</Badge> }
+function StatusFilters({ value, counts, onChange }: { value: MembershipStatus | ''; counts: Record<MembershipStatus, number>; onChange: (value: MembershipStatus | '') => void }) { const filters: Array<{ value: MembershipStatus | ''; label: string; count: number }> = [{ value: '', label: 'All', count: counts.active + counts.invited + counts.suspended }, { value: 'active', label: 'Active', count: counts.active }, { value: 'invited', label: 'Invited', count: counts.invited }, { value: 'suspended', label: 'Suspended', count: counts.suspended }]; return <div className="flex max-w-full overflow-x-auto rounded-lg border border-border bg-surface p-1" aria-label="Filter members by status">{filters.map((filter) => <button key={filter.value || 'all'} type="button" aria-pressed={value === filter.value} onClick={() => onChange(filter.value)} className={cn('flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors', value === filter.value ? 'bg-primary-subtle text-primary' : 'text-fg-muted hover:bg-surface-hover hover:text-fg')}><span>{filter.label}</span><span className="tabular-nums text-fg-subtle">{filter.count}</span></button>)}</div> }
+function MemberListCard({ member, onClick }: { member: MemberRecord; onClick: () => void }) { return <button type="button" onClick={onClick} className="w-full rounded-xl border border-border bg-surface p-4 text-left shadow-sm transition-colors hover:bg-surface-hover"><div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-3"><Avatar name={member.name} src={member.image ?? undefined} size={36} /><div className="min-w-0"><div className="flex flex-wrap items-center gap-1.5"><span className="truncate font-medium text-fg">{member.name}</span>{member.isCurrentUser ? <Badge variant="outline">You</Badge> : null}{member.isSuperAdmin ? <Badge variant="warning">Super-admin</Badge> : null}</div><div className="truncate text-xs text-fg-muted">{member.email}</div></div></div><StatusBadge status={member.status} /></div><div className="mt-3 flex flex-wrap items-center gap-1">{member.assignments.length ? member.assignments.map((assignment) => <Badge key={assignment.id} variant="secondary">{assignment.roleName}</Badge>) : <span className="text-xs text-fg-subtle">No roles</span>}<span className="ml-auto text-xs text-fg-muted">{formatDate(member.joinedAt ?? member.invitedAt ?? member.createdAt)}</span></div></button> }
 function Metric({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) { return <div><dt className="text-xs font-medium uppercase tracking-wide text-fg-subtle">{label}</dt><dd className={cn('mt-1 truncate text-sm font-semibold text-fg', mono && 'font-mono text-xs')}>{value}</dd></div> }
 function formatDate(value: Date) { return value.toLocaleDateString(undefined, { dateStyle: 'medium' }) }
 function scopeLabel(scope: RoleScope): string { if (scope.type === 'tenant') return 'All records'; if (scope.type === 'self') return 'Own records'; if (scope.type === 'sites') return `${scope.siteIds.length} selected sites`; if (scope.type === 'people') return `${scope.personIds.length} selected people`; if (scope.type === 'crews') return `${scope.crewIds.length} selected crews`; return `${scope.departmentIds.length} departments, ${scope.groupIds.length} groups` }
 function errorMessage(error: unknown): string { return error instanceof Error ? error.message : 'The IAM operation failed.' }
+function memberCan(member: MemberRecord, capability: keyof NonNullable<MemberRecord['capabilities']>): boolean { if (member.capabilities) return Boolean(member.capabilities[capability]); if (capability === 'updateProfile' || capability === 'resendInvite') return !member.isSuperAdmin; return !member.isCurrentUser && !member.isSuperAdmin }
+async function suspendMember(member: MemberRecord, update: (input: { status: MembershipStatus }) => Promise<boolean>) { if (await confirmDialog({ message: `Suspend ${member.name}? They will lose access until reactivated.`, confirmLabel: 'Suspend member', tone: 'danger' })) await update({ status: 'suspended' }) }
+async function runMemberAction(action: MemberAdminAction, member: MemberRecord, service: IamAdminService, refresh: () => Promise<void>) { const confirmation = typeof action.confirm === 'function' ? action.confirm(member) : action.confirm; if (confirmation && !(await confirmDialog(confirmation))) return; await action.run({ member, service, refresh }) }
+function assertUniqueExtensions(extensions: MemberAdminExtension[], reserved: string[], surface: string) { const keys = new Set(reserved); for (const extension of extensions) { if (!extension.key.trim() || keys.has(extension.key)) throw new Error(`Duplicate or reserved ${surface} detail tab key: ${extension.key || '(empty)'}`); keys.add(extension.key) } }
+function assertUniqueActionKeys(actions: MemberAdminAction[]) { const keys = new Set<string>(); for (const action of actions) { if (!action.key.trim() || keys.has(action.key)) throw new Error(`Duplicate member action key: ${action.key || '(empty)'}`); keys.add(action.key) } }

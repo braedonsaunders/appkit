@@ -72,6 +72,8 @@ import { AttachmentPanel } from '@appkit/storage/react'
 import { createMemoryRecordApprovalAdapter } from '@appkit/workflows'
 import { ApprovalActions, ApprovalHistory, RecordApprovalProvider } from '@appkit/workflows/approval-react'
 import { createTenantContextFactory } from '@appkit/tenant'
+import { createMemoryIamService } from '@appkit/iam/memory'
+import { AuditAdmin, RolesAdmin, UsersAdmin } from '@appkit/iam/react'
 
 assert.equal(parseFormula('count()', { resolveField: () => null }).ok, true)
 assert.equal(color('primary').startsWith('rgb('), true)
@@ -83,6 +85,10 @@ const tenantContextFactory = createTenantContextFactory({
 const tenantContext = tenantContextFactory.makeTenantContext({ name: 'primary' }, { userId: 'user-1', tenantId: 'tenant-1', isSuperAdmin: false, timezone: 'America/Toronto', locale: 'fr', defaultLocale: 'en', enabledLocales: ['en', 'fr'], localeOverride: 'fr', membership: { id: 'member-1', displayName: 'Ada' }, permissions: new Set(['records.read.all']), scopes: [{ type: 'tenant' }], personId: 'person-1' })
 assert.equal(tenantContext.personId, 'person-1')
 assert.equal(await tenantContext.db(async database => database.name), 'primary')
+const iamService = createMemoryIamService()
+assert.match(renderToStaticMarkup(React.createElement(RolesAdmin, { service: iamService, permissionGroups: [] })), /Roles/)
+assert.match(renderToStaticMarkup(React.createElement(UsersAdmin, { service: iamService, permissionGroups: [] })), /Users/)
+assert.match(renderToStaticMarkup(React.createElement(AuditAdmin, { service: iamService })), /Audit log/)
 assert.equal(compileCustomReport({ entity: 'entries', columns: ['status'], filters: { combinator: 'and', rules: [{ field: 'status', op: 'eq', value: 'posted' }] } }, 'org-1', { entities: [{ key: 'entries', label: 'Entries', category: 'ledger', description: 'Entries', from: 'entries e', orgColumn: 'e.org_id', columns: [{ key: 'status', label: 'Status', kind: 'enum', expr: 'e.status', options: ['draft', 'posted'] }] }] }).sql.includes('e.org_id = $1'), true)
 assert.equal(compileCustomReport({ entity: 'incidents', mode: 'summarize', columns: [], measures: [{ fn: 'count' }] }, 'tenant-1', { entities: [{ key: 'incidents', label: 'Incidents', category: 'operations', description: 'Incidents', table: 'incidents', columns: [{ key: 'reference', label: 'Reference', kind: 'text' }] }] }).sql.includes('"incidents"."tenant_id" = $1'), true)
 assert.match(renderToStaticMarkup(React.createElement(Button, null, 'Ready')), /Ready/)
@@ -135,6 +141,10 @@ import type { PromptDialogOptions } from '@appkit/ui'
 import type { RecordApprovalAdapter, RecordApprovalState } from '@appkit/workflows'
 import type { ApprovalActionsProps, ApprovalHistoryProps, RecordApprovalProviderProps } from '@appkit/workflows/approval-react'
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
+import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
+import { createDrizzleIamService } from '@appkit/iam/drizzle'
+import type { BulkRoleAssignmentInput, IamAdminService, MemberRecord, RoleRecord } from '@appkit/iam'
+import type { MemberAdminAction, MemberAdminExtension, RoleAdminExtension } from '@appkit/iam/react'
 import { createMembershipAccessResolver, resolveMembershipAccess } from '@appkit/tenant'
 import type { MembershipAccessDatabase, RequestContext, RequestContextArgs, TenantDatabase } from '@appkit/tenant'
 ${typePackages.map((_, index) => `type PackageContract${index} = typeof Package${index}`).join('\n')}
@@ -171,6 +181,7 @@ declare const applicationContext: ApplicationRequestContext
 declare const applicationArgs: ApplicationRequestArgs
 declare const tenantDatabase: TenantDatabase
 declare const postgresJsDatabase: PostgresJsDatabase<Record<string, unknown>>
+declare const nodePgDatabase: NodePgDatabase<Record<string, unknown>>
 async function unchangedMembershipAccessCall(database: MembershipAccessDatabase) {
   return resolveMembershipAccess(database, 'membership-1', 'active-role-1')
 }
@@ -178,12 +189,29 @@ async function productionDriverMembershipAccessCall() {
   return resolveMembershipAccess(postgresJsDatabase, 'membership-1', 'active-role-1')
 }
 const boundMembershipAccess = createMembershipAccessResolver({ permissionCatalogue: ['records.read.all'] })
+function unchangedIamCalls(service: IamAdminService, member: MemberRecord, role: RoleRecord, bulk: BulkRoleAssignmentInput) {
+  void service.bulkUpdateRoleAssignments(bulk)
+  void service.resendInvite(member.id)
+  void service.listAuditEvents({ recordType: 'membership', recordId: member.id, sort: 'at', direction: 'desc' })
+  void role.capabilities
+}
+const nodePgIam = createDrizzleIamService({ db: nodePgDatabase, tenantId: 'tenant-1', actor: { userId: 'user-1' } })
+const postgresJsIam = createDrizzleIamService({ db: postgresJsDatabase, tenantId: 'tenant-1', actor: { userId: 'user-1' } })
+const memberAction: MemberAdminAction = { key: 'reset', label: 'Reset password', async run() {} }
+const memberExtension: MemberAdminExtension = { key: 'identity', label: 'Identity', render: () => null }
+const roleExtension: RoleAdminExtension = { key: 'access', label: 'Access', render: () => null }
 void applicationContext.personId
 void applicationArgs.personId
 void tenantDatabase
 void unchangedMembershipAccessCall
 void productionDriverMembershipAccessCall
 void boundMembershipAccess
+void unchangedIamCalls
+void nodePgIam
+void postgresJsIam
+void memberAction
+void memberExtension
+void roleExtension
 `,
   )
   await writeFile(

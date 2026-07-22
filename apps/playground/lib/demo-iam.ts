@@ -115,5 +115,20 @@ function audit(id: string, action: string, recordType: string, recordId: string,
 
 export const demoIamService = createMemoryIamService(
   { roles, members, auditEvents },
-  { actor: { userId: 'user-1', name: 'Ada Lovelace' } },
+  {
+    actor: { userId: 'user-1', name: 'Ada Lovelace', isSuperAdmin: true },
+    permissionCatalogue: allPermissions,
+    roleCapabilities: (role) => ({
+      updateKey: !role.isBuiltIn,
+      updateDetails: true,
+      updatePermissions: role.key !== 'administrator',
+      duplicate: true,
+      delete: !role.isBuiltIn,
+      reason: role.key === 'administrator'
+        ? 'The root administrator permission set is locked to prevent workspace lockout.'
+        : role.isBuiltIn
+          ? 'Built-in role keys and deletion are protected.'
+          : undefined,
+    }),
+  },
 )
