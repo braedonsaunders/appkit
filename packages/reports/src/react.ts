@@ -1,4 +1,4 @@
-export { ReportStudio, ReportResultView, type ReportStudioValue } from './report-studio'
+export { ReportStudio, ReportResultView, reportStudioTemplates, type ReportStudioTemplate, type ReportStudioValue } from './report-studio'
 export { ReportPaper } from './report-paper'
 export { PaperView } from './paper-view'
 export {

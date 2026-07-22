@@ -1,8 +1,8 @@
 'use client'
 
 import * as React from 'react'
-import { CalendarClock, ChevronDown, ChevronUp, Columns3, Filter, GripVertical, Loader2, Play, Plus, Save, Settings2, Sigma, Table2, Trash2, X } from 'lucide-react'
-import { Button, Checkbox, Input, Label, SearchSelect, cn } from '@appkit/ui'
+import { CalendarClock, CheckCircle2, ChevronDown, ChevronUp, Columns3, Filter, GripVertical, LayoutTemplate, Loader2, Play, Plus, Save, Search, Settings2, Sigma, Table2, Trash2, X } from 'lucide-react'
+import { Button, Checkbox, Input, Label, SearchSelect, Textarea, cn } from '@appkit/ui'
 import type { ReportCustomQuery, ReportAggFn } from './custom-query'
 import { REPORT_AGG_FNS, REPORT_TEMPORAL_BINS } from './custom-query'
 import type { CustomReportDefinition } from './definitions'
@@ -16,9 +16,10 @@ import { ReportExportMenu, type ReportExportOption } from './export-menu'
 import { reportRunResultToPaper, type ReportDrillLoader, type ReportDrillRecord, type ReportCellContext } from './viewer-types'
 
 export type ReportStudioValue = { definition: CustomReportDefinition; schedule?: ReportSchedule | null }
+export type ReportStudioTemplate = { id: string; label: string; description: string; query: ReportCustomQuery }
 type StudioTab = 'data' | 'filter' | 'format'
 
-export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRecord = ReportDrillRecord>({ value, catalog, result, onChange, onPreview, onSave, organization = 'Organization', currency = '', drill, exports: exportOptions, printHref, className }: {
+export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRecord = ReportDrillRecord>({ value, catalog, result, onChange, onPreview, onSave, organization = 'Organization', currency = '', drill, exports: exportOptions, printHref, templates, autoPreviewMs = 500, autoSaveMs = 700, className }: {
   value: ReportStudioValue
   catalog: ReportEntityCatalog
   result: ReportRunResult | null
@@ -34,6 +35,11 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
   }
   exports?: ReportExportOption[]
   printHref?: string
+  templates?: ReportStudioTemplate[] | ((entity: NonNullable<ReturnType<typeof reportEntity>>) => ReportStudioTemplate[])
+  /** Debounced production live preview. Set false for manual-run-only hosts. */
+  autoPreviewMs?: number | false
+  /** Debounced production autosave. Set false when the host owns save timing. */
+  autoSaveMs?: number | false
   className?: string
 }) {
   const [preview, setPreview] = React.useState(result)
@@ -49,16 +55,36 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
   const updateDefinition = (next: Partial<CustomReportDefinition>) => onChange({ ...value, definition: { ...definition, ...next } })
   const updateQuery = (next: ReportCustomQuery) => updateDefinition({ query: next })
 
-  async function run() {
+  async function run(next = value) {
     setRunning(true); setError(null)
-    try { setPreview(await onPreview(value)) } catch (cause) { setError(cause instanceof Error ? cause.message : 'The report could not run.') }
+    try { setPreview(await onPreview(next)) } catch (cause) { setError(cause instanceof Error ? cause.message : 'The report could not run.') }
     finally { setRunning(false) }
   }
-  async function save() {
+  async function save(next = value) {
     setSaving(true); setError(null)
-    try { const response = await onSave(value); if (!response.ok) setError(response.error) }
+    try { const response = await onSave(next); if (!response.ok) setError(response.error) }
     finally { setSaving(false) }
   }
+
+  const previewKey = JSON.stringify({ query, layout: definition.layout, name: definition.name, description: definition.description })
+  const lastSavedKey = React.useRef(previewKey)
+  React.useEffect(() => {
+    if (autoPreviewMs === false) return
+    const timer = window.setTimeout(() => { void run(value) }, Math.max(0, autoPreviewMs))
+    return () => window.clearTimeout(timer)
+    // The serialized report input is the intentional dependency; callbacks are
+    // application adapters and should not restart a settled preview.
+  }, [previewKey, autoPreviewMs])
+  React.useEffect(() => {
+    if (autoSaveMs === false) return
+    if (lastSavedKey.current === previewKey) return
+    const timer = window.setTimeout(() => { lastSavedKey.current = previewKey; void save(value) }, Math.max(0, autoSaveMs))
+    return () => window.clearTimeout(timer)
+  }, [previewKey, autoSaveMs])
+
+  const studioTemplates = entity
+    ? (typeof templates === 'function' ? templates(entity) : templates ?? reportStudioTemplates(entity))
+    : []
 
   const tabs: { key: StudioTab; label: string; icon: typeof Table2 }[] = [
     { key: 'data', label: 'Data', icon: Table2 },
@@ -70,14 +96,22 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
     <aside className="flex min-h-0 flex-col border-b border-border bg-surface lg:col-span-1 lg:border-r lg:border-b-0">
       <div className="shrink-0 space-y-3 border-b border-border p-4 lg:p-5">
         <Field label="Name"><Input value={definition.name} onChange={(event) => updateDefinition({ name: event.target.value, slug: slug(event.target.value) })} /></Field>
+        <Field label="Description"><Textarea rows={2} value={definition.description ?? ''} onChange={(event) => updateDefinition({ description: event.target.value || undefined })} /></Field>
         <div className="grid grid-cols-3 gap-1 rounded-lg border border-border p-0.5">{tabs.map((item) => <button key={item.key} type="button" onClick={() => setTab(item.key)} className={cn('flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium transition-colors', tab === item.key ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:bg-surface-hover hover:text-fg')}><item.icon size={14} />{item.label}</button>)}</div>
       </div>
       <div className="app-scroll min-h-0 flex-1 space-y-5 overflow-y-auto p-4 lg:p-5">
         {tab === 'data' ? <>
           <section className="grid gap-3">
-            <Field label="Source"><SearchSelect value={query.entity} onChange={(entityKey) => { const next = reportEntity(catalog, entityKey); if (next) updateQuery({ entity: next.key, mode: 'rows', columns: defaultColumnsFor(next), filters: null, groupBy: null, sort: next.defaultSort ?? null, sorts: next.defaultSort ? [next.defaultSort] : [], limit: query.limit ?? 1000 }) }} options={catalog.entities.map((item) => ({ value: item.key, label: item.label, hint: item.description }))} /></Field>
+            <Field label="Source"><SearchSelect value={query.entity} onChange={(entityKey) => { const next = reportEntity(catalog, entityKey); if (next) updateQuery({ entity: next.key, mode: 'rows', columns: defaultColumnsFor(next), filters: null, groupBy: null, sort: next.defaultSort ?? null, sorts: next.defaultSort ? [next.defaultSort] : [], limit: query.limit ?? 1000 }) }} options={catalog.entities.map((item) => ({ value: item.key, label: item.label, hint: item.description, group: item.category }))} /></Field>
             <div className="grid grid-cols-2 gap-2"><ModeButton active={(query.mode ?? 'rows') === 'rows'} icon={<Columns3 />} label="Rows" onClick={() => updateQuery({ ...query, mode: 'rows' })} /><ModeButton active={query.mode === 'summarize'} icon={<Sigma />} label="Summarize" onClick={() => updateQuery({ ...query, mode: 'summarize', measures: query.measures?.length ? query.measures : [{ fn: 'count' }] })} /></div>
           </section>
+          {studioTemplates.length ? <BuilderSection title="Templates" icon={<LayoutTemplate />}>{studioTemplates.map((template) => {
+            const active = JSON.stringify(template.query) === JSON.stringify(query)
+            return <button key={template.id} type="button" onClick={() => updateQuery(template.query)} className={cn('flex w-full items-start gap-2 rounded-lg border px-2.5 py-2 text-left transition-colors', active ? 'border-primary bg-primary-subtle text-fg' : 'border-border bg-surface text-fg hover:border-primary/50 hover:bg-surface-hover')}>
+              <CheckCircle2 size={14} className={cn('mt-0.5 shrink-0', active ? 'text-primary' : 'text-fg-subtle')} />
+              <span className="min-w-0"><span className="block text-xs font-medium">{template.label}</span><span className="mt-0.5 block text-[11px] leading-snug text-fg-muted">{template.description}</span></span>
+            </button>
+          })}</BuilderSection> : null}
           {entity && (query.mode ?? 'rows') === 'rows' ? <RowsBuilder entity={entity} query={query} onChange={updateQuery} /> : null}
           {entity && query.mode === 'summarize' ? <SummaryBuilder entity={entity} query={query} onChange={updateQuery} /> : null}
           {entity ? <SortLimitBuilder entity={entity} query={query} onChange={updateQuery} /> : null}
@@ -90,7 +124,7 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
     <main className="flex min-h-0 flex-col bg-bg-subtle lg:col-span-2">
       <header className="flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border bg-surface px-4">
         <div><h2 className="text-sm font-semibold text-fg">{definition.name || 'Untitled report'}</h2><p className="text-xs text-fg-muted">{entity?.label ?? 'Choose a source'} · {query.mode === 'summarize' ? 'Summary' : 'Detail rows'}</p></div>
-        <div className="flex items-center gap-2">{exportOptions?.length ? <ReportExportMenu options={exportOptions} printHref={printHref} onError={(cause) => setError(cause.message)} /> : null}<Button type="button" variant="outline" size="sm" onClick={run} disabled={running}>{running ? <Loader2 className="size-4 animate-spin" /> : <Play size={14} />}Run</Button><Button type="button" size="sm" onClick={save} disabled={saving}>{saving ? <Loader2 className="size-4 animate-spin" /> : <Save size={14} />}Save</Button></div>
+        <div className="flex items-center gap-2">{exportOptions?.length ? <ReportExportMenu options={exportOptions} printHref={printHref} onError={(cause) => setError(cause.message)} /> : null}<Button type="button" variant="outline" size="sm" onClick={() => void run()} disabled={running}>{running ? <Loader2 className="size-4 animate-spin" /> : <Play size={14} />}Run</Button><Button type="button" size="sm" onClick={() => void save()} disabled={saving}>{saving ? <Loader2 className="size-4 animate-spin" /> : <Save size={14} />}Save</Button></div>
       </header>
       <div className="app-scroll min-h-0 flex-1 overflow-auto p-4 lg:p-6">
         {error ? <div role="alert" className="mb-4 rounded-lg border border-danger/30 bg-danger-subtle px-3 py-2 text-sm text-danger">{error}</div> : null}
@@ -102,15 +136,19 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
 }
 
 function RowsBuilder({ entity, query, onChange }: { entity: NonNullable<ReturnType<typeof reportEntity>>; query: ReportCustomQuery; onChange: (query: ReportCustomQuery) => void }) {
+  const [columnSearch, setColumnSearch] = React.useState('')
   const selected = query.columns
   const labels = query.columnLabels ?? {}
-  const available = entity.columns.filter((column) => !selected.includes(column.key))
+  const search = columnSearch.trim().toLowerCase()
+  const available = entity.columns.filter((column) => !selected.includes(column.key) && (!search || `${column.label} ${column.key}`.toLowerCase().includes(search)))
   const setColumns = (columns: string[]) => onChange({ ...query, columns, columnLabels: Object.fromEntries(Object.entries(labels).filter(([key]) => columns.includes(key))) })
   const move = (index: number, delta: -1 | 1) => { const target = index + delta; if (target < 0 || target >= selected.length) return; const columns = [...selected]; [columns[index], columns[target]] = [columns[target]!, columns[index]!]; setColumns(columns) }
   const setLabel = (key: string, value: string) => { const next = { ...labels }; if (value.trim()) next[key] = value; else delete next[key]; onChange({ ...query, columnLabels: next }) }
   return <BuilderSection title="Columns" icon={<Columns3 />}>
+    <div className="relative"><Search size={13} className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-fg-subtle" /><Input value={columnSearch} onChange={(event) => setColumnSearch(event.target.value)} placeholder="Search columns" className="h-8 pl-7 text-xs" /></div>
+    <div className="flex flex-wrap gap-1.5"><Button type="button" variant="outline" size="sm" onClick={() => setColumns(defaultColumnsFor(entity))}>Defaults</Button><Button type="button" variant="outline" size="sm" onClick={() => setColumns(entity.columns.map((column) => column.key))}>All</Button><Button type="button" variant="ghost" size="sm" onClick={() => setColumns([])}>Clear</Button></div>
     {selected.length === 0 ? <p className="text-xs text-danger">Select at least one column.</p> : <ul className="space-y-1">{selected.map((key, index) => { const column = reportColumn(entity, key); return <li key={key} className="flex items-center gap-1.5"><span className="min-w-0 flex-1 truncate rounded-md border border-border bg-bg-subtle px-2 py-1 text-xs text-fg">{column?.label ?? key}</span><Input className="h-7 w-32 text-xs" value={labels[key] ?? ''} onChange={(event) => setLabel(key, event.target.value)} placeholder="Label override" /><button type="button" onClick={() => move(index, -1)} disabled={index === 0} aria-label="Move column up" className="rounded p-1 text-fg-subtle hover:bg-surface-hover hover:text-fg disabled:opacity-30"><ChevronUp size={14} /></button><button type="button" onClick={() => move(index, 1)} disabled={index === selected.length - 1} aria-label="Move column down" className="rounded p-1 text-fg-subtle hover:bg-surface-hover hover:text-fg disabled:opacity-30"><ChevronDown size={14} /></button><button type="button" onClick={() => setColumns(selected.filter((columnKey) => columnKey !== key))} aria-label="Remove column" className="rounded p-1 text-fg-subtle hover:bg-danger-subtle hover:text-danger"><X size={14} /></button></li> })}</ul>}
-    {available.length ? <div className="flex flex-wrap gap-1.5 pt-1">{available.map((column) => <button key={column.key} type="button" onClick={() => setColumns([...selected, column.key])} className="rounded-full border border-border px-2.5 py-1 text-xs text-fg-muted transition-colors hover:border-primary hover:text-primary"><span className="inline-flex items-center gap-1"><Plus size={11} />{column.label}</span></button>)}</div> : null}
+    {available.length ? <div className="flex max-h-48 flex-wrap gap-1.5 overflow-y-auto pt-1">{available.map((column) => <button key={column.key} type="button" onClick={() => setColumns([...selected, column.key])} className="rounded-full border border-border px-2.5 py-1 text-xs text-fg-muted transition-colors hover:border-primary hover:text-primary"><span className="inline-flex items-center gap-1"><Plus size={11} />{column.label}</span></button>)}</div> : search ? <p className="text-xs text-fg-subtle">No columns match.</p> : null}
     <Field label="Group rows into sections"><SearchSelect value={query.groupBy ?? ''} onChange={(groupBy) => onChange({ ...query, groupBy: groupBy || null })} options={[{ value: '', label: 'No grouping' }, ...entity.columns.map((column) => ({ value: column.key, label: column.label }))]} /></Field>
   </BuilderSection>
 }
@@ -144,6 +182,41 @@ function LayoutBuilder({ value, onChange }: { value: ReportStudioValue; onChange
   const layout = value.definition.layout, schedule = value.schedule
   const changeLayout = (next: Partial<typeof layout>) => onChange({ ...value, definition: { ...value.definition, layout: { ...layout, ...next } } })
   return <BuilderSection title="Page and delivery" icon={<CalendarClock />}><div className="grid grid-cols-2 gap-2"><Field label="Paper"><SearchSelect value={layout.paperSize} onChange={(paperSize) => changeLayout({ paperSize: paperSize as typeof layout.paperSize })} options={['letter', 'a4', 'legal'].map((item) => ({ value: item, label: item.toUpperCase() }))} /></Field><Field label="Orientation"><SearchSelect value={layout.orientation} onChange={(orientation) => changeLayout({ orientation: orientation as typeof layout.orientation })} options={[{ value: 'portrait', label: 'Portrait' }, { value: 'landscape', label: 'Landscape' }]} /></Field><Field label="Density"><SearchSelect value={layout.density} onChange={(density) => changeLayout({ density: density as typeof layout.density })} options={[{ value: 'standard', label: 'Standard' }, { value: 'compact', label: 'Compact' }]} /></Field><Field label="Margin (mm)"><Input type="number" min={5} max={30} value={layout.marginMm} onChange={(event) => changeLayout({ marginMm: Math.min(30, Math.max(5, Number(event.currentTarget.value) || 15)) })} /></Field></div><label className="flex items-center gap-2 text-sm text-fg"><Checkbox checked={layout.showSummary} onChange={(event) => changeLayout({ showSummary: event.currentTarget.checked })} />Show summary band</label>{schedule ? <label className="flex items-center gap-2 text-sm text-fg"><Checkbox checked={schedule.enabled} onChange={(event) => onChange({ ...value, schedule: { ...schedule, enabled: event.target.checked } })} />Scheduled delivery enabled</label> : null}</BuilderSection>
+}
+
+/** Generic production templates derived only from the injected catalogue. */
+export function reportStudioTemplates(entity: NonNullable<ReturnType<typeof reportEntity>>): ReportStudioTemplate[] {
+  const columns = defaultColumnsFor(entity)
+  const base: ReportCustomQuery = {
+    entity: entity.key,
+    mode: 'rows',
+    columns,
+    breakouts: [],
+    measures: [],
+    filters: null,
+    groupBy: null,
+    sort: entity.defaultSort ?? null,
+    sorts: entity.defaultSort ? [entity.defaultSort] : null,
+    limit: 1000,
+  }
+  const temporal = entity.columns.find((column) => column.key === 'month') ?? entity.columns.find((column) => column.key.endsWith('_on')) ?? entity.columns.find((column) => column.key.endsWith('_at')) ?? entity.columns.find((column) => column.kind === 'date' || column.kind === 'timestamp')
+  const category = entity.columns.find((column) => column.key === 'status') ?? entity.columns.find((column) => column.kind === 'enum') ?? entity.columns.find((column) => column.kind === 'text' && !column.key.endsWith('_id'))
+  const numeric = entity.columns.find((column) => column.kind === 'number')
+  const templates: ReportStudioTemplate[] = [{ id: 'detail-register', label: 'Detail register', description: 'Selected columns in source order with the default sort.', query: base }]
+  if (category) templates.push({ id: 'grouped-register', label: `Grouped by ${category.label}`, description: 'Detail rows organized into report sections.', query: { ...base, groupBy: category.key } })
+  if (temporal) templates.push({
+    id: 'monthly-activity',
+    label: numeric ? `Monthly ${numeric.label}` : 'Monthly activity',
+    description: numeric ? `Monthly total and record count for ${numeric.label.toLowerCase()}.` : 'Monthly record count.',
+    query: { entity: entity.key, mode: 'summarize', columns: [], breakouts: [{ column: temporal.key, bin: 'month' }], measures: numeric ? [{ fn: 'sum', column: numeric.key }, { fn: 'count' }] : [{ fn: 'count' }], filters: null, groupBy: null, sort: null, sorts: null, limit: 1000 },
+  })
+  if (category && numeric) templates.push({
+    id: 'totals-by-category',
+    label: `${numeric.label} by ${category.label}`,
+    description: `Rank ${category.label.toLowerCase()} values by ${numeric.label.toLowerCase()}.`,
+    query: { entity: entity.key, mode: 'summarize', columns: [], breakouts: [{ column: category.key }], measures: [{ fn: 'sum', column: numeric.key }, { fn: 'count' }], filters: null, groupBy: null, sort: null, sorts: null, limit: 1000 },
+  })
+  return templates
 }
 
 export function ReportResultView({ organization = 'Organization', title = 'Report', description, result }: { organization?: string; title?: string; description?: string; result: ReportRunResult }) {

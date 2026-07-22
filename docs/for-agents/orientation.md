@@ -439,7 +439,9 @@ compilation, fiscal breakouts, grouped result shaping, saved definition
 registries, document layout/rendering, DST-safe cadence, schedule policy, and
 lease-based idempotent run claiming. `@appkit/reports/react` preserves the
 production report surface: `ReportStudio` has the one-third scrolling build rail
-and two-thirds live paper preview; `PaperView` and `ReportPaper` provide the
+and two-thirds live paper preview, grouped searchable sources, catalogue-derived
+templates, ordered/searchable columns, and debounced preview/autosave adapters;
+`PaperView` and `ReportPaper` provide the
 shared document presentation; `StatementMatrixTable` keeps grouped headings,
 hierarchy, accounting currency, actual/thousands/millions scaling, percentage
 variance semantics, totals, collapse/expand, account navigation, and amount
