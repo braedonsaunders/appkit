@@ -160,8 +160,8 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `@appkit/db`        | Tenant-scoped Postgres execution, BYPASSRLS system access, identity schema, API keys, schema helpers, and RLS installation. |
 | `@appkit/tenant`    | Request context, wildcard RBAC, read tiers, visibility scopes, grant/deny overrides, and super-admin behavior.              |
-| `@appkit/iam`       | Optional roles, memberships, scoped assignments, permission exceptions, audit, full administration UI, and memory/Drizzle adapters. |
-| `@appkit/auth`      | Optional scrypt passwords and stateless HMAC sessions.                                                                      |
+| `@appkit/iam`       | Optional roles, memberships, scoped assignments, permission exceptions, audit, full administration UI, and memory/HTTP/Drizzle adapters. |
+| `@appkit/auth`      | Durable sessions, passwords and resets, magic links, invitation grants, OAuth accounts, React forms, and memory/Drizzle/Next adapters. |
 | `@appkit/events`    | Structured audit records, transactional outbox, recipient resolution, leased relay, durable retries, and effects ledger.      |
 | `@appkit/api`       | API-key authorization, idempotent writes, typed public errors, and OpenAPI descriptions.                                    |
 | `@appkit/sandbox`   | Shared QuickJS isolation with memory, stack, deadline, governance, frozen-input, host-function, log, and structured-fault contracts. |

@@ -1,11 +1,18 @@
 {
   "name": "@appkit/auth",
   "version": "0.1.0",
-  "description": "Passwords (scrypt) + stateless HMAC-signed sessions, over the @appkit/db identity schema. Framework-agnostic.",
+  "description": "Production authentication: durable sessions, passwords, magic links, invitation grants, reset flows, React UI, and Postgres adapters.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./server": "./src/server.ts",
+    "./client": "./src/client.ts",
+    "./invites": "./src/invites.ts",
+    "./drizzle": "./src/drizzle.ts",
+    "./memory": "./src/memory.ts",
+    "./react": "./src/react.tsx",
+    "./next": "./src/next.ts",
     "./package.json": "./package.json"
   },
   "main": "./src/index.ts",
@@ -21,11 +28,21 @@
   },
   "dependencies": {
     "@appkit/db": "workspace:*",
-    "drizzle-orm": "^0.45.2"
+    "@appkit/ui": "workspace:*",
+    "better-auth": "^1.6.23",
+    "drizzle-orm": "^0.45.2",
+    "pg": "^8.22.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^22",
+    "@types/pg": "^8.20.0",
+    "@types/react": "^19.2.2",
+    "react": "^19.2.7",
     "tsx": "^4.19.2"
+  },
+  "peerDependencies": {
+    "react": ">=18.2 <20"
   },
   "author": "Braedon Saunders",
   "repository": {

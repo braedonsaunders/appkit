@@ -14,6 +14,7 @@ scoped assignments, lifecycle state, audit events, and the complete
 - `@appkit/iam/react` — role, member, scope, override, and audit administration
 - `@appkit/iam/drizzle` — tenant-bound Postgres/RLS service with atomic audit
 - `@appkit/iam/memory` — deterministic browser, local-first, and test adapter
+- `@appkit/iam/http` — authenticated framework-neutral handler and full-contract client
 - `@appkit/iam/schema` — canonical identity and audit schema re-exports
 
 Applications supply their permission catalogue and any domain scope choices.

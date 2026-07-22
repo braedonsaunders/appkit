@@ -8,6 +8,7 @@
     ".": "./src/index.ts",
     "./drizzle": "./src/drizzle.ts",
     "./memory": "./src/memory.ts",
+    "./http": "./src/http.ts",
     "./react": "./src/react.ts",
     "./schema": "./src/schema.ts",
     "./package.json": "./package.json"

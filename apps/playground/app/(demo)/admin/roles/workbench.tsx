@@ -1,12 +1,13 @@
 'use client'
 
 import { RolesAdmin } from '@appkit/iam/react'
-import { demoIamService, DEMO_PERMISSION_GROUPS } from '../../../../lib/demo-iam'
+import { DEMO_PERMISSION_GROUPS } from '../../../../lib/demo-iam'
+import { demoIamClient } from '../../../../lib/demo-iam-client'
 
 export function RolesWorkbench() {
   return (
     <RolesAdmin
-      service={demoIamService}
+      service={demoIamClient}
       permissionGroups={DEMO_PERMISSION_GROUPS}
       scopeOptions={{
         sites: [{ value: 'site-east', label: 'East site' }, { value: 'site-west', label: 'West site' }],

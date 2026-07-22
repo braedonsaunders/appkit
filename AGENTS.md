@@ -59,6 +59,10 @@ imports it improves.
 - `packages/tenant` — request context + RBAC on top of `@appkit/db`:
   `RequestContext`, `can` / `assertCan` (wildcards, read-tiers, per-user
   grant/deny overrides), `resolveMembershipAccess`, super-admin.
+- `packages/auth` — optional persisted authentication over the canonical
+  identity schema: password/reset and magic-link flows, membership-bound invite
+  grants, React/client/Next entry points, and memory/HTTP/Drizzle seams. Public
+  apps can omit it entirely.
 - `packages/iam` — optional full identity administration over those primitives:
   roles, memberships, scoped assignments, per-user overrides, invitation
   lifecycle, audit, production React screens, and memory/Drizzle adapters.

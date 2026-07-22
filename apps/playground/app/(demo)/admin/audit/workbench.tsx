@@ -1,8 +1,8 @@
 'use client'
 
 import { AuditAdmin } from '@appkit/iam/react'
-import { demoIamService } from '../../../../lib/demo-iam'
+import { demoIamClient } from '../../../../lib/demo-iam-client'
 
 export function AuditWorkbench() {
-  return <AuditAdmin service={demoIamService} />
+  return <AuditAdmin service={demoIamClient} />
 }

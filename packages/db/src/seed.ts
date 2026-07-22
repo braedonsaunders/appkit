@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
-import { memberships, roleAssignments, roles, tenants, users } from './schema/identity'
+import { authAccounts, memberships, roleAssignments, roles, tenants, users } from './schema/identity'
 import type { RoleScope } from './schema/identity'
 
 type Db = NodePgDatabase<Record<string, never>>
@@ -8,9 +8,9 @@ type Db = NodePgDatabase<Record<string, never>>
 /**
  * Provisioning helpers to seed a fresh install — a tenant, a (possibly
  * super-admin) user, memberships, and built-in roles. Password hashing is the
- * caller's job (pass `passwordHash` from `@appkit/auth`.hashPassword) so this
- * package stays dependency-clean. Run these with the BYPASSRLS `superDb` (tenant
- * rows don't exist yet to scope to).
+ * caller's job (pass a hash produced by the configured authentication runtime)
+ * so this package stays dependency-clean. Run these with the BYPASSRLS
+ * `superDb` (tenant rows don't exist yet to scope to).
  */
 
 export async function createTenant(db: Db, input: { name: string; slug: string }): Promise<{ id: string }> {
@@ -20,17 +20,24 @@ export async function createTenant(db: Db, input: { name: string; slug: string }
 
 export async function createUser(
   db: Db,
-  input: { email: string; name: string; passwordHash?: string; isSuperAdmin?: boolean },
+  input: { email: string; name: string; credentialHash?: string; isSuperAdmin?: boolean },
 ): Promise<{ id: string }> {
   const [row] = await db
     .insert(users)
     .values({
       email: input.email,
       name: input.name,
-      passwordHash: input.passwordHash,
       isSuperAdmin: input.isSuperAdmin ?? false,
     })
     .returning({ id: users.id })
+  if (input.credentialHash) {
+    await db.insert(authAccounts).values({
+      userId: row!.id,
+      accountId: row!.id,
+      providerId: 'credential',
+      password: input.credentialHash,
+    })
+  }
   return row!
 }
 

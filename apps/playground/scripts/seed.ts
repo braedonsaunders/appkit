@@ -1,5 +1,5 @@
 // Seed the public playground against a real Postgres. Idempotent: re-running
-// keeps the tenant/users and explicitly clears local-login credentials.
+// keeps the tenant/users; the public demo never creates login credentials.
 //
 //   pnpm seed  # reads .env.local when present, otherwise the process environment
 
@@ -19,7 +19,6 @@ import {
   schema,
   seedRoles,
   tenants,
-  users,
 } from '@appkit/db'
 import {
   DASHBOARD_TENANT_TABLES,
@@ -94,7 +93,6 @@ async function main() {
       const userId =
         existing?.id ??
         (await createUser(sdb as never, { email, name, isSuperAdmin })).id
-      await sdb.update(users).set({ passwordHash: null }).where(eq(users.id, userId))
       const [m] = await sdb
         .select({ id: memberships.id })
         .from(memberships)

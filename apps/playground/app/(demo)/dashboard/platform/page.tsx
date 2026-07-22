@@ -295,13 +295,13 @@ const GROUPS: AdminHubGroup[] = [
       },
       {
         title: '@appkit/auth',
-        description: 'Add local credentials when a product needs them without forcing authentication into public or externally managed apps.',
+        description: 'Add a complete identity-provider runtime when an app needs one while keeping public and externally managed apps auth-free.',
         icon: <LockKeyhole />,
         badge: <Badge variant="secondary">Optional</Badge>,
         features: [
-          'Scrypt password hashing with timing-safe verification',
-          'Stateless HMAC-signed sessions and explicit expiry handling',
-          'Optional local authentication that can be enabled only where required',
+          'Durable sessions, password sign-in and resets, hashed one-time magic links, and OAuth accounts',
+          'Membership-bound invitation grants with atomic activation and audit',
+          'React forms, framework-neutral delivery, and memory, Postgres, and Next.js adapters',
         ],
       },
     ],

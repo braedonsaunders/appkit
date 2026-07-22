@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { applyPermissionOverrides, permissionSetCovers } from './permissions'
 import { createMemoryIamService, IamConflictError, IamProtectedRecordError } from './memory'
+import { createHttpIamService, createIamHttpHandler } from './http'
 import type { MemberRecord, RoleRecord } from './types'
 
 const date = new Date('2026-01-01T00:00:00.000Z')
@@ -46,4 +47,24 @@ test('memory service applies role protections, scope upserts, and audit', async 
   assert.deepEqual(updated.scope, { type: 'sites', siteIds: ['site-1'] })
   await assert.rejects(() => service.deleteRole(duplicate.id), IamConflictError)
   assert.equal((await service.listAuditEvents()).total, 3)
+})
+
+test('HTTP adapter carries the complete service contract and revives dates', async () => {
+  let authorized = 0
+  const service = createMemoryIamService({ roles: [role], members: [member] })
+  const handler = createIamHttpHandler({
+    authorize: async () => { authorized += 1 },
+    resolveService: async () => service,
+  })
+  const client = createHttpIamService({
+    endpoint: 'https://app.example.test/api/iam',
+    fetch: (async (input: RequestInfo | URL, init?: RequestInit) =>
+      handler(new Request(input, init))) as typeof fetch,
+  })
+  const result = await client.listRoles({ perPage: 10 })
+  assert.equal(result.rows[0]?.name, 'Administrator')
+  assert.ok(result.rows[0]?.createdAt instanceof Date)
+  const created = await client.createRole({ name: 'Reviewer', permissions: ['records.read'] })
+  assert.equal(created.name, 'Reviewer')
+  assert.equal(authorized, 2)
 })

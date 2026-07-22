@@ -1,12 +1,13 @@
 'use client'
 
 import { UsersAdmin } from '@appkit/iam/react'
-import { demoIamService, DEMO_PERMISSION_GROUPS } from '../../../../lib/demo-iam'
+import { DEMO_PERMISSION_GROUPS } from '../../../../lib/demo-iam'
+import { demoIamClient } from '../../../../lib/demo-iam-client'
 
 export function UsersWorkbench() {
   return (
     <UsersAdmin
-      service={demoIamService}
+      service={demoIamClient}
       permissionGroups={DEMO_PERMISSION_GROUPS}
       locales={[{ value: 'en', label: 'English' }, { value: 'fr', label: 'French' }, { value: 'es', label: 'Spanish' }]}
       scopeOptions={{

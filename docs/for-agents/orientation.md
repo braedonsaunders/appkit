@@ -111,7 +111,18 @@ search, a navigable event list, before/after field diffs, structured snapshots,
 request metadata, and a fullscreen detail drawer. The application injects its
 permission catalogue and hierarchy options; `@appkit/iam/drizzle` persists the
 same service contract against the canonical RLS identity/audit schema, while
-`@appkit/iam/memory` supports browser-only, local-first, and test consumers.
+`@appkit/iam/http` carries the full contract across an application-owned auth
+gate and `@appkit/iam/memory` supports browser-only, local-first, and test
+consumers.
+
+**Authentication (`@appkit/auth`)** — `createAppkitAuth` owns persisted Better
+Auth sessions, password accounts and resets, hashed magic links, provider
+accounts, and session revocation. `createInviteService` binds a successfully
+consumed one-time link to one membership generation; `/drizzle` activates and
+audits it atomically, while `/memory` preserves the same state machine for
+tests. `/client`, `/next`, and `/react` provide optional framework and UI layers.
+Applications inject email delivery, brand rendering, route authorization,
+tenant selection, and any post-acceptance domain effect.
 
 ## 3. Composition patterns
 
