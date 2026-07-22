@@ -1,14 +1,22 @@
 import 'server-only'
 import { cache } from 'react'
 import { and, eq } from 'drizzle-orm'
-import { memberships, tenants, users } from '@appkit/db'
-import { makeTenantContext, resolveMembershipAccess, type RequestContext } from '@appkit/tenant'
+import { memberships, schema, tenants, users } from '@appkit/db'
+import { resolveLocalePreferences } from '@appkit/i18n'
+import {
+  makeTenantContext,
+  resolveMembershipAccess,
+  type RequestContext,
+  type TenantDatabase,
+} from '@appkit/tenant'
 import { PERMISSION_CATALOGUE } from '../permissions'
 import { DEMO_TENANT, DEMO_USER } from './demo-data'
 import { isDatabaseConfigured, platform } from './platform'
 
+type DemoRequestContext = RequestContext<object, TenantDatabase<typeof schema>>
+
 export type DemoEnvironment = {
-  ctx: RequestContext
+  ctx: DemoRequestContext
   user: { id: string; name: string; email: string; isSuperAdmin: boolean }
   tenant: { id: string; name: string; slug: string }
 }
@@ -22,10 +30,15 @@ export type DemoEnvironment = {
  */
 export const getDemoEnvironment = cache(async (): Promise<DemoEnvironment> => {
   if (!isDatabaseConfigured()) {
-    const ctx: RequestContext = {
+    const ctx: DemoRequestContext = {
       userId: DEMO_USER.id,
       tenantId: DEMO_TENANT.id,
       isSuperAdmin: true,
+      timezone: 'America/Toronto',
+      locale: 'en',
+      defaultLocale: 'en',
+      enabledLocales: ['en'],
+      localeOverride: null,
       membership: { id: DEMO_USER.membershipId, displayName: DEMO_USER.name },
       permissions: new Set(PERMISSION_CATALOGUE),
       scopes: [{ type: 'tenant' }],
@@ -47,9 +60,13 @@ export const getDemoEnvironment = cache(async (): Promise<DemoEnvironment> => {
         userId: users.id,
         userName: users.name,
         userEmail: users.email,
+        userTimezone: users.timezone,
         userActive: users.isActive,
         isSuperAdmin: users.isSuperAdmin,
         displayName: memberships.displayName,
+        localeOverride: memberships.localeOverride,
+        defaultLocale: tenants.defaultLocale,
+        enabledLocales: tenants.enabledLocales,
       })
       .from(memberships)
       .innerJoin(tenants, eq(tenants.id, memberships.tenantId))
@@ -61,11 +78,20 @@ export const getDemoEnvironment = cache(async (): Promise<DemoEnvironment> => {
       throw new Error('The appkit demo identity is missing. Run `pnpm --filter @appkit/playground seed`.')
     }
 
-    const access = await resolveMembershipAccess(sdb as never, row.membershipId, PERMISSION_CATALOGUE)
-    const ctx = makeTenantContext(appkit as never, {
+    const access = await resolveMembershipAccess(sdb, row.membershipId, null, {
+      permissionCatalogue: PERMISSION_CATALOGUE,
+    })
+    const locale = resolveLocalePreferences({
+      defaultLocale: row.defaultLocale,
+      enabledLocales: row.enabledLocales,
+      userLocale: row.localeOverride,
+    })
+    const ctx = makeTenantContext(appkit, {
       userId: row.userId,
       tenantId: row.tenantId,
       isSuperAdmin: row.isSuperAdmin,
+      timezone: row.userTimezone,
+      ...locale,
       membership: { id: row.membershipId, displayName: row.displayName },
       permissions: access.permissions,
       scopes: access.scopes,

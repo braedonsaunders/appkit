@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@appkit/db": "workspace:*",
-    "@appkit/iam": "workspace:*",
+    "@appkit/i18n": "workspace:*",
     "drizzle-orm": "^0.45.2"
   },
   "devDependencies": {

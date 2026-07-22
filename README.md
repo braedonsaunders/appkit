@@ -175,7 +175,7 @@ product’s record names, routes, queries, or permissions inside AppKit.
 | Package             | What it gives your app                                                                                                      |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `@appkit/db`        | Tenant-scoped Postgres execution, BYPASSRLS system access, identity schema, API keys, schema helpers, and RLS installation. |
-| `@appkit/tenant`    | Request context, wildcard RBAC, read tiers, visibility scopes, grant/deny overrides, and super-admin behavior.              |
+| `@appkit/tenant`    | Tenant-bound request context with locale/timezone policy, typed app extensions, active-role resolution, wildcard/read-tier RBAC, fail-closed grant/deny overrides, portable database-runtime binding, and super-admin behavior. |
 | `@appkit/iam`       | Optional roles, memberships, scoped assignments, permission exceptions, audit, full administration UI, and memory/HTTP/Drizzle adapters. |
 | `@appkit/auth`      | Durable sessions, passwords and resets, magic links, invitation grants, OAuth accounts, React forms, and memory/Drizzle/Next adapters. |
 | `@appkit/events`    | Structured audit records, transactional outbox, recipient resolution, leased relay, durable retries, and effects ledger.      |

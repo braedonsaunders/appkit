@@ -22,6 +22,9 @@
     "test": "node --import tsx --test src/*.test.ts",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
+  "dependencies": {
+    "@appkit/tenant": "workspace:*"
+  },
   "peerDependencies": {
     "@appkit/db": "^0.1.0",
     "@appkit/ui": "^0.1.0",

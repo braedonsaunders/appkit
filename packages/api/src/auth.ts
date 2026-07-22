@@ -10,6 +10,7 @@
 import { and, eq, isNull, lt, or } from 'drizzle-orm'
 import type { AppkitDb } from '@appkit/db'
 import { apiKeys, tenants } from '@appkit/db'
+import { resolveLocalePreferences } from '@appkit/i18n'
 import { makeTenantContext, type RequestContext } from '@appkit/tenant'
 import { ApiError } from './errors'
 import { sanitizeApiPermissions } from './permissions'
@@ -54,12 +55,22 @@ export function createApiAuth(config: ApiAuthConfig) {
 
     const match = await appkit.withSuperAdmin(async (tx) => {
       const [row] = await tx
-        .select({ key: apiKeys })
+        .select({
+          key: apiKeys,
+          tenantDefaultLocale: tenants.defaultLocale,
+          tenantEnabledLocales: tenants.enabledLocales,
+        })
         .from(apiKeys)
         .innerJoin(tenants, eq(tenants.id, apiKeys.tenantId))
         .where(eq(apiKeys.keyHash, keyHash))
         .limit(1)
-      return row?.key ?? null
+      return row
+        ? {
+            ...row.key,
+            tenantDefaultLocale: row.tenantDefaultLocale,
+            tenantEnabledLocales: row.tenantEnabledLocales,
+          }
+        : null
     })
     if (!match) throw ApiError.unauthorized()
     if (match.revokedAt) throw ApiError.unauthorized('API key has been revoked')
@@ -105,10 +116,16 @@ export function createApiAuth(config: ApiAuthConfig) {
       .catch((error) => console.error('[appkit/api] last-used telemetry update failed', error))
 
     const permissions = sanitizeApiPermissions(match.permissions ?? [], config.permissionCatalogue)
+    const locale = resolveLocalePreferences({
+      defaultLocale: match.tenantDefaultLocale,
+      enabledLocales: match.tenantEnabledLocales,
+    })
     const ctx = makeTenantContext(appkit, {
       userId: match.createdBy ?? `api_key:${match.id}`,
       tenantId: match.tenantId,
       isSuperAdmin: false,
+      timezone: 'UTC',
+      ...locale,
       membership: null,
       // API keys are tenant-level credentials → full-tenant visibility.
       permissions: new Set(permissions),

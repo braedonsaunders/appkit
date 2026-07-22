@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@appkit/db": "workspace:*",
+    "@appkit/i18n": "workspace:*",
     "@appkit/tenant": "workspace:*",
     "drizzle-orm": "^0.45.2"
   },

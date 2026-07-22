@@ -234,6 +234,9 @@ importers:
       '@appkit/db':
         specifier: workspace:*
         version: link:../db
+      '@appkit/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       '@appkit/tenant':
         specifier: workspace:*
         version: link:../tenant
@@ -775,6 +778,10 @@ importers:
     publishDirectory: dist
 
   packages/iam:
+    dependencies:
+      '@appkit/tenant':
+        specifier: workspace:*
+        version: link:../tenant
     devDependencies:
       '@appkit/db':
         specifier: workspace:*
@@ -1115,9 +1122,9 @@ importers:
       '@appkit/db':
         specifier: workspace:*
         version: link:../db
-      '@appkit/iam':
+      '@appkit/i18n':
         specifier: workspace:*
-        version: link:../iam
+        version: link:../i18n
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(gel@2.2.0)(kysely@0.29.4)(mysql2@3.23.1(@types/node@22.20.1))(pg@8.22.0)(postgres@3.4.9)

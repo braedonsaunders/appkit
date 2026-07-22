@@ -397,10 +397,20 @@ export const { db, superDb, withTenant, withTenantContext, withSuperAdmin } =
   (pooled) or `withTenant(tenantId, fn)` (one atomic transaction). Unscoped
   queries match **no rows** (deny-by-default). Cross-tenant/system work uses
   `withSuperAdmin(sdb => …)`.
-- **RBAC** (`@appkit/tenant`): build a `RequestContext` (resolve the user's
-  permission set via `resolveMembershipAccess`), then gate mutations with
-  `assertCan(ctx, 'module.action')`. `module.*` wildcards and `.read.{all,site,
-  self}` tiers work; super-admins pass everything.
+- **Request context** (`@appkit/tenant`): the shared context carries tenant,
+  membership, timezone, effective/default/enabled locale policy, permissions,
+  scopes, active role, impersonation, API-key attribution, and a tenant-bound
+  database callback. Add application-owned identity data with
+  `RequestContext<MyContextExtension>`; do not fork the core type.
+- **RBAC** (`@appkit/tenant`): resolve the user's permission set with the
+  production-shaped `resolveMembershipAccess(tx, membershipId, activeRoleId?)`,
+  then gate mutations with `assertCan(ctx, 'module.action')`. Bind the app's
+  permission catalogue once with `createMembershipAccessResolver` when concrete
+  denies can carve keys out of wildcard grants. `module.*` wildcards and
+  `.read.{all,site,self}` tiers work; super-admins pass everything.
+- **Existing database runtimes** use `createTenantContextFactory` to retain the
+  same `makeTenantContext(baseDb, args)` / `makeSuperAdminContext(baseDb, userId)`
+  call sites while the application continues to own its RLS implementation.
 
 The canonical identity schema (tenants, users, memberships, roles,
 role_assignments, per-user permission overrides) ships in `@appkit/db/schema` —
