@@ -75,7 +75,11 @@ imports it improves.
 - `packages/workflows` — dependency-free workflow graphs at the root, with the
   shared React Flow authoring shell under `/react`.
 - `packages/notifications` — dependency-free notification policy at the root,
-  with React, Drizzle store, and feature-owned schema adapter entry points.
+  with the production inbox, preference and push surfaces, tenant routing
+  cockpit, Drizzle stores, and feature-owned schema adapter entry points.
+- `packages/jobs` — lazy BullMQ/Redis infrastructure plus the complete reusable
+  production email, notification/push, PDF/document, report, scheduled,
+  outbound, script, sandbox, migration, and capture queue profiles.
 - `packages/customization` — app-supplied record catalogues, custom fields,
   configurable form layouts, and list views.
 - `packages/create-appkit` — the public scaffold CLI. It composes the real shell,

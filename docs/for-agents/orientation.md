@@ -542,10 +542,15 @@ tests, demos, and local tools. Selecting the `storage` capability in
 `create-appkit` installs this package without pulling it into unrelated apps.
 `@appkit/jobs` supplies lazy BullMQ producer/worker connections, bounded Redis
 readiness, source payload validators, and an atomic fixed-window rate limiter.
-Its `/notifications` entry preserves the production notify/push job contracts,
-queue names, validation limits, deterministic 250-recipient batching, stable
-batch ids, retry/backoff profiles, and retention windows behind an
-application-owned `createJobs` runtime.
+Its optional queue entries preserve the production email, notify/push,
+PDF/document, report, scheduled, outbound, authored-script, sandbox, migration,
+and asynchronous capture contracts. Queue names, payload ceilings,
+recipient fan-out, deterministic IDs, in-flight PDF de-duplication, retries,
+backoff, retention, worker concurrency, and the complete eleven-job repeatable
+schedule registry are retained behind an application-owned `createJobs`
+runtime. Factories remain lazy until a queue or worker is requested, and
+existing deployments can override queue names or concurrency without forking
+the runtime.
 Its `/web-push` entry includes subscription validation, public-DNS
 checks, bounded encrypted payloads, and terminal provider status handling.
 

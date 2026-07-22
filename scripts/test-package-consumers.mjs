@@ -76,6 +76,10 @@ import { createTenantContextFactory } from '@appkit/tenant'
 import { createMemoryIamService } from '@appkit/iam/memory'
 import { AuditAdmin, RolesAdmin, UsersAdmin } from '@appkit/iam/react'
 import { buildNotifyQueueJobs } from '@appkit/jobs/notifications'
+import { buildEmailQueueJobs } from '@appkit/jobs/email'
+import { assertPdfJobData, pdfJobId } from '@appkit/jobs/pdf'
+import { PRODUCTION_SCHEDULES, scheduledJobOptions } from '@appkit/jobs/scheduled'
+import { assertOutboundDispatchJob } from '@appkit/jobs/outbound'
 import { NotificationSettings, ProductionNotificationPreferences, PushDeviceNotifications } from '@appkit/notifications/react'
 
 assert.equal(parseFormula('count()', { resolveField: () => null }).ok, true)
@@ -126,6 +130,13 @@ assert.match(renderToStaticMarkup(React.createElement(NotificationSettings, { ca
 assert.match(renderToStaticMarkup(React.createElement(ProductionNotificationPreferences, { catalog: notificationCatalog, initial: [], adapter: { async save() {} } })), /Save preferences/)
 assert.match(renderToStaticMarkup(React.createElement(PushDeviceNotifications, { vapidPublicKey: null, adapter: { async save() {}, async remove() {}, async test() { return { sent: 1 } } } })), /Push notifications on this device/)
 assert.deepEqual(buildNotifyQueueJobs({ tenantId: '11111111-1111-4111-8111-111111111111', userIds: Array.from({ length: 251 }, (_, index) => 'user-' + index), category: 'records', type: 'record.updated', title: 'Updated' }, { jobId: 'record-updated' }).map(job => job.data.userIds.length), [250, 1])
+assert.deepEqual(buildEmailQueueJobs({ to: ['owner@example.com', 'team@example.com'], subject: 'Ready', html: '<p>Ready</p>', text: 'Ready' }, { jobId: 'report-ready' }).map(job => job.data.to), ['owner@example.com', 'team@example.com'])
+const packedPdfJob = { kind: 'record_summary', tenantId: '11111111-1111-4111-8111-111111111111', subjectId: '22222222-2222-4222-8222-222222222222', entityType: 'form_response', heading: 'Response', fields: [] }
+assert.doesNotThrow(() => assertPdfJobData(packedPdfJob))
+assert.match(pdfJobId(packedPdfJob), /^pdf\|/)
+assert.equal(PRODUCTION_SCHEDULES.length, 11)
+assert.equal(scheduledJobOptions({ kind: 'sync_run', tenantId: '11111111-1111-4111-8111-111111111111', connectionId: '22222222-2222-4222-8222-222222222222', trigger: 'manual' }).jobId, 'sync-run|11111111-1111-4111-8111-111111111111|22222222-2222-4222-8222-222222222222')
+assert.doesNotThrow(() => assertOutboundDispatchJob({ tenantId: '11111111-1111-4111-8111-111111111111', automationId: '22222222-2222-4222-8222-222222222222', event: { type: 'record.created', tenantId: '11111111-1111-4111-8111-111111111111', subjectId: 'record-one', items: [] } }))
 assert.equal(compileCustomReport({ entity: 'entries', columns: ['status'], filters: { combinator: 'and', rules: [{ field: 'status', op: 'eq', value: 'posted' }] } }, 'org-1', { entities: [{ key: 'entries', label: 'Entries', category: 'ledger', description: 'Entries', from: 'entries e', orgColumn: 'e.org_id', columns: [{ key: 'status', label: 'Status', kind: 'enum', expr: 'e.status', options: ['draft', 'posted'] }] }] }).sql.includes('e.org_id = $1'), true)
 assert.equal(compileCustomReport({ entity: 'incidents', mode: 'summarize', columns: [], measures: [{ fn: 'count' }] }, 'tenant-1', { entities: [{ key: 'incidents', label: 'Incidents', category: 'operations', description: 'Incidents', table: 'incidents', columns: [{ key: 'reference', label: 'Reference', kind: 'text' }] }] }).sql.includes('"incidents"."tenant_id" = $1'), true)
 assert.match(renderToStaticMarkup(React.createElement(Button, null, 'Ready')), /Ready/)
@@ -186,6 +197,16 @@ import type { ProductionFormDesignerAdapter, ProductionFormDesignerProps, Produc
 import type { NotificationConfigurationAdapter, NotificationPolicyInput } from '@appkit/notifications'
 import type { NotificationPreferencesAdapter, NotificationSettingsProps, ProductionNotificationPreferencesProps, PushDeviceAdapter } from '@appkit/notifications/react'
 import type { NotifyJobData, PushJobData } from '@appkit/jobs/notifications'
+import type { EmailJobData, EnqueueEmailData } from '@appkit/jobs/email'
+import type { OutboundDispatchJob } from '@appkit/jobs/outbound'
+import type { PdfJobData, OnDemandPdfJobData, RenderedPdfArtifact } from '@appkit/jobs/pdf'
+import type { ReportRunJobData, ReportDeliveryJobData } from '@appkit/jobs/reports'
+import type { ScheduledTick, ScheduledDefinition } from '@appkit/jobs/scheduled'
+import { createScheduledQueue } from '@appkit/jobs/scheduled'
+import type { ScriptJobData } from '@appkit/jobs/scripts'
+import type { SandboxJobData } from '@appkit/jobs/sandbox'
+import type { MigrationJobData } from '@appkit/jobs/migration'
+import type { CaptureJobData } from '@appkit/jobs/capture'
 import { createMembershipAccessResolver, resolveMembershipAccess } from '@appkit/tenant'
 import type { MembershipAccessDatabase, RequestContext, RequestContextArgs, TenantDatabase } from '@appkit/tenant'
 ${typePackages.map((_, index) => `type PackageContract${index} = typeof Package${index}`).join('\n')}
@@ -228,6 +249,35 @@ void (null as unknown as ProductionNotificationPreferencesProps)
 void (null as unknown as PushDeviceAdapter)
 void (null as unknown as NotifyJobData)
 void (null as unknown as PushJobData)
+void (null as unknown as EmailJobData)
+void (null as unknown as EnqueueEmailData)
+void (null as unknown as OutboundDispatchJob)
+void (null as unknown as PdfJobData)
+void (null as unknown as OnDemandPdfJobData)
+void (null as unknown as RenderedPdfArtifact)
+void (null as unknown as ReportRunJobData)
+void (null as unknown as ReportDeliveryJobData)
+void (null as unknown as ScheduledTick)
+void (null as unknown as ScheduledDefinition)
+void (null as unknown as ScriptJobData)
+void (null as unknown as SandboxJobData)
+void (null as unknown as MigrationJobData)
+void (null as unknown as CaptureJobData)
+const organizationScriptJob: ScriptJobData = { orgId: '10000000-0000-4000-8000-000000000001', scriptId: 'script-one', kind: 'bulk', actorId: 'user-one' }
+const tenantScriptJob: ScriptJobData = { tenantId: '10000000-0000-4000-8000-000000000001', scriptId: 'script-one', kind: 'scheduled' }
+const organizationMigrationJob: MigrationJobData = { orgId: '10000000-0000-4000-8000-000000000001', connectionId: 'connection-one', mode: 'full_migration' }
+const sourceCaptureJob: CaptureJobData = { orgId: '10000000-0000-4000-8000-000000000001', captureItemId: 'capture-one' }
+const sourceReportDeliveryJob: ReportDeliveryJobData = { orgId: '10000000-0000-4000-8000-000000000001', definitionId: 'income-statement', recipients: ['owner@example.com'] }
+const sourceReportRunJob: ReportRunJobData = { tenantId: '10000000-0000-4000-8000-000000000001', scheduleId: '20000000-0000-4000-8000-000000000001', runId: '30000000-0000-4000-8000-000000000001' }
+declare const jobsRuntime: import('@appkit/jobs').Jobs
+const customScheduledQueue = createScheduledQueue<{ kind: 'search_reindex'; tenantId: string }>(jobsRuntime, { schedules: [], validateCustomTick(data) { void data.tenantId } })
+void organizationScriptJob
+void tenantScriptJob
+void organizationMigrationJob
+void sourceCaptureJob
+void sourceReportDeliveryJob
+void sourceReportRunJob
+void customScheduledQueue
 type ApplicationRequestContext = RequestContext<{ personId: string | null; terminology?: { authority: string } }>
 type ApplicationRequestArgs = RequestContextArgs<{ personId: string | null; terminology?: { authority: string } }>
 declare const applicationContext: ApplicationRequestContext

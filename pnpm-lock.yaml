@@ -68,6 +68,9 @@ importers:
       '@appkit/integrations':
         specifier: workspace:*
         version: link:../../packages/integrations
+      '@appkit/jobs':
+        specifier: workspace:*
+        version: link:../../packages/jobs
       '@appkit/notifications':
         specifier: workspace:*
         version: link:../../packages/notifications
@@ -851,6 +854,9 @@ importers:
 
   packages/jobs:
     dependencies:
+      '@appkit/email-render':
+        specifier: workspace:*
+        version: link:../email-render
       '@appkit/sync':
         specifier: workspace:*
         version: link:../sync

@@ -29,6 +29,7 @@
     "@appkit/i18n": "workspace:*",
     "@appkit/integrations": "workspace:*",
     "@appkit/iam": "workspace:*",
+    "@appkit/jobs": "workspace:*",
     "@appkit/notifications": "workspace:*",
     "@appkit/pdf": "workspace:*",
     "@appkit/reports": "workspace:*",

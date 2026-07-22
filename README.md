@@ -208,7 +208,7 @@ product’s record names, routes, queries, or permissions inside AppKit.
 | `@appkit/forms-documents` | Form print styles and bounded authored PDF templates over the canonical forms-core companion-value contract.                       |
 | `@appkit/forms-pdf`       | Form summaries, repeating tables, photos, hardened browser/resource rendering, record/report templates, and full-bleed design documents. |
 | `@appkit/crypto`          | AES-256-GCM sealed secrets with configurable HKDF-derived application keys.                                                        |
-| `@appkit/jobs`            | BullMQ/Redis producers and workers, lazy connections, source-compatible notification/push queues, deterministic batching, bounded readiness, payload guards, rate limits, and hardened Web Push. |
+| `@appkit/jobs`            | Lazy BullMQ/Redis runtime plus production email, notification/push, PDF/document, report, scheduled, outbound, script, sandbox, migration, and capture queues with exact retries, retention, validation, deterministic IDs, schedule reconciliation, worker profiles, rate limits, and hardened Web Push. |
 | `@appkit/storage`         | Tenant-owned S3 objects plus the optional production attachment workspace: upload, search, type filters, paging, preview, download, expansion, removal, HTTP adapters, and database-free memory adapters. |
 
 ## Modular by construction

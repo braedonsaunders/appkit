@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
-import { Queue, type JobsOptions } from 'bullmq'
+import { Queue, type JobsOptions, type Processor } from 'bullmq'
 import type { Jobs } from './index'
+import { createProfileQueue, createProfileWorker, type QueueProfileOverrides } from './profile'
 import {
   assertIdentifier,
   assertJsonBytes,
@@ -40,6 +41,18 @@ const MAX_USERS_PER_JOB = 250
 const MAX_USERS_PER_ENQUEUE = 100_000
 const MAX_JOBS_PER_ADD_BULK = 40
 const CHANNELS = new Set<NonNullable<NotifyJobData['channels']>[number]>(['in_app', 'email', 'push', 'sms'])
+
+export const NOTIFICATION_QUEUE_PROFILE = {
+  name: 'notifications',
+  defaultJobOptions: { attempts: 3, backoff: { type: 'fixed', delay: 5_000 }, removeOnComplete: { age: 24 * 3_600 }, removeOnFail: { age: 7 * 24 * 3_600 } },
+  workerConcurrency: 10,
+} as const
+
+export const PUSH_QUEUE_PROFILE = {
+  name: 'push',
+  defaultJobOptions: { attempts: 5, backoff: { type: 'exponential', delay: 10_000 }, removeOnComplete: { age: 24 * 3_600 }, removeOnFail: { age: 30 * 24 * 3_600 } },
+  workerConcurrency: 10,
+} as const
 
 export function normalizeNotifyJobData(data: NotifyJobData): NotifyJobData {
   assertUuid(data.tenantId, 'Notification tenantId')
@@ -84,18 +97,14 @@ export function assertPushJobData(data: PushJobData): void {
  * runtime. Queue construction remains lazy, so importing this module never
  * contacts Redis during builds or server-component analysis.
  */
-export function createNotificationQueues(jobs: Jobs) {
+export function createNotificationQueues(jobs: Jobs, overrides: { notifications?: QueueProfileOverrides; push?: QueueProfileOverrides } = {}) {
   let notifyQueue: Queue<NotifyJobData> | undefined
   let pushQueue: Queue<PushJobData> | undefined
-  const getNotifyQueue = () => notifyQueue ??= new Queue<NotifyJobData>('notifications', {
-    connection: jobs.getConnection(),
-    defaultJobOptions: { attempts: 3, backoff: { type: 'fixed', delay: 5_000 }, removeOnComplete: { age: 24 * 3_600 }, removeOnFail: { age: 7 * 24 * 3_600 } },
-  })
-  const getPushQueue = () => pushQueue ??= new Queue<PushJobData>('push', {
-    connection: jobs.getConnection(),
-    defaultJobOptions: { attempts: 5, backoff: { type: 'exponential', delay: 10_000 }, removeOnComplete: { age: 24 * 3_600 }, removeOnFail: { age: 30 * 24 * 3_600 } },
-  })
+  const getNotifyQueue = () => notifyQueue ??= createProfileQueue<NotifyJobData>(jobs, NOTIFICATION_QUEUE_PROFILE, overrides.notifications)
+  const getPushQueue = () => pushQueue ??= createProfileQueue<PushJobData>(jobs, PUSH_QUEUE_PROFILE, overrides.push)
   return {
+    getNotifyQueue,
+    getPushQueue,
     async enqueueNotification(data: NotifyJobData, options?: JobsOptions) {
       const queue = getNotifyQueue()
       const definitions = buildNotifyQueueJobs(data, options)
@@ -108,6 +117,12 @@ export function createNotificationQueues(jobs: Jobs) {
       assertPushJobData(data)
       assertQueueJobId(jobId, 'Push jobId')
       return getPushQueue().add('send', data, { jobId })
+    },
+    createNotificationWorker<R>(processor: Processor<NotifyJobData, R>) {
+      return createProfileWorker(jobs, NOTIFICATION_QUEUE_PROFILE, processor, overrides.notifications)
+    },
+    createPushWorker<R>(processor: Processor<PushJobData, R>) {
+      return createProfileWorker(jobs, PUSH_QUEUE_PROFILE, processor, overrides.push)
     },
   }
 }

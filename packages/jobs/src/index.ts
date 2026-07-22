@@ -13,11 +13,11 @@ export type Jobs = {
   getConnection: () => ConnectionOptions
   getBlockingConnection: () => ConnectionOptions
   defineQueue: <T = unknown>(name: string) => Queue<T>
-  createWorker: <T = unknown>(
+  createWorker: <T = unknown, R = unknown>(
     name: string,
-    processor: Processor<T>,
+    processor: Processor<T, R>,
     options?: Omit<WorkerOptions, 'connection'>,
-  ) => Worker<T>
+  ) => Worker<T, R>
   closeJobConnections: () => Promise<void>
 }
 
@@ -38,11 +38,11 @@ export function createJobs(opts: { redisUrl: string }): Jobs {
   const defineQueue = <T = unknown>(name: string): Queue<T> =>
     new Queue<T>(name, { connection: getConnection() })
 
-  const createWorker = <T = unknown>(
+  const createWorker = <T = unknown, R = unknown>(
     name: string,
-    processor: Processor<T>,
+    processor: Processor<T, R>,
     options?: Omit<WorkerOptions, 'connection'>,
-  ): Worker<T> => new Worker<T>(name, processor, { connection: getBlockingConnection(), ...options })
+  ): Worker<T, R> => new Worker<T, R>(name, processor, { connection: getBlockingConnection(), ...options })
 
   async function closeJobConnections(): Promise<void> {
     const connections = [producer, blocking].filter((c): c is Redis => Boolean(c))
@@ -75,3 +75,14 @@ export * from './rate-limit'
 export * from './validation'
 export * from './web-push'
 export * from './notifications'
+export * from './identity'
+export * from './profile'
+export * from './email'
+export * from './outbound'
+export * from './pdf'
+export * from './reports'
+export * from './scheduled'
+export * from './scripts'
+export * from './sandbox'
+export * from './migration'
+export * from './capture'

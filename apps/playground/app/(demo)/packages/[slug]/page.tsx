@@ -20,6 +20,22 @@ import {
   TableRow,
 } from '@appkit/ui'
 import {
+  CAPTURE_QUEUE_PROFILE,
+  EMAIL_QUEUE_PROFILE,
+  MIGRATION_QUEUE_PROFILE,
+  NOTIFICATION_QUEUE_PROFILE,
+  OUTBOUND_QUEUE_PROFILE,
+  PDF_QUEUE_PROFILE,
+  PRODUCTION_SCHEDULES,
+  PUSH_QUEUE_PROFILE,
+  REPORT_DELIVERY_QUEUE_PROFILE,
+  REPORT_RUN_QUEUE_PROFILE,
+  SANDBOX_QUEUE_PROFILE,
+  SCHEDULED_QUEUE_PROFILE,
+  SCRIPTS_QUEUE_PROFILE,
+  type QueueProfile,
+} from '@appkit/jobs'
+import {
   getPackage,
   PACKAGE_CATALOG,
   PACKAGE_CATEGORIES,
@@ -83,6 +99,8 @@ export default async function PackagePage({ params }: PackagePageProps) {
           <Badge key={engine} variant="outline">{engine} {version}</Badge>
         ))}
       </div>
+
+      {item.name === '@appkit/jobs' ? <JobsPackageShowcase /> : null}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(280px,0.5fr)]">
         <Card>
@@ -158,6 +176,86 @@ export default async function PackagePage({ params }: PackagePageProps) {
       ) : null}
     </DetailPageLayout>
   )
+}
+
+const JOB_PROFILES: readonly { label: string; profile: QueueProfile }[] = [
+  { label: 'Email', profile: EMAIL_QUEUE_PROFILE },
+  { label: 'Notifications', profile: NOTIFICATION_QUEUE_PROFILE },
+  { label: 'Push', profile: PUSH_QUEUE_PROFILE },
+  { label: 'PDF and documents', profile: PDF_QUEUE_PROFILE },
+  { label: 'Report runs', profile: REPORT_RUN_QUEUE_PROFILE },
+  { label: 'Report delivery', profile: REPORT_DELIVERY_QUEUE_PROFILE },
+  { label: 'Scheduled work', profile: SCHEDULED_QUEUE_PROFILE },
+  { label: 'Outbound events', profile: OUTBOUND_QUEUE_PROFILE },
+  { label: 'Authored scripts', profile: SCRIPTS_QUEUE_PROFILE },
+  { label: 'Sandboxes', profile: SANDBOX_QUEUE_PROFILE },
+  { label: 'Migrations', profile: MIGRATION_QUEUE_PROFILE },
+  { label: 'Capture', profile: CAPTURE_QUEUE_PROFILE },
+]
+
+function JobsPackageShowcase() {
+  return (
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(420px,0.85fr)]">
+      <Card>
+        <CardHeader>
+          <CardTitle>Production queue profiles</CardTitle>
+          <CardDescription>Queue names, retry policy, retention, and worker concurrency come from the exported runtime—not duplicated demo data.</CardDescription>
+        </CardHeader>
+        <CardContent className="overflow-x-auto p-0">
+          <Table>
+            <TableHeader><TableRow><TableHead>Work</TableHead><TableHead>Queue</TableHead><TableHead>Attempts</TableHead><TableHead>Backoff</TableHead><TableHead>Failed jobs</TableHead><TableHead>Workers</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {JOB_PROFILES.map(({ label, profile }) => (
+                <TableRow key={label}>
+                  <TableCell className="font-medium text-fg">{label}</TableCell>
+                  <TableCell className="font-mono text-xs text-fg-muted">{profile.name}</TableCell>
+                  <TableCell>{profile.defaultJobOptions.attempts ?? 1}</TableCell>
+                  <TableCell>{backoffLabel(profile)}</TableCell>
+                  <TableCell>{retentionLabel(profile)}</TableCell>
+                  <TableCell>{profile.workerConcurrency}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Repeatable work</CardTitle>
+          <CardDescription>The default registry reconciles Redis to these exact identities and removes stale shadow schedules.</CardDescription>
+        </CardHeader>
+        <CardContent className="overflow-x-auto p-0">
+          <Table>
+            <TableHeader><TableRow><TableHead>Job</TableHead><TableHead>Kind</TableHead><TableHead>Cron</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {PRODUCTION_SCHEDULES.map((schedule) => (
+                <TableRow key={schedule.repeatKey}>
+                  <TableCell className="font-mono text-xs text-fg">{schedule.name}</TableCell>
+                  <TableCell className="font-mono text-xs text-fg-muted">{schedule.data.kind}</TableCell>
+                  <TableCell className="font-mono text-xs text-fg-muted">{schedule.pattern}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function backoffLabel(profile: QueueProfile): string {
+  const backoff = profile.defaultJobOptions.backoff
+  if (!backoff) return 'None'
+  if (typeof backoff === 'number') return `${backoff / 1_000}s`
+  return `${backoff.type} ${Number(backoff.delay ?? 0) / 1_000}s`
+}
+
+function retentionLabel(profile: QueueProfile): string {
+  const retention = profile.defaultJobOptions.removeOnFail
+  if (!retention || typeof retention === 'boolean' || typeof retention === 'number') return retention ? 'Configured' : 'Kept'
+  if (!('age' in retention) || !retention.age) return 'Configured'
+  return `${Math.round(retention.age / 86_400)} days`
 }
 
 function installCommand(item: PackageCatalogItem): string {

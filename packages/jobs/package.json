@@ -1,7 +1,7 @@
 {
   "name": "@appkit/jobs",
   "version": "0.1.0",
-  "description": "Production BullMQ runtime with lazy connections, notification queue profiles, readiness, validation, rate limits, and Web Push.",
+  "description": "Production BullMQ runtime and complete reusable queue profiles for email, notifications, PDF, reports, schedules, scripts, migration, capture, and outbound work.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {
@@ -9,6 +9,15 @@
     "./health": "./src/health.ts",
     "./rate-limit": "./src/rate-limit.ts",
     "./notifications": "./src/notifications.ts",
+    "./email": "./src/email.ts",
+    "./outbound": "./src/outbound.ts",
+    "./pdf": "./src/pdf.ts",
+    "./reports": "./src/reports.ts",
+    "./scheduled": "./src/scheduled.ts",
+    "./scripts": "./src/scripts.ts",
+    "./sandbox": "./src/sandbox.ts",
+    "./migration": "./src/migration.ts",
+    "./capture": "./src/capture.ts",
     "./web-push": "./src/web-push.ts",
     "./package.json": "./package.json"
   },
@@ -24,6 +33,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
+    "@appkit/email-render": "workspace:*",
     "@appkit/sync": "workspace:*",
     "bullmq": "^5.34.0",
     "ioredis": "^5.4.2",
