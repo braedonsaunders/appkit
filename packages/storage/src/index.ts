@@ -28,6 +28,7 @@ import { MULTIPART_UPLOAD_PART_SIZE_BYTES, multipartPartCount, shouldUseMultipar
 export * from './keys'
 export * from './lifecycle'
 export * from './multipart'
+export * from './attachments'
 
 export type StorageConfig = {
   /** e.g. http://localhost:9000 (MinIO) or https://{account}.r2.cloudflarestorage.com */

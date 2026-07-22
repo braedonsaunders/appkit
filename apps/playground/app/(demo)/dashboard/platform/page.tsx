@@ -531,13 +531,17 @@ const GROUPS: AdminHubGroup[] = [
       },
       {
         title: '@appkit/storage',
-        description: 'Keep file workflows provider-portable across AWS, R2, MinIO, and other S3-compatible services.',
+        description: 'Keep file workflows provider-portable while shipping a complete attachment workspace.',
         icon: <Cloud />,
         features: [
           'Put, get, delete, and head operations behind one injected configuration',
           'Presigned upload and download URLs for direct client transfers',
+          'Upload, URL search/filter/paging, preview, download, expand, and removal UI',
+          'Injected HTTP or database-free memory adapters preserve application authorization and tenancy',
           'Provider changes without changes to application feature code',
         ],
+        href: '/attachments',
+        linkLabel: 'Open attachment workspace',
       },
     ],
   },
@@ -550,7 +554,7 @@ export default function PlatformPage() {
       description="AppKit gives TypeScript teams a production-shaped application foundation—complete enough to start fast, modular enough to adopt without a rewrite."
       actions={
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="success">35 modular packages</Badge>
+          <Badge variant="success">36 modular packages</Badge>
           <Button asChild variant="outline" size="sm">
             <a href="https://github.com/braedonsaunders/appkit" target="_blank" rel="noreferrer">View on GitHub</a>
           </Button>

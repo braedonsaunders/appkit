@@ -59,6 +59,9 @@ imports it improves.
 - `packages/tenant` — request context + RBAC on top of `@appkit/db`:
   `RequestContext`, `can` / `assertCan` (wildcards, read-tiers, per-user
   grant/deny overrides), `resolveMembershipAccess`, super-admin.
+- `packages/storage` — tenant-safe S3/R2/MinIO object storage plus the optional
+  source-extracted attachment workspace under `/react`; HTTP and database-free
+  memory adapters keep application authorization and persistence injectable.
 - `packages/auth` — optional persisted authentication over the canonical
   identity schema: password/reset and magic-link flows, membership-bound invite
   grants, React/client/Next entry points, and memory/HTTP/Drizzle seams. Public

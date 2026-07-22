@@ -193,7 +193,7 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 | `@appkit/forms-pdf`       | Form summaries, repeating tables, photos, hardened browser/resource rendering, record/report templates, and full-bleed design documents. |
 | `@appkit/crypto`          | AES-256-GCM sealed secrets with configurable HKDF-derived application keys.                                                        |
 | `@appkit/jobs`            | BullMQ/Redis producers and workers, lazy connections, bounded readiness, payload guards, rate limits, and hardened Web Push.      |
-| `@appkit/storage`         | Tenant-owned S3 objects, multipart upload, streams/ranges, verified promotion, lifecycle/readiness, and strict environment config. |
+| `@appkit/storage`         | Tenant-owned S3 objects plus the optional production attachment workspace: upload, search, type filters, paging, preview, download, expansion, removal, HTTP adapters, and database-free memory adapters. |
 
 ## Modular by construction
 

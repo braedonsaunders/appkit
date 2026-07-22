@@ -60,6 +60,7 @@ const NAV: SidebarNavGroup[] = [
       { href: '/reports', label: 'Reports', iconKey: 'library' },
       { href: '/design-studio', label: 'Design studio', iconKey: 'sparkles' },
       { href: '/customization', label: 'Customization', iconKey: 'wrench' },
+      { href: '/attachments', label: 'Attachments', iconKey: 'file' },
       { href: '/notifications', label: 'Notifications', iconKey: 'bell' },
       { href: '/dashboard/platform', label: 'Platform', iconKey: 'package', mobile: true },
       { href: '/components', label: 'Components', iconKey: 'sparkles' },

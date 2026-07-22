@@ -36,6 +36,7 @@
     "@appkit/tenant": "workspace:*",
     "@appkit/tokens": "workspace:*",
     "@appkit/sms": "workspace:*",
+    "@appkit/storage": "workspace:*",
     "@appkit/sync": "workspace:*",
     "@appkit/ui": "workspace:*",
     "@appkit/workflows": "workspace:*",

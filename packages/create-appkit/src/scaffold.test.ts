@@ -33,7 +33,9 @@ test('scaffolds a complete AppKit Next application without performing external a
     assert.match(await readFile(join(target, 'src/components/app-frame.tsx'), 'utf8'), /UiLinkProvider/)
     assert.match(await readFile(join(target, 'src/components/app-frame.tsx'), 'utf8'), /PageTransition/)
     assert.match(await readFile(join(target, 'src/app/layout.tsx'), 'utf8'), /getThemeScript/)
-    assert.match(await readFile(join(target, 'src/app/globals.css'), 'utf8'), /@appkit\/ui\/styles\.css/)
+    const styles = await readFile(join(target, 'src/app/globals.css'), 'utf8')
+    assert.match(styles, /@appkit\/ui\/styles\.css/)
+    assert.match(styles, /@appkit\/forms\/styles\.css/)
   } finally {
     await rm(root, { recursive: true, force: true })
   }
@@ -76,6 +78,26 @@ test('identity capability installs the complete optional IAM stack', async () =>
     assert.equal(dependencies['@appkit/iam'], 'latest')
     assert.equal(dependencies['drizzle-orm'], '^0.45.2')
     assert.equal(dependencies.pg, '^8.13.1')
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('storage capability installs the object runtime and attachment workspace package', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'create-appkit-storage-'))
+  const target = join(root, 'workspace')
+  try {
+    const result = await scaffoldProject({
+      directory: target,
+      features: ['storage'],
+      install: false,
+      initializeGit: false,
+    })
+    assert.deepEqual(result.packages, ['@appkit/tokens', '@appkit/ui', '@appkit/storage'])
+    const manifest = await readGeneratedPackage(target)
+    const dependencies = manifest.dependencies as Record<string, string>
+    assert.equal(dependencies['@appkit/storage'], 'latest')
+    assert.match(await readFile(join(target, 'src/app/globals.css'), 'utf8'), /@appkit\/storage\/styles\.css/)
   } finally {
     await rm(root, { recursive: true, force: true })
   }

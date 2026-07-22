@@ -479,6 +479,15 @@ ranges, streaming reads, rich metadata, verified ETag promotion, lifecycle
 tags, and existence-safe presigning live behind one injected configuration.
 `@appkit/storage/env` exposes a strict, portable `APPKIT_STORAGE_*` environment
 contract. Applications with another configuration system use `createStorage`.
+`@appkit/storage/react` is the complete extracted record-attachment workspace:
+upload, URL-backed search/type filters/paging, image and PDF preview, download,
+expanded preview, and removal. It retains the source `targetTable`/`targetId`
+caller shape while injecting an `AttachmentAdapter`, so authorization, tenancy,
+metadata persistence, and file routes remain application-owned.
+`createHttpAttachmentAdapter` matches the source GET/POST/DELETE response
+contract; `@appkit/storage/memory` is a functional database-free adapter for
+tests, demos, and local tools. Selecting the `storage` capability in
+`create-appkit` installs this package without pulling it into unrelated apps.
 `@appkit/jobs` supplies lazy BullMQ producer/worker connections, bounded Redis
 readiness, source payload validators, and an atomic fixed-window rate limiter.
 Its `/web-push` entry includes subscription validation, public-DNS

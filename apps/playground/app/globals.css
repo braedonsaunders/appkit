@@ -8,6 +8,7 @@
 @import '@appkit/customization/styles.css';
 @import '@appkit/apps/styles.css';
 @import '@appkit/scripts/styles.css';
+@import '@appkit/storage/styles.css';
 
 /* Scan the playground and shared component sources for class usage. */
 @source '../app';
@@ -17,6 +18,7 @@
 @source '../../../packages/editor/src';
 @source '../../../packages/forms/src';
 @source '../../../packages/notifications/src';
+@source '../../../packages/storage/src';
 @source '../../../packages/workflows/src';
 @source '../../../packages/customization/src';
 
