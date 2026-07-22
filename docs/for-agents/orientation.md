@@ -483,8 +483,15 @@ preferences, digest/quiet-hour behavior, critical delivery rules, and stable
 deduplication keys before invoking app-owned delivery adapters. Digest
 aggregation and push subscription lifecycle are package-owned. Its root has no
 dependencies. `@appkit/notifications/schema` owns its feature tables,
-`@appkit/notifications/drizzle` provides the RLS-aware store, and
-`@appkit/notifications/react` provides the inbox and preference matrix.
+`@appkit/notifications/drizzle` provides the RLS-aware delivery store and a
+tenant/user-bound inbox adapter with search, cursor paging, folder counts, and
+mutations, while domain to-dos remain one injected query. The React entry
+`@appkit/notifications/react` provides the complete responsive three-pane inbox:
+smart and category folders, search, optimistic read/unread/delete/snooze,
+to-dos, cursor paging, a reading pane, mobile drawers, recoverable errors, and
+the matching loading shell. Applications inject the tenant/user-scoped
+`NotificationInboxAdapter`, category/to-do visuals, routes, and localized copy.
+The same entry provides the per-category/channel preference matrix.
 
 Package boundaries are executable architecture. `pnpm check:boundaries` rejects
 runtime cycles and forbidden foundation dependencies; `pnpm test:isolation`

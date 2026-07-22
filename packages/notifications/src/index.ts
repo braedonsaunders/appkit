@@ -16,6 +16,21 @@ export type NotificationStore = {
 }
 export type NotificationDeliverer = (delivery: NotificationDelivery) => Promise<void>
 
+export {
+  applyNotificationInboxDelta,
+  buildNotificationInboxFolders,
+  filterNotificationInboxItems,
+  notificationRecordToInboxItem,
+} from './inbox'
+export type {
+  NotificationInboxAdapter,
+  NotificationInboxFilter,
+  NotificationInboxFolders,
+  NotificationInboxItem,
+  NotificationInboxPage,
+  NotificationTodoItem,
+} from './inbox'
+
 export function planNotificationDeliveries(event: NotificationEvent, recipients: readonly NotificationRecipient[], preferences: Map<string, Map<NotificationChannel, boolean>>, policy: NotificationTenantPolicy = {}, now = new Date()): NotificationDelivery[] {
   const configured = policy.categoryChannels?.[event.category]
   const allowed: readonly NotificationChannel[] = configured?.length

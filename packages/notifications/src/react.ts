@@ -1,2 +1,8 @@
-export { NotificationCenter, NotificationPreferences } from './ui'
-export type { NotificationCenterProps, NotificationPreferencesProps } from './ui'
+export { NotificationInbox, NotificationInboxSkeleton, NotificationPreferences } from './ui'
+export type {
+  NotificationCategoryVisual,
+  NotificationInboxCopy,
+  NotificationInboxProps,
+  NotificationPreferencesProps,
+  NotificationTodoVisual,
+} from './ui'
