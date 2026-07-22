@@ -1,7 +1,7 @@
 {
   "name": "@appkit/forms",
   "version": "0.1.0",
-  "description": "Reusable form designer and runtime renderer for AppKit applications.",
+  "description": "Production form designer, workflow authoring bridge, and complete fill runtime for AppKit applications.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "sideEffects": ["*.css"],
@@ -28,6 +28,7 @@
     "@appkit/tokens": "workspace:*",
     "@appkit/ui": "workspace:*",
     "@excalidraw/excalidraw": "^0.18.0",
+    "framer-motion": "^12.42.2",
     "lucide-react": "^1.24.0",
     "react-grid-layout": "^2.2.3"
   },

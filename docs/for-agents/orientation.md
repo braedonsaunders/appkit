@@ -211,11 +211,12 @@ products: finance fields (`currency`, `percentage`, `gl_account`, `party`) sit
 beside the full safety/field-operations vocabulary. The dependency-light root
 owns parsing, cross-reference linting, conditional logic, formula evaluation,
 defaults, response validation, scoring, participant extraction, attachment URL
-policy, and DOM-free text extraction. Rich document sanitization and response
+policy, companion-value conventions, and DOM-free text extraction. Rich document sanitization and response
 normalization are explicit `@appkit/forms-core/sanitize` and
 `@appkit/forms-core/response-normalize` entries so a validator-only service does
-not allocate or bundle a browser DOM. The package has no UI, localization,
-token, or email-rendering dependency.
+not allocate or bundle a browser DOM. The package has no UI, token, or
+email-rendering dependency; its small localization dependency resolves authored
+labels for companion and automation profiles.
 The live `/forms/core` reference executes the schema parser and response
 validator, lists the field registry, and displays both automation vocabularies.
 
@@ -239,22 +240,27 @@ authorized data access, and optional photo analysis inside its trust boundary.
 The source English copy catalogue is complete and consumers can replace it with
 their own generated-copy translator.
 
-`FormRenderer` remains the smaller controlled renderer for applications that
-want to own every field value and service callback. It is not the production
-parity surface. `LogicBuilder` is a faithful generalized source extraction, but
-`FormDesigner` is still only the portable controlled authoring composition; the
-complete source designer shell and its overview, workflow, assignment,
-permissions, publishing, and assisted-authoring surfaces have not yet been
-ported and must not be described as drop-in compatible. The live `/forms`
-reference uses the full production runtime for Fill preview while retaining the
-controlled authoring workbench, JSON editing, import/export, and browser-local
-persistence.
+`ProductionFormDesigner` is the complete generalized source authoring workspace:
+the 1/3–2/3 composition, overview, complete field palette, stacked/free canvas,
+tabs, sign-off workflow, record behaviour, record-list columns, manual actions,
+assignments, permissions, localized copy, preview, immutable publishing, and
+property inspectors are present. Persistence, navigation, data sources,
+authorization, optional AI assistance, and workflow rendering are typed host
+seams. `formFlowProfile` and `lintFormFlowGraph` preserve the source companion,
+writability, photo, and top-level-field rules when composing
+`@appkit/workflows/react`.
+
+`FormRenderer` and `FormDesigner` remain smaller controlled compositions for
+applications that intentionally own every callback. Neither is the production
+parity surface. The live `/forms` reference now runs `ProductionFormDesigner`,
+the production Flows canvas, the complete production fill runtime, JSON
+editing, import/export, and browser-local persistence without a database.
 
 `@appkit/editor` owns the optional TipTap authoring control used by rich-text
-fields. `@appkit/forms-documents` owns localized companion-field generation,
-document styles, and generated bounded PDF templates. These remain separate so
-schema validation can run in services that install neither an editor nor the
-document pipeline.
+fields. Companion-value conventions live in `@appkit/forms-core` because forms,
+flows, and documents must agree on them. `@appkit/forms-documents` owns document
+styles and generated bounded PDF templates and re-exports those canonical
+helpers for existing document consumers.
 
 `@appkit/i18n` resolves supported locales, Accept-Language, tenant defaults,
 per-user overrides, and localized authored content. Plain-string records remain

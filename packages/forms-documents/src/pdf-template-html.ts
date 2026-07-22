@@ -7,23 +7,23 @@
 //
 // Every token references the form flow adapter's loadValues() map ONLY:
 // raw {{fieldId}} values plus the companion keys declared in
-// form-companions.ts (`_text`, `_image`, `_photos`, repeating-section and
+// @appkit/forms-core companion helpers (`_text`, `_image`, `_photos`, repeating-section and
 // table-field collections). Layout-only fields are skipped.
 //
 // Consumed by the web publish hook / admin "Generate" affordance AND the db
 // seed backfill — keep it dependency-free (pure string building).
 
-import type { FormSchemaV1 } from '@appkit/forms-core'
-import { DEFAULT_LOCALE, type AppLocale } from '@appkit/i18n'
-import { color } from '@appkit/tokens'
 import {
+  type FormSchemaV1,
   SKIP_FIELD_TYPES,
   hasImageCompanion,
   hasPhotosCompanion,
   hasTextCompanion,
   isAttachmentArrayField,
   labelText,
-} from './form-companions'
+} from '@appkit/forms-core'
+import { DEFAULT_LOCALE, type AppLocale } from '@appkit/i18n'
+import { color } from '@appkit/tokens'
 
 // --- shared design language (mirrors the seeded native-module documents) ----
 

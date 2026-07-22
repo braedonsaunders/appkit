@@ -61,7 +61,7 @@ import { compileCustomReport, parseReportScheduleForm } from '@appkit/reports'
 import { color } from '@appkit/tokens'
 import { Button, PagedTable, PromptRoot, SubtabNav } from '@appkit/ui'
 import { emptyFormSchema, validateFormSchema } from '@appkit/forms-core'
-import { ProductionFormRenderer } from '@appkit/forms'
+import { ProductionFormDesigner, ProductionFormRenderer } from '@appkit/forms'
 import { createDesignDocument } from '@appkit/design-studio'
 import { DesignStudioEditor } from '@appkit/design-studio/react'
 import { ReportFilterBar, ReportPaper, ReportRunHistory, ReportScheduleForm, ReportScheduleList, StatementMatrixTable, Table, TableBody, TableCell, TableRow, reportStudioTemplates } from '@appkit/reports/react'
@@ -91,6 +91,22 @@ const productionFormAdapter = {
   async aggregateData() { return { value: null, total: 0 } },
 }
 assert.match(renderToStaticMarkup(React.createElement(ProductionFormRenderer, { adapter: productionFormAdapter, templateId: 'template-1', templateName: 'Equipment inspection', version: 3, schema: productionFormSchema, sites: [], people: [], entitiesByField: {}, currentUser: { personId: null, name: 'Inspector' }, recordsHref: '/records', readOnly: true, responseStatus: 'submitted', initialValues: { serial: 'EQ-1042' } })), /EQ-1042/)
+const productionDesignerAdapter = {
+  async publish() { return { ok: true, version: 4 } },
+  async saveOverview() { return { ok: true } },
+  async saveRecordConfig() { return { ok: true } },
+  async saveListConfig() { return { ok: true } },
+  async savePermissions() { return { ok: true } },
+}
+const recordActionAdapter = {
+  async create(name, graph) { return { id: 'flow-1', name, graph, enabled: true } },
+  async update() {},
+  async setEnabled() {},
+  async remove() {},
+}
+const designerMarkup = renderToStaticMarkup(React.createElement(ProductionFormDesigner, { adapter: productionDesignerAdapter, recordActionAdapter, templateId: 'template-1', templateName: 'Equipment inspection', initialSchema: productionFormSchema, currentVersion: 3, backHref: '/forms', recordsHref: '/records', assignmentCreateHref: '/assignments/new', assignmentsHref: '/assignments', locale: 'en', defaultLocale: 'en', enabledLocales: ['en'] }))
+assert.match(designerMarkup, /Record behaviour/)
+assert.match(designerMarkup, /Publish v4/)
 const tenantContextFactory = createTenantContextFactory({
   async withTenant(database, tenantId, fn) { assert.equal(tenantId, 'tenant-1'); return fn(database) },
   async withSuperAdmin(database, fn) { return fn(database) },
@@ -158,7 +174,7 @@ import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { createDrizzleIamService } from '@appkit/iam/drizzle'
 import type { BulkRoleAssignmentInput, IamAdminService, MemberRecord, RoleRecord } from '@appkit/iam'
 import type { MemberAdminAction, MemberAdminExtension, RoleAdminExtension } from '@appkit/iam/react'
-import type { ProductionFormRendererProps, ProductionFormRuntimeAdapter } from '@appkit/forms'
+import type { ProductionFormDesignerAdapter, ProductionFormDesignerProps, ProductionFormRendererProps, ProductionFormRuntimeAdapter } from '@appkit/forms'
 import { createMembershipAccessResolver, resolveMembershipAccess } from '@appkit/tenant'
 import type { MembershipAccessDatabase, RequestContext, RequestContextArgs, TenantDatabase } from '@appkit/tenant'
 ${typePackages.map((_, index) => `type PackageContract${index} = typeof Package${index}`).join('\n')}
@@ -191,6 +207,8 @@ void (null as unknown as ApprovalHistoryProps)
 void (null as unknown as RecordApprovalProviderProps)
 void (null as unknown as ProductionFormRendererProps)
 void (null as unknown as ProductionFormRuntimeAdapter)
+void (null as unknown as ProductionFormDesignerProps)
+void (null as unknown as ProductionFormDesignerAdapter)
 type ApplicationRequestContext = RequestContext<{ personId: string | null; terminology?: { authority: string } }>
 type ApplicationRequestArgs = RequestContextArgs<{ personId: string | null; terminology?: { authority: string } }>
 declare const applicationContext: ApplicationRequestContext

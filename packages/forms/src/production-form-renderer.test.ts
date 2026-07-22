@@ -71,8 +71,11 @@ test('source photo state keeps derived analysis only for an identical ordered se
 })
 
 test('every extracted production copy key resolves to readable English copy', async () => {
-  const source = await readFile(new URL('./production-form-renderer.tsx', import.meta.url), 'utf8')
-  const ids = new Set(source.match(/m_[0-9a-f]{14}/g) ?? [])
+  const sources = await Promise.all([
+    readFile(new URL('./production-form-renderer.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('./production-form-designer.tsx', import.meta.url), 'utf8'),
+  ])
+  const ids = new Set(sources.flatMap((source) => source.match(/m_[0-9a-f]{14}/g) ?? []))
   const missing = [...ids].filter((id) => resolveGeneratedCopy(id) === id)
   assert.deepEqual(missing, [])
 })

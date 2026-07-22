@@ -1018,7 +1018,7 @@ function ProductionFormRendererBody({
             <GeneratedValue
               value={
                 inlineTabbed ? (
-                  <div className="flex flex-wrap items-center gap-1.5 border-b border-border pb-2 border-border">
+                  <div className="flex flex-wrap items-center gap-1.5 border-b border-border pb-2">
                     <GeneratedValue
                       value={appTabs.map((t) => (
                         <button
@@ -1027,8 +1027,8 @@ function ProductionFormRendererBody({
                           onClick={() => setActiveTabId(t.id)}
                           className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
                             t.id === activeTabId
-                              ? 'border-primary bg-primary text-on-primary'
-                              : 'border-border bg-surface text-fg hover:border-primary hover:text-primary border-border bg-bg-subtle text-fg'
+                              ? 'border-primary bg-primary text-primary-fg'
+                              : 'border-border bg-surface text-fg hover:border-primary hover:text-primary'
                           }`}
                         >
                           <GeneratedValue value={localizeText(t.title, locale, t.id)} />
@@ -1193,8 +1193,8 @@ function ProductionFormRendererBody({
                             title={tGenerated('m_0c388e73463aaf')}
                             className={`inline-flex h-8 w-8 items-center justify-center rounded-full border ${
                               fieldMode
-                                ? 'border-warning bg-warning-subtle text-warning border-warning bg-warning-subtle/40 text-warning'
-                                : 'border-border bg-surface text-fg0 hover:bg-bg-subtle border-border bg-bg-subtle text-fg-muted'
+                                ? 'border-warning bg-warning-subtle text-warning'
+                                : 'border-border bg-surface text-fg-muted hover:bg-bg-subtle'
                             }`}
                           >
                             <Sun size={15} />
@@ -1210,7 +1210,7 @@ function ProductionFormRendererBody({
               <div className="space-y-3">
                 <Link
                   href={returnTo ?? recordsHref}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline text-primary"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                 >
                   <ChevronLeft size={13} />{' '}
                   <GeneratedValue
@@ -1224,7 +1224,7 @@ function ProductionFormRendererBody({
                   />
                 </Link>
                 <div className="flex items-center justify-between gap-2">
-                  <h1 className="truncate text-xl font-semibold text-fg text-fg">
+                  <h1 className="truncate text-xl font-semibold text-fg">
                     <GeneratedValue value={templateName} />
                   </h1>
                   <div className="flex items-center gap-2">
@@ -1235,8 +1235,8 @@ function ProductionFormRendererBody({
                       title={tGenerated('m_0c388e73463aaf')}
                       className={`inline-flex h-8 w-8 items-center justify-center rounded-full border ${
                         fieldMode
-                          ? 'border-warning bg-warning-subtle text-warning border-warning bg-warning-subtle/40 text-warning'
-                          : 'border-border bg-surface text-fg0 hover:bg-bg-subtle border-border bg-bg-subtle text-fg-muted'
+                          ? 'border-warning bg-warning-subtle text-warning'
+                          : 'border-border bg-surface text-fg-muted hover:bg-bg-subtle'
                       }`}
                     >
                       <Sun size={15} />
@@ -1277,10 +1277,10 @@ function ProductionFormRendererBody({
                                     onClick={() => jumpTo(i)}
                                     className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 transition-colors ${
                                       isCurrent
-                                        ? 'border-primary bg-primary text-on-primary'
+                                        ? 'border-primary bg-primary text-primary-fg'
                                         : isCompleted
-                                          ? 'border-success bg-success-subtle text-success hover:bg-success-subtle border-success/50 bg-success-subtle/40 text-success'
-                                          : 'border-border bg-surface text-fg border-border bg-bg-subtle text-fg'
+                                          ? 'border-success bg-success-subtle text-success hover:bg-success-subtle'
+                                          : 'border-border bg-surface text-fg'
                                     } ${!isClickable ? 'cursor-not-allowed opacity-60' : ''}`}
                                   >
                                     <span
@@ -1288,8 +1288,8 @@ function ProductionFormRendererBody({
                                         isCurrent
                                           ? 'bg-surface text-primary'
                                           : isCompleted
-                                            ? 'bg-success-subtle0 text-on-primary'
-                                            : 'bg-bg-subtle text-fg bg-bg-subtle text-fg'
+                                            ? 'bg-success text-success-fg'
+                                            : 'bg-bg-subtle text-fg'
                                       }`}
                                     >
                                       <GeneratedValue
@@ -1309,7 +1309,7 @@ function ProductionFormRendererBody({
                             })}
                           />
                         </ol>
-                        <div className="h-1 overflow-hidden rounded-full bg-bg-subtle bg-bg-subtle">
+                        <div className="h-1 overflow-hidden rounded-full bg-bg-subtle">
                           <div
                             className="h-full rounded-full bg-primary transition-all"
                             style={{ width: `${Math.max(8, completion)}%` }}
@@ -1438,7 +1438,7 @@ function ProductionFormRendererBody({
             <GeneratedValue
               value={
                 tabbed ? (
-                  <div className="flex flex-wrap items-center gap-1.5 border-b border-border pb-2 border-border">
+                  <div className="flex flex-wrap items-center gap-1.5 border-b border-border pb-2">
                     <GeneratedValue
                       value={appTabs.map((t) => (
                         <button
@@ -1447,8 +1447,8 @@ function ProductionFormRendererBody({
                           onClick={() => setActiveTabId(t.id)}
                           className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
                             t.id === activeTabId
-                              ? 'border-primary bg-primary text-on-primary'
-                              : 'border-border bg-surface text-fg hover:border-primary hover:text-primary border-border bg-bg-subtle text-fg'
+                              ? 'border-primary bg-primary text-primary-fg'
+                              : 'border-border bg-surface text-fg hover:border-primary hover:text-primary'
                           }`}
                         >
                           <GeneratedValue value={localizeText(t.title, locale, t.id)} />
@@ -1468,7 +1468,7 @@ function ProductionFormRendererBody({
                     icon={<ClipboardList size={20} />}
                     tone="slate"
                   >
-                    <p className="text-sm text-fg0 text-fg-muted">
+                    <p className="text-sm text-fg-muted">
                       <GeneratedValue
                         value={
                           tabbed ? (
@@ -1666,7 +1666,7 @@ function RepeatingSection({
       <GeneratedValue
         value={
           rows.length === 0 ? (
-            <p className="text-sm text-fg0 text-fg-muted">
+            <p className="text-sm text-fg-muted">
               <GeneratedText id="m_126f736e7419f7" />
               <GeneratedValue
                 value={
@@ -1685,16 +1685,16 @@ function RepeatingSection({
               return (
                 <div
                   key={i}
-                  className="rounded-lg border border-border bg-bg-subtle/60 p-3 border-border bg-bg-subtle/40"
+                  className="rounded-lg border border-border bg-bg-subtle/60 p-3"
                 >
                   <div className="mb-2 flex items-center justify-between">
-                    <div className="text-xs font-semibold tracking-wide text-fg0 uppercase text-fg-muted">
+                    <div className="text-xs font-semibold tracking-wide text-fg-muted uppercase">
                       <GeneratedValue value={formatRowLabel(section, i, row)} />
                     </div>
                     <button
                       type="button"
                       onClick={() => onRemove(i)}
-                      className="ff-chip flex h-9 w-9 items-center justify-center rounded-md text-fg-muted hover:bg-danger-subtle hover:text-danger disabled:opacity-30 dark:hover:bg-danger-subtle/40"
+                      className="ff-chip flex h-9 w-9 items-center justify-center rounded-md text-fg-muted hover:bg-danger-subtle hover:text-danger disabled:opacity-30"
                       title={tGenerated('m_1a9d8d971b1edb')}
                       disabled={rows.length <= min}
                     >
@@ -1807,7 +1807,7 @@ function FieldRow({
       <GeneratedValue
         value={
           helpText ? (
-            <p className="text-xs text-fg0 text-fg-muted">
+            <p className="text-xs text-fg-muted">
               <GeneratedValue value={helpText} />
             </p>
           ) : null
@@ -2017,7 +2017,7 @@ function InlineFieldRow({
       <GeneratedValue
         value={
           helpText ? (
-            <p className="text-xs text-fg0 text-fg-muted">
+            <p className="text-xs text-fg-muted">
               <GeneratedValue value={helpText} />
             </p>
           ) : null
@@ -2195,7 +2195,7 @@ function FieldInput({
           <GeneratedValue
             value={
               loc ? (
-                <p className="text-xs text-fg0">
+                <p className="text-xs text-fg-muted">
                   <GeneratedValue value={loc.lat.toFixed(5)} />,{' '}
                   <GeneratedValue value={loc.lng.toFixed(5)} />
                   <GeneratedValue
@@ -2242,7 +2242,7 @@ function FieldInput({
                   value={scale.map((s) => (
                     <th
                       key={s.value}
-                      className="p-1.5 text-center text-xs font-medium text-fg0"
+                      className="p-1.5 text-center text-xs font-medium text-fg-muted"
                     >
                       <GeneratedValue value={s.label} />
                     </th>
@@ -2361,13 +2361,13 @@ function FieldInput({
                   onClick={() => onChange(sel ? '' : o.value)}
                   className={`ff-chip flex min-h-[48px] items-center gap-2.5 rounded-md border px-4 text-left text-sm font-medium ${
                     sel
-                      ? 'border-primary bg-primary-subtle text-primary border-primary bg-primary-subtle/40 text-primary'
-                      : 'border-border bg-surface text-fg hover:bg-bg-subtle border-border bg-bg-subtle text-fg'
+                      ? 'border-primary bg-primary-subtle text-primary'
+                      : 'border-border bg-surface text-fg hover:bg-bg-subtle'
                   }`}
                 >
                   <span
                     className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
-                      sel ? 'border-primary' : 'border-border border-border'
+                      sel ? 'border-primary' : 'border-border'
                     }`}
                   >
                     <GeneratedValue
@@ -2401,15 +2401,15 @@ function FieldInput({
                   }
                   className={`ff-chip flex min-h-[48px] w-full items-center gap-3 rounded-md border px-4 text-left text-sm font-medium ${
                     sel
-                      ? 'border-primary bg-primary-subtle text-primary border-primary bg-primary-subtle/40 text-primary'
-                      : 'border-border bg-surface text-fg hover:bg-bg-subtle border-border bg-bg-subtle text-fg'
+                      ? 'border-primary bg-primary-subtle text-primary'
+                      : 'border-border bg-surface text-fg hover:bg-bg-subtle'
                   }`}
                 >
                   <span
                     className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 ${
                       sel
-                        ? 'border-primary bg-primary text-on-primary'
-                        : 'border-border border-border'
+                        ? 'border-primary bg-primary text-primary-fg'
+                        : 'border-border'
                     }`}
                   >
                     <GeneratedValue value={sel ? <Check size={13} /> : null} />
@@ -2436,11 +2436,11 @@ function FieldInput({
               const sel = value === v
               const tone = sel
                 ? v === 'pass'
-                  ? 'border-success bg-success-subtle text-success border-success bg-success-subtle/40 text-success'
+                  ? 'border-success bg-success-subtle text-success'
                   : v === 'fail'
-                    ? 'border-danger bg-danger-subtle text-danger border-danger bg-danger-subtle/40 text-danger'
-                    : 'border-border bg-bg-subtle text-fg border-border bg-bg-subtle/60 text-fg'
-                : 'border-border bg-surface text-fg hover:bg-bg-subtle border-border bg-bg-subtle text-fg'
+                    ? 'border-danger bg-danger-subtle text-danger'
+                    : 'border-border bg-bg-subtle text-fg'
+                : 'border-border bg-surface text-fg hover:bg-bg-subtle'
               return (
                 <button
                   key={v}
@@ -2476,9 +2476,9 @@ function FieldInput({
                 const sel = v.answer === opt
                 const tone = sel
                   ? opt === 'yes'
-                    ? 'border-success bg-success-subtle text-success border-success bg-success-subtle/40 text-success'
-                    : 'border-danger bg-danger-subtle text-danger border-danger bg-danger-subtle/40 text-danger'
-                  : 'border-border bg-surface text-fg hover:bg-bg-subtle border-border bg-bg-subtle text-fg'
+                    ? 'border-success bg-success-subtle text-success'
+                    : 'border-danger bg-danger-subtle text-danger'
+                  : 'border-border bg-surface text-fg hover:bg-bg-subtle'
                 return (
                   <button
                     key={opt}
@@ -2517,20 +2517,20 @@ function FieldInput({
               {
                 v: 'green',
                 label: 'Green',
-                dot: 'bg-success-subtle0',
-                sel: 'border-success bg-success-subtle bg-success-subtle/40',
+                dot: 'bg-success',
+                sel: 'border-success bg-success-subtle',
               },
               {
                 v: 'yellow',
                 label: 'Yellow',
                 dot: 'bg-warning',
-                sel: 'border-warning bg-warning-subtle bg-warning-subtle/40',
+                sel: 'border-warning bg-warning-subtle',
               },
               {
                 v: 'red',
                 label: 'Red',
-                dot: 'bg-danger-subtle0',
-                sel: 'border-danger bg-danger-subtle bg-danger-subtle/40',
+                dot: 'bg-danger',
+                sel: 'border-danger bg-danger-subtle',
               },
             ].map((opt) => {
               const sel = value === opt.v
@@ -2543,7 +2543,7 @@ function FieldInput({
                   className={`ff-chip flex min-h-[48px] flex-col items-center justify-center gap-1 rounded-md border text-sm font-medium ${
                     sel
                       ? `${opt.sel} text-fg text-fg`
-                      : 'border-border bg-surface text-fg hover:bg-bg-subtle border-border bg-bg-subtle text-fg'
+                      : 'border-border bg-surface text-fg hover:bg-bg-subtle'
                   }`}
                 >
                   <span className={`inline-block h-4 w-4 rounded-full ${opt.dot}`} />
@@ -2587,14 +2587,14 @@ function FieldInput({
                       return (
                         <span
                           key={id}
-                          className="inline-flex items-center gap-1 rounded-full border border-primary bg-primary-subtle py-0.5 pr-1 pl-2.5 text-xs text-primary border-primary bg-primary-subtle/40 text-primary"
+                          className="inline-flex items-center gap-1 rounded-full border border-primary bg-primary-subtle py-0.5 pr-1 pl-2.5 text-xs text-primary"
                         >
                           <GeneratedValue value={label} />
                           <button
                             type="button"
                             onClick={() => onChange(arr.filter((v) => v !== id))}
                             aria-label={tGenerated('m_101f98a70352fa', { value0: label })}
-                            className="rounded-full p-0.5 text-primary hover:bg-primary-subtle hover:text-primary text-primary dark:hover:bg-primary-subtle"
+                            className="rounded-full p-0.5 text-primary hover:bg-primary-subtle hover:text-primary"
                           >
                             <X size={12} />
                           </button>
@@ -2746,7 +2746,7 @@ function NumberStepper({
   }
   const bump = (dir: -1 | 1) => onChange(clamp((num ?? 0) + dir * step))
   const btn =
-    'ff-chip flex w-14 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-fg hover:bg-bg-subtle active:scale-95 disabled:opacity-40 border-border bg-bg-subtle text-fg'
+    'ff-chip flex w-14 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-fg hover:bg-bg-subtle active:scale-95 disabled:opacity-40'
   return (
     <div className="flex items-stretch gap-2">
       <button
@@ -2819,8 +2819,8 @@ function RatingButtons({
               onClick={() => onChange(sel ? '' : n)}
               className={`ff-chip flex h-12 min-w-12 flex-1 items-center justify-center rounded-md border text-lg font-semibold ${
                 sel
-                  ? 'border-primary bg-primary text-on-primary'
-                  : 'border-border bg-surface text-fg hover:bg-bg-subtle border-border bg-bg-subtle text-fg'
+                  ? 'border-primary bg-primary text-primary-fg'
+                  : 'border-border bg-surface text-fg hover:bg-bg-subtle'
               }`}
             >
               <GeneratedValue value={n} />
@@ -2879,14 +2879,14 @@ function TableField({
   return (
     <div className="space-y-2">
       {/* Desktop / wide: full table */}
-      <div className="hidden overflow-x-auto rounded-md border border-border sm:block border-border">
+      <div className="hidden overflow-x-auto rounded-md border border-border sm:block">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="bg-bg-subtle bg-bg-subtle/60">
+            <tr className="bg-bg-subtle">
               <GeneratedValue
                 value={
                   rowMode === 'fixed' ? (
-                    <th className="border-b border-border px-2 py-1.5 text-left text-xs font-semibold text-fg border-border text-fg" />
+                    <th className="border-b border-border px-2 py-1.5 text-left text-xs font-semibold text-fg" />
                   ) : null
                 }
               />
@@ -2894,7 +2894,7 @@ function TableField({
                 value={columns.map((c) => (
                   <th
                     key={c.key}
-                    className="border-b border-border px-2 py-1.5 text-left text-xs font-semibold text-fg border-border text-fg"
+                    className="border-b border-border px-2 py-1.5 text-left text-xs font-semibold text-fg"
                   >
                     <GeneratedValue value={c.label || c.key} />
                   </th>
@@ -2903,7 +2903,7 @@ function TableField({
               <GeneratedValue
                 value={
                   rowMode === 'addable' ? (
-                    <th className="w-8 border-b border-border border-border" />
+                    <th className="w-8 border-b border-border" />
                   ) : null
                 }
               />
@@ -2925,12 +2925,12 @@ function TableField({
                   rows.map((row, i) => (
                     <tr
                       key={i}
-                      className="border-b border-border last:border-b-0 border-border"
+                      className="border-b border-border last:border-b-0"
                     >
                       <GeneratedValue
                         value={
                           rowMode === 'fixed' ? (
-                            <td className="px-2 py-1 text-xs font-medium whitespace-nowrap text-fg text-fg">
+                            <td className="px-2 py-1 text-xs font-medium whitespace-nowrap text-fg">
                               <GeneratedValue
                                 value={
                                   fixedRows[i]?.label ?? (
@@ -2983,7 +2983,7 @@ function TableField({
         <GeneratedValue
           value={
             rowMode === 'addable' ? (
-              <div className="border-t border-border p-1.5 border-border">
+              <div className="border-t border-border p-1.5">
                 <button
                   type="button"
                   onClick={addRow}
@@ -3003,17 +3003,17 @@ function TableField({
         <GeneratedValue
           value={
             rows.length === 0 ? (
-              <p className="text-sm text-fg0">
+              <p className="text-sm text-fg-muted">
                 <GeneratedText id="m_119e08753a396f" />
               </p>
             ) : (
               rows.map((row, i) => (
                 <div
                   key={i}
-                  className="rounded-lg border border-border bg-bg-subtle/60 p-3 border-border bg-bg-subtle/40"
+                  className="rounded-lg border border-border bg-bg-subtle/60 p-3"
                 >
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="text-xs font-semibold tracking-wide text-fg0 uppercase">
+                    <span className="text-xs font-semibold tracking-wide text-fg-muted uppercase">
                       <GeneratedValue
                         value={
                           rowMode === 'fixed' ? (
@@ -3034,7 +3034,7 @@ function TableField({
                             onClick={() => removeRow(i)}
                             disabled={rows.length <= minRows}
                             title={tGenerated('m_12b310a027b08a')}
-                            className="ff-chip flex h-9 w-9 items-center justify-center rounded-md text-fg-muted hover:bg-danger-subtle hover:text-danger disabled:opacity-30 dark:hover:bg-danger-subtle/40"
+                            className="ff-chip flex h-9 w-9 items-center justify-center rounded-md text-fg-muted hover:bg-danger-subtle hover:text-danger disabled:opacity-30"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -3046,7 +3046,7 @@ function TableField({
                     <GeneratedValue
                       value={columns.map((c) => (
                         <div key={c.key} className="space-y-1">
-                          <label className="text-xs font-medium text-fg0">
+                          <label className="text-xs font-medium text-fg-muted">
                             <GeneratedValue value={c.label || c.key} />
                           </label>
                           <TableCell
@@ -3071,7 +3071,7 @@ function TableField({
                 type="button"
                 onClick={addRow}
                 disabled={maxRows != null && rows.length >= maxRows}
-                className="ff-chip flex min-h-[48px] w-full items-center justify-center gap-2 rounded-md border border-dashed border-border text-sm font-medium text-primary hover:bg-primary-subtle disabled:cursor-not-allowed disabled:opacity-40 border-border text-primary"
+                className="ff-chip flex min-h-[48px] w-full items-center justify-center gap-2 rounded-md border border-dashed border-border text-sm font-medium text-primary hover:bg-primary-subtle disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Plus size={16} /> <GeneratedText id="m_1eabd71bbc0199" />
               </button>
@@ -3628,7 +3628,7 @@ function DataTableInput({
       <div className="overflow-x-auto rounded border border-border">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border bg-bg-subtle text-left text-xs text-fg0">
+            <tr className="border-b border-border bg-bg-subtle text-left text-xs text-fg-muted">
               <GeneratedValue
                 value={selectable !== 'none' ? <th className="w-8 px-2 py-1.5" /> : null}
               />
@@ -3715,7 +3715,7 @@ function DataTableInput({
           }
         />
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-fg0">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-fg-muted">
         <span>
           <GeneratedValue
             value={
@@ -3834,11 +3834,11 @@ function MetricBlock({ field, evalCtx }: { field: FormField; evalCtx: EvalContex
                 </span>
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-bg-subtle">
                   <div
-                    className="h-full rounded-full bg-primary-subtle0"
+                    className="h-full rounded-full bg-primary"
                     style={{ width: `${(g.value / total) * 100}%` }}
                   />
                 </div>
-                <span className="w-10 text-right text-fg0 tabular-nums">
+                <span className="w-10 text-right text-fg-muted tabular-nums">
                   <GeneratedValue value={fmt(g.value)} />
                 </span>
               </div>
@@ -4035,7 +4035,7 @@ function PhotoAiInput({ value, onChange }: { value: unknown; onChange: (v: unkno
                                 <strong className="capitalize">
                                   <GeneratedValue value={p.item} />
                                 </strong>
-                                <span className="text-fg0">
+                                <span className="text-fg-muted">
                                   <GeneratedValue value={' '} />
                                   — <GeneratedValue value={p.status} />
                                   <GeneratedValue value={p.detail ? `: ${p.detail}` : ''} />
@@ -4072,7 +4072,7 @@ function PhotoAiInput({ value, onChange }: { value: unknown; onChange: (v: unkno
                                 <span className={`text-xs uppercase ${sevTone(h.severity)}`}>
                                   (<GeneratedValue value={h.severity} />)
                                 </span>
-                                <span className="text-fg0">
+                                <span className="text-fg-muted">
                                   {' '}
                                   — <GeneratedValue value={h.detail} />
                                 </span>
@@ -4168,7 +4168,7 @@ function PhotoAnnotateInput({
           value={markers.map((m, i) => (
             <span
               key={m.id}
-              className="absolute flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-danger text-xs font-bold text-on-primary ring-2 ring-surface"
+              className="absolute flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-danger text-xs font-bold text-danger-fg ring-2 ring-surface"
               style={{ left: `${m.x * 100}%`, top: `${m.y * 100}%` }}
             >
               <GeneratedValue value={i + 1} />
@@ -4186,7 +4186,7 @@ function PhotoAnnotateInput({
               <GeneratedValue
                 value={markers.map((m, i) => (
                   <li key={m.id} className="flex items-center gap-2">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-danger text-[10px] font-bold text-on-primary">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-danger text-[10px] font-bold text-danger-fg">
                       <GeneratedValue value={i + 1} />
                     </span>
                     <Input
@@ -4213,7 +4213,7 @@ function PhotoAnnotateInput({
       <button
         type="button"
         onClick={() => setFiles([])}
-        className="text-xs text-fg0 hover:underline"
+        className="text-xs text-fg-muted hover:underline"
       >
         <GeneratedText id="m_0b4d2076c64fbb" />
       </button>
@@ -4428,7 +4428,7 @@ function RichTextInput({ value, onChange }: { value: unknown; onChange: (v: unkn
     ref.current?.focus()
   }
   const btn =
-    'flex h-7 w-7 items-center justify-center rounded text-fg0 enabled:hover:bg-surface enabled:hover:text-fg disabled:cursor-not-allowed disabled:opacity-40'
+    'flex h-7 w-7 items-center justify-center rounded text-fg-muted enabled:hover:bg-surface enabled:hover:text-fg disabled:cursor-not-allowed disabled:opacity-40'
   return (
     <div className="rounded-md border border-border">
       <div className="flex gap-0.5 border-b border-border bg-bg-subtle p-1">

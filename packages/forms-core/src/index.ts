@@ -1,5 +1,6 @@
 export * from './schema'
 export * from './field-types'
+export * from './form-companions'
 export * from './custom-fields'
 export * from './entity-attrs'
 export * from './validator'

@@ -2,9 +2,21 @@
 
 import * as React from 'react'
 import { Download, Eye, FileJson, LayoutGrid, RotateCcw, Save, Upload } from 'lucide-react'
-import { FormDesigner, ProductionFormRenderer, type FormDataSource, type ProductionFormRuntimeAdapter, type RecordActionFlow, type RecordActionFlowAdapter, type RecordConfig } from '@appkit/forms'
+import {
+  ProductionFormDesigner,
+  ProductionFormRenderer,
+  formFlowProfile,
+  type FormDataSource,
+  type ProductionFormDesignerAdapter,
+  type ProductionFormRuntimeAdapter,
+  type RecordActionFlow,
+  type RecordActionFlowAdapter,
+  type RecordConfig,
+} from '@appkit/forms'
 import { parseFormSchema, type FormSchemaV1 } from '@appkit/forms-core'
+import type { AutomationGraph } from '@appkit/forms-core/safety-automation'
 import { Badge, Button, TabContent, Textarea, toast } from '@appkit/ui'
+import { FlowsCanvas, type WorkflowStudioAdapter } from '@appkit/workflows/react'
 import { SUPPLIER_QUALIFICATION_SCHEMA } from '../../../lib/forms/example-schema'
 
 const STORAGE_KEY = 'appkit.forms.workbench.schema.v1'
@@ -25,16 +37,75 @@ export function FormWorkbench() {
   const [schema, setSchema] = React.useState<FormSchemaV1>(STARTER_SCHEMA)
   const [mode, setMode] = React.useState<Mode>('design')
   const [json, setJson] = React.useState(() => JSON.stringify(STARTER_SCHEMA, null, 2))
+  const [designerRevision, setDesignerRevision] = React.useState(0)
+  const [version, setVersion] = React.useState(1)
   const [recordConfig, setRecordConfig] = React.useState<RecordConfig>({ editingMode: 'both', locking: { enabled: true, trigger: 'on_finalize', lockRoles: ['manager'], unlockRoles: ['admin'] }, tabs: { review: true, comments: true, audit: true } })
   const [flows, setFlows] = React.useState<RecordActionFlow[]>([])
+  const [allowedRoles, setAllowedRoles] = React.useState<string[]>([])
+  const [pinned, setPinned] = React.useState(false)
   const fileRef = React.useRef<HTMLInputElement>(null)
   const flowAdapter = React.useMemo<RecordActionFlowAdapter>(() => ({
     async create(name, graph) { const flow = { id: crypto.randomUUID(), name, enabled: true, graph }; setFlows((current) => [...current, flow]); return flow },
     async update(id, graph) { setFlows((current) => current.map((flow) => flow.id === id ? { ...flow, graph } : flow)) },
     async setEnabled(id, enabled) { setFlows((current) => current.map((flow) => flow.id === id ? { ...flow, enabled } : flow)) },
     async remove(id) { setFlows((current) => current.filter((flow) => flow.id !== id)) },
-    open() { toast.info('Open the Workflow page to expand this button into a multi-step graph.') },
   }), [])
+  const workflowAdapter = React.useMemo<WorkflowStudioAdapter>(() => ({
+    async create(_subject, name) {
+      const id = crypto.randomUUID()
+      setFlows((current) => [...current, { id, name, enabled: false, graph: { schemaVersion: 1, nodes: [], edges: [] } }])
+      return { ok: true, id }
+    },
+    async remove(id) {
+      setFlows((current) => current.filter((flow) => flow.id !== id))
+      return { ok: true }
+    },
+    async rename(id, name) {
+      setFlows((current) => current.map((flow) => flow.id === id ? { ...flow, name } : flow))
+      return { ok: true }
+    },
+    async save(id, graph: AutomationGraph) {
+      setFlows((current) => current.map((flow) => flow.id === id ? { ...flow, graph } : flow))
+      return { ok: true }
+    },
+    async setEnabled(id, enabled) {
+      setFlows((current) => current.map((flow) => flow.id === id ? { ...flow, enabled } : flow))
+      return { ok: true }
+    },
+  }), [])
+  const designerAdapter = React.useMemo<ProductionFormDesignerAdapter>(() => ({
+    async publish(input) {
+      const nextVersion = version + 1
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(input.schema))
+      window.localStorage.setItem(`${STORAGE_KEY}.publish`, JSON.stringify({ version: nextVersion, changelog: input.changelog }))
+      setVersion(nextVersion)
+      return { ok: true, version: nextVersion }
+    },
+    async saveOverview(input) {
+      window.localStorage.setItem(`${STORAGE_KEY}.overview`, JSON.stringify(input))
+      return { ok: true }
+    },
+    async saveRecordConfig(input) {
+      setRecordConfig(input.recordConfig)
+      window.localStorage.setItem(`${STORAGE_KEY}.records`, JSON.stringify(input.recordConfig))
+      return { ok: true }
+    },
+    async saveListConfig(input) {
+      setRecordConfig((current) => ({ ...current, list: input.listConfig }))
+      window.localStorage.setItem(`${STORAGE_KEY}.list`, JSON.stringify(input.listConfig))
+      return { ok: true }
+    },
+    async savePermissions(input) {
+      setAllowedRoles(input.allowedRoles)
+      window.localStorage.setItem(`${STORAGE_KEY}.roles`, JSON.stringify(input.allowedRoles))
+      return { ok: true }
+    },
+    async setPinned(input) {
+      setPinned(input.pinned)
+      window.localStorage.setItem(`${STORAGE_KEY}.pinned`, String(input.pinned))
+      return { ok: true }
+    },
+  }), [version])
   const productionSchema = React.useMemo(() => ({
     ...schema,
     workflow: schema.workflow ?? {
@@ -98,6 +169,7 @@ export function FormWorkbench() {
         if (result.ok) {
           setSchema(result.schema)
           setJson(JSON.stringify(result.schema, null, 2))
+          setDesignerRevision((current) => current + 1)
         }
       } catch {
         window.localStorage.removeItem(STORAGE_KEY)
@@ -105,9 +177,10 @@ export function FormWorkbench() {
     }
   }, [])
 
-  function updateSchema(next: FormSchemaV1) {
+  function updateSchema(next: FormSchemaV1, remountDesigner = false) {
     setSchema(next)
     setJson(JSON.stringify(next, null, 2))
+    if (remountDesigner) setDesignerRevision((current) => current + 1)
   }
 
   function save() {
@@ -122,7 +195,7 @@ export function FormWorkbench() {
         toast.error(result.issues[0]?.message ?? 'Schema is invalid.')
         return
       }
-      updateSchema(result.schema)
+      updateSchema(result.schema, true)
       toast.success('Validated schema applied.')
     } catch {
       toast.error('Schema must be valid JSON.')
@@ -147,7 +220,7 @@ export function FormWorkbench() {
         toast.error(result.issues[0]?.message ?? 'Imported schema is invalid.')
         return
       }
-      updateSchema(result.schema)
+      updateSchema(result.schema, true)
       toast.success('Form schema imported.')
     } catch {
       toast.error('The selected file is not a valid form schema.')
@@ -156,46 +229,76 @@ export function FormWorkbench() {
 
   function reset() {
     window.localStorage.removeItem(STORAGE_KEY)
-    updateSchema(STARTER_SCHEMA)
+    updateSchema(STARTER_SCHEMA, true)
     toast.success('Starter schema restored.')
   }
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-bg">
-      <header className="flex shrink-0 items-center justify-between gap-4 border-b border-border bg-surface px-4 py-2">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h1 className="truncate text-sm font-semibold text-fg">{titleText(schema.title)}</h1>
-            <Badge variant="secondary" className="text-[10px] uppercase">form</Badge>
-          </div>
-          <p className="text-xs text-fg-muted">Draft · {schema.sections.length} sections</p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()}><Upload size={14} />Import</Button>
-          <Button size="sm" variant="outline" onClick={download}><Download size={14} />Export</Button>
-          <Button size="sm" onClick={save}><Save size={14} />Save</Button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="application/json,.json"
-            className="hidden"
-            onChange={(event) => {
-              void importFile(event.currentTarget.files?.[0])
-              event.currentTarget.value = ''
-            }}
-          />
-        </div>
-      </header>
-
       <div className="flex shrink-0 items-center gap-1 border-b border-border bg-surface px-3 py-1.5">
         <ModeButton active={mode === 'design'} onClick={() => setMode('design')} icon={<LayoutGrid size={14} />}>Build</ModeButton>
         <ModeButton active={mode === 'preview'} onClick={() => setMode('preview')} icon={<Eye size={14} />}>Fill preview</ModeButton>
         <ModeButton active={mode === 'schema'} onClick={() => setMode('schema')} icon={<FileJson size={14} />}>Schema</ModeButton>
-        <Button className="ml-auto" size="sm" variant="ghost" onClick={reset}><RotateCcw size={14} />Restore starter</Button>
+        <div className="ml-auto flex items-center gap-1">
+          <Badge variant="secondary" className="hidden text-[10px] uppercase sm:inline-flex">database-free</Badge>
+          <Button size="sm" variant="ghost" onClick={() => fileRef.current?.click()}><Upload size={14} />Import</Button>
+          <Button size="sm" variant="ghost" onClick={download}><Download size={14} />Export</Button>
+          <Button size="sm" variant="ghost" onClick={save}><Save size={14} />Save draft</Button>
+          <Button size="sm" variant="ghost" onClick={reset}><RotateCcw size={14} />Restore starter</Button>
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          onChange={(event) => {
+            void importFile(event.currentTarget.files?.[0])
+            event.currentTarget.value = ''
+          }}
+        />
       </div>
 
       <TabContent tabKey={mode} duration={0.12} className="min-h-0 flex-1 overflow-hidden">
-        {mode === 'design' ? <FormDesigner value={schema} onChange={updateSchema} recordConfig={recordConfig} onRecordConfigChange={setRecordConfig} roles={[{ key: 'manager', name: 'Manager' }, { key: 'admin', name: 'Administrator' }, { key: 'reviewer', name: 'Reviewer' }]} recordActionFlows={flows} recordActionAdapter={flowAdapter} dataSources={DEMO_DATA_SOURCES} className="h-full" /> : null}
+        {mode === 'design' ? (
+          <ProductionFormDesigner
+            key={designerRevision}
+            adapter={designerAdapter}
+            templateId="demo-form"
+            templateName={titleText(schema.title)}
+            initialSchema={schema}
+            currentVersion={version}
+            overview={{ description: 'Qualify suppliers before they are approved for purchasing.', category: 'Operations', iconKey: null, emailOnSubmit: false, surfaceAsTool: true }}
+            recordConfig={recordConfig}
+            allowedRoles={allowedRoles}
+            roles={[{ key: 'manager', name: 'Manager' }, { key: 'admin', name: 'Administrator' }, { key: 'reviewer', name: 'Reviewer' }]}
+            flows={flows}
+            recordActionAdapter={flowAdapter}
+            dataSources={DEMO_DATA_SOURCES}
+            renderFlows={({ templateId, name, schema: activeSchema, flows: activeFlows }) => (
+              <FlowsCanvas
+                profile={formFlowProfile(templateId, name, activeSchema)}
+                emailTemplates={[]}
+                flows={activeFlows}
+                canEdit
+                adapter={workflowAdapter}
+                embedded
+              />
+            )}
+            backHref="/forms"
+            recordsHref="/forms"
+            assignmentCreateHref="/forms"
+            assignmentsHref="/forms"
+            dataSourcesHref="/forms"
+            canPin
+            pinned={pinned}
+            onSchemaChange={updateSchema}
+            locale="en"
+            defaultLocale="en"
+            enabledLocales={['en', 'fr']}
+            localeLabels={{ en: 'English', fr: 'Français' }}
+            className="h-full"
+          />
+        ) : null}
         {mode === 'preview' ? (
           <div className="app-scroll h-full overflow-y-auto p-4 sm:p-8">
             <div className="mx-auto max-w-4xl rounded-xl border border-border bg-surface p-4 shadow-sm sm:p-8">

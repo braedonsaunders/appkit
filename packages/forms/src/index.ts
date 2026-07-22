@@ -4,6 +4,19 @@ export {
   type FormDesignerProps,
 } from './form-designer'
 export {
+  ProductionFormDesigner,
+} from './production-form-designer'
+export type {
+  ProductionDesignerAssistantInput,
+  ProductionDesignerFlowsInput,
+  ProductionDesignerOverview,
+  ProductionDesignerResult,
+  ProductionFormDesignerAdapter,
+  ProductionFormDesignerProps,
+  ProductionFormKind,
+} from './production-designer-adapter'
+export { formFlowProfile, lintFormFlowGraph } from './form-flow-validation'
+export {
   FormRenderer,
   type FormRendererProps,
   type FormFieldAdapter,

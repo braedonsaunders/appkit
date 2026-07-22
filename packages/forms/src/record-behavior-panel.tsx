@@ -98,7 +98,7 @@ export function RecordBehaviorPanel({
               >
                 <span className={cn(
                   'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border',
-                  active ? 'border-primary bg-primary text-on-primary' : 'border-border-strong',
+                  active ? 'border-primary bg-primary text-primary-fg' : 'border-border-strong',
                 )}>
                   {active ? <Check size={11} /> : null}
                 </span>

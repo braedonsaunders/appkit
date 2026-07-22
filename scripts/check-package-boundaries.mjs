@@ -31,7 +31,7 @@ const packages = new Map(
 const appkitRuntimeAllowlists = {
   '@appkit/db': [],
   '@appkit/ui': ['@appkit/tokens'],
-  '@appkit/forms-core': [],
+  '@appkit/forms-core': ['@appkit/i18n'],
   '@appkit/dashboard': ['@appkit/analytics'],
   '@appkit/notifications': [],
   '@appkit/workflows': [],
@@ -52,7 +52,7 @@ const forbiddenRuntimeDependencies = {
     '@tiptap/starter-kit',
     'react-grid-layout',
   ],
-  '@appkit/forms-core': ['@appkit/email-render', '@appkit/i18n', '@appkit/tokens'],
+  '@appkit/forms-core': ['@appkit/email-render', '@appkit/tokens'],
   '@appkit/design-studio': ['fabric'],
   '@appkit/pdf': ['isomorphic-dompurify', 'puppeteer-core'],
   '@appkit/forms-pdf': ['@appkit/design-studio', '@appkit/pdf'],

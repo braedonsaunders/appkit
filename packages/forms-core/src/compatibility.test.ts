@@ -4,6 +4,7 @@ import {
   FIELD_TYPES,
   emptyFormSchema,
   formSchemaV1Schema,
+  hasTextCompanion,
   parseFormSchema,
   profileFieldIds,
   recipientTargetSchema,
@@ -32,6 +33,8 @@ test('accepts a plain-string schema without workflow metadata', () => {
   expect(result.ok).toBe(true)
   expect(FIELD_TYPES.currency.valueKind).toBe('number')
   expect(FIELD_TYPES.party.optionsSource).toBe('parties')
+  expect(hasTextCompanion('party')).toBe(true)
+  expect(hasTextCompanion('gl_account')).toBe(true)
 })
 
 test('accepts a localized schema with workflow metadata', () => {

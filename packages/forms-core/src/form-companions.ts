@@ -13,7 +13,8 @@
 //   {{#each <sectionId>}}  repeating-section rows keyed by field id
 //   {{#each <fieldId>}}    table-field rows keyed by column key
 
-import { entityKindForPicker, type I18nString } from '@appkit/forms-core'
+import { entityKindForPicker } from './entity-attrs'
+import type { I18nString } from './schema'
 import { DEFAULT_LOCALE, localizeText, type AppLocale } from '@appkit/i18n'
 
 /** Content-only field types that carry no mergeable value. */
@@ -46,6 +47,8 @@ const TEXT_COMPANION_TYPES = new Set([
   'photo_ai',
   'photo_annotated',
   'datetime',
+  'gl_account',
+  'party',
 ])
 
 export function hasTextCompanion(type: string): boolean {

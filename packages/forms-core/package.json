@@ -28,6 +28,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
+    "@appkit/i18n": "workspace:*",
     "htmlparser2": "^10.1.0",
     "isomorphic-dompurify": "^3.18.0",
     "zod": "^4.4.3"

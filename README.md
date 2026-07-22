@@ -147,8 +147,8 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 | `@appkit/tokens`        | Semantic light/dark brand, shape, elevation, and motion tokens surfaced through Tailwind v4.                                                                                  |
 | `@appkit/ui`            | Accessible primitives, topbar/sidebar app shell, account launcher, search, notifications, settings, record and paged tables, subtabs, drawers, uploads, signatures, page layouts, and route transitions. |
 | `@appkit/dashboard`     | Responsive drag/resize dashboards, reusable insight cards, a card library, query studio, visualizations, lifecycle controls, and optional Drizzle persistence.                 |
-| `@appkit/forms-core`    | Versioned schemas, field registry, formulas, conditional logic, validation, scoring, and source-compatible business and safety automation contracts.                          |
-| `@appkit/forms`         | The complete production fill runtime—revision-safe drafts, inline saves, validation, guided steps, data-bound controls, repeating tables, media, signatures, sketches, responsive canvas layouts, and typed host adapters—plus controlled form-authoring components. |
+| `@appkit/forms-core`    | Versioned schemas, field and companion-value registry, formulas, conditional logic, validation, scoring, and source-compatible business and safety automation contracts.                          |
+| `@appkit/forms`         | The complete production designer and fill runtime: 1/3–2/3 authoring, fields/canvas/tabs/sign-off, record/list/action/access configuration, workflow bridge, immutable publishing, revision-safe drafts, guided steps, data-bound controls, repeating tables, media, signatures, and typed host adapters. |
 | `@appkit/editor`        | Optional controlled TipTap rich-text authoring.                                                                                                                               |
 | `@appkit/customization` | Versioned form layouts, custom fields, and the production record-list system: saved views, subtabs, search, filters, sorting, paging, drill-through, designers, plus optional memory and tenant-scoped Drizzle persistence. Your app supplies its record catalogue once; AppKit keeps every editor, validator, and store on that contract. |
 | `@appkit/design-studio` | Bounded multi-artboard print design, safe HTML/print output, and an interactive Fabric workspace with transforms, layers, zoom, and full property editing.                     |
@@ -205,7 +205,7 @@ product’s record names, routes, queries, or permissions inside AppKit.
 | `@appkit/emails`          | Resend, SendGrid, Mailgun, Postmark, secure SMTP, and development-only loopback SMTP behind one tenant-aware contract.            |
 | `@appkit/sms`             | Twilio, Vonage, MessageBird, Plivo, and Telnyx with strict addressing and credential-safe failures.                                |
 | `@appkit/pdf`             | Pure-JS PDFKit reports/statements plus optional authored-template and hardened Chromium rendering entries.                         |
-| `@appkit/forms-documents` | Localized form companion fields, print styles, and bounded authored PDF templates.                                                 |
+| `@appkit/forms-documents` | Form print styles and bounded authored PDF templates over the canonical forms-core companion-value contract.                       |
 | `@appkit/forms-pdf`       | Form summaries, repeating tables, photos, hardened browser/resource rendering, record/report templates, and full-bleed design documents. |
 | `@appkit/crypto`          | AES-256-GCM sealed secrets with configurable HKDF-derived application keys.                                                        |
 | `@appkit/jobs`            | BullMQ/Redis producers and workers, lazy connections, bounded readiness, payload guards, rate limits, and hardened Web Push.      |
