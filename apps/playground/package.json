@@ -28,6 +28,7 @@
     "@appkit/forms-pdf": "workspace:*",
     "@appkit/i18n": "workspace:*",
     "@appkit/integrations": "workspace:*",
+    "@appkit/iam": "workspace:*",
     "@appkit/notifications": "workspace:*",
     "@appkit/pdf": "workspace:*",
     "@appkit/reports": "workspace:*",

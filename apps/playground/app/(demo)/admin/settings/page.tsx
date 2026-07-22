@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Bell, GripVertical, Settings, Shield } from 'lucide-react'
+import { Bell, GripVertical, Settings } from 'lucide-react'
 import {
   Button,
   Input,
@@ -22,26 +22,6 @@ const nextLink: LinkRender = ({ href, children, className }) => (
   </Link>
 )
 
-const ROLES = [
-  { value: 'owner', label: 'Owner' },
-  { value: 'admin', label: 'Admin' },
-  { value: 'editor', label: 'Editor' },
-  { value: 'viewer', label: 'Viewer' },
-]
-const PERMISSIONS = [
-  { key: 'billing', label: 'Manage billing', desc: 'View and change the subscription and payment methods.' },
-  { key: 'members', label: 'Invite & manage members', desc: 'Add, remove, and change roles for people.' },
-  { key: 'roles', label: 'Manage roles', desc: 'Create roles and edit their permissions.' },
-  { key: 'content', label: 'Edit records', desc: 'Create and modify records across the workspace.' },
-  { key: 'delete', label: 'Delete records', desc: 'Permanently remove records.' },
-  { key: 'reports', label: 'View reports', desc: 'Access analytics and financial reports.' },
-]
-const DEFAULT_PERMS: Record<string, Record<string, boolean>> = {
-  owner: { billing: true, members: true, roles: true, content: true, delete: true, reports: true },
-  admin: { billing: true, members: true, roles: true, content: true, delete: true, reports: true },
-  editor: { billing: false, members: false, roles: false, content: true, delete: false, reports: true },
-  viewer: { billing: false, members: false, roles: false, content: false, delete: false, reports: true },
-}
 const NAV_ITEMS = ['Dashboard', 'Invoices', 'Expenses', 'Reports', 'Customers', 'Settings']
 
 const NAV: SettingsNavGroup[] = [
@@ -52,10 +32,6 @@ const NAV: SettingsNavGroup[] = [
       { key: 'navigation', label: 'Navigation', icon: <GripVertical /> },
       { key: 'notifications', label: 'Notifications', icon: <Bell /> },
     ],
-  },
-  {
-    label: 'Access',
-    items: [{ key: 'roles', label: 'Roles & permissions', icon: <Shield /> }],
   },
 ]
 
@@ -83,7 +59,6 @@ export default function SettingsPage() {
         linkRender={nextLink}
       >
         {active === 'general' ? <GeneralSettings /> : null}
-        {active === 'roles' ? <RolesSettings /> : null}
         {active === 'navigation' ? <NavigationSettings /> : null}
         {active === 'notifications' ? <NotificationSettings /> : null}
       </SettingsShell>
@@ -169,33 +144,6 @@ function GeneralSettings() {
         <SettingsRow title="Reset workspace settings" description="Restore the browser demo defaults.">
           <Button variant="destructive" onClick={reset}>Reset</Button>
         </SettingsRow>
-      </SettingsSection>
-    </>
-  )
-}
-
-function RolesSettings() {
-  const [role, setRole] = React.useState('editor')
-  const [perms, setPerms] = React.useState<Record<string, boolean>>(DEFAULT_PERMS.editor!)
-  const pick = (value: string) => {
-    setRole(value)
-    setPerms({ ...(DEFAULT_PERMS[value] ?? {}) })
-  }
-  return (
-    <>
-      <SettingsSection title="Role" description="Choose a role to view and edit its permissions.">
-        <SettingsRow title="Editing role">
-          <div className="w-48">
-            <SearchSelect value={role} onChange={pick} options={ROLES} />
-          </div>
-        </SettingsRow>
-      </SettingsSection>
-      <SettingsSection title="Permissions">
-        {PERMISSIONS.map((p) => (
-          <SettingsRow key={p.key} title={p.label} description={p.desc}>
-            <Switch checked={!!perms[p.key]} disabled={role === 'owner'} onChange={(e) => setPerms((prev) => ({ ...prev, [p.key]: e.target.checked }))} />
-          </SettingsRow>
-        ))}
       </SettingsSection>
     </>
   )

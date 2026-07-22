@@ -26,7 +26,7 @@ const HUB_GROUPS: AdminHubGroup[] = [
     accent: 'violet',
     cards: [
       { href: '/admin/users', title: 'Users', description: 'Invite and manage people', icon: <Users size={18} /> },
-      { href: '/admin/settings?s=roles', title: 'Roles', description: 'Roles and permissions', icon: <Shield size={18} /> },
+      { href: '/admin/roles', title: 'Roles', description: 'Roles, permissions, members, and data scope', icon: <Shield size={18} /> },
     ],
   },
   {

@@ -4,10 +4,13 @@ export { createDb, type AppkitDb, type TenantCtx } from './client'
 export * as schema from './schema'
 export {
   tenants,
+  tenantStatus,
   users,
   memberships,
+  membershipStatus,
   roles,
   roleAssignments,
+  permissionOverrideEffect,
   userPermissionOverrides,
   IDENTITY_TENANT_TABLES,
   type RoleScope,

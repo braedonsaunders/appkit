@@ -15,6 +15,7 @@ export const FEATURE_PACKAGES = {
   extensions: ['@appkit/apps', '@appkit/endpoints', '@appkit/sandbox', '@appkit/scripts'],
   forms: ['@appkit/editor', '@appkit/forms', '@appkit/forms-core', '@appkit/i18n'],
   integrations: ['@appkit/integrations', '@appkit/sync'],
+  identity: ['@appkit/auth', '@appkit/db', '@appkit/iam', '@appkit/tenant'],
   platform: ['@appkit/api', '@appkit/auth', '@appkit/crypto', '@appkit/events'],
   tenancy: ['@appkit/db', '@appkit/tenant'],
   workflows: ['@appkit/jobs', '@appkit/workflows'],
@@ -59,7 +60,7 @@ export async function scaffoldProject(options: ScaffoldOptions): Promise<{ direc
     'react-dom': '^19.2.7',
   })
   if (features.includes('analytics')) Object.assign(dependencies, { 'react-grid-layout': '^2.2.3' })
-  if (features.includes('tenancy')) Object.assign(dependencies, { 'drizzle-orm': '^0.45.2', pg: '^8.13.1' })
+  if (features.includes('tenancy') || features.includes('identity')) Object.assign(dependencies, { 'drizzle-orm': '^0.45.2', pg: '^8.13.1' })
   if (features.includes('workflows')) Object.assign(dependencies, { '@xyflow/react': '^12.10.0' })
 
   await writeProjectFiles(directory, {

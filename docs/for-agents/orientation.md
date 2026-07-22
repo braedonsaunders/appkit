@@ -101,6 +101,18 @@ the tenant-scoped query and navigation. `NotificationsBell`, `ThemeProvider` /
 `getThemeScript` / `ThemeToggle`, `NavigationModeProvider`, and `UiLinkProvider` /
 `UiBackLinkProvider` complete the shared shell runtime.
 
+**Identity administration (`@appkit/iam/react`)** — `RolesAdmin` provides the
+production searchable role list, complete create/edit/duplicate/delete drawer,
+grouped permission matrix, role detail tabs, member assignment, and record-data
+scope authoring. `UsersAdmin` adds invitation, lifecycle state, locale override,
+multi-role assignment, per-assignment scope, protected-member behavior, and
+per-user grant/deny exceptions. `AuditAdmin` provides actor/action/record
+search, a navigable event list, before/after field diffs, structured snapshots,
+request metadata, and a fullscreen detail drawer. The application injects its
+permission catalogue and hierarchy options; `@appkit/iam/drizzle` persists the
+same service contract against the canonical RLS identity/audit schema, while
+`@appkit/iam/memory` supports browser-only, local-first, and test consumers.
+
 ## 3. Composition patterns
 
 - **Records are flyout-first.** Create/view/edit a record in a `Drawer` /
@@ -112,9 +124,9 @@ the tenant-scoped query and navigation. `NotificationsBell`, `ThemeProvider` /
   server query, and render `SearchInput` + `FilterChips` + `SortableTh` +
   `Pagination`. Wire `ListNavProvider` once to the app router so controls soft-
   navigate without full reloads. Use prefixed keys when several lists share a
-  route. `apps/playground/app/(demo)/admin/users/page.tsx` is the live
-  reference. `RecordList` remains the controlled choice for bounded, already-
-  loaded data. Never render an unbounded or unsearchable table.
+  route. `RecordList` remains the controlled choice for bounded, already-loaded
+  data; the IAM React package uses its paginated service boundary instead of
+  owning framework routes. Never render an unbounded or unsearchable table.
 - **Line-item editors** use `LineGrid` — columns are data (`text`/`amount`/
   `select`/`readonly`+`render`); it's controlled (rows in, rows out).
 - **Menus** use `useContextMenu()` + `<ContextMenu>` (kebab button →

@@ -59,6 +59,9 @@ imports it improves.
 - `packages/tenant` — request context + RBAC on top of `@appkit/db`:
   `RequestContext`, `can` / `assertCan` (wildcards, read-tiers, per-user
   grant/deny overrides), `resolveMembershipAccess`, super-admin.
+- `packages/iam` — optional full identity administration over those primitives:
+  roles, memberships, scoped assignments, per-user overrides, invitation
+  lifecycle, audit, production React screens, and memory/Drizzle adapters.
 - `packages/editor`, `packages/forms-documents`, `packages/reports`,
   `packages/pdf`, `packages/forms-pdf`, and `packages/design-studio` — optional
   rich-text and document/print layers over their dependency-light contracts.

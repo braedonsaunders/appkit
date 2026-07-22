@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { roleAssignments, roles, userPermissionOverrides, type RoleScope } from '@appkit/db'
+import { applyPermissionOverrides, permissionSetCovers } from '@appkit/iam'
 
 /** The minimal shape `can`/`assertCan` need — a resolved request context. */
 export type AccessCtx = {
@@ -38,28 +39,11 @@ export function assertNotImpersonating(
  *  wildcards grant any `module.x`; `.read.{all,site,self}` tiers cascade. */
 export function can(ctx: AccessCtx, perm: string): boolean {
   if (ctx.isSuperAdmin) return true
-  if (ctx.permissions.has(perm)) return true
-  if (readTierCovers(ctx.permissions, perm)) return true
-  for (const p of ctx.permissions) {
-    if (p.endsWith('.*') && perm.startsWith(p.slice(0, -1))) return true
-  }
-  return false
+  return permissionSetCovers(ctx.permissions, perm)
 }
 
 export function assertCan(ctx: AccessCtx, perm: string): void {
   if (!can(ctx, perm)) throw new ForbiddenError(perm)
-}
-
-// A `module.read.all` grant implies `.read.site` and `.read.self`; `.read.site`
-// implies `.read.self`.
-function readTierCovers(permissions: Set<string>, requested: string): boolean {
-  const match = /^(.+)\.read\.(all|site|self)$/.exec(requested)
-  if (!match) return false
-  const [, prefix, tier] = match
-  if (!prefix) return false
-  if (tier === 'site') return permissions.has(`${prefix}.read.all`)
-  if (tier === 'self') return permissions.has(`${prefix}.read.all`) || permissions.has(`${prefix}.read.site`)
-  return false
 }
 
 /** Narrow a role-assignment list to a single "switched-into" role, if set. */
@@ -102,37 +86,13 @@ export async function resolveMembershipAccess(
     .from(userPermissionOverrides)
     .where(eq(userPermissionOverrides.membershipId, membershipId))
 
-  for (const o of overrides) if (o.effect === 'grant') permissions.add(o.permission)
-  applyPermissionDenies(
+  const resolved = applyPermissionOverrides(
     permissions,
-    overrides.filter((o) => o.effect === 'deny').map((o) => o.permission),
+    overrides,
     permissionCatalogue,
   )
 
-  return { permissions, scopes, appliedRoleId }
-}
-
-function applyPermissionDenies(
-  permissions: Set<string>,
-  denies: string[],
-  catalogue: readonly string[],
-): void {
-  const specificDenies = denies.filter((d) => !d.endsWith('.*'))
-  // A specific deny under a wildcard grant expands the wildcard to the concrete,
-  // non-denied keys so the rest of the grant survives.
-  for (const grant of [...permissions]) {
-    if (!grant.endsWith('.*')) continue
-    const prefix = grant.slice(0, -1)
-    if (!specificDenies.some((d) => d.startsWith(prefix))) continue
-    permissions.delete(grant)
-    for (const key of catalogue) if (key.startsWith(prefix)) permissions.add(key)
-  }
-  for (const denied of denies) {
-    permissions.delete(denied)
-    if (!denied.endsWith('.*')) continue
-    const prefix = denied.slice(0, -1)
-    for (const grant of [...permissions]) if (grant.startsWith(prefix)) permissions.delete(grant)
-  }
+  return { permissions: resolved, scopes, appliedRoleId }
 }
 
 // --- Visibility scopes ------------------------------------------------------

@@ -52,3 +52,31 @@ test('refuses to overwrite a non-empty target', async () => {
     await rm(root, { recursive: true, force: true })
   }
 })
+
+test('identity capability installs the complete optional IAM stack', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'create-appkit-identity-'))
+  const target = join(root, 'workspace')
+  try {
+    const result = await scaffoldProject({
+      directory: target,
+      features: ['identity'],
+      install: false,
+      initializeGit: false,
+    })
+    assert.deepEqual(result.packages, [
+      '@appkit/tokens',
+      '@appkit/ui',
+      '@appkit/auth',
+      '@appkit/db',
+      '@appkit/iam',
+      '@appkit/tenant',
+    ])
+    const manifest = await readGeneratedPackage(target)
+    const dependencies = manifest.dependencies as Record<string, string>
+    assert.equal(dependencies['@appkit/iam'], 'latest')
+    assert.equal(dependencies['drizzle-orm'], '^0.45.2')
+    assert.equal(dependencies.pg, '^8.13.1')
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
