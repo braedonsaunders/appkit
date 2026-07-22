@@ -1,14 +1,40 @@
 import { reportColumnExpression, type ReportEntity } from './entities'
+import { resolvePreset } from './period-presets'
 
 export const REPORT_FILTER_OPERATORS = [
   'eq', 'neq', 'in', 'not_in', 'gte', 'lte', 'contains',
   'is_null', 'is_not_null', 'is_true', 'is_false',
   'between_days_ago', 'due_within_days', 'since_today',
   'this_week', 'this_month', 'this_year', 'before_now',
+  'period_preset',
 ] as const
 export type ReportFilterOperator = (typeof REPORT_FILTER_OPERATORS)[number]
 export type ReportRule = { field: string; operator: ReportFilterOperator; value?: string | number | boolean | string[] | number[] | null }
 export type ReportRuleGroup = { combinator: 'and' | 'or'; not?: boolean; rules: (ReportRule | ReportRuleGroup)[] }
+
+export type ReportFilterOperatorMeta = { key: ReportFilterOperator; label: string; needsValue: 'none' | 'one' | 'list' }
+const META_ROWS: [ReportFilterOperator, string, ReportFilterOperatorMeta['needsValue']][] = [
+  ['eq', 'is', 'one'], ['neq', 'is not', 'one'], ['in', 'is any of', 'list'], ['not_in', 'is none of', 'list'],
+  ['gte', 'is at least', 'one'], ['lte', 'is at most', 'one'], ['contains', 'contains', 'one'],
+  ['is_null', 'is empty', 'none'], ['is_not_null', 'is not empty', 'none'], ['is_true', 'is true', 'none'], ['is_false', 'is false', 'none'],
+  ['between_days_ago', 'is within the last days', 'one'], ['due_within_days', 'is due within days', 'one'],
+  ['since_today', 'is today', 'none'], ['this_week', 'is this week', 'none'], ['this_month', 'is this month', 'none'], ['this_year', 'is this year', 'none'], ['before_now', 'is before now', 'none'],
+  ['period_preset', 'is in period', 'one'],
+]
+const OPERATOR_META = Object.fromEntries(META_ROWS.map(([key, label, needsValue]) => [key, { key, label, needsValue }])) as Record<ReportFilterOperator, ReportFilterOperatorMeta>
+
+export function operatorsForKind(kind: ReportEntity['columns'][number]['kind']): ReportFilterOperatorMeta[] {
+  const keys: ReportFilterOperator[] = kind === 'boolean'
+    ? ['is_true', 'is_false', 'is_null', 'is_not_null']
+    : kind === 'date' || kind === 'timestamp'
+      ? ['eq', 'gte', 'lte', 'period_preset', 'between_days_ago', 'due_within_days', 'since_today', 'this_week', 'this_month', 'this_year', 'before_now', 'is_null', 'is_not_null']
+      : kind === 'number'
+        ? ['eq', 'neq', 'gte', 'lte', 'in', 'not_in', 'is_null', 'is_not_null']
+        : kind === 'enum'
+          ? ['eq', 'neq', 'in', 'not_in', 'is_null', 'is_not_null']
+          : ['eq', 'neq', 'contains', 'in', 'not_in', 'is_null', 'is_not_null']
+  return keys.map((key) => OPERATOR_META[key])
+}
 
 export class SqlParameters {
   readonly values: unknown[] = []
@@ -20,6 +46,7 @@ export function compileReportRule(
   rule: ReportRule,
   parameters: SqlParameters,
   now = new Date(),
+  fiscalStartMonth = 1,
 ): string | null {
   const column = reportColumnExpression(entity, rule.field)
   if (!column) return null
@@ -53,6 +80,12 @@ export function compileReportRule(
     case 'this_month': return currentPeriod(column, 'month')
     case 'this_year': return currentPeriod(column, 'year')
     case 'before_now': return `${column} < now()`
+    case 'period_preset': {
+      if (typeof value !== 'string') return null
+      const range = resolvePreset(value, { today: now.toISOString().slice(0, 10), startMonth: fiscalStartMonth })
+      if (!range) return null
+      return `(${column} >= ${parameters.add(range.from)} AND ${column} <= ${parameters.add(range.to)})`
+    }
   }
 }
 
@@ -60,7 +93,7 @@ export function compileReportRuleGroup(
   entity: ReportEntity,
   group: ReportRuleGroup,
   parameters: SqlParameters,
-  options: { maxDepth?: number; maxRules?: number; now?: Date } = {},
+  options: { maxDepth?: number; maxRules?: number; now?: Date; fiscalStartMonth?: number } = {},
 ): string | null {
   let count = 0
   const maxDepth = options.maxDepth ?? 5
@@ -72,7 +105,7 @@ export function compileReportRuleGroup(
       if (++count > maxRules) throw new Error('Filter tree contains too many rules')
       const compiled = isRuleGroup(item)
         ? walk(item, depth + 1)
-        : compileReportRule(entity, item, parameters, options.now)
+        : compileReportRule(entity, item, parameters, options.now, options.fiscalStartMonth)
       if (compiled) parts.push(compiled)
     }
     if (!parts.length) return null

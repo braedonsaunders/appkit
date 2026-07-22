@@ -2,6 +2,7 @@
 @import '@appkit/ui/styles.css';
 @import '@appkit/dashboard/styles.css';
 @import '@appkit/design-studio/styles.css';
+@import '@appkit/reports/styles.css';
 @import '@appkit/forms/styles.css';
 @import '@appkit/workflows/styles.css';
 @import '@appkit/customization/styles.css';
@@ -16,7 +17,6 @@
 @source '../../../packages/editor/src';
 @source '../../../packages/forms/src';
 @source '../../../packages/notifications/src';
-@source '../../../packages/reports/src';
 @source '../../../packages/workflows/src';
 @source '../../../packages/customization/src';
 

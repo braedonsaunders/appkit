@@ -43,7 +43,7 @@ export function compileCustomReport(
     : compileRows(entity, query, tenantId, options)
 }
 
-function compileRows(entity: ReportEntity, query: CustomReportQuery, tenantId: string, options: { maxRows?: number }): CompiledCustomReport {
+function compileRows(entity: ReportEntity, query: CustomReportQuery, tenantId: string, options: { maxRows?: number; fiscalStartMonth?: number }): CompiledCustomReport {
   const keys = unique(query.columns.filter((key) => reportColumnExpression(entity, key)))
   if (!keys.length) throw new Error('A row report requires at least one valid column')
   const groupBy = query.groupBy && reportColumnExpression(entity, query.groupBy) ? query.groupBy : null
@@ -52,7 +52,7 @@ function compileRows(entity: ReportEntity, query: CustomReportQuery, tenantId: s
   const where = [`${entity.tenantColumn} = ${parameters.add(tenantId)}`]
   appendImplicitFilters(entity, where, parameters)
   if (query.filters) {
-    const filters = compileReportRuleGroup(entity, query.filters, parameters)
+    const filters = compileReportRuleGroup(entity, query.filters, parameters, { fiscalStartMonth: options.fiscalStartMonth })
     if (filters) where.push(filters)
   }
   const sorts = (query.sorts?.length ? query.sorts : entity.defaultSort ? [entity.defaultSort] : [])
@@ -72,7 +72,7 @@ function compileSummary(entity: ReportEntity, query: CustomReportQuery, tenantId
   const where = [`${entity.tenantColumn} = ${parameters.add(tenantId)}`]
   appendImplicitFilters(entity, where, parameters)
   if (query.filters) {
-    const filters = compileReportRuleGroup(entity, query.filters, parameters)
+    const filters = compileReportRuleGroup(entity, query.filters, parameters, { fiscalStartMonth: options.fiscalStartMonth })
     if (filters) where.push(filters)
   }
   const dimensionSql = breakouts.map((item, index) => `${breakoutExpression(entity, item, startMonth)} AS "d${index}"`)

@@ -430,12 +430,21 @@ same feature-owned pattern under `@appkit/notifications/schema`.
 refinement, metadata-backed custom fields, tenant-bound row and summary query
 compilation, fiscal breakouts, grouped result shaping, saved definition
 registries, document layout/rendering, DST-safe cadence, schedule policy, and
-lease-based idempotent run claiming. `@appkit/reports/react` exports the production-shaped `ReportStudio`:
-a one-third scrolling build rail and two-thirds live document preview with row,
-summary, filter, page, schedule, run, and save interactions. Applications inject
-the data catalogue, tenant-scoped execution, persistence, and export/delivery
+lease-based idempotent run claiming. `@appkit/reports/react` preserves the
+production report surface: `ReportStudio` has the one-third scrolling build rail
+and two-thirds live paper preview; `PaperView` and `ReportPaper` provide the
+shared document presentation; `StatementMatrixTable` keeps grouped headings,
+hierarchy, totals, collapse/expand, and amount drill-through; and
+`ReportDrillDrawer`, `ReportFilterBar`, and `ReportExportMenu` retain supporting
+rows, pagination, compact filters, PDF-backed print, and multi-format actions.
+The recursive filter editor, ordered/renamable columns, three-level sort, page
+setup, schedule, run, and save controls write the same contracts the compiler
+consumes. Applications inject their catalogue, tenant-scoped execution,
+persistence, typed drill target/loader, native record opener, and export/delivery
 transport. Domain-specific built-in definitions remain in the consuming
-application rather than becoming framework defaults.
+application rather than becoming framework defaults. Applications rendering
+these React surfaces import `@appkit/reports/styles.css` alongside
+`@appkit/ui/styles.css` so Tailwind v4 scans the packaged components.
 
 `@appkit/pdf` provides a pure-JS PDFKit report,
 table, and financial-statement renderer. Bounded template rendering is under

@@ -175,7 +175,7 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 | Package                 | What it gives your app                                                                                                                                                |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@appkit/analytics`     | App-owned semantic catalogues, parsed formulas, tenant-bound parameterized SQL, result contracts, and a visualization registry.                                       |
-| `@appkit/reports`       | Governed SQL, relationship refinement, custom fields, fiscal/grouped results, document output, DST-safe cadence, durable run claims, and a full report studio.     |
+| `@appkit/reports`       | Governed SQL, recursive filters, fiscal/grouped results, a 1/3–2/3 report studio, paper and statement viewers, drilldown drawers, print/export, schedules, and durable run claims. |
 | `@appkit/workflows`     | Multi-flow visual studio, compatible templates, typed inspectors, bounded graphs, durable replay-safe actions, pause/resume approval gates, any/all quorum, HMAC email decisions, and optional Drizzle storage. |
 | `@appkit/sync`          | Connector registry, cursors, record caps, dry runs, crosswalks, fail-closed authoritative snapshots, CSV/transforms, hardened egress, and optional SQL drivers.       |
 | `@appkit/integrations`  | Trigger/destination registry, token mapping, send-once policy, partial retry ledgers, and optional HTTP, Slack/Teams, Sheets, email, SQL, and Drizzle adapters.       |

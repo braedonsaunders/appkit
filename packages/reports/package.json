@@ -4,10 +4,14 @@
   "description": "Composable saved-report, scheduling, execution, and document-rendering contracts.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./document": "./src/document-entry.ts",
     "./react": "./src/react.ts",
+    "./styles.css": "./src/styles.css",
     "./package.json": "./package.json"
   },
   "main": "./src/index.ts",
