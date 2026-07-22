@@ -13,6 +13,7 @@
     "./schema": "./src/schema.ts",
     "./drizzle": "./src/drizzle.ts",
     "./react": "./src/react.ts",
+    "./approval-react": "./src/approval-react.ts",
     "./styles.css": "./src/styles.css",
     "./package.json": "./package.json"
   },

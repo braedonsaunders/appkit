@@ -140,6 +140,12 @@ export { SearchSelect, type SearchSelectProps, type SelectOption } from './searc
 export { Select, type SelectProps } from './select'
 export { Dialog, type DialogProps, type DialogSize } from './dialog'
 export {
+  PromptRoot,
+  promptDialog,
+  cancelPromptDialog,
+  type PromptDialogOptions,
+} from './prompt-dialog'
+export {
   toast,
   Toaster,
   type ToastT,

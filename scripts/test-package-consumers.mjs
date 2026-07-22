@@ -36,6 +36,7 @@ async function verifyNodeAndReactConsumer() {
         type: 'module',
         dependencies: {
           ...tarballs,
+          '@xyflow/react': '^12.10.0',
           'drizzle-orm': '^0.45.2',
           fabric: '^7.0.0',
           'lucide-react': '^1.24.0',
@@ -56,7 +57,7 @@ import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { parseFormula } from '@appkit/analytics'
 import { color } from '@appkit/tokens'
-import { Button, PagedTable, SubtabNav } from '@appkit/ui'
+import { Button, PagedTable, PromptRoot, SubtabNav } from '@appkit/ui'
 import { emptyFormSchema, validateFormSchema } from '@appkit/forms-core'
 import { createDesignDocument } from '@appkit/design-studio'
 import { DesignStudioEditor } from '@appkit/design-studio/react'
@@ -65,6 +66,8 @@ import { defaultListView } from '@appkit/customization'
 import { createMemoryListViewStore } from '@appkit/customization/memory'
 import { createMemoryAttachmentAdapter } from '@appkit/storage/memory'
 import { AttachmentPanel } from '@appkit/storage/react'
+import { createMemoryRecordApprovalAdapter } from '@appkit/workflows'
+import { ApprovalActions, ApprovalHistory, RecordApprovalProvider } from '@appkit/workflows/approval-react'
 
 assert.equal(parseFormula('count()', { resolveField: () => null }).ok, true)
 assert.equal(color('primary').startsWith('rgb('), true)
@@ -75,6 +78,9 @@ assert.match(renderToStaticMarkup(React.createElement(DesignStudioEditor, { docu
 assert.match(renderToStaticMarkup(React.createElement(ReportPaper, { organization: 'Example', title: 'Report' }, React.createElement(ReportTable, null, React.createElement(ReportTableBody, null, React.createElement(ReportTableRow, null, React.createElement(ReportTableCell, null, 'Ready')))))), /data-report-paper/)
 assert.match(renderToStaticMarkup(React.createElement(PagedTable, { rows: [{ id: '1', name: 'Ready' }], columns: [{ key: 'name', header: 'Name', cell: row => row.name }], empty: 'Empty', rowKey: row => row.id })), /Ready/)
 assert.match(renderToStaticMarkup(React.createElement(SubtabNav, { tabs: [{ key: 'details', label: 'Details' }], active: 'details' })), /aria-selected="true"/)
+assert.equal(renderToStaticMarkup(React.createElement(PromptRoot)), '')
+const approvalAdapter = createMemoryRecordApprovalAdapter()
+assert.equal(renderToStaticMarkup(React.createElement(RecordApprovalProvider, { adapter: approvalAdapter }, React.createElement(React.Fragment, null, React.createElement(ApprovalActions, { subjectKind: 'record', subjectId: 'one' }), React.createElement(ApprovalHistory, { subjectKind: 'record', subjectId: 'one' })))), '')
 const attachmentAdapter = createMemoryAttachmentAdapter()
 assert.match(renderToStaticMarkup(React.createElement(AttachmentPanel, { targetTable: 'records', targetId: 'one', canEdit: true, adapter: attachmentAdapter })), /Attachments/)
 const listStore = createMemoryListViewStore({ createId: () => 'view-1' })
@@ -94,6 +100,9 @@ import type { ReportDrillDrawerText, ReportStudioValue, StatementMatrixView } fr
 import type { DrizzleListViewStoreOptions } from '@appkit/customization/drizzle'
 import type { MemoryListViewStoreOptions } from '@appkit/customization/memory'
 import type { PersistedListViewScope } from '@appkit/customization/persistence-schema'
+import type { PromptDialogOptions } from '@appkit/ui'
+import type { RecordApprovalAdapter, RecordApprovalState } from '@appkit/workflows'
+import type { ApprovalActionsProps, ApprovalHistoryProps, RecordApprovalProviderProps } from '@appkit/workflows/approval-react'
 ${typePackages.map((_, index) => `type PackageContract${index} = typeof Package${index}`).join('\n')}
 ${typePackages.map((_, index) => `void (null as unknown as PackageContract${index})`).join('\n')}
 void (null as unknown as PagedColumn<{ id: string }>)
@@ -109,6 +118,12 @@ void (null as unknown as StatementMatrixView)
 void (null as unknown as DrizzleListViewStoreOptions)
 void (null as unknown as MemoryListViewStoreOptions)
 void (null as unknown as PersistedListViewScope)
+void (null as unknown as PromptDialogOptions)
+void (null as unknown as RecordApprovalAdapter)
+void (null as unknown as RecordApprovalState)
+void (null as unknown as ApprovalActionsProps)
+void (null as unknown as ApprovalHistoryProps)
+void (null as unknown as RecordApprovalProviderProps)
 `,
   )
   await writeFile(

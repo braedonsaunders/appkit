@@ -33,6 +33,7 @@ test('scaffolds a complete AppKit Next application without performing external a
     assert.match(await readFile(join(target, 'src/components/app-frame.tsx'), 'utf8'), /UiLinkProvider/)
     assert.match(await readFile(join(target, 'src/components/app-frame.tsx'), 'utf8'), /PageTransition/)
     assert.match(await readFile(join(target, 'src/app/layout.tsx'), 'utf8'), /getThemeScript/)
+    assert.match(await readFile(join(target, 'src/app/layout.tsx'), 'utf8'), /<PromptRoot \/>/)
     const styles = await readFile(join(target, 'src/app/globals.css'), 'utf8')
     assert.match(styles, /@appkit\/ui\/styles\.css/)
     assert.match(styles, /@appkit\/forms\/styles\.css/)

@@ -54,7 +54,8 @@ out of applications that do not author rich text.
 **Feedback** — `Alert` + `AlertTitle` + `AlertDescription` (variants default/
 destructive/warning/success/info) · `toast` + `Toaster` (**sonner-compatible**:
 `toast.success/error/warning/info/loading/message/promise/custom/dismiss`) ·
-`Dialog` (centered modal) · `Progress` (determinate + indeterminate) · `Skeleton`
+`Dialog` (centered modal) · `promptDialog` + `PromptRoot` (one imperative,
+promise-based text prompt for rename/reason flows) · `Progress` (determinate + indeterminate) · `Skeleton`
 (shimmer) · `Spinner`.
 
 **Overlays & menus** — `Drawer` / `UrlDrawer` (the flyout: spring slide-in,
@@ -500,6 +501,10 @@ limits, cycle detection, linting, durable runs, replay-safe action claims, and
 approval gates. Its `any`/`all` quorum behavior and pause/resume seam come from
 the production reference implementations. Gate rows retain
 their branch plans so a worker can resume after a process restart.
+The root also exports the record-facing approval projection contract plus
+source-compatible HTTP and fully functional memory adapters. It preserves the
+production `subjectKind`/`subjectId`, record-state query, gate-decision body,
+409 concurrency result, pending-assignee, and approval-history shapes.
 `@appkit/workflows/react` adds the production multi-flow studio: workflow
 library rail, enable/rename/delete controls, full React Flow canvas, node
 toolbar, typed node registry, subject-compatible templates, drawer inspector,
@@ -507,6 +512,15 @@ and live lint. The application injects its subject profile, persistence adapter,
 optional message catalogue, and optional email-design adapter while the package
 owns the complete authoring interaction. The smaller single-graph
 `WorkflowBuilder` remains available for embedded editors.
+`RecordApprovalProvider`, `ApprovalActions`, and `ApprovalHistory` provide the
+production record-flyout experience: viewer-authorized approve/reject actions,
+a required rejection reason, pending-with feedback, shared state refresh, and
+the collapsible submitted/requested/approved/rejected/escalated/delegated event
+history. The provider injects authorization-bound state/decision I/O and the
+host router refresh seam; the controls retain their source caller shape.
+Dependency-sensitive consumers may import the same surface from
+`@appkit/workflows/approval-react` without loading the visual studio, React
+Flow, or form-authoring modules.
 `/approval-tokens` signs one-click decisions;
 `/schema` and `/drizzle` own definitions, runs, gates, and action executions.
 The two source-native automation schemas remain in `@appkit/forms-core`; apps
