@@ -538,16 +538,31 @@ adapter peer leaks into it. Both run as part of `pnpm lint`.
 `@appkit/customization` owns the production customization contracts: versioned
 form layouts, ordered header groups, editable line-item columns, record actions,
 saved list views, structured filters, defaults, parse/lint/refresh behavior, and
-custom-field definitions. `@appkit/customization/react` exports the extracted
+custom-field definitions. The framework-free root also resolves explicit,
+personal, organization, and system views in production order; merges newly
+registered/custom columns without losing user order; and executes the same
+search, filter, sort, and pagination contract in database-free applications.
+`@appkit/customization/react` exports the extracted `RecordListView`,
 `CustomizationStudio`, `FormDesigner`, `ListViewDesigner`, and
-`CustomFieldDesigner`. `CustomizationStudio` is the complete one-third
-library / two-thirds editor composition; the individual editors remain
-available for embedded use. Routing, tenant-scoped persistence, authorization,
-record labels, and roles are injected; the complete authoring interaction stays
-in the package. Import
+`CustomFieldDesigner`. `RecordListView` is the consuming record surface: saved
+view picker/defaults, compact quick filters, subtabs, sortable typed columns,
+record drill-through, actions, empty state, and controlled pagination. Currency,
+status semantics, labels, routing, and domain cell renderers are injected.
+
+`@appkit/customization/memory` supplies the complete authorization-aware saved
+view repository for database-free and local-first apps.
+`@appkit/customization/persistence-schema` owns the four extracted tenant tables
+for layouts/views and their per-user preferences, while
+`@appkit/customization/drizzle` supplies the RLS-compatible saved-view repository
+with ownership checks, default uniqueness, validated writes, preference upsert,
+and deletion cleanup. `CustomizationStudio` retains the complete one-third
+library / two-thirds editor composition; the individual editors remain available
+for embedded use. Applications inject permission decisions, record catalogues,
+labels, roles, and routing. Import
 `@appkit/customization/styles.css` wherever the React editors are used so
 Tailwind scans the optional package. The database-free `/customization`
-reference supplies browser-local persistence to that same packaged studio.
+reference connects that same studio to a working source-derived record list and
+browser-local persistence.
 
 The working references are `/workflows`, `/admin/integrations`,
 `/notifications`, and `/customization`.

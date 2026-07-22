@@ -1,15 +1,16 @@
 'use client'
 
 import * as React from 'react'
-import { defaultFormLayout, defaultListView } from '@appkit/customization'
+import { defaultFormLayout, defaultListView, getRecordType, mergeListViewColumns, queryRecordList, type SavedListView } from '@appkit/customization'
 import {
   CustomizationStudio,
+  RecordListView,
   type CustomFieldDefinition,
   type CustomizationDesignerAdapter,
   type FormDefinition,
   type ListViewDefinition,
 } from '@appkit/customization/react'
-import { Spinner } from '@appkit/ui'
+import { Badge, Button, Drawer, Spinner } from '@appkit/ui'
 
 const STORAGE_KEY = 'appkit-customization-studio-v2'
 
@@ -125,6 +126,7 @@ export function CustomizationWorkbench() {
   const [views, setViews] = React.useState(INITIAL_VIEWS)
   const [fields, setFields] = React.useState(INITIAL_FIELDS)
   const [hydrated, setHydrated] = React.useState(false)
+  const [surface, setSurface] = React.useState<'records' | 'customize'>('records')
 
   React.useEffect(() => {
     try {
@@ -189,20 +191,110 @@ export function CustomizationWorkbench() {
     )
   }
 
-  return (
-    <CustomizationStudio
-      adapter={adapter}
-      forms={forms}
-      views={views}
-      fields={fields}
-      initialRecordType="vendor_bill"
-      resolveLabel={(messageKey, fallback) => SOURCE_LABELS[messageKey] ?? fallback}
-      roleOptions={[
-        { value: 'administrator', label: 'Administrator' },
-        { value: 'manager', label: 'Manager' },
-        { value: 'member', label: 'Member' },
-      ]}
-      footer={<p className="text-xs text-fg-subtle">Changes are saved in this browser.</p>}
-    />
-  )
+  return <div className="flex h-full min-h-0 flex-col bg-bg">
+    <div className="flex shrink-0 gap-1 border-b border-border bg-surface px-4 pt-2">
+      <SurfaceTab active={surface === 'records'} onClick={() => setSurface('records')}>Record list</SurfaceTab>
+      <SurfaceTab active={surface === 'customize'} onClick={() => setSurface('customize')}>Customize</SurfaceTab>
+    </div>
+    <div className="min-h-0 flex-1 overflow-hidden">
+      {surface === 'records' ? <RecordListDemo views={views} fields={fields} onCustomize={() => setSurface('customize')} setViews={setViews} /> : <CustomizationStudio
+        adapter={adapter}
+        forms={forms}
+        views={views}
+        fields={fields}
+        initialRecordType="vendor_bill"
+        initialMode="views"
+        resolveLabel={(messageKey, fallback) => SOURCE_LABELS[messageKey] ?? fallback}
+        roleOptions={[
+          { value: 'administrator', label: 'Administrator' },
+          { value: 'manager', label: 'Manager' },
+          { value: 'member', label: 'Member' },
+        ]}
+        footer={<p className="text-xs text-fg-subtle">Changes are saved in this browser.</p>}
+      />}
+    </div>
+  </div>
 }
+
+const RECORD_ROWS = [
+  { id: '1', kind: 'bill', document_number: 'BILL-1048', party_name: 'Northwind Supply', document_date: '2026-07-18', reference_number: 'NW-8841', total: 18420, open_balance: 18420, status: 'pending_approval', cf_review_owner: 'Jordan Lee' },
+  { id: '2', kind: 'bill', document_number: 'BILL-1047', party_name: 'Summit Materials', document_date: '2026-07-17', reference_number: 'SM-5520', total: 7235.5, open_balance: 7235.5, status: 'approved', cf_review_owner: 'Alex Morgan' },
+  { id: '3', kind: 'credit', document_number: 'CR-0192', party_name: 'Northwind Supply', document_date: '2026-07-16', reference_number: 'CM-219', total: -940, open_balance: -940, status: 'posted', cf_review_owner: 'Jordan Lee' },
+  { id: '4', kind: 'bill', document_number: 'BILL-1046', party_name: 'Harbour Equipment', document_date: '2026-07-15', reference_number: 'HE-19002', total: 32600, open_balance: 32600, status: 'draft', cf_review_owner: 'Sam Rivera' },
+  { id: '5', kind: 'bill', document_number: 'BILL-1045', party_name: 'Cedar Electric', document_date: '2026-07-14', reference_number: 'CE-773', total: 4860, open_balance: 0, status: 'paid', cf_review_owner: 'Alex Morgan' },
+  { id: '6', kind: 'credit', document_number: 'CR-0191', party_name: 'Summit Materials', document_date: '2026-07-13', reference_number: 'CM-218', total: -1275, open_balance: 0, status: 'posted', cf_review_owner: 'Sam Rivera' },
+  { id: '7', kind: 'bill', document_number: 'BILL-1044', party_name: 'Fieldstone Rentals', document_date: '2026-07-12', reference_number: 'FR-6104', total: 9120, open_balance: 9120, status: 'pending_approval', cf_review_owner: 'Jordan Lee' },
+  { id: '8', kind: 'bill', document_number: 'BILL-1043', party_name: 'Atlas Concrete', document_date: '2026-07-11', reference_number: 'AC-884', total: 15680, open_balance: 0, status: 'paid', cf_review_owner: 'Alex Morgan' },
+  { id: '9', kind: 'bill', document_number: 'BILL-1042', party_name: 'Harbour Equipment', document_date: '2026-07-10', reference_number: 'HE-18977', total: 2440, open_balance: 2440, status: 'approved', cf_review_owner: 'Sam Rivera' },
+  { id: '10', kind: 'credit', document_number: 'CR-0190', party_name: 'Cedar Electric', document_date: '2026-07-09', reference_number: 'CM-217', total: -320, open_balance: -320, status: 'draft', cf_review_owner: 'Jordan Lee' },
+  { id: '11', kind: 'bill', document_number: 'BILL-1041', party_name: 'Northwind Supply', document_date: '2026-07-08', reference_number: 'NW-8798', total: 5840, open_balance: 5840, status: 'pending_approval', cf_review_owner: 'Alex Morgan' },
+  { id: '12', kind: 'bill', document_number: 'BILL-1040', party_name: 'Summit Materials', document_date: '2026-07-07', reference_number: 'SM-5481', total: 11200, open_balance: 0, status: 'paid', cf_review_owner: 'Sam Rivera' },
+]
+
+function RecordListDemo({ views, fields, onCustomize, setViews }: { views: ListViewDefinition[]; fields: CustomFieldDefinition[]; onCustomize: () => void; setViews: React.Dispatch<React.SetStateAction<ListViewDefinition[]>> }) {
+  const meta = getRecordType('vendor_bill')!
+  const available = views.filter((view) => view.recordType === 'vendor_bill')
+  const [viewId, setViewId] = React.useState(available.find((view) => view.isDefault)?.id ?? available[0]?.id ?? '')
+  const selected = available.find((view) => view.id === viewId) ?? available[0]
+  const dynamicColumns = fields.filter((field) => field.recordType === 'vendor_bill' && field.config.showInList).map((field) => ({ key: `cf_${field.key}`, label: field.label, kind: 'custom' as const }))
+  const baseView = mergeListViewColumns(selected?.config ?? defaultListView('vendor_bill'), meta, dynamicColumns)
+  const [sort, setSort] = React.useState(baseView.sort)
+  const [search, setSearch] = React.useState('')
+  const [status, setStatus] = React.useState<string | undefined>()
+  const [tab, setTab] = React.useState('all')
+  const [page, setPage] = React.useState(1)
+  const [open, setOpen] = React.useState<(typeof RECORD_ROWS)[number] | null>(null)
+  React.useEffect(() => { setSort(baseView.sort); setPage(1) }, [viewId])
+  const runtimeView = { ...baseView, sort }
+  const input = tab === 'all' ? RECORD_ROWS : RECORD_ROWS.filter((row) => row.kind === tab)
+  const result = queryRecordList({ rows: input, view: runtimeView, meta, search, filters: status ? [{ key: 'status', operator: 'eq', value: status }] : [], page })
+  const statusOptions = [...new Set(RECORD_ROWS.map((row) => row.status))].map((value) => ({ value, label: value.replace(/_/g, ' ').replace(/^./, (character) => character.toUpperCase()), count: RECORD_ROWS.filter((row) => row.status === value).length }))
+  const savedViews: SavedListView[] = available.map((view) => ({ ...view, id: view.id!, ownerId: null }))
+  return <div className="h-full overflow-y-auto p-4 sm:p-6"><div className="mx-auto max-w-screen-2xl space-y-4">
+    <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-2xl font-semibold text-fg">Bills and credits</h1><p className="mt-1 text-sm text-fg-muted">Search, filter, sort, switch saved views, and open a record.</p></div><Button onClick={onCustomize}>Customize views</Button></div>
+    <RecordListView
+      meta={meta}
+      view={runtimeView}
+      rows={result.rows}
+      total={result.total}
+      page={result.page}
+      perPage={result.perPage}
+      views={savedViews}
+      currentViewId={selected?.id ?? null}
+      currentViewName={selected?.name ?? 'Standard'}
+      dynamicColumns={dynamicColumns}
+      subtabs={[
+        { key: 'all', label: 'All activity', count: RECORD_ROWS.length },
+        { key: 'bill', label: 'Bills', count: RECORD_ROWS.filter((row) => row.kind === 'bill').length },
+        { key: 'credit', label: 'Credits', count: RECORD_ROWS.filter((row) => row.kind === 'credit').length },
+      ]}
+      activeSubtab={tab}
+      search={search}
+      currency="USD"
+      statusVariant={(value) => value === 'approved' || value === 'paid' || value === 'posted'
+        ? 'success'
+        : value === 'draft' || value === 'pending_approval'
+          ? 'warning'
+          : value === 'voided'
+            ? 'outline'
+            : 'secondary'}
+      quickFilters={[{ key: 'status', label: 'Status', value: status, options: statusOptions, onChange: (value) => { setStatus(value); setPage(1) } }]}
+      canManageViews
+      resolveLabel={(messageKey, fallback) => SOURCE_LABELS[messageKey] ?? fallback}
+      rowKey={(row) => String(row.id)}
+      onSearchChange={(value) => { setSearch(value); setPage(1) }}
+      onPageChange={setPage}
+      onSortChange={(column, direction) => { setSort({ column, dir: direction }); setPage(1) }}
+      onViewChange={(id) => setViewId(id)}
+      onSetDefaultView={async (id) => setViews((current) => current.map((view) => view.recordType === 'vendor_bill' ? { ...view, isDefault: view.id === id } : view))}
+      onCreateView={onCustomize}
+      onManageViews={onCustomize}
+      onSubtabChange={(key) => { setTab(key); setPage(1) }}
+      onOpenRow={setOpen}
+    />
+    <Drawer open={Boolean(open)} onClose={() => setOpen(null)} title={open?.document_number} description={open?.party_name} size="md"><div className="grid gap-4 sm:grid-cols-2"><RecordField label="Status"><Badge>{open?.status.replace(/_/g, ' ')}</Badge></RecordField><RecordField label="Date">{open?.document_date}</RecordField><RecordField label="Reference">{open?.reference_number}</RecordField><RecordField label="Review owner">{open?.cf_review_owner}</RecordField><RecordField label="Total">{open ? new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(open.total) : null}</RecordField><RecordField label="Open balance">{open ? new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(open.open_balance) : null}</RecordField></div></Drawer>
+  </div></div>
+}
+
+function SurfaceTab({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) { return <button type="button" onClick={onClick} className={active ? '-mb-px border-b-2 border-primary px-3 py-2 text-sm font-medium text-primary' : '-mb-px border-b-2 border-transparent px-3 py-2 text-sm font-medium text-fg-muted hover:text-fg'}>{children}</button> }
+function RecordField({ label, children }: { label: string; children: React.ReactNode }) { return <div><p className="text-xs font-medium uppercase tracking-wide text-fg-subtle">{label}</p><div className="mt-1 text-sm text-fg">{children}</div></div> }

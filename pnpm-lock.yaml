@@ -375,6 +375,9 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
+      '@appkit/db':
+        specifier: workspace:*
+        version: link:../db
       '@appkit/ui':
         specifier: workspace:*
         version: link:../ui
@@ -387,6 +390,12 @@ importers:
       '@types/react-dom':
         specifier: ^19
         version: 19.2.3(@types/react@19.2.17)
+      drizzle-kit:
+        specifier: ^0.30.6
+        version: 0.30.6
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(gel@2.2.0)(kysely@0.29.4)(mysql2@3.23.1(@types/node@22.20.1))(pg@8.22.0)(postgres@3.4.9)
       lucide-react:
         specifier: ^1.24.0
         version: 1.25.0(react@19.2.7)

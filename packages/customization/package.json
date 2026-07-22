@@ -1,7 +1,7 @@
 {
   "name": "@appkit/customization",
   "version": "0.1.0",
-  "description": "Production form, line-column, list-view, and custom-field customization contracts and React designers.",
+  "description": "Production form, custom-field, saved-view, and record-list runtime with React, memory, and Drizzle adapters.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "sideEffects": [
@@ -10,18 +10,23 @@
   "exports": {
     ".": "./src/index.ts",
     "./react": "./src/react.ts",
+    "./drizzle": "./src/drizzle.ts",
+    "./persistence-schema": "./src/persistence-schema.ts",
+    "./memory": "./src/memory.ts",
     "./styles.css": "./src/styles.css",
     "./package.json": "./package.json"
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "files": [
-    "src"
+    "src",
+    "drizzle"
   ],
   "scripts": {
     "build": "node ../../scripts/build-package.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test src/*.test.ts",
+    "generate": "drizzle-kit generate",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "author": "Braedon Saunders",
@@ -52,13 +57,21 @@
     "zod": "^4.4.3"
   },
   "peerDependencies": {
+    "@appkit/db": "^0.1.0",
     "@appkit/ui": "^0.1.0",
+    "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
+    "@appkit/db": {
+      "optional": true
+    },
     "@appkit/ui": {
+      "optional": true
+    },
+    "drizzle-orm": {
       "optional": true
     },
     "lucide-react": {
@@ -72,10 +85,13 @@
     }
   },
   "devDependencies": {
+    "@appkit/db": "workspace:*",
     "@appkit/ui": "workspace:*",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "drizzle-kit": "^0.30.6",
+    "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.24.0",
     "react": "^19",
     "react-dom": "^19",

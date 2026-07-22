@@ -16,7 +16,8 @@ import { CustomFieldDesigner } from './custom-field-designer'
 import { FormDesigner } from './form-designer'
 import { ListViewDesigner } from './list-view-designer'
 
-type Mode = 'forms' | 'views' | 'fields'
+export type CustomizationStudioMode = 'forms' | 'views' | 'fields'
+type Mode = CustomizationStudioMode
 type Selection =
   | { mode: 'forms'; id: string | 'new' }
   | { mode: 'views'; id: string | 'new' }
@@ -37,6 +38,7 @@ export interface CustomizationStudioProps {
   fields: CustomFieldDefinition[]
   recordTypes?: RecordTypeMeta[]
   initialRecordType?: string
+  initialMode?: CustomizationStudioMode
   resolveLabel?: CustomizationLabelResolver
   canManageOrganization?: boolean
   roleOptions?: { value: string; label: string }[]
@@ -51,6 +53,7 @@ export function CustomizationStudio({
   fields,
   recordTypes = RECORD_TYPES,
   initialRecordType,
+  initialMode = 'forms',
   resolveLabel = (_messageKey, fallback) => fallback,
   canManageOrganization = true,
   roleOptions = [],
@@ -64,11 +67,15 @@ export function CustomizationStudio({
   if (!firstRecordType) throw new Error('CustomizationStudio requires at least one record type')
 
   const [recordType, setRecordType] = useState(firstRecordType)
-  const [mode, setMode] = useState<Mode>('forms')
+  const [mode, setMode] = useState<Mode>(initialMode)
   const [selection, setSelection] = useState<Selection>(() => ({
-    mode: 'forms',
-    id: forms.find((form) => form.recordType === firstRecordType)?.id ?? 'new',
-  }))
+    mode: initialMode,
+    id: initialMode === 'forms'
+      ? forms.find((form) => form.recordType === firstRecordType)?.id ?? 'new'
+      : initialMode === 'views'
+        ? views.find((view) => view.recordType === firstRecordType)?.id ?? 'new'
+        : fields.find((field) => field.recordType === firstRecordType)?.id ?? 'new-header',
+  } as Selection))
 
   const recordMeta = recordTypes.find((record) => record.key === recordType)
   if (!recordMeta) throw new Error(`Unknown record type: ${recordType}`)
