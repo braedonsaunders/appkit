@@ -1,6 +1,6 @@
 {
   "name": "@appkit/crypto",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Sealed secrets (AES-256-GCM, HKDF-derived key) — the single implementation for tenant credentials at rest.",
   "license": "AGPL-3.0-or-later",
   "type": "module",

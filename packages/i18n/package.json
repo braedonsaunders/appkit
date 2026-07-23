@@ -1,6 +1,6 @@
 {
   "name": "@appkit/i18n",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Tenant-aware locale policy and localized-content resolution for AppKit applications.",
   "license": "AGPL-3.0-or-later",
   "type": "module",

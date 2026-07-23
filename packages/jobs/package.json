@@ -1,6 +1,6 @@
 {
   "name": "@appkit/jobs",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Production BullMQ runtime and complete reusable queue profiles for email, notifications, PDF, reports, schedules, scripts, migration, capture, and outbound work.",
   "license": "AGPL-3.0-or-later",
   "type": "module",

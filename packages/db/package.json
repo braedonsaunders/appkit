@@ -1,6 +1,6 @@
 {
   "name": "@appkit/db",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Multi-tenant Postgres RLS engine, schema helpers, and canonical identity persistence.",
   "license": "AGPL-3.0-or-later",
   "type": "module",

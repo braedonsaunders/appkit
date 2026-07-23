@@ -1,6 +1,6 @@
 {
   "name": "@appkit/forms-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Framework-neutral form schemas, evaluation, validation, scoring, localization, and automation planning.",
   "license": "AGPL-3.0-or-later",
   "type": "module",

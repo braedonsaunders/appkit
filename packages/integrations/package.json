@@ -1,6 +1,6 @@
 {
   "name": "@appkit/integrations",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Production outbound automation with authoring UI, durable publication, retry ledgers, and optional HTTP, chat, Sheets, email, SQL, and Drizzle adapters.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -34,11 +34,11 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
-    "@appkit/email-render": "^0.1.0",
-    "@appkit/db": "^0.1.0",
-    "@appkit/sync": "^0.1.0",
+    "@appkit/email-render": "^0.1.1",
+    "@appkit/db": "^0.2.0",
+    "@appkit/sync": "^1.0.0",
     "drizzle-orm": "^0.45.2",
-    "@appkit/ui": "^0.1.0",
+    "@appkit/ui": "^0.1.1",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

@@ -1,6 +1,6 @@
 {
   "name": "@appkit/dashboard",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Optional dashboard layouts, insight cards, visual studio, and feature-owned persistence.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -31,8 +31,8 @@
     "@appkit/analytics": "workspace:*"
   },
   "peerDependencies": {
-    "@appkit/db": "^0.1.0",
-    "@appkit/ui": "^0.1.0",
+    "@appkit/db": "^0.2.0",
+    "@appkit/ui": "^0.1.1",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",

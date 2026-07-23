@@ -1,6 +1,6 @@
 {
   "name": "@appkit/reports",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Production report studio, governed query engine, paper and statement viewers, drill-through, exports, schedules, and durable runs.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -29,14 +29,20 @@
     "@appkit/analytics": "workspace:*"
   },
   "peerDependencies": {
-    "@appkit/ui": "^0.1.0",
+    "@appkit/ui": "^0.1.1",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0"
   },
   "peerDependenciesMeta": {
-    "@appkit/ui": { "optional": true },
-    "lucide-react": { "optional": true },
-    "react": { "optional": true }
+    "@appkit/ui": {
+      "optional": true
+    },
+    "lucide-react": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@appkit/ui": "workspace:*",

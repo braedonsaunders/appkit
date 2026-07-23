@@ -1,6 +1,6 @@
 {
   "name": "@appkit/forms-documents",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Optional form document styles and generated PDF templates over the shared companion-field contract.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
