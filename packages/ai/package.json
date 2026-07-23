@@ -1,6 +1,6 @@
 {
   "name": "@appkit/ai",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "App-agnostic bounded agent loop and streaming assistant interface, with provider policy supplied by the host app.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -30,7 +30,7 @@
     "zod": "^4.4.3"
   },
   "peerDependencies": {
-    "@appkit/ui": "^0.1.0",
+    "@appkit/ui": "^0.1.1",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -38,12 +38,24 @@
     "remark-gfm": "^4.0.1"
   },
   "peerDependenciesMeta": {
-    "@appkit/ui": { "optional": true },
-    "lucide-react": { "optional": true },
-    "react": { "optional": true },
-    "react-dom": { "optional": true },
-    "react-markdown": { "optional": true },
-    "remark-gfm": { "optional": true }
+    "@appkit/ui": {
+      "optional": true
+    },
+    "lucide-react": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "react-markdown": {
+      "optional": true
+    },
+    "remark-gfm": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@appkit/ui": "workspace:*",

@@ -1,6 +1,6 @@
 {
   "name": "@appkit/tenant",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Request context, tenant-bound DB helper, and RBAC (permissions, roles, super-admin) on top of @appkit/db.",
   "license": "AGPL-3.0-or-later",
   "type": "module",

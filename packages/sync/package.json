@@ -1,6 +1,6 @@
 {
   "name": "@appkit/sync",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Production data synchronization with transactional batches, per-record ledgers, fail-closed snapshots, connector families, and durable cursors.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -37,7 +37,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
-    "@appkit/db": "^0.1.0",
+    "@appkit/db": "^0.2.0",
     "drizzle-orm": "^0.45.2",
     "mssql": "^11.0.1",
     "mysql2": "^3.22.6",

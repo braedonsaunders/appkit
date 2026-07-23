@@ -1,6 +1,6 @@
 {
   "name": "@appkit/email-render",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Framework-neutral email template rendering, sanitization, delivery input normalization, and subject handling.",
   "license": "AGPL-3.0-or-later",
   "type": "module",

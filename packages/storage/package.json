@@ -1,6 +1,6 @@
 {
   "name": "@appkit/storage",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Tenant-safe S3-compatible storage with multipart upload, streaming, ranges, promotion, lifecycle policy, and presigned access.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -28,7 +28,7 @@
     "@aws-sdk/s3-request-presigner": "^3.700.0"
   },
   "peerDependencies": {
-    "@appkit/ui": "^0.1.0",
+    "@appkit/ui": "^0.1.1",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

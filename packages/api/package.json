@@ -1,6 +1,6 @@
 {
   "name": "@appkit/api",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Public REST API toolkit — API-key auth, idempotent writes, typed errors, and a request wrapper. Framework-neutral.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
