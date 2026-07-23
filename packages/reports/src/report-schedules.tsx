@@ -3,6 +3,9 @@
 import * as React from 'react'
 import { CalendarClock, ChevronLeft, ChevronRight, Download, Loader2, Pause, Play, Plus, Search, Trash2, X, Zap } from 'lucide-react'
 import { Badge, Button, Input, Label, SearchSelect, Select, Textarea, cn } from '@appkit/ui'
+import type { ReportEntity } from './entities'
+import { ReportFilterTree } from './filter-tree'
+import type { ReportRuleGroup } from './filters'
 import { parseReportScheduleForm, type ParsedReportScheduleForm } from './schedule-form'
 import { REPORT_SCHEDULE_LIMITS } from './schedule-policy'
 import { describeReportSchedule, reportScheduleRecipientCount } from './schedule'
@@ -14,6 +17,8 @@ export type ReportScheduleDefinitionOption = {
   category?: string | null
   kind?: 'built_in' | 'custom'
   description?: string | null
+  /** The host-authorized source used to edit schedule-only runtime filters. */
+  entity?: ReportEntity
 }
 
 export type ReportScheduleMemberOption = { userId: string; name: string; email: string }
@@ -43,6 +48,19 @@ export type ReportScheduleFormProps = {
   className?: string
 }
 
+const EMPTY_FILTERS: ReportRuleGroup = { combinator: 'and', rules: [] }
+
+function scheduleFilterGroup(value: Record<string, unknown> | undefined): ReportRuleGroup {
+  if (
+    value &&
+    (value.combinator === 'and' || value.combinator === 'or') &&
+    Array.isArray(value.rules)
+  ) {
+    return value as ReportRuleGroup
+  }
+  return EMPTY_FILTERS
+}
+
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const TIMEZONES = ['UTC', 'America/Toronto', 'America/Vancouver', 'America/Edmonton', 'America/Winnipeg', 'America/Halifax', 'America/St_Johns', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'Europe/London', 'Europe/Paris', 'Asia/Tokyo', 'Australia/Sydney']
 
@@ -50,7 +68,7 @@ const TIMEZONES = ['UTC', 'America/Toronto', 'America/Vancouver', 'America/Edmon
  * Complete create/edit schedule form extracted from the production reporting
  * surface. It posts through the same bounded parser as server adapters and
  * retains member recipients, external emails, nth-weekday cadence, date bounds,
- * delivery copy, days-window filtering, and advanced JSON filters.
+ * delivery copy, and compiler-native runtime filters.
  */
 export function ReportScheduleForm({ definitions, members, initial, defaultTimezone = 'UTC', submitLabel = 'Save schedule', busy = false, onSubmit, onCancel, extraFooter, className }: ReportScheduleFormProps) {
   const timezoneListId = React.useId()
@@ -60,31 +78,13 @@ export function ReportScheduleForm({ definitions, members, initial, defaultTimez
   const [cadence, setCadence] = React.useState<ReportSchedule['cadence']>(initial?.cadence ?? 'weekly')
   const [monthlyMode, setMonthlyMode] = React.useState<'day' | 'weekday'>(initial?.weekOfMonth ? 'weekday' : 'day')
   const [selectedUsers, setSelectedUsers] = React.useState(() => new Set(initial?.recipientUserIds ?? []))
-  const initialFilters = initial?.filters ?? {}
-  const [days, setDays] = React.useState(() => typeof initialFilters.days === 'number' ? String(initialFilters.days) : '')
-  const [advanced, setAdvanced] = React.useState(() => {
-    const { days: _, ...rest } = initialFilters
-    return Object.keys(rest).length ? JSON.stringify(rest, null, 2) : ''
-  })
+  const [filters, setFilters] = React.useState<ReportRuleGroup>(() =>
+    scheduleFilterGroup(initial?.filters),
+  )
   const [submitting, setSubmitting] = React.useState(false)
   const [submitError, setSubmitError] = React.useState<string | null>(null)
 
-  const { filtersJson, advancedError } = React.useMemo(() => {
-    let filters: Record<string, unknown> = {}
-    let error: string | null = null
-    if (advanced.trim()) {
-      try {
-        const parsed: unknown = JSON.parse(advanced)
-        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) filters = parsed as Record<string, unknown>
-        else error = 'Advanced filters must be a JSON object.'
-      } catch (cause) {
-        error = `Invalid JSON: ${cause instanceof Error ? cause.message : String(cause)}`
-      }
-    }
-    const numericDays = Number(days)
-    if (days.trim() && Number.isFinite(numericDays) && numericDays > 0) filters = { ...filters, days: numericDays }
-    return { filtersJson: JSON.stringify(filters), advancedError: error }
-  }, [advanced, days])
+  const filtersJson = JSON.stringify(filters.rules.length ? filters : {})
 
   function toggleUser(userId: string) {
     setSelectedUsers((current) => {
@@ -114,7 +114,15 @@ export function ReportScheduleForm({ definitions, members, initial, defaultTimez
     <input type="hidden" name="filters" value={filtersJson} />
 
     <Field label="Report" required>
-      <SearchSelect value={definitionId} onChange={setDefinitionId} options={definitions.map((item) => ({ value: item.id, label: item.name, hint: item.kind === 'custom' ? 'Custom' : undefined, group: item.category ?? undefined }))} ariaLabel="Report" />
+      <SearchSelect
+        value={definitionId}
+        onChange={(next) => {
+          setDefinitionId(next)
+          setFilters(EMPTY_FILTERS)
+        }}
+        options={definitions.map((item) => ({ value: item.id, label: item.name, hint: item.kind === 'custom' ? 'Custom' : undefined, group: item.category ?? undefined }))}
+        ariaLabel="Report"
+      />
       {definition?.description ? <p className="text-xs text-fg-muted">{definition.description}</p> : null}
       <input type="hidden" name="definitionId" value={definitionId} />
     </Field>
@@ -153,12 +161,17 @@ export function ReportScheduleForm({ definitions, members, initial, defaultTimez
 
     <fieldset className="rounded-lg border border-border p-3">
       <legend className="px-1 text-xs font-semibold tracking-wide text-fg-muted uppercase">Report filters</legend>
-      <div className="flex flex-wrap items-end gap-3"><Field label="Rolling days"><Input type="number" min={1} max={365} value={days} onChange={(event) => setDays(event.target.value)} placeholder="30" className="w-36" /></Field><p className="pb-2 text-xs text-fg-subtle">Leave blank to use the report definition without a rolling window.</p></div>
-      <details className="mt-2"><summary className="cursor-pointer text-xs text-fg-muted hover:text-primary">Advanced JSON filters</summary><Textarea rows={4} maxLength={REPORT_SCHEDULE_LIMITS.filtersChars} value={advanced} onChange={(event) => setAdvanced(event.target.value)} placeholder={'{\n  "status": "active"\n}'} className="mt-2 font-mono text-xs" />{advancedError ? <p className="mt-1 text-xs text-danger">{advancedError}</p> : null}</details>
+      {definition?.entity ? (
+        <ReportFilterTree entity={definition.entity} group={filters} onChange={setFilters} />
+      ) : (
+        <p className="text-sm text-fg-muted">
+          This report does not expose schedule-time filters.
+        </p>
+      )}
     </fieldset>
 
     {submitError ? <div role="alert" className="rounded-lg border border-danger/30 bg-danger-subtle px-3 py-2 text-sm text-danger">{submitError}</div> : null}
-    <div className="flex items-center justify-between gap-3"><div>{extraFooter}</div><div className="flex items-center gap-2">{onCancel ? <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button> : null}<Button type="submit" disabled={busy || submitting || Boolean(advancedError)}>{busy || submitting ? <Loader2 className="size-4 animate-spin" /> : null}{submitLabel}</Button></div></div>
+    <div className="flex items-center justify-between gap-3"><div>{extraFooter}</div><div className="flex items-center gap-2">{onCancel ? <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button> : null}<Button type="submit" disabled={busy || submitting}>{busy || submitting ? <Loader2 className="size-4 animate-spin" /> : null}{submitLabel}</Button></div></div>
   </form>
 }
 

@@ -119,9 +119,9 @@ function CustomReportDemo() {
 }
 
 const scheduleDefinitions: ReportScheduleDefinitionOption[] = [
-  { id: 'portfolio', name: 'Project portfolio', category: 'Operations', kind: 'custom', description: 'Active and upcoming project work.' },
-  { id: 'income-statement', name: 'Income statement', category: 'Financial statements', kind: 'built_in', description: 'Revenue, costs, and operating income.' },
-  { id: 'margin-review', name: 'Project margin review', category: 'Operations', kind: 'custom', description: 'Contract value and forecast margin by project.' },
+  { id: 'portfolio', name: 'Project portfolio', category: 'Operations', kind: 'custom', description: 'Active and upcoming project work.', entity: catalog.entities[0] },
+  { id: 'income-statement', name: 'Income statement', category: 'Financial statements', kind: 'built_in', description: 'Revenue, costs, and operating income.', entity: catalog.entities[0] },
+  { id: 'margin-review', name: 'Project margin review', category: 'Operations', kind: 'custom', description: 'Contract value and forecast margin by project.', entity: catalog.entities[0] },
 ]
 
 const scheduleMembers: ReportScheduleMemberOption[] = [
@@ -131,7 +131,7 @@ const scheduleMembers: ReportScheduleMemberOption[] = [
 ]
 
 const initialSchedules: ReportSchedule[] = [
-  { id: 'schedule-portfolio', definitionId: 'portfolio', name: 'Monday portfolio', active: true, cadence: 'weekly', timezone: 'America/Toronto', hour: 8, minute: 30, dayOfWeek: 1, dayOfMonth: null, weekOfMonth: null, repeatEvery: 1, startsOn: '2026-01-01', endsOn: null, recipientUserIds: ['member-avery'], recipientEmails: ['operations@example.com'], filters: { days: 30 }, emailSubject: 'Weekly project portfolio', emailMessage: 'Please review the active portfolio before the delivery meeting.', nextRunAt: '2026-07-27T12:30:00.000Z', lastRunAt: '2026-07-20T12:30:06.000Z' },
+  { id: 'schedule-portfolio', definitionId: 'portfolio', name: 'Monday portfolio', active: true, cadence: 'weekly', timezone: 'America/Toronto', hour: 8, minute: 30, dayOfWeek: 1, dayOfMonth: null, weekOfMonth: null, repeatEvery: 1, startsOn: '2026-01-01', endsOn: null, recipientUserIds: ['member-avery'], recipientEmails: ['operations@example.com'], filters: { combinator: 'and', rules: [{ field: 'status', op: 'eq', value: 'Active' }] }, emailSubject: 'Weekly project portfolio', emailMessage: 'Please review the active portfolio before the delivery meeting.', nextRunAt: '2026-07-27T12:30:00.000Z', lastRunAt: '2026-07-20T12:30:06.000Z' },
   { id: 'schedule-income', definitionId: 'income-statement', name: 'Month-end statement', active: false, cadence: 'monthly', timezone: 'America/Toronto', hour: 7, minute: 0, dayOfWeek: 1, dayOfMonth: null, weekOfMonth: 5, repeatEvery: 1, startsOn: null, endsOn: null, recipientUserIds: ['member-maya', 'member-noah'], recipientEmails: [], filters: {}, emailSubject: null, emailMessage: null, nextRunAt: null, lastRunAt: '2026-06-30T11:00:04.000Z' },
 ]
 

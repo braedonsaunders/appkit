@@ -15,7 +15,7 @@ function scheduleForm(overrides: Record<string, string> = {}): FormData {
     timezone: 'America/Toronto',
     recipientUserIds: 'user_1,user_1,user_2',
     recipientEmails: ' Team@Example.com, team@example.com ',
-    filters: '{"days":30}',
+    filters: '{"combinator":"and","rules":[{"field":"status","op":"eq","value":"active"}]}',
     ...overrides,
   }
   for (const [key, value] of Object.entries(values)) data.set(key, value)
@@ -28,7 +28,7 @@ test('schedule create and edit use one normalized production field contract', ()
     dayOfWeek: 1, dayOfMonth: null, weekOfMonth: null, hour: 7, minute: 30,
     timezone: 'America/Toronto', startsOn: null, endsOn: null,
     recipientUserIds: ['user_1', 'user_2'], recipientEmails: ['team@example.com'],
-    filters: { days: 30 }, emailSubject: null, emailMessage: null,
+    filters: { combinator: 'and', rules: [{ field: 'status', op: 'eq', value: 'active' }] }, emailSubject: null, emailMessage: null,
   })
 })
 
@@ -38,7 +38,7 @@ test('nth-weekday schedules, date bounds, and custom delivery copy are preserved
     dayOfWeek: 1, dayOfMonth: null, weekOfMonth: 5, hour: 7, minute: 30,
     timezone: 'America/Toronto', startsOn: '2026-01-01', endsOn: '2027-12-31',
     recipientUserIds: ['user_1', 'user_2'], recipientEmails: ['team@example.com'],
-    filters: { days: 30 }, emailSubject: 'Monthly report', emailMessage: 'Review before the meeting.',
+    filters: { combinator: 'and', rules: [{ field: 'status', op: 'eq', value: 'active' }] }, emailSubject: 'Monthly report', emailMessage: 'Review before the meeting.',
   })
 })
 
