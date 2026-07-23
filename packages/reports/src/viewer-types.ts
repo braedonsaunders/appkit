@@ -1,7 +1,6 @@
-import type { ReportLayout, ReportRunResult } from './types'
+import { resolveReportLayout, type ReportLayout, type ReportRunResult } from './types'
 
 export type ReportPaperCell = string | number | boolean | null | undefined
-export type PaperCell = ReportPaperCell
 
 export type ReportPaperGroup<TDrillTarget = unknown> = {
   title?: string
@@ -19,7 +18,6 @@ export type ReportPaperGroup<TDrillTarget = unknown> = {
   totalRowIndex?: number
   isEmpty?: boolean
 }
-export type PaperGroup<TDrillTarget = unknown> = ReportPaperGroup<TDrillTarget>
 
 export type ReportPaperData<TDrillTarget = unknown> = {
   title: string
@@ -31,7 +29,13 @@ export type ReportPaperData<TDrillTarget = unknown> = {
   defaultDrillTarget?: TDrillTarget
   layout?: Partial<ReportLayout>
 }
-export type PaperData<TDrillTarget = unknown> = ReportPaperData<TDrillTarget>
+
+export function reportPaperSummary<TDrillTarget>(
+  data: ReportPaperData<TDrillTarget>,
+): NonNullable<ReportPaperData<TDrillTarget>['summary']> {
+  if (!resolveReportLayout(data.layout).showSummary) return []
+  return data.summary ?? []
+}
 
 export type ReportDrillCell = string | number | boolean | null
 

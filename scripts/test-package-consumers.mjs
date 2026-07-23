@@ -64,7 +64,7 @@ import { emptyFormSchema, validateFormSchema } from '@appkit/forms-core'
 import { ProductionFormDesigner, ProductionFormRenderer } from '@appkit/forms'
 import { createDesignDocument } from '@appkit/design-studio'
 import { DesignStudioEditor } from '@appkit/design-studio/react'
-import { ReportFilterBar, ReportPaper, ReportRunHistory, ReportScheduleForm, ReportScheduleList, StatementMatrixTable, Table, TableBody, TableCell, TableRow, reportStudioTemplates } from '@appkit/reports/react'
+import { ReportFilterBar, ReportPaper, ReportRunHistory, ReportScheduleForm, ReportScheduleList, ReportTable, ReportTableBody, ReportTableCell, ReportTableRow, StatementMatrixTable, reportStudioTemplates } from '@appkit/reports/react'
 import { createCustomizationEngine } from '@appkit/customization'
 import { createMemoryListViewStore } from '@appkit/customization/memory'
 import { RecordListView } from '@appkit/customization/react'
@@ -149,7 +149,7 @@ assert.equal(compileCustomReport({ entity: 'incidents', mode: 'summarize', colum
 assert.match(renderToStaticMarkup(React.createElement(Button, null, 'Ready')), /Ready/)
 const design = createDesignDocument({ name: 'Smoke', theme: { primary: '#0f766e', accent: '#d97706', paper: '#ffffff', ink: '#0f172a', muted: '#64748b' } })
 assert.match(renderToStaticMarkup(React.createElement(DesignStudioEditor, { document: design, onChange() {}, catalog: { fields: [] } })), /Smoke/)
-assert.match(renderToStaticMarkup(React.createElement(ReportPaper, { company: 'Example', title: 'Report' }, React.createElement(Table, null, React.createElement(TableBody, null, React.createElement(TableRow, null, React.createElement(TableCell, null, 'Ready')))))), /data-report-paper/)
+assert.match(renderToStaticMarkup(React.createElement(ReportPaper, { organization: 'Example', title: 'Report' }, React.createElement(ReportTable, null, React.createElement(ReportTableBody, null, React.createElement(ReportTableRow, null, React.createElement(ReportTableCell, null, 'Ready')))))), /data-report-paper/)
 assert.match(renderToStaticMarkup(React.createElement(StatementMatrixTable, { view: { columns: [{ key: 'actual', label: 'Actual', kind: 'amount' }, { key: 'variance', label: 'Variance', kind: 'variance_pct' }], lines: [{ key: 'revenue', kind: 'account', label: 'Revenue', depth: 0, accountId: 'account-1', values: [125000, 12.5] }] }, currency: 'USD', scale: 'thousands' })), /Revenue/)
 assert.match(renderToStaticMarkup(React.createElement(ReportFilterBar, { value: { period: 'this_month' }, onChange() {}, controls: { period: true, breakout: true, compare: true, basis: true, scale: true, showZero: true }, dimensions: { departments: [], projects: [], locations: [], classes: [] } })), /Breakout/)
 assert.equal(reportStudioTemplates({ key: 'entries', label: 'Entries', category: 'ledger', description: 'Entries', from: 'entries e', orgColumn: 'e.org_id', columns: [{ key: 'posted_on', label: 'Posted on', kind: 'date', expr: 'e.posted_on' }, { key: 'status', label: 'Status', kind: 'enum', expr: 'e.status' }, { key: 'amount', label: 'Amount', kind: 'number', expr: 'e.amount' }] }).length, 4)

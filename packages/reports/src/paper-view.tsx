@@ -12,7 +12,7 @@ import {
   ReportTableRow,
   reportTotalRowClass,
 } from './report-table'
-import type { ReportPaperCell, ReportPaperData } from './viewer-types'
+import { reportPaperSummary, type ReportPaperCell, type ReportPaperData } from './viewer-types'
 
 function isNumericCell(value: ReportPaperCell): boolean {
   if (typeof value === 'number') return true
@@ -58,7 +58,6 @@ function DrillValue<T>({
  */
 export function PaperView<TDrillTarget>({
   organization,
-  company,
   data,
   emptyLabel = 'No data.',
   currency = '',
@@ -66,9 +65,7 @@ export function PaperView<TDrillTarget>({
   onDrill,
   renderLink,
 }: {
-  organization?: string
-  /** Source-compatible alias for applications cutting over their report pages. */
-  company?: string
+  organization: string
   data: ReportPaperData<TDrillTarget>
   emptyLabel?: string
   currency?: string
@@ -77,16 +74,17 @@ export function PaperView<TDrillTarget>({
   renderLink?: (href: string, content: React.ReactNode) => React.ReactNode
 }) {
   const wide = data.groups.some((group) => group.columns.length > 5)
+  const summary = reportPaperSummary(data)
   return <ReportPaper
-    organization={organization ?? company}
+    organization={organization}
     title={data.title}
     periodPhrase={data.periodPhrase}
     note={data.note}
     wide={wide}
     layout={data.layout}
   >
-    {data.summary?.length ? <div className="mb-6 grid grid-flow-col auto-cols-fr divide-x divide-border border-y border-border py-3">
-      {data.summary.map((item, index) => {
+    {summary.length ? <div className="mb-6 grid grid-flow-col auto-cols-fr divide-x divide-border border-y border-border py-3">
+      {summary.map((item, index) => {
         const target = item.drill ?? (isNumericCell(item.value) ? data.defaultDrillTarget : undefined)
         const value = formatCell(item.value, false, currency, locale)
         return <div key={item.key ?? `${item.label}-${index}`} className="min-w-0 px-3 text-center">

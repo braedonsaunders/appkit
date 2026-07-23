@@ -3,7 +3,7 @@ import test from 'node:test'
 import { compileReportRuleGroup, SqlParameters } from './filters'
 import { createReportDrillCodec } from './drill'
 import type { ReportEntity } from './entities'
-import { reportRunResultToPaper } from './viewer-types'
+import { reportPaperSummary, reportRunResultToPaper } from './viewer-types'
 
 const entity: ReportEntity = {
   key: 'records', label: 'Records', category: 'Operations', from: 'records r', tenantColumn: 'r.tenant_id', defaultColumns: ['created_on'],
@@ -38,4 +38,14 @@ test('report results map to paper rows without losing alignments, money, or cell
   assert.deepEqual(paper.groups[0]?.align, ['left', 'right'])
   assert.deepEqual(paper.groups[0]?.money, [false, true])
   assert.deepEqual(paper.groups[0]?.drills, [[null, { kind: 'value' }]])
+})
+
+test('paper summary visibility follows the canonical report layout', () => {
+  const data = {
+    title: 'Portfolio',
+    summary: [{ label: 'Records', value: 1 }],
+    groups: [],
+  }
+  assert.equal(reportPaperSummary(data).length, 1)
+  assert.deepEqual(reportPaperSummary({ ...data, layout: { showSummary: false } }), [])
 })

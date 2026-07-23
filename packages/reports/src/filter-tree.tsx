@@ -25,9 +25,6 @@ export function ReportFilterTree({ entity, group, onChange, depth = 0 }: { entit
   </div>
 }
 
-/** Source-compatible export for a direct report-builder import cutover. */
-export const FilterTree = ReportFilterTree
-
 function RuleRow({ entity, rule, onChange, onRemove }: { entity: ReportEntity; rule: ReportRule; onChange: (rule: ReportRule) => void; onRemove: () => void }) {
   const column = entity.columns.find((item) => item.key === rule.field) ?? entity.columns[0]
   const operators = column ? operatorsForKind(column.kind) : []

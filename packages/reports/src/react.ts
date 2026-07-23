@@ -20,12 +20,6 @@ export {
   ReportTableHead,
   ReportTableHeader,
   ReportTableRow,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
   reportSubtotalRowClass,
   reportTotalRowClass,
 } from './report-table'
@@ -42,7 +36,7 @@ export {
   type ReportSegmentOption,
   type ReportSubsidiaryOption,
 } from './report-filter-bar'
-export { FilterTree, ReportFilterTree } from './filter-tree'
+export { ReportFilterTree } from './filter-tree'
 export {
   StatementMatrixTable,
   type StatementMatrixColumn,

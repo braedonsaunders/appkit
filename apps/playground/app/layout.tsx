@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Script from 'next/script'
 import { ConfirmRoot, getThemeScript, PromptRoot, Toaster } from '@appkit/ui'
 import './globals.css'
 
@@ -11,7 +10,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head><Script id="appkit-theme" strategy="beforeInteractive">{getThemeScript()}</Script></head>
+      <head>
+        <script id="appkit-theme" dangerouslySetInnerHTML={{ __html: getThemeScript() }} />
+      </head>
       <body className="min-h-screen bg-bg text-fg antialiased">
         {children}
         <PromptRoot />

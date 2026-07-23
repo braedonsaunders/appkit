@@ -293,7 +293,7 @@ function StatementDemo() {
       />
     </div>
     <div className="app-scroll min-h-0 flex-1 overflow-auto p-4 lg:p-6">
-      <ReportPaper company="Northstar Works" title="Income statement" periodPhrase="Fiscal year to date">
+      <ReportPaper organization="Northstar Works" title="Income statement" periodPhrase="Fiscal year to date">
         <StatementMatrixTable
           view={statementView}
           scale={filters.scale === 'thousands' || filters.scale === 'millions' ? filters.scale : 'actual'}

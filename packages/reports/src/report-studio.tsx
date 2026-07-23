@@ -9,7 +9,7 @@ import type { CustomReportDefinition } from './definitions'
 import type { ReportEntityCatalog } from './entities'
 import { defaultColumnsFor, reportColumn, reportEntity } from './entities'
 import { ReportFilterTree } from './filter-tree'
-import type { ReportRunResult, ReportSchedule } from './types'
+import type { ReportLayout, ReportRunResult, ReportSchedule } from './types'
 import { PaperView } from './paper-view'
 import { ReportDrillDrawer } from './report-drill-drawer'
 import { ReportExportMenu, type ReportExportOption } from './export-menu'
@@ -219,8 +219,8 @@ export function reportStudioTemplates(entity: NonNullable<ReturnType<typeof repo
   return templates
 }
 
-export function ReportResultView({ organization = 'Organization', title = 'Report', description, result }: { organization?: string; title?: string; description?: string; result: ReportRunResult }) {
-  return <PaperView organization={organization} data={reportRunResultToPaper(title, result, { periodPhrase: description })} />
+export function ReportResultView({ organization = 'Organization', title = 'Report', description, layout, result }: { organization?: string; title?: string; description?: string; layout?: Partial<ReportLayout>; result: ReportRunResult }) {
+  return <PaperView organization={organization} data={reportRunResultToPaper(title, result, { periodPhrase: description, layout })} />
 }
 
 function BuilderSection({ title, icon, action, children }: { title: string; icon: React.ReactNode; action?: () => void; children: React.ReactNode }) { return <section className="space-y-3 rounded-xl border border-border bg-surface p-3"><div className="flex items-center justify-between"><h3 className="flex items-center gap-2 text-sm font-semibold text-fg"><span className="text-primary [&_svg]:size-4">{icon}</span>{title}</h3>{action ? <Button type="button" variant="ghost" size="sm" onClick={action}><Plus size={13} />Add</Button> : null}</div>{children}</section> }
