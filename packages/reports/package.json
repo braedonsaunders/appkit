@@ -1,6 +1,6 @@
 {
   "name": "@appkit/reports",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Production report studio, governed query engine, paper and statement viewers, drill-through, exports, schedules, and durable runs.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
