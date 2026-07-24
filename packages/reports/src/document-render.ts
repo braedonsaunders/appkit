@@ -74,7 +74,7 @@ export type ReportDocumentInput = {
   primaryColor?: string | null
   reportName: string
   dateRangeLabel: string
-  generatedAt: Date
+  generatedAt?: Date
   summary?: ReportSummaryItem[]
   groups: {
     title: string
@@ -133,7 +133,6 @@ export function buildReportDocumentCss(
         org: '10pt',
         title: '15pt',
         period: '9pt',
-        note: '8pt',
         logo: '30px',
         headMargin: '16px',
         sumMargin: '0 0 16px',
@@ -152,7 +151,6 @@ export function buildReportDocumentCss(
         org: '11.5pt',
         title: '18pt',
         period: '10pt',
-        note: '8.5pt',
         logo: '40px',
         headMargin: '24px',
         sumMargin: '0 0 24px',
@@ -174,7 +172,6 @@ export function buildReportDocumentCss(
   .appkit-report-doc .doc-org { font-size: ${s.org}; font-weight: 600; }
   .appkit-report-doc .doc-title { font-size: ${s.title}; font-weight: 700; letter-spacing: -0.01em; margin: 2px 0; }
   .appkit-report-doc .doc-period { font-size: ${s.period}; color: #6b7280; }
-  .appkit-report-doc .doc-note { font-size: ${s.note}; color: #9ca3af; font-style: italic; }
   .appkit-report-doc .summary {
     display: flex;
     border-top: 1px solid #e5e7eb;
@@ -299,14 +296,12 @@ export function renderReportDocumentBodyHtml(input: ReportDocumentInput): string
     })
     .join('')
 
-  const generated = `${escapeHtml(translate('Generated'))} ${escapeHtml(input.generatedAt.toISOString().slice(0, 19).replace('T', ' '))}`
   return `<div class="appkit-report-doc">
   <header class="doc-head">
     ${input.tenantLogoUrl ? `<img class="logo" src="${escapeHtml(input.tenantLogoUrl)}" alt=""/>` : ''}
     ${input.tenantName ? `<div class="doc-org">${escapeHtml(input.tenantName)}</div>` : ''}
     <div class="doc-title">${escapeHtml(input.reportName)}</div>
     ${input.dateRangeLabel ? `<div class="doc-period">${escapeHtml(input.dateRangeLabel)}</div>` : ''}
-    <div class="doc-note">${generated}</div>
   </header>
   ${summaryCells ? `<div class="summary">${summaryCells}</div>` : ''}
   ${groupsHtml}

@@ -23,7 +23,6 @@ export function ReportDocumentView({
   description = '',
   layout,
   result,
-  generatedAt = new Date(),
   className,
 }: {
   organization: string
@@ -31,7 +30,6 @@ export function ReportDocumentView({
   description?: string
   layout?: Partial<ReportLayout>
   result: ReportRunResult
-  generatedAt?: Date
   className?: string
 }) {
   const resolved = resolveReportLayout(layout)
@@ -40,7 +38,6 @@ export function ReportDocumentView({
     tenantName: organization,
     reportName: title,
     dateRangeLabel: description,
-    generatedAt,
     summary: resolved.showSummary ? result.summary : undefined,
     groups: result.groups.map((group) => ({
       title: group.title,
