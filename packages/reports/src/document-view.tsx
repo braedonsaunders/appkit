@@ -19,6 +19,8 @@ const PAPER_WIDTH: Record<ReportLayout['paperSize'], string> = {
  */
 export function ReportDocumentView({
   organization,
+  logoUrl,
+  primaryColor,
   title,
   description = '',
   layout,
@@ -26,6 +28,8 @@ export function ReportDocumentView({
   className,
 }: {
   organization: string
+  logoUrl?: string | null
+  primaryColor?: string | null
   title: string
   description?: string
   layout?: Partial<ReportLayout>
@@ -33,9 +37,11 @@ export function ReportDocumentView({
   className?: string
 }) {
   const resolved = resolveReportLayout(layout)
-  const documentCss = buildReportDocumentCss(undefined, resolved.density)
+  const documentCss = buildReportDocumentCss(primaryColor, resolved.density)
   const bodyHtml = renderReportDocumentBodyHtml({
     tenantName: organization,
+    tenantLogoUrl: logoUrl,
+    primaryColor,
     reportName: title,
     dateRangeLabel: description,
     summary: resolved.showSummary ? result.summary : undefined,

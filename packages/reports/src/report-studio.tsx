@@ -20,7 +20,7 @@ export type ReportStudioValue = { definition: CustomReportDefinition; schedule?:
 export type ReportStudioTemplate = { id: string; label: string; description: string; query: ReportCustomQuery }
 type StudioTab = 'data' | 'filter' | 'format'
 
-export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRecord = ReportDrillRecord>({ value, catalog, result, onChange, onPreview, onSave, organization = 'Organization', currency = '', drill, exports: exportOptions, printHref, templates, autoPreviewMs = 500, autoSaveMs = 700, className }: {
+export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRecord = ReportDrillRecord>({ value, catalog, result, onChange, onPreview, onSave, organization = 'Organization', logoUrl, primaryColor, currency = '', drill, exports: exportOptions, printHref, templates, autoPreviewMs = 500, autoSaveMs = 700, className }: {
   value: ReportStudioValue
   catalog: ReportEntityCatalog
   result: ReportRunResult | null
@@ -28,6 +28,8 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
   onPreview: (value: ReportStudioValue) => Promise<ReportRunResult>
   onSave: (value: ReportStudioValue) => Promise<{ ok: true } | { ok: false; error: string }>
   organization?: string
+  logoUrl?: string | null
+  primaryColor?: string | null
   currency?: string
   drill?: {
     target: (context: ReportCellContext) => TDrillTarget | null | undefined
@@ -129,7 +131,7 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
       </header>
       <div className="app-scroll min-h-0 flex-1 overflow-auto p-4 lg:p-6">
         {error ? <div role="alert" className="mb-4 rounded-lg border border-danger/30 bg-danger-subtle px-3 py-2 text-sm text-danger">{error}</div> : null}
-        {preview ? <div className="rounded-xl bg-bg p-3 sm:p-5">{drill ? <PaperView organization={organization} data={reportRunResultToPaper(definition.name, preview, { periodPhrase: definition.description, layout: definition.layout, drillTarget: drill.target })} emptyLabel="No rows match this report." currency={currency} onDrill={setDrillTarget} /> : <ReportDocumentView organization={organization} title={definition.name} description={definition.description} layout={definition.layout} result={preview} />}</div> : <div className="grid min-h-96 place-items-center rounded-xl border border-dashed border-border bg-surface text-sm text-fg-subtle">Run the report to preview it.</div>}
+        {preview ? <div className="rounded-xl bg-bg p-3 sm:p-5">{drill ? <PaperView organization={organization} data={reportRunResultToPaper(definition.name, preview, { periodPhrase: definition.description, layout: definition.layout, drillTarget: drill.target })} emptyLabel="No rows match this report." currency={currency} onDrill={setDrillTarget} /> : <ReportDocumentView organization={organization} logoUrl={logoUrl} primaryColor={primaryColor} title={definition.name} description={definition.description} layout={definition.layout} result={preview} />}</div> : <div className="grid min-h-96 place-items-center rounded-xl border border-dashed border-border bg-surface text-sm text-fg-subtle">Run the report to preview it.</div>}
       </div>
     </main>
     {drill ? <ReportDrillDrawer target={drillTarget} load={drill.load} onClose={() => setDrillTarget(null)} onOpenRecord={drill.onOpenRecord} /> : null}
@@ -220,8 +222,8 @@ export function reportStudioTemplates(entity: NonNullable<ReturnType<typeof repo
   return templates
 }
 
-export function ReportResultView({ organization = 'Organization', title = 'Report', description, layout, result }: { organization?: string; title?: string; description?: string; layout?: Partial<ReportLayout>; result: ReportRunResult }) {
-  return <ReportDocumentView organization={organization} title={title} description={description} layout={layout} result={result} />
+export function ReportResultView({ organization = 'Organization', logoUrl, primaryColor, title = 'Report', description, layout, result }: { organization?: string; logoUrl?: string | null; primaryColor?: string | null; title?: string; description?: string; layout?: Partial<ReportLayout>; result: ReportRunResult }) {
+  return <ReportDocumentView organization={organization} logoUrl={logoUrl} primaryColor={primaryColor} title={title} description={description} layout={layout} result={result} />
 }
 
 function BuilderSection({ title, icon, action, children }: { title: string; icon: React.ReactNode; action?: () => void; children: React.ReactNode }) { return <section className="space-y-3 rounded-xl border border-border bg-surface p-3"><div className="flex items-center justify-between"><h3 className="flex items-center gap-2 text-sm font-semibold text-fg"><span className="text-primary [&_svg]:size-4">{icon}</span>{title}</h3>{action ? <Button type="button" variant="ghost" size="sm" onClick={action}><Plus size={13} />Add</Button> : null}</div>{children}</section> }
