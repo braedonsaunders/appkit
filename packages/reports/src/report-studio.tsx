@@ -1,8 +1,8 @@
 'use client'
 
 import * as React from 'react'
-import { CalendarClock, CheckCircle2, ChevronDown, ChevronUp, Columns3, Filter, GripVertical, LayoutTemplate, Loader2, Play, Plus, Save, Search, Settings2, Sigma, Table2, Trash2, X } from 'lucide-react'
-import { Button, Checkbox, Input, Label, SearchSelect, Textarea, cn } from '@appkit/ui'
+import { ArrowLeft, CalendarClock, CheckCircle2, ChevronDown, ChevronUp, Columns3, FileText, Filter, GripVertical, LayoutTemplate, Loader2, Play, Plus, Save, Search, Settings2, Sigma, Table2, Trash2, X } from 'lucide-react'
+import { Button, Checkbox, Input, Label, SearchSelect, Textarea, UiLink, cn } from '@appkit/ui'
 import type { ReportCustomQuery, ReportAggFn } from './custom-query'
 import { REPORT_AGG_FNS, REPORT_TEMPORAL_BINS } from './custom-query'
 import type { CustomReportDefinition } from './definitions'
@@ -20,7 +20,7 @@ export type ReportStudioValue = { definition: CustomReportDefinition; schedule?:
 export type ReportStudioTemplate = { id: string; label: string; description: string; query: ReportCustomQuery }
 type StudioTab = 'data' | 'filter' | 'format'
 
-export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRecord = ReportDrillRecord>({ value, catalog, result, onChange, onPreview, onSave, organization = 'Organization', logoUrl, primaryColor, currency = '', drill, exports: exportOptions, printHref, templates, autoPreviewMs = 500, autoSaveMs = 700, className }: {
+export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRecord = ReportDrillRecord>({ value, catalog, result, onChange, onPreview, onSave, organization = 'Organization', logoUrl, primaryColor, currency = '', drill, exports: exportOptions, printHref, pdfHref, backHref, backLabel = 'Back to reports', templates, autoPreviewMs = 500, autoSaveMs = 700, className }: {
   value: ReportStudioValue
   catalog: ReportEntityCatalog
   result: ReportRunResult | null
@@ -38,6 +38,11 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
   }
   exports?: ReportExportOption[]
   printHref?: string
+  /** Direct PDF action. The studio saves the current definition before opening it. */
+  pdfHref?: string
+  /** Return destination rendered through the host application's link adapter. */
+  backHref?: string
+  backLabel?: string
   templates?: ReportStudioTemplate[] | ((entity: NonNullable<ReturnType<typeof reportEntity>>) => ReportStudioTemplate[])
   /** Debounced production live preview. Set false for manual-run-only hosts. */
   autoPreviewMs?: number | false
@@ -63,10 +68,25 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
     try { setPreview(await onPreview(next)) } catch (cause) { setError(cause instanceof Error ? cause.message : 'The report could not run.') }
     finally { setRunning(false) }
   }
-  async function save(next = value) {
+  async function save(next = value): Promise<boolean> {
     setSaving(true); setError(null)
-    try { const response = await onSave(next); if (!response.ok) setError(response.error) }
+    try {
+      const response = await onSave(next)
+      if (!response.ok) {
+        setError(response.error)
+        return false
+      }
+      return true
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'The report could not be saved.')
+      return false
+    }
     finally { setSaving(false) }
+  }
+  async function exportPdf() {
+    if (!pdfHref) return
+    if (!(await save())) return
+    window.location.assign(pdfHref)
   }
 
   const previewKey = JSON.stringify({ query, layout: definition.layout, name: definition.name, description: definition.description })
@@ -126,8 +146,11 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
 
     <main className="flex min-h-0 flex-col bg-bg-subtle lg:col-span-2">
       <header className="flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border bg-surface px-4">
-        <div><h2 className="text-sm font-semibold text-fg">{definition.name || 'Untitled report'}</h2><p className="text-xs text-fg-muted">{entity?.label ?? 'Choose a source'} · {query.mode === 'summarize' ? 'Summary' : 'Detail rows'}</p></div>
-        <div className="flex items-center gap-2">{exportOptions?.length ? <ReportExportMenu options={exportOptions} printHref={printHref} onError={(cause) => setError(cause.message)} /> : null}<Button type="button" variant="outline" size="sm" onClick={() => void run()} disabled={running}>{running ? <Loader2 className="size-4 animate-spin" /> : <Play size={14} />}Run</Button><Button type="button" size="sm" onClick={() => void save()} disabled={saving}>{saving ? <Loader2 className="size-4 animate-spin" /> : <Save size={14} />}Save</Button></div>
+        <div className="flex min-w-0 items-center gap-3">
+          {backHref ? <Button asChild variant="ghost" size="sm"><UiLink href={backHref} aria-label={backLabel}><ArrowLeft size={14} />{backLabel}</UiLink></Button> : null}
+          <div className="min-w-0"><h2 className="truncate text-sm font-semibold text-fg">{definition.name || 'Untitled report'}</h2><p className="truncate text-xs text-fg-muted">{entity?.label ?? 'Choose a source'} · {query.mode === 'summarize' ? 'Summary' : 'Detail rows'}</p></div>
+        </div>
+        <div className="flex items-center gap-2">{exportOptions?.length ? <ReportExportMenu options={exportOptions} printHref={printHref} onError={(cause) => setError(cause.message)} /> : null}<Button type="button" variant="outline" size="sm" onClick={() => void run()} disabled={running}>{running ? <Loader2 className="size-4 animate-spin" /> : <Play size={14} />}Run</Button>{pdfHref ? <Button type="button" variant="outline" size="sm" onClick={() => void exportPdf()} disabled={saving}><FileText size={14} />PDF</Button> : null}<Button type="button" size="sm" onClick={() => void save()} disabled={saving}>{saving ? <Loader2 className="size-4 animate-spin" /> : <Save size={14} />}Save</Button></div>
       </header>
       <div className="app-scroll min-h-0 flex-1 overflow-auto p-4 lg:p-6">
         {error ? <div role="alert" className="mb-4 rounded-lg border border-danger/30 bg-danger-subtle px-3 py-2 text-sm text-danger">{error}</div> : null}
