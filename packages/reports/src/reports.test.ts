@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { computeNextReportRun, queryResultToReport, resolveReportLayout, runReport, validateReportSchedule, type ReportDefinition, type ReportSchedule } from './index'
+import { computeNextReportRun, DEFAULT_REPORT_LAYOUT, queryResultToReport, resolveReportLayout, runReport, validateReportSchedule, type ReportDefinition, type ReportSchedule } from './index'
 
 test('query results become typed report groups without losing row shape', () => {
   const result = queryResultToReport({ columns: [{ key: 'team', label: 'Team', semanticType: 'category', role: 'dimension' }, { key: 'total', label: 'Total', semanticType: 'currency', role: 'measure' }], rows: [{ team: 'A', total: 12 }, { team: 'B', total: 8 }], rowCount: 2, truncated: false, durationMs: 4 }, { groupBy: 'team' })
@@ -11,6 +11,8 @@ test('query results become typed report groups without losing row shape', () => 
 
 test('report layout is clamped to source-system document limits', () => {
   assert.deepEqual(resolveReportLayout({ marginMm: 99, density: 'compact', orientation: 'portrait' }), { paperSize: 'letter', orientation: 'portrait', marginMm: 30, showSummary: true, density: 'compact' })
+  assert.equal(DEFAULT_REPORT_LAYOUT.orientation, 'portrait')
+  assert.equal(resolveReportLayout().orientation, 'portrait')
 })
 
 test('timezone-aware weekly scheduling produces a future occurrence', () => {

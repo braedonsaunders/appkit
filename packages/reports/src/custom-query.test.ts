@@ -28,6 +28,46 @@ test('row report compiler scopes the tenant and binds every authored value', () 
   assert.doesNotMatch(compiled.sql, /open/)
 })
 
+test('flat multi-value dimensions compile set membership instead of whole-string equality', () => {
+  const catalog: ReportEntityCatalog = {
+    entities: [
+      {
+        key: 'people',
+        label: 'People',
+        category: 'directory',
+        table: 'report_people',
+        columns: [
+          {
+            key: 'group_ids',
+            label: 'Person group',
+            kind: 'text',
+            filterValueMode: 'csv-set',
+            filterOptions: [
+              { value: 'group-a', label: 'Crew A' },
+              { value: 'group-b', label: 'Crew B' },
+            ],
+          },
+        ],
+      },
+    ],
+  }
+  const compiled = compileCustomReport(
+    {
+      entity: 'people',
+      mode: 'rows',
+      columns: ['group_ids'],
+      filters: {
+        combinator: 'and',
+        rules: [{ field: 'group_ids', op: 'in', value: ['group-a', 'group-b'] }],
+      },
+    },
+    'tenant-1',
+    catalog,
+  )
+  assert.match(compiled.sql, /string_to_array\(COALESCE\("report_people"\."group_ids"::text, ''\), ','\) && ARRAY\[\$2, \$3\]/)
+  assert.deepEqual(compiled.params, ['tenant-1', 'group-a', 'group-b'])
+})
+
 test('summary compiler supports fiscal bins and validates numeric aggregates', () => {
   const compiled = compileCustomReport({ entity: 'records', mode: 'summarize', columns: [], breakouts: [{ column: 'created_at', bin: 'fiscal_year' }], measures: [{ fn: 'sum', column: 'amount' }] }, 'tenant-1', catalog, { fiscalStartMonth: 4 })
   assert.match(compiled.sql, /make_interval\(months => 9\)/)

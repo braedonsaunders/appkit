@@ -21,7 +21,7 @@ export type { ReportDensity, ReportLayoutConfig, ReportPaperSize }
 
 export const DEFAULT_REPORT_LAYOUT: Required<ReportLayoutConfig> = {
   paperSize: 'letter',
-  orientation: 'landscape',
+  orientation: 'portrait',
   marginMm: 15,
   showSummary: true,
   density: 'standard',

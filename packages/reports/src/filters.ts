@@ -50,8 +50,26 @@ export function compileReportRule(
 ): string | null {
   const column = reportColumnExpression(entity, rule.field)
   if (!column) return null
+  const columnMeta = entity.columns.find((candidate) => candidate.key === rule.field)
   const value = rule.value
   const present = value !== null && value !== undefined && value !== ''
+  if (columnMeta?.filterValueMode === 'csv-set') {
+    const set = `string_to_array(COALESCE(${column}::text, ''), ',')`
+    switch (rule.op) {
+      case 'eq':
+        return present ? `${parameters.add(value)} = ANY(${set})` : null
+      case 'neq':
+        return present ? `NOT (${parameters.add(value)} = ANY(${set}))` : null
+      case 'in':
+      case 'not_in': {
+        if (!Array.isArray(value) || !value.length) return null
+        const overlap = `${set} && ARRAY[${value.map((entry) => parameters.add(String(entry))).join(', ')}]`
+        return rule.op === 'not_in' ? `NOT (${overlap})` : overlap
+      }
+      default:
+        break
+    }
+  }
   switch (rule.op) {
     case 'eq': return present ? `${column} = ${parameters.add(value)}` : null
     case 'neq': return present ? `${column} <> ${parameters.add(value)}` : null

@@ -11,13 +11,23 @@ const GROUP_ORDER: PeriodPresetGroup[] = ['fiscal_year', 'fiscal_quarter', 'fisc
 type Node = ReportRule | ReportRuleGroup
 function isGroup(node: Node): node is ReportRuleGroup { return 'rules' in node }
 
+export function defaultOperatorForColumn(
+  column: ReportEntity['columns'][number],
+): ReportFilterOperator {
+  if (reportColumnOptions(column).length) return 'in'
+  return operatorsForKind(column.kind)[0]?.key ?? 'eq'
+}
+
 /** Recursive nested and/or filter editor matching the tree consumed by the SQL compiler. */
 export function ReportFilterTree({ entity, group, onChange, depth = 0 }: { entity: ReportEntity; group: ReportRuleGroup; onChange: (group: ReportRuleGroup) => void; depth?: number }) {
   const setRule = (index: number, rule: Node) => { const rules = [...group.rules]; rules[index] = rule; onChange({ ...group, rules }) }
   const remove = (index: number) => onChange({ ...group, rules: group.rules.filter((_, current) => current !== index) })
   const addRule = () => {
     const column = entity.columns[0]
-    if (column) onChange({ ...group, rules: [...group.rules, { field: column.key, op: operatorsForKind(column.kind)[0]?.key ?? 'eq', value: '' }] })
+    if (column) {
+      const op = defaultOperatorForColumn(column)
+      onChange({ ...group, rules: [...group.rules, { field: column.key, op, value: op === 'in' ? [] : '' }] })
+    }
   }
   return <div className={depth === 0 ? 'space-y-2 rounded-lg border border-border p-3' : 'space-y-2 rounded-lg border border-border bg-bg-subtle p-3'}>
     <div className="flex items-center gap-2"><span className="text-xs text-fg-muted">Match</span><Select className="h-8 w-48" value={group.combinator} onChange={(event) => onChange({ ...group, combinator: event.target.value as 'and' | 'or' })}><option value="and">all conditions</option><option value="or">any condition</option></Select></div>
@@ -33,13 +43,17 @@ function RuleRow({ entity, rule, onChange, onRemove }: { entity: ReportEntity; r
   const options = column ? reportColumnOptions(column) : []
   const changeField = (field: string) => {
     const nextColumn = entity.columns.find((item) => item.key === field)
-    const available = nextColumn ? operatorsForKind(nextColumn.kind) : []
-    const nextOperator = available.some((item) => item.key === rule.op) ? rule.op : available[0]?.key ?? 'eq'
-    onChange({ field, op: nextOperator, value: '' })
+    if (!nextColumn) return
+    const nextOperator = defaultOperatorForColumn(nextColumn)
+    onChange({ field, op: nextOperator, value: nextOperator === 'in' ? [] : '' })
   }
   return <div className="flex flex-wrap items-center gap-2">
     <Select className="h-8 min-w-40" value={rule.field} onChange={(event) => changeField(event.target.value)}>{entity.columns.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</Select>
-    <Select className="h-8 min-w-36" value={rule.op} onChange={(event) => onChange({ ...rule, op: event.target.value as ReportFilterOperator })}>{operators.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</Select>
+    <Select className="h-8 min-w-36" value={rule.op} onChange={(event) => {
+      const op = event.target.value as ReportFilterOperator
+      const needsList = operators.find((item) => item.key === op)?.needsValue === 'list'
+      onChange({ ...rule, op, value: needsList ? (Array.isArray(rule.value) ? rule.value : []) : (Array.isArray(rule.value) ? '' : rule.value) })
+    }}>{operators.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</Select>
     {rule.op === 'period_preset' ? <Select className="h-8 w-52" value={typeof rule.value === 'string' ? rule.value : 'this_fiscal_year'} onChange={(event) => onChange({ ...rule, value: event.target.value })}>{GROUP_ORDER.map((group) => <optgroup key={group} label={PERIOD_PRESET_GROUP_LABELS[group]}>{PERIOD_PRESETS.filter((preset) => preset.group === group).map((preset) => <option key={preset.id} value={preset.id}>{preset.label}</option>)}</optgroup>)}</Select>
       : operator?.needsValue === 'one' && options.length ? <SearchSelect className="w-52" triggerClassName="h-8" value={typeof rule.value === 'string' ? rule.value : ''} onChange={(value) => onChange({ ...rule, value })} options={options} clearable placeholder="Choose a value" ariaLabel="Filter value" />
       : operator?.needsValue === 'one' ? <Input className="h-8 w-40" type={column?.kind === 'date' ? 'date' : column?.kind === 'number' ? 'number' : 'text'} value={typeof rule.value === 'string' || typeof rule.value === 'number' ? String(rule.value) : ''} placeholder="Value" onChange={(event) => onChange({ ...rule, value: event.target.value })} />

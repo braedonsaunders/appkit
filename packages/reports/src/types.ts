@@ -48,7 +48,7 @@ export type ReportLayout = {
 
 export const DEFAULT_REPORT_LAYOUT: ReportLayout = {
   paperSize: 'letter',
-  orientation: 'landscape',
+  orientation: 'portrait',
   marginMm: 15,
   showSummary: true,
   density: 'standard',
@@ -99,7 +99,10 @@ export function resolveReportLayout(value?: Partial<ReportLayout> | null): Repor
     paperSize: REPORT_PAPER_SIZES.includes(value?.paperSize as ReportPaperSize)
       ? (value!.paperSize as ReportPaperSize)
       : DEFAULT_REPORT_LAYOUT.paperSize,
-    orientation: value?.orientation === 'portrait' ? 'portrait' : 'landscape',
+    orientation:
+      value?.orientation === 'portrait' || value?.orientation === 'landscape'
+        ? value.orientation
+        : DEFAULT_REPORT_LAYOUT.orientation,
     marginMm: Number.isFinite(margin) ? Math.min(30, Math.max(5, margin)) : 15,
     showSummary: value?.showSummary !== false,
     density: value?.density === 'compact' ? 'compact' : 'standard',

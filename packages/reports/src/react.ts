@@ -13,6 +13,7 @@ export {
 } from './report-schedules'
 export { ReportPaper } from './report-paper'
 export { PaperView } from './paper-view'
+export { ReportDocumentView } from './document-view'
 export {
   ReportTable,
   ReportTableBody,

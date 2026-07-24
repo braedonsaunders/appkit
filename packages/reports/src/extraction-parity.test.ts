@@ -6,7 +6,13 @@ const records: ReportEntity = {
   key: 'records', label: 'Records', category: 'Operations', from: 'records', tenantColumn: 'records.tenant_id', defaultColumns: ['name'],
   columns: [
     { key: 'name', label: 'Name', kind: 'text', expression: 'records.name' },
-    { key: 'owner_id', label: 'Owner ID', kind: 'uuid', expression: 'records.owner_id' },
+    {
+      key: 'owner_id',
+      label: 'Owner ID',
+      kind: 'uuid',
+      expression: 'records.owner_id',
+      filterOptions: [{ value: 'person-1', label: 'Ada Lovelace' }],
+    },
     { key: 'metadata_dump', label: 'Metadata', kind: 'text', expression: 'records.metadata', arrayUnnest: 'jsonb' },
   ],
   relations: [{ via: 'owner_id', target: 'people', foreignColumn: 'id', label: 'Owner' }],
@@ -25,6 +31,12 @@ test('document refinement drops JSON and resolves related UUIDs to readable labe
   const owner = refined?.columns.find((column) => column.key === 'owner_id')
   assert.equal(owner?.label, 'Owner')
   assert.match(owner?.expression ?? '', /last_name/)
+})
+
+test('reference-backed filter options preserve host values and display labels', () => {
+  assert.deepEqual(reportColumnOptions(records.columns[1]!), [
+    { value: 'person-1', label: 'Ada Lovelace' },
+  ])
 })
 
 test('custom fields compile to typed, allowlisted metadata columns and augment without duplicates', async () => {

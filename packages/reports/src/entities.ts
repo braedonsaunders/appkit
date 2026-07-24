@@ -13,7 +13,17 @@ export type ReportEntityColumn = {
   /** Synthetic JSON/array columns are omitted from printable documents. */
   arrayUnnest?: 'array' | 'jsonb'
   description?: string
-  enumOptions?: { value: string; label: string }[]
+  /**
+   * Tenant-resolved values that can legally be used to filter this column.
+   * Hosts populate this for enums and reference-backed dimensions alike.
+   */
+  filterOptions?: readonly { value: string; label: string }[]
+  /**
+   * Flat reporting views may expose a many-valued dimension as a comma-delimited
+   * set. In that case equality and set operators target membership, not the
+   * serialized string as a whole.
+   */
+  filterValueMode?: 'scalar' | 'csv-set'
   /** Source-compatible raw enum values. */
   options?: readonly string[]
 }
@@ -81,6 +91,6 @@ export function defaultColumnsFor(entity: ReportEntity, limit = 7): string[] {
 }
 
 export function reportColumnOptions(column: ReportEntityColumn): { value: string; label: string }[] {
-  if (column.enumOptions?.length) return column.enumOptions
+  if (column.filterOptions?.length) return [...column.filterOptions]
   return (column.options ?? []).map((value) => ({ value, label: value.replaceAll('_', ' ') }))
 }
