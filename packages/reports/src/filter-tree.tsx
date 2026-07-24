@@ -1,7 +1,8 @@
 'use client'
 
-import { Plus, Trash2 } from 'lucide-react'
-import { Button, Input, Select } from '@appkit/ui'
+import { useState } from 'react'
+import { Plus, Trash2, X } from 'lucide-react'
+import { Button, Input, SearchSelect, Select, type SelectOption } from '@appkit/ui'
 import { operatorsForKind, type ReportFilterOperator, type ReportRule, type ReportRuleGroup } from './filters'
 import { PERIOD_PRESETS, PERIOD_PRESET_GROUP_LABELS, type PeriodPresetGroup } from './period-presets'
 import { reportColumnOptions, type ReportEntity } from './entities'
@@ -40,11 +41,50 @@ function RuleRow({ entity, rule, onChange, onRemove }: { entity: ReportEntity; r
     <Select className="h-8 min-w-40" value={rule.field} onChange={(event) => changeField(event.target.value)}>{entity.columns.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</Select>
     <Select className="h-8 min-w-36" value={rule.op} onChange={(event) => onChange({ ...rule, op: event.target.value as ReportFilterOperator })}>{operators.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</Select>
     {rule.op === 'period_preset' ? <Select className="h-8 w-52" value={typeof rule.value === 'string' ? rule.value : 'this_fiscal_year'} onChange={(event) => onChange({ ...rule, value: event.target.value })}>{GROUP_ORDER.map((group) => <optgroup key={group} label={PERIOD_PRESET_GROUP_LABELS[group]}>{PERIOD_PRESETS.filter((preset) => preset.group === group).map((preset) => <option key={preset.id} value={preset.id}>{preset.label}</option>)}</optgroup>)}</Select>
-      : operator?.needsValue === 'one' && options.length ? <Select className="h-8 w-44" value={typeof rule.value === 'string' ? rule.value : ''} onChange={(event) => onChange({ ...rule, value: event.target.value })}><option value="">Choose a value</option>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</Select>
+      : operator?.needsValue === 'one' && options.length ? <SearchSelect className="w-52" triggerClassName="h-8" value={typeof rule.value === 'string' ? rule.value : ''} onChange={(value) => onChange({ ...rule, value })} options={options} clearable placeholder="Choose a value" ariaLabel="Filter value" />
       : operator?.needsValue === 'one' ? <Input className="h-8 w-40" type={column?.kind === 'date' ? 'date' : column?.kind === 'number' ? 'number' : 'text'} value={typeof rule.value === 'string' || typeof rule.value === 'number' ? String(rule.value) : ''} placeholder="Value" onChange={(event) => onChange({ ...rule, value: event.target.value })} />
-      : operator?.needsValue === 'list' && options.length ? <div className="flex max-w-md flex-wrap gap-1">{options.map((option) => { const selected = Array.isArray(rule.value) && rule.value.map(String).includes(option.value); return <button key={option.value} type="button" onClick={() => { const current = Array.isArray(rule.value) ? rule.value.map(String) : []; onChange({ ...rule, value: selected ? current.filter((value) => value !== option.value) : [...current, option.value] }) }} className={selected ? 'rounded-full border border-primary bg-primary-subtle px-2 py-0.5 text-xs text-primary' : 'rounded-full border border-border px-2 py-0.5 text-xs text-fg-muted hover:border-border-strong'}>{option.label}</button> })}</div>
-      : operator?.needsValue === 'list' ? <Input className="h-8 w-52" value={Array.isArray(rule.value) ? rule.value.join(', ') : ''} placeholder="Comma-separated values" onChange={(event) => onChange({ ...rule, value: event.target.value.split(',').map((value) => value.trim()).filter(Boolean) })} />
+      : operator?.needsValue === 'list' && options.length ? <MultiSelect value={Array.isArray(rule.value) ? rule.value.map(String) : []} options={options} onChange={(next) => onChange({ ...rule, value: next })} />
+      : operator?.needsValue === 'list' ? <TokenInput value={Array.isArray(rule.value) ? rule.value.map(String) : []} onChange={(next) => onChange({ ...rule, value: next })} />
       : <span className="text-xs text-fg-subtle">No value</span>}
     <Button type="button" variant="ghost" size="sm" onClick={onRemove} aria-label="Remove condition"><Trash2 size={14} /></Button>
+  </div>
+}
+
+function Chip({ label, onRemove, tone = 'primary' }: { label: string; onRemove: () => void; tone?: 'primary' | 'neutral' }) {
+  return <button type="button" onClick={onRemove} className={tone === 'primary'
+    ? 'inline-flex items-center gap-1 rounded-full border border-primary bg-primary-subtle px-2 py-0.5 text-xs text-primary'
+    : 'inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-fg-muted hover:border-border-strong'}>
+    <span className="max-w-52 truncate">{label}</span><X size={12} className="shrink-0" />
+  </button>
+}
+
+/** Searchable add-a-value control plus removable chips for the selected set. */
+function MultiSelect({ value, options, onChange }: { value: string[]; options: { value: string; label: string }[]; onChange: (value: string[]) => void }) {
+  const selected = new Set(value)
+  const remaining: SelectOption[] = options.filter((option) => !selected.has(option.value))
+  const labelOf = (candidate: string) => options.find((option) => option.value === candidate)?.label ?? candidate
+  return <div className="flex max-w-md flex-col gap-1.5">
+    <SearchSelect className="w-52" triggerClassName="h-8" value="" onChange={(next) => { if (next) onChange([...value, next]) }} options={remaining} placeholder="Add value…" ariaLabel="Add filter value" />
+    {value.length ? <div className="flex flex-wrap gap-1">{value.map((item) => <Chip key={item} label={labelOf(item)} onRemove={() => onChange(value.filter((current) => current !== item))} />)}</div> : null}
+  </div>
+}
+
+/** Free-text multi-value entry: type a value, press Enter to add it as a chip. */
+function TokenInput({ value, onChange }: { value: string[]; onChange: (value: string[]) => void }) {
+  const [draft, setDraft] = useState('')
+  const commit = () => { const trimmed = draft.trim(); if (trimmed && !value.includes(trimmed)) onChange([...value, trimmed]); setDraft('') }
+  return <div className="flex max-w-md flex-col gap-1.5">
+    <Input
+      className="h-8 w-52"
+      value={draft}
+      placeholder="Type a value, press Enter"
+      onChange={(event) => setDraft(event.target.value)}
+      onBlur={commit}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') { event.preventDefault(); commit() }
+        else if (event.key === 'Backspace' && !draft && value.length) onChange(value.slice(0, -1))
+      }}
+    />
+    {value.length ? <div className="flex flex-wrap gap-1">{value.map((item) => <Chip key={item} label={item} tone="neutral" onRemove={() => onChange(value.filter((current) => current !== item))} />)}</div> : null}
   </div>
 }

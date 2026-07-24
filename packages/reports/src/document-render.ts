@@ -116,112 +116,128 @@ export function buildReportPageCss(
  *  them would be silently ignored). Selectors are scoped under
  *  .appkit-report-doc so the fragment can mount inside the app without
  *  restyling the page around it. `density: 'compact'` shrinks type + padding
- *  so more rows fit per page. */
+ *  so more rows fit per page.
+ *
+ *  The look mirrors the on-screen <ReportPaper>/<PaperView>: a centered
+ *  document header, a divided summary band (no cards), plain uppercase section
+ *  headers, and clean borderless rows under a ruled header — so the exported
+ *  PDF is visually identical to the in-app preview. */
 export function buildReportDocumentCss(
-  primaryColor?: string | null,
+  _primaryColor?: string | null,
   density: ReportDensity = 'standard',
 ): string {
-  const primary = primaryColor ?? '#0f766e'
   const compact = density === 'compact'
   const s = compact
     ? {
-        body: '9pt',
-        h1: '14pt',
-        meta: '8pt',
+        body: '8.5pt',
+        org: '10pt',
+        title: '15pt',
+        period: '9pt',
+        note: '8pt',
         logo: '30px',
-        summaryMargin: '8px 0 12px',
-        sumPad: '5px 8px',
-        sumLabel: '8pt',
-        sumValue: '11.5pt',
-        section: '10px 0',
-        h2: '10.5pt',
+        headMargin: '16px',
+        sumMargin: '0 0 16px',
+        sumPad: '8px 0',
+        sumLabel: '7.5pt',
+        sumValue: '10.5pt',
+        section: '0 0 18px',
+        h3: '8pt',
         subtitle: '8pt',
         table: '8.5pt',
-        cellPad: '3px 6px',
-        headerPad: '0 0 7px',
-        headerMargin: '10px',
+        thPad: '4px 10px 4px 0',
+        tdPad: '3px 10px 3px 0',
       }
     : {
         body: '10pt',
-        h1: '18pt',
-        meta: '9pt',
+        org: '11.5pt',
+        title: '18pt',
+        period: '10pt',
+        note: '8.5pt',
         logo: '40px',
-        summaryMargin: '12px 0 18px',
-        sumPad: '8px 10px',
-        sumLabel: '9pt',
-        sumValue: '14pt',
-        section: '14px 0',
-        h2: '11.5pt',
-        subtitle: '9pt',
+        headMargin: '24px',
+        sumMargin: '0 0 24px',
+        sumPad: '12px 0',
+        sumLabel: '8.5pt',
+        sumValue: '12.5pt',
+        section: '0 0 28px',
+        h3: '8.5pt',
+        subtitle: '8.5pt',
         table: '9.5pt',
-        cellPad: '5px 8px',
-        headerPad: '0 0 10px',
-        headerMargin: '14px',
+        thPad: '6px 14px 6px 0',
+        tdPad: '4px 14px 4px 0',
       }
   return `
-  .appkit-report-doc { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial; color: #111; font-size: ${s.body}; }
+  .appkit-report-doc { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial; color: #111827; font-size: ${s.body}; font-variant-numeric: tabular-nums; }
   .appkit-report-doc * { box-sizing: border-box; }
-  .appkit-report-doc header.cover {
-    border-bottom: 3px solid ${primary};
-    padding: ${s.headerPad};
-    margin-bottom: ${s.headerMargin};
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-  }
-  .appkit-report-doc header.cover h1 { font-size: ${s.h1}; margin: 0; color: #111; }
-  .appkit-report-doc header.cover .meta { text-align: right; font-size: ${s.meta}; color: #444; }
-  .appkit-report-doc header.cover .meta div + div { margin-top: 2px; }
-  .appkit-report-doc header.cover img.logo { max-height: ${s.logo}; margin-bottom: 6px; }
+  .appkit-report-doc .doc-head { text-align: center; margin-bottom: ${s.headMargin}; }
+  .appkit-report-doc .doc-head img.logo { max-height: ${s.logo}; margin: 0 auto 6px; display: block; }
+  .appkit-report-doc .doc-org { font-size: ${s.org}; font-weight: 600; }
+  .appkit-report-doc .doc-title { font-size: ${s.title}; font-weight: 700; letter-spacing: -0.01em; margin: 2px 0; }
+  .appkit-report-doc .doc-period { font-size: ${s.period}; color: #6b7280; }
+  .appkit-report-doc .doc-note { font-size: ${s.note}; color: #9ca3af; font-style: italic; }
   .appkit-report-doc .summary {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 8px;
-    margin: ${s.summaryMargin};
-  }
-  .appkit-report-doc .sum {
-    border: 1px solid #e5e7eb;
-    border-left: 3px solid ${primary};
+    display: flex;
+    border-top: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
     padding: ${s.sumPad};
-    border-radius: 3px;
-    background: #fafafa;
+    margin: ${s.sumMargin};
     break-inside: avoid;
   }
-  .appkit-report-doc .sum-label { color: #6b7280; font-size: ${s.sumLabel}; }
-  .appkit-report-doc .sum-value { font-size: ${s.sumValue}; font-weight: 600; color: #111; margin-top: 2px; }
+  .appkit-report-doc .sum { flex: 1 1 0; min-width: 0; padding: 0 12px; text-align: center; }
+  .appkit-report-doc .sum + .sum { border-left: 1px solid #e5e7eb; }
+  .appkit-report-doc .sum-label { color: #6b7280; font-size: ${s.sumLabel}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .appkit-report-doc .sum-value { font-size: ${s.sumValue}; font-weight: 600; margin-top: 2px; }
   .appkit-report-doc section.group { margin: ${s.section}; }
-  .appkit-report-doc section.group h2 {
-    font-size: ${s.h2};
-    color: ${primary};
-    margin: 8px 0 4px;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 3px;
+  .appkit-report-doc section.group .group-title {
+    font-size: ${s.h3};
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin: 8px 0 6px;
     break-after: avoid;
   }
-  .appkit-report-doc section.group .subtitle { font-size: ${s.subtitle}; color: #666; margin-bottom: 6px; break-after: avoid; }
+  .appkit-report-doc section.group .group-title .subtitle { margin-left: 8px; font-weight: 400; text-transform: none; letter-spacing: normal; color: #6b7280; }
   .appkit-report-doc table { width: 100%; max-width: 100%; border-collapse: collapse; font-size: ${s.table}; }
   .appkit-report-doc thead { display: table-header-group; }
   .appkit-report-doc tr { break-inside: avoid; }
   .appkit-report-doc thead th {
     text-align: left;
-    background: #f3f4f6;
+    vertical-align: bottom;
     border-bottom: 1px solid #d1d5db;
-    padding: ${s.cellPad};
-    color: #374151;
+    padding: ${s.thPad};
+    color: #6b7280;
     font-weight: 600;
+    font-size: 0.82em;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
     overflow-wrap: anywhere;
   }
   .appkit-report-doc tbody td {
-    padding: ${s.cellPad};
-    border-bottom: 1px solid #f1f5f9;
+    padding: ${s.tdPad};
     vertical-align: top;
     overflow-wrap: anywhere;
   }
-  .appkit-report-doc tbody td em { color: #999; font-style: italic; }
-  .appkit-report-doc tbody tr:nth-child(even) { background: #fafafa; }
-  .appkit-report-doc .empty { color: #999; font-style: italic; padding: 8px 0; }
+  .appkit-report-doc th:last-child, .appkit-report-doc td:last-child { padding-right: 0; }
+  .appkit-report-doc .a-right { text-align: right; }
+  .appkit-report-doc .a-center { text-align: center; }
+  .appkit-report-doc tbody td em { color: #9ca3af; font-style: italic; }
+  .appkit-report-doc .empty { color: #9ca3af; font-style: italic; text-align: center; padding: 24px 0; }
   .appkit-report-doc img { max-width: 100%; height: auto; }
 `
+}
+
+const NUMERIC_CELL = /^-?[$(]?-?[\d,]+(\.\d+)?\)?%?$/
+
+/** Mirror of PaperView's per-cell numeric heuristic so free-form values align
+ *  the same way on paper as they do on screen. */
+function isNumericValue(value: unknown): boolean {
+  if (typeof value === 'number') return true
+  if (typeof value !== 'string') return false
+  return NUMERIC_CELL.test(value.trim())
+}
+
+function alignClass(align: 'left' | 'center' | 'right'): string {
+  return align === 'right' ? ' class="a-right"' : align === 'center' ? ' class="a-center"' : ''
 }
 
 /** The document body fragment: cover header + summary band + one section per
@@ -230,45 +246,51 @@ export function buildReportDocumentCss(
  *  both to Paged.js; the PDF shell puts them in <head>). */
 export function renderReportDocumentBodyHtml(input: ReportDocumentInput): string {
   const translate = input.translate ?? ((source: string) => source)
+  const multiGroup = input.groups.length > 1
   const summaryCells = (input.summary ?? [])
     .map(
-      (s) => `<div class="sum">
-        <div class="sum-label">${escapeHtml(translate(s.label))}</div>
-        <div class="sum-value">${escapeHtml(String(s.value))}</div>
+      (item) => `<div class="sum">
+        <div class="sum-label">${escapeHtml(translate(item.label))}</div>
+        <div class="sum-value">${escapeHtml(String(item.value))}</div>
       </div>`,
     )
     .join('')
 
   const groupsHtml = input.groups
     .map((g) => {
+      const showTitle = g.title && (multiGroup || Boolean(g.subtitle))
+      const titleHtml = showTitle
+        ? `<div class="group-title">${escapeHtml(translate(g.title))}${g.subtitle ? `<span class="subtitle">${escapeHtml(translate(g.subtitle))}</span>` : ''}</div>`
+        : ''
       if (g.isEmpty || g.rows.length === 0) {
         return `<section class="group">
-          <h2>${escapeHtml(translate(g.title))}</h2>
-          ${g.subtitle ? `<div class="subtitle">${escapeHtml(translate(g.subtitle))}</div>` : ''}
+          ${titleHtml}
           <div class="empty">${escapeHtml(translate('No data.'))}</div>
         </section>`
       }
+      const columnAlign = g.columns.map((column) => {
+        if (typeof column === 'string') return 'left' as const
+        return column.align ?? (column.semanticType === 'number' || column.semanticType === 'currency' ? 'right' : 'left')
+      })
       const head = g.columns
-        .map((column) => `<th>${escapeHtml(translate(typeof column === 'string' ? column : column.label))}</th>`)
+        .map((column, index) => `<th${alignClass(columnAlign[index] ?? 'left')}>${escapeHtml(translate(typeof column === 'string' ? column : column.label))}</th>`)
         .join('')
       const body = g.rows
-        .map(
-          (row) => {
-            const cells = Array.isArray(row)
-              ? row
-              : g.columns.map((column) => row[typeof column === 'string' ? column : column.key])
-            return `<tr>${cells
-              .map(
-                (value) =>
-                  `<td>${value === null || value === undefined ? '<em>—</em>' : escapeHtml(String(value))}</td>`,
-              )
-              .join('')}</tr>`
-          },
-        )
+        .map((row) => {
+          const cells = Array.isArray(row)
+            ? row
+            : g.columns.map((column) => row[typeof column === 'string' ? column : column.key])
+          return `<tr>${cells
+            .map((value, index) => {
+              const declared = columnAlign[index] ?? 'left'
+              const align = declared === 'left' && isNumericValue(value) ? 'right' : declared
+              return `<td${alignClass(align)}>${value === null || value === undefined || value === '' ? '<em>—</em>' : escapeHtml(String(value))}</td>`
+            })
+            .join('')}</tr>`
+        })
         .join('')
       return `<section class="group">
-        <h2>${escapeHtml(translate(g.title))}</h2>
-        ${g.subtitle ? `<div class="subtitle">${escapeHtml(translate(g.subtitle))}</div>` : ''}
+        ${titleHtml}
         <table>
           <thead><tr>${head}</tr></thead>
           <tbody>${body}</tbody>
@@ -277,17 +299,14 @@ export function renderReportDocumentBodyHtml(input: ReportDocumentInput): string
     })
     .join('')
 
+  const generated = `${escapeHtml(translate('Generated'))} ${escapeHtml(input.generatedAt.toISOString().slice(0, 19).replace('T', ' '))}`
   return `<div class="appkit-report-doc">
-  <header class="cover">
-    <div>
-      ${input.tenantLogoUrl ? `<img class="logo" src="${escapeHtml(input.tenantLogoUrl)}" alt=""/>` : ''}
-      <h1>${escapeHtml(input.reportName)}</h1>
-    </div>
-    <div class="meta">
-      <div><strong>${escapeHtml(input.tenantName)}</strong></div>
-      <div>${escapeHtml(input.dateRangeLabel)}</div>
-      <div>${escapeHtml(translate('Generated'))} ${escapeHtml(input.generatedAt.toISOString().slice(0, 19).replace('T', ' '))}</div>
-    </div>
+  <header class="doc-head">
+    ${input.tenantLogoUrl ? `<img class="logo" src="${escapeHtml(input.tenantLogoUrl)}" alt=""/>` : ''}
+    ${input.tenantName ? `<div class="doc-org">${escapeHtml(input.tenantName)}</div>` : ''}
+    <div class="doc-title">${escapeHtml(input.reportName)}</div>
+    ${input.dateRangeLabel ? `<div class="doc-period">${escapeHtml(input.dateRangeLabel)}</div>` : ''}
+    <div class="doc-note">${generated}</div>
   </header>
   ${summaryCells ? `<div class="summary">${summaryCells}</div>` : ''}
   ${groupsHtml}
