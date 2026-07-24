@@ -33,6 +33,7 @@ export const DEFAULT_REPORT_LAYOUT: Required<ReportLayoutConfig> = {
 
 export const REPORT_MARGIN_MM_MIN = 5
 export const REPORT_MARGIN_MM_MAX = 30
+export const REPORT_DOCUMENT_FONT_FAMILY = '"AppKit Report Sans", sans-serif'
 
 /** Normalise a stored (or user-supplied) layout: whitelist paper/orientation/
  *  density, clamp margins, default the optionals — always returns a fully
@@ -169,23 +170,8 @@ export function buildReportDocumentCss(
         tdPad: '4px 14px 4px 0',
       }
   return `
-  @font-face {
-    font-family: "AppKit Report Sans";
-    font-style: normal;
-    font-weight: 400 600;
-    font-display: block;
-    src: url("${REPORT_DOCUMENT_FONT_LATIN_EXT_DATA_URL}") format("woff2");
-    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-  }
-  @font-face {
-    font-family: "AppKit Report Sans";
-    font-style: normal;
-    font-weight: 400 600;
-    font-display: block;
-    src: url("${REPORT_DOCUMENT_FONT_LATIN_DATA_URL}") format("woff2");
-    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-  }
-  .appkit-report-doc { font-family: "AppKit Report Sans", sans-serif; color: #111827; font-size: ${s.body}; font-variant-numeric: tabular-nums; }
+  ${buildReportDocumentFontCss()}
+  .appkit-report-doc { font-family: ${REPORT_DOCUMENT_FONT_FAMILY}; color: #111827; font-size: ${s.body}; font-variant-numeric: tabular-nums; }
   .appkit-report-doc * { box-sizing: border-box; }
   .appkit-report-doc .doc-head { text-align: center; margin-bottom: ${s.headMargin}; }
   .appkit-report-doc .doc-head img.logo { max-height: ${s.logo}; margin: 0 auto 6px; display: block; }
@@ -240,6 +226,29 @@ export function buildReportDocumentCss(
   .appkit-report-doc tbody td em { color: #9ca3af; font-style: italic; }
   .appkit-report-doc .empty { color: #9ca3af; font-style: italic; text-align: center; padding: 24px 0; }
   .appkit-report-doc img { max-width: 100%; height: auto; }
+`
+}
+
+/** Self-contained font-face rules for the report body and Chromium's isolated
+ * header/footer document. Both consume the same embedded bytes. */
+export function buildReportDocumentFontCss(): string {
+  return `
+  @font-face {
+    font-family: "AppKit Report Sans";
+    font-style: normal;
+    font-weight: 400 600;
+    font-display: block;
+    src: url("${REPORT_DOCUMENT_FONT_LATIN_EXT_DATA_URL}") format("woff2");
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  }
+  @font-face {
+    font-family: "AppKit Report Sans";
+    font-style: normal;
+    font-weight: 400 600;
+    font-display: block;
+    src: url("${REPORT_DOCUMENT_FONT_LATIN_DATA_URL}") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
 `
 }
 

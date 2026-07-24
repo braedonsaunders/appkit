@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { computeNextReportRun, DEFAULT_REPORT_LAYOUT, queryResultToReport, resolveReportLayout, runReport, validateReportSchedule, type ReportDefinition, type ReportSchedule } from './index'
-import { buildReportDocumentCss } from './document-render'
+import {
+  buildReportDocumentCss,
+  buildReportDocumentFontCss,
+  REPORT_DOCUMENT_FONT_FAMILY,
+} from './document-render'
 
 test('query results become typed report groups without losing row shape', () => {
   const result = queryResultToReport({ columns: [{ key: 'team', label: 'Team', semanticType: 'category', role: 'dimension' }, { key: 'total', label: 'Total', semanticType: 'currency', role: 'measure' }], rows: [{ team: 'A', total: 12 }, { team: 'B', total: 8 }], rowCount: 2, truncated: false, durationMs: 4 }, { groupBy: 'team' })
@@ -21,6 +25,8 @@ test('report documents embed one deterministic font for screen and PDF rendering
   assert.match(css, /font-family: "AppKit Report Sans"/)
   assert.match(css, /src: url\("data:font\/woff2;base64,/)
   assert.doesNotMatch(css, /system-ui|-apple-system|"Segoe UI"/)
+  assert.match(buildReportDocumentFontCss(), /font-family: "AppKit Report Sans"/)
+  assert.equal(REPORT_DOCUMENT_FONT_FAMILY, '"AppKit Report Sans", sans-serif')
 })
 
 test('timezone-aware weekly scheduling produces a future occurrence', () => {
