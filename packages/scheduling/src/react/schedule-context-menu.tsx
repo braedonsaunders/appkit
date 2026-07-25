@@ -1,30 +1,32 @@
 'use client'
 
 /**
- * Right-click menu for a task row: edit, outline moves, type conversion,
- * status, duplicate, delete.
+ * Right-click menu for a task row, built on `@appkit/ui`'s ContextMenu: edit,
+ * outline moves, type conversion, status, duplicate, delete.
  *
- * Type conversion carries the field changes the new type implies — converting
- * to a milestone zeroes the duration and pins the finish to the start, because
- * a "milestone" that still spans five days is a bar wearing a diamond.
+ * Everything is one flat list with separators rather than a hover submenu —
+ * that is what the shared primitive draws, and a flat list is what actually
+ * works on touch. The current status carries a check so the section reads as a
+ * choice rather than eight unrelated commands.
+ *
+ * Type conversion carries the field changes the new type implies: converting to
+ * a milestone zeroes the duration and pins the finish to the start, because a
+ * "milestone" that still spans five days is a bar wearing a diamond.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   ArrowDown,
   ArrowUp,
-  CheckCircle2,
+  Check,
   ChevronRight,
-  Circle,
-  Clock,
   Copy,
   Diamond,
-  Pause,
   Pencil,
   Plus,
   Trash2,
 } from 'lucide-react'
-import { cn } from '@appkit/ui'
+import { ContextMenu, type ContextMenuEntry } from '@appkit/ui'
 import type { ScheduleTask, ScheduleTaskPatchInput, ScheduleTaskStatus } from '../types'
 import { useSchedulingLabels } from './context'
 
@@ -48,18 +50,7 @@ export interface ScheduleContextMenuProps {
   onMove?: (taskId: string, direction: 'up' | 'down') => void
 }
 
-const STATUS_ICONS: Record<ScheduleTaskStatus, typeof Circle> = {
-  not_started: Circle,
-  in_progress: Clock,
-  on_hold: Pause,
-  complete: CheckCircle2,
-}
 const STATUS_ORDER: ScheduleTaskStatus[] = ['not_started', 'in_progress', 'on_hold', 'complete']
-
-/** Menu box estimate, used only to keep it inside the viewport. */
-const MENU_WIDTH = 220
-const MENU_HEIGHT = 430
-const VIEWPORT_MARGIN = 8
 
 export function ScheduleContextMenu({
   menu,
@@ -75,202 +66,150 @@ export function ScheduleContextMenu({
   onMove,
 }: ScheduleContextMenuProps) {
   const labels = useSchedulingLabels()
-  const ref = useRef<HTMLDivElement>(null)
-  const [statusOpen, setStatusOpen] = useState(false)
-
-  useEffect(() => {
-    if (!menu) return
-    const handlePointer = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) onClose()
-    }
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
-    document.addEventListener('mousedown', handlePointer)
-    document.addEventListener('keydown', handleKey)
-    return () => {
-      document.removeEventListener('mousedown', handlePointer)
-      document.removeEventListener('keydown', handleKey)
-    }
-  }, [menu, onClose])
-
-  useEffect(() => setStatusOpen(false), [menu])
-
   if (!menu) return null
 
-  const { x, y, task } = menu
-  const clampedX = Math.min(x, window.innerWidth - MENU_WIDTH - VIEWPORT_MARGIN)
-  const clampedY = Math.min(y, window.innerHeight - MENU_HEIGHT - VIEWPORT_MARGIN)
+  const { task } = menu
+  const items: ContextMenuEntry[] = [
+    { key: 'edit', label: labels.editor.title, icon: Pencil, onSelect: () => onEdit(task) },
+    ...(onCreateSibling
+      ? [
+          {
+            key: 'sibling',
+            label: labels.toolbar.addTask,
+            icon: Plus,
+            onSelect: () => onCreateSibling(task),
+          },
+        ]
+      : []),
+    ...(onCreateChild
+      ? [
+          {
+            key: 'child',
+            label: labels.editor.addChild,
+            icon: Plus,
+            onSelect: () => onCreateChild(task),
+          },
+        ]
+      : []),
 
-  const act = (fn: () => void) => () => {
-    fn()
-    onClose()
-  }
+    { key: 'sep-outline', separator: true as const },
+    ...(onIndent
+      ? [
+          {
+            key: 'indent',
+            label: labels.toolbar.indent,
+            icon: ChevronRight,
+            onSelect: () => onIndent(task.id),
+          },
+        ]
+      : []),
+    ...(onOutdent
+      ? [
+          {
+            key: 'outdent',
+            label: labels.toolbar.outdent,
+            icon: ChevronRight,
+            onSelect: () => onOutdent(task.id),
+          },
+        ]
+      : []),
+    ...(onMove
+      ? [
+          {
+            key: 'up',
+            label: labels.menu.earlier,
+            icon: ArrowUp,
+            onSelect: () => onMove(task.id, 'up'),
+          },
+          {
+            key: 'down',
+            label: labels.menu.later,
+            icon: ArrowDown,
+            onSelect: () => onMove(task.id, 'down'),
+          },
+        ]
+      : []),
+
+    { key: 'sep-type', separator: true as const },
+    ...(task.taskType !== 'task'
+      ? [
+          {
+            key: 'to-task',
+            label: labels.editor.convertTo(labels.taskType.task),
+            icon: Diamond,
+            onSelect: () =>
+              onUpdate(task.id, { taskType: 'task', duration: Math.max(task.duration, 1) }),
+          },
+        ]
+      : []),
+    ...(task.taskType !== 'milestone'
+      ? [
+          {
+            key: 'to-milestone',
+            label: labels.editor.convertTo(labels.taskType.milestone),
+            icon: Diamond,
+            onSelect: () =>
+              onUpdate(task.id, {
+                taskType: 'milestone',
+                duration: 0,
+                progress: 0,
+                endDate: task.startDate,
+              }),
+          },
+        ]
+      : []),
+    ...(task.taskType !== 'summary'
+      ? [
+          {
+            key: 'to-summary',
+            label: labels.editor.convertTo(labels.taskType.summary),
+            icon: Diamond,
+            onSelect: () =>
+              onUpdate(task.id, { taskType: 'summary', duration: Math.max(task.duration, 1) }),
+          },
+        ]
+      : []),
+
+    { key: 'sep-status', separator: true as const },
+    ...STATUS_ORDER.map((status) => ({
+      key: `status-${status}`,
+      label: labels.status[status],
+      // The check marks where the task is now; the rest are the moves available.
+      icon: task.status === status ? Check : undefined,
+      disabled: task.status === status,
+      onSelect: () =>
+        onUpdate(task.id, {
+          status,
+          // Marking complete without progress leaves the two disagreeing.
+          ...(status === 'complete' ? { progress: 1 } : {}),
+        }),
+    })),
+
+    ...(onDuplicate
+      ? [
+          { key: 'sep-duplicate', separator: true as const },
+          {
+            key: 'duplicate',
+            label: labels.editor.duplicate,
+            icon: Copy,
+            onSelect: () => onDuplicate(task),
+          },
+        ]
+      : []),
+
+    { key: 'sep-delete', separator: true as const },
+    {
+      key: 'delete',
+      label: labels.editor.delete,
+      icon: Trash2,
+      danger: true,
+      onSelect: () => onDelete(task.id),
+    },
+  ]
 
   return (
-    <div
-      ref={ref}
-      role="menu"
-      data-testid="schedule-context-menu"
-      className="fixed z-[100] min-w-[220px] rounded-lg border border-border bg-elevated py-1 text-xs shadow-xl"
-      style={{ left: clampedX, top: clampedY }}
-    >
-      <MenuItem icon={Pencil} label={labels.editor.title} onClick={act(() => onEdit(task))} />
-      {onCreateSibling && (
-        <MenuItem icon={Plus} label={labels.toolbar.addTask} onClick={act(() => onCreateSibling(task))} />
-      )}
-      {onCreateChild && (
-        <MenuItem
-          icon={Plus}
-          label={`${labels.toolbar.addTask} — ${labels.badges.summary}`}
-          onClick={act(() => onCreateChild(task))}
-        />
-      )}
-
-      <Separator />
-
-      {onIndent && (
-        <MenuItem icon={ChevronRight} label={labels.toolbar.indent} onClick={act(() => onIndent(task.id))} />
-      )}
-      {onOutdent && (
-        <MenuItem
-          icon={ChevronRight}
-          iconClassName="rotate-180"
-          label={labels.toolbar.outdent}
-          onClick={act(() => onOutdent(task.id))}
-        />
-      )}
-      {onMove && (
-        <>
-          <MenuItem icon={ArrowUp} label={labels.menu.earlier} onClick={act(() => onMove(task.id, 'up'))} />
-          <MenuItem icon={ArrowDown} label={labels.menu.later} onClick={act(() => onMove(task.id, 'down'))} />
-        </>
-      )}
-
-      <Separator />
-
-      {task.taskType !== 'task' ? (
-        <MenuItem
-          icon={Diamond}
-          label={labels.taskType.task}
-          onClick={act(() =>
-            onUpdate(task.id, { taskType: 'task', duration: Math.max(task.duration, 1) }),
-          )}
-        />
-      ) : null}
-      {task.taskType !== 'milestone' ? (
-        <MenuItem
-          icon={Diamond}
-          label={labels.taskType.milestone}
-          onClick={act(() =>
-            onUpdate(task.id, {
-              taskType: 'milestone',
-              duration: 0,
-              progress: 0,
-              endDate: task.startDate,
-            }),
-          )}
-        />
-      ) : null}
-      {task.taskType !== 'summary' ? (
-        <MenuItem
-          icon={Diamond}
-          label={labels.taskType.summary}
-          onClick={act(() =>
-            onUpdate(task.id, { taskType: 'summary', duration: Math.max(task.duration, 1) }),
-          )}
-        />
-      ) : null}
-
-      <Separator />
-
-      <div
-        className="relative"
-        onMouseEnter={() => setStatusOpen(true)}
-        onMouseLeave={() => setStatusOpen(false)}
-      >
-        <div className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-fg-muted transition-colors hover:bg-surface-hover">
-          <Clock className="h-3.5 w-3.5 text-fg-subtle" />
-          <span className="flex-1">{labels.columns.status}</span>
-          <ChevronRight className="h-3.5 w-3.5 text-fg-subtle" />
-        </div>
-        {statusOpen && (
-          <div className="absolute top-0 left-full ml-1 min-w-[170px] rounded-lg border border-border bg-elevated py-1 shadow-xl">
-            {STATUS_ORDER.map((status) => {
-              const Icon = STATUS_ICONS[status]
-              const isActive = task.status === status
-              return (
-                <div
-                  key={status}
-                  className={cn(
-                    'flex cursor-pointer items-center gap-2 px-3 py-1.5 transition-colors',
-                    isActive
-                      ? 'bg-primary-subtle text-primary'
-                      : 'text-fg-muted hover:bg-surface-hover',
-                  )}
-                  onClick={act(() =>
-                    onUpdate(task.id, {
-                      status,
-                      ...(status === 'complete' ? { progress: 1 } : {}),
-                    }),
-                  )}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  <span>{labels.status[status]}</span>
-                  {isActive ? <CheckCircle2 className="ml-auto h-3 w-3" /> : null}
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-
-      {onDuplicate && (
-        <MenuItem icon={Copy} label={labels.menu.snapshot} onClick={act(() => onDuplicate(task))} />
-      )}
-
-      <Separator />
-
-      <MenuItem
-        icon={Trash2}
-        label={labels.editor.delete}
-        danger
-        onClick={act(() => onDelete(task.id))}
-      />
-    </div>
+    <ContextMenu open position={{ x: menu.x, y: menu.y }} items={items} onClose={onClose} />
   )
-}
-
-function MenuItem({
-  icon: Icon,
-  label,
-  onClick,
-  danger,
-  iconClassName,
-}: {
-  icon: typeof Pencil
-  label: string
-  onClick: () => void
-  danger?: boolean
-  iconClassName?: string
-}) {
-  return (
-    <div
-      role="menuitem"
-      className={cn(
-        'flex cursor-pointer items-center gap-2 px-3 py-1.5 transition-colors',
-        danger ? 'text-danger hover:bg-danger-subtle' : 'text-fg-muted hover:bg-surface-hover',
-      )}
-      onClick={onClick}
-    >
-      <Icon className={cn('h-3.5 w-3.5', iconClassName)} />
-      <span>{label}</span>
-    </div>
-  )
-}
-
-function Separator() {
-  return <div className="my-1 border-t border-border" />
 }
 
 /** Track right-click position and target task for the menu above. */

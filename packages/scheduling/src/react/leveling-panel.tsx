@@ -11,8 +11,8 @@
  */
 
 import { useMemo, useState } from 'react'
-import { ArrowRight, Scale, X } from 'lucide-react'
-import { Badge, Button, cn } from '@appkit/ui'
+import { ArrowRight } from 'lucide-react'
+import { Badge, Button, Checkbox, Dialog, cn } from '@appkit/ui'
 import {
   buildResourceLoadSeries,
   levelResources,
@@ -77,8 +77,6 @@ export function LevelingPanel({
     [assignments, calendars, resources, tasks],
   )
 
-  if (!open) return null
-
   const reasonLabel = (reason: ScheduleLevelingConflict['reason']) =>
     reason === 'exceeds_float'
       ? labels.leveling.reasonExceedsFloat
@@ -89,50 +87,50 @@ export function LevelingPanel({
   const resourceName = (id: string) => resources.find((r) => r.id === id)?.name ?? id
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" data-testid="schedule-leveling">
-      <div className="absolute inset-0 bg-overlay/30 backdrop-blur-[1px]" onClick={onClose} />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={labels.leveling.heading}
-        className="relative flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl"
-        style={{ height: 'min(88vh, 720px)' }}
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
-          <div className="min-w-0">
-            <p className="flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.18em] text-fg-subtle uppercase">
-              <Scale className="h-3 w-3" />
-              {labels.badges.schedule}
-            </p>
-            <h3 className="mt-1 text-base font-semibold text-fg">{labels.leveling.heading}</h3>
-            <p className="mt-1 text-xs text-fg-muted">{labels.leveling.description}</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={labels.editor.cancel}
-            className="text-fg-subtle transition-colors hover:text-fg"
+    <Dialog
+      open={open}
+      onClose={onClose}
+      size="lg"
+      fullHeight
+      closeLabel={labels.editor.cancel}
+      title={labels.leveling.heading}
+      description={labels.leveling.description}
+      footer={
+        <>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            {labels.editor.cancel}
+          </Button>
+          <Button
+            size="sm"
+            disabled={result.moves.length === 0 || applying}
+            data-testid="schedule-leveling-apply"
+            onClick={async () => {
+              setApplying(true)
+              try {
+                if (await onApply(result.moves)) onClose()
+              } finally {
+                setApplying(false)
+              }
+            }}
           >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-4 border-b border-border bg-bg-subtle px-5 py-3 text-xs text-fg-muted">
+            {labels.leveling.apply}
+          </Button>
+        </>
+      }
+    >
+      <div data-testid="schedule-leveling" className="contents">
+        <div className="mt-4 flex flex-wrap items-center gap-4 border-y border-border bg-bg-subtle px-6 py-3 text-xs text-fg-muted">
           <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={withinFloatOnly}
               onChange={(event) => setWithinFloatOnly(event.target.checked)}
-              className="rounded border-border"
             />
             {labels.leveling.withinFloatOnly}
           </label>
           <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={freezeStartedTasks}
               onChange={(event) => setFreezeStartedTasks(event.target.checked)}
-              className="rounded border-border"
             />
             {labels.leveling.freezeStartedTasks}
           </label>
@@ -151,7 +149,7 @@ export function LevelingPanel({
           </div>
         </div>
 
-        <div className="sched-scroll min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-4">
+        <div className="sched-scroll min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-4">
           {result.hasCycle ? (
             <p className="rounded-lg bg-danger-subtle px-3 py-2 text-xs text-danger">
               {labels.insights.cycleDetected}
@@ -252,28 +250,7 @@ export function LevelingPanel({
           </section>
         </div>
 
-        <div className="flex items-center gap-2 border-t border-border px-5 py-4">
-          <div className="flex-1" />
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            {labels.editor.cancel}
-          </Button>
-          <Button
-            size="sm"
-            disabled={result.moves.length === 0 || applying}
-            data-testid="schedule-leveling-apply"
-            onClick={async () => {
-              setApplying(true)
-              try {
-                if (await onApply(result.moves)) onClose()
-              } finally {
-                setApplying(false)
-              }
-            }}
-          >
-            {labels.leveling.apply}
-          </Button>
-        </div>
       </div>
-    </div>
+    </Dialog>
   )
 }

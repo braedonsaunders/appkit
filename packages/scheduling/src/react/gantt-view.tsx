@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronRight, GripVertical } from 'lucide-react'
-import { cn } from '@appkit/ui'
+import { Badge, cn } from '@appkit/ui'
 import {
   addDays,
   diffDays,
@@ -614,50 +614,50 @@ export function GanttView({
                                 </span>
                                 <div className="mt-1 flex max-h-5 min-w-0 flex-wrap items-center gap-1.5 overflow-hidden text-[10px] text-fg-subtle">
                                   {!isCompactLeftPanel && isSummaryTask ? (
-                                    <Chip>{labels.badges.summary}</Chip>
+                                    <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-medium">{labels.badges.summary}</Badge>
                                   ) : null}
                                   {!isCompactLeftPanel && hierarchy?.hasChildren ? (
-                                    <Chip>{labels.format.childCount(hierarchy.childCount)}</Chip>
+                                    <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-medium">{labels.format.childCount(hierarchy.childCount)}</Badge>
                                   ) : null}
                                   {task.assignee ? <span className="min-w-0 truncate">{task.assignee}</span> : null}
                                   {!isCompactLeftPanel &&
                                   typeof totalFloat === 'number' &&
                                   Number.isFinite(totalFloat) ? (
-                                    <Chip tone={totalFloat <= 0 ? 'danger' : 'neutral'}>
+                                    <Badge variant={totalFloat <= 0 ? 'destructive' : 'secondary'} className="px-1.5 py-0 text-[10px] font-medium">
                                       {labels.format.floatDays(Math.round(totalFloat))}
-                                    </Chip>
+                                    </Badge>
                                   ) : null}
                                   {variance.isBehind ? (
-                                    <Chip tone="warning">
+                                    <Badge variant="warning" className="px-1.5 py-0 text-[10px] font-medium">
                                       {labels.format.slipDays(
                                         Math.max(variance.finishDays ?? 0, variance.startDays ?? 0),
                                       )}
-                                    </Chip>
+                                    </Badge>
                                   ) : null}
                                   {variance.isAhead ? (
-                                    <Chip tone="success">
+                                    <Badge variant="success" className="px-1.5 py-0 text-[10px] font-medium">
                                       {labels.format.aheadDays(
                                         Math.min(variance.finishDays ?? 0, variance.startDays ?? 0),
                                       )}
-                                    </Chip>
+                                    </Badge>
                                   ) : null}
                                   {insights.overdueTaskIds.has(task.id) ? (
-                                    <Chip tone="danger">{labels.badges.overdue}</Chip>
+                                    <Badge variant="destructive" className="px-1.5 py-0 text-[10px] font-medium">{labels.badges.overdue}</Badge>
                                   ) : null}
                                   {insights.violatingTaskIds.has(task.id) ? (
-                                    <Chip tone="warning">{labels.badges.logic}</Chip>
+                                    <Badge variant="warning" className="px-1.5 py-0 text-[10px] font-medium">{labels.badges.logic}</Badge>
                                   ) : null}
                                   {insights.deadlineMissTaskIds.has(task.id) ? (
-                                    <Chip tone="danger">{labels.badges.deadline}</Chip>
+                                    <Badge variant="destructive" className="px-1.5 py-0 text-[10px] font-medium">{labels.badges.deadline}</Badge>
                                   ) : null}
                                   {insights.constraintViolationTaskIds.has(task.id) ? (
-                                    <Chip tone="warning">{labels.badges.constraint}</Chip>
+                                    <Badge variant="warning" className="px-1.5 py-0 text-[10px] font-medium">{labels.badges.constraint}</Badge>
                                   ) : null}
                                   {insights.resourceConflictTaskIds.has(task.id) ? (
-                                    <Chip tone="warning">{labels.badges.resource}</Chip>
+                                    <Badge variant="warning" className="px-1.5 py-0 text-[10px] font-medium">{labels.badges.resource}</Badge>
                                   ) : null}
                                   {insights.criticalTaskIds.has(task.id) ? (
-                                    <Chip tone="primary">{labels.badges.critical}</Chip>
+                                    <Badge className="px-1.5 py-0 text-[10px] font-medium">{labels.badges.critical}</Badge>
                                   ) : null}
                                 </div>
                               </div>
@@ -884,28 +884,6 @@ export function GanttView({
   )
 }
 
-function Chip({
-  children,
-  tone = 'neutral',
-}: {
-  children: React.ReactNode
-  tone?: 'neutral' | 'danger' | 'warning' | 'success' | 'primary'
-}) {
-  return (
-    <span
-      className={cn(
-        'shrink-0 rounded-full px-1.5 py-0.5',
-        tone === 'neutral' && 'bg-bg-subtle text-fg-muted',
-        tone === 'danger' && 'bg-danger-subtle text-danger',
-        tone === 'warning' && 'bg-warning-subtle text-warning',
-        tone === 'success' && 'bg-success-subtle text-success',
-        tone === 'primary' && 'bg-primary-subtle text-primary',
-      )}
-    >
-      {children}
-    </span>
-  )
-}
 
 function HeaderColumn({
   column,

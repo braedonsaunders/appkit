@@ -49,6 +49,8 @@ export interface SchedulingLabels {
   }
   columns: {
     name: string
+    /** The type FIELD's label — distinct from the type values in `taskType`. */
+    taskType: string
     start: string
     finish: string
     duration: string
@@ -98,6 +100,10 @@ export interface SchedulingLabels {
     choosePredecessor: string
     cycleRejected: string
     removeDependencyFailed: string
+    addChild: string
+    duplicate: string
+    /** "Convert to <type>" — the type name is passed in. */
+    convertTo: (typeLabel: string) => string
   }
   insights: {
     heading: string
@@ -294,6 +300,7 @@ export const defaultSchedulingLabels: SchedulingLabels = {
   },
   columns: {
     name: 'Task',
+    taskType: 'Type',
     start: 'Start',
     finish: 'Finish',
     duration: 'Duration',
@@ -344,6 +351,9 @@ export const defaultSchedulingLabels: SchedulingLabels = {
     choosePredecessor: 'Choose a predecessor task first.',
     cycleRejected: 'That dependency would create a loop in the schedule.',
     removeDependencyFailed: 'Unable to remove the dependency right now.',
+    addChild: 'Add child task',
+    duplicate: 'Duplicate',
+    convertTo: (typeLabel) => `Convert to ${typeLabel.toLowerCase()}`,
   },
   insights: {
     heading: 'Schedule health',

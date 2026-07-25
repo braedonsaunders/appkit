@@ -6,12 +6,15 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { cn } from './utils'
 
-export type DialogSize = 'sm' | 'md' | 'lg'
+export type DialogSize = 'sm' | 'md' | 'lg' | 'xl'
 
 const SIZE: Record<DialogSize, string> = {
   sm: 'max-w-sm',
   md: 'max-w-lg',
   lg: 'max-w-2xl',
+  // Working dialogs — an editor with its own sidebar, a two-pane review — need
+  // more width than a confirm prompt.
+  xl: 'max-w-5xl',
 }
 
 export type DialogProps = {
@@ -25,6 +28,14 @@ export type DialogProps = {
   /** Hide the corner close button. */
   hideClose?: boolean
   closeLabel?: string
+  /**
+   * Give the panel a fixed working height and hand the body to the consumer as
+   * a flex region with no padding. Use it when the content owns its own
+   * toolbar/scroll/columns (an editor, a review pane) rather than being a short
+   * block of prose — otherwise the dialog grows with its content and the page
+   * behind it scrolls instead.
+   */
+  fullHeight?: boolean
 }
 
 /** Centered modal dialog: backdrop, spring scale-in, focus trap, Esc/click-out. */
@@ -38,6 +49,7 @@ export function Dialog({
   size = 'md',
   hideClose,
   closeLabel = 'Close',
+  fullHeight,
 }: DialogProps) {
   const reduce = useReducedMotion()
   const [mounted, setMounted] = React.useState(false)
@@ -121,6 +133,7 @@ export function Dialog({
             className={cn(
               'relative flex w-full flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-lg',
               SIZE[size],
+              fullHeight && 'h-[min(92vh,780px)]',
             )}
           >
             {title || description ? (
@@ -139,7 +152,16 @@ export function Dialog({
                 <X className="size-4" />
               </button>
             ) : null}
-            {children ? <div className="px-6 py-5 text-sm text-fg">{children}</div> : null}
+            {children ? (
+              <div
+                className={cn(
+                  'text-sm text-fg',
+                  fullHeight ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : 'px-6 py-5',
+                )}
+              >
+                {children}
+              </div>
+            ) : null}
             {footer ? (
               <div className="flex items-center justify-end gap-2 border-t border-border bg-bg-subtle px-6 py-3">
                 {footer}

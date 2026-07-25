@@ -9,7 +9,7 @@
  */
 
 import { useMemo, useState } from 'react'
-import { Badge, Button, cn } from '@appkit/ui'
+import { Badge, Button, Progress, cn } from '@appkit/ui'
 import { parseDate } from '../dates'
 import { getTaskVariance, normalizeScheduleProgress } from '../insights'
 import { resolvePhaseColor } from '../palette'
@@ -199,18 +199,18 @@ export function BoardView({
                 </span>
               </div>
               <div className="mt-2 flex flex-wrap gap-1 text-[10px] text-fg-subtle">
-                <Pill>
+                <Badge variant="secondary" className="px-2 py-0 text-[10px] font-medium">
                   {tasksByStatus[status].filter((t) => insights.criticalTaskIds.has(t.id)).length}{' '}
                   {labels.list.critical}
-                </Pill>
-                <Pill>
+                </Badge>
+                <Badge variant="secondary" className="px-2 py-0 text-[10px] font-medium">
                   {tasksByStatus[status].filter((t) => insights.overdueTaskIds.has(t.id)).length}{' '}
                   {labels.list.overdue}
-                </Pill>
-                <Pill>
+                </Badge>
+                <Badge variant="secondary" className="px-2 py-0 text-[10px] font-medium">
                   {tasksByStatus[status].filter((t) => insights.attentionTaskIds.has(t.id)).length}{' '}
                   {labels.list.issues}
-                </Pill>
+                </Badge>
               </div>
             </div>
 
@@ -315,46 +315,43 @@ export function BoardView({
 
                         <div className="mb-2 flex flex-wrap gap-1 text-[10px] text-fg-subtle">
                           {deadlineDate ? (
-                            <Pill>
+                            <Badge variant="secondary" className="px-2 py-0 text-[10px] font-medium">
                               {labels.columns.deadline} {formatters.shortDate(deadlineDate)}
-                            </Pill>
+                            </Badge>
                           ) : null}
                           {typeof floatDays === 'number' && Number.isFinite(floatDays) ? (
-                            <Pill>{labels.format.floatDays(Math.round(floatDays))}</Pill>
+                            <Badge variant="secondary" className="px-2 py-0 text-[10px] font-medium">{labels.format.floatDays(Math.round(floatDays))}</Badge>
                           ) : null}
                           {variance.isBehind ? (
-                            <Pill tone="warning">
+                            <Badge variant="warning" className="px-2 py-0 text-[10px] font-medium">
                               {labels.format.slipDays(
                                 Math.max(variance.finishDays ?? 0, variance.startDays ?? 0),
                               )}
-                            </Pill>
+                            </Badge>
                           ) : null}
                         </div>
 
                         {assignments.length > 0 ? (
                           <div className="mb-2 flex flex-wrap gap-1">
                             {assignments.slice(0, MAX_INLINE_RESOURCES).map((assignment) => (
-                              <Pill key={assignment.id}>
+                              <Badge key={assignment.id} variant="secondary" className="px-2 py-0 text-[10px] font-medium">
                                 {resourceById.get(assignment.resourceId)?.name ??
                                   assignment.role ??
                                   labels.list.resource}
-                              </Pill>
+                              </Badge>
                             ))}
                             {assignments.length > MAX_INLINE_RESOURCES ? (
-                              <Pill>+{assignments.length - MAX_INLINE_RESOURCES}</Pill>
+                              <Badge variant="secondary" className="px-2 py-0 text-[10px] font-medium">+{assignments.length - MAX_INLINE_RESOURCES}</Badge>
                             ) : null}
                           </div>
                         ) : null}
 
                         {progress > 0 && (
-                          <div className="mb-2">
-                            <div className="h-1 w-full overflow-hidden rounded-full bg-border">
-                              <div
-                                className="h-full rounded-full bg-primary"
-                                style={{ width: `${progress * 100}%` }}
-                              />
-                            </div>
-                          </div>
+                          <Progress
+                            value={progress * 100}
+                            aria-label={labels.columns.progress}
+                            className="mb-2 h-1"
+                          />
                         )}
 
                         <div className="flex flex-wrap gap-1">
@@ -443,16 +440,3 @@ export function BoardView({
   )
 }
 
-function Pill({ children, tone = 'neutral' }: { children: React.ReactNode; tone?: 'neutral' | 'warning' }) {
-  return (
-    <span
-      className={cn(
-        'rounded-full px-2 py-0.5',
-        tone === 'neutral' && 'bg-bg-subtle text-fg-muted',
-        tone === 'warning' && 'bg-warning-subtle text-warning',
-      )}
-    >
-      {children}
-    </span>
-  )
-}

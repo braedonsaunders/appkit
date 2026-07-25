@@ -12,7 +12,7 @@
 
 import { Fragment, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronRight, GripVertical, Trash2 } from 'lucide-react'
-import { Badge, Button, cn } from '@appkit/ui'
+import { Badge, Button, Checkbox, Progress, cn } from '@appkit/ui'
 import { diffDays, parseDate } from '../dates'
 import { buildTaskHierarchyInfo, getSummaryTaskIds, getVisibleTasks } from '../hierarchy'
 import { getTaskVariance, normalizeScheduleProgress } from '../insights'
@@ -248,21 +248,21 @@ export function ListView({
     >
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border bg-bg-subtle/60 px-4 py-2">
         <div className="flex flex-wrap items-center gap-2 text-[11px] text-fg-muted">
-          <Pill>
+          <Badge variant="secondary" className="px-2 py-0 text-[10px] font-medium">
             {tasks.length} {labels.list.visible}
-          </Pill>
-          <Pill>
+          </Badge>
+          <Badge variant="secondary" className="px-2 py-0 text-[10px] font-medium">
             {visibleSummary.critical} {labels.list.critical}
-          </Pill>
-          <Pill>
+          </Badge>
+          <Badge variant="secondary" className="px-2 py-0 text-[10px] font-medium">
             {visibleSummary.overdue} {labels.list.overdue}
-          </Pill>
-          <Pill>
+          </Badge>
+          <Badge variant="secondary" className="px-2 py-0 text-[10px] font-medium">
             {visibleSummary.slip} {labels.list.slip}
-          </Pill>
-          <Pill>
+          </Badge>
+          <Badge variant="secondary" className="px-2 py-0 text-[10px] font-medium">
             {visibleSummary.issues} {labels.list.issues}
-          </Pill>
+          </Badge>
         </div>
       </div>
 
@@ -318,15 +318,13 @@ export function ListView({
             <tr className="border-b border-border bg-bg-subtle">
               <th className="w-8 px-2 py-2" />
               <th className="w-8 px-3 py-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   aria-label={labels.list.selectAll}
                   checked={selectedIds.size === tasks.length && tasks.length > 0}
                   onChange={() => {
                     if (selectedIds.size === tasks.length) setSelectedIds(new Set())
                     else setSelectedIds(new Set(tasks.map((task) => task.id)))
                   }}
-                  className="rounded border-border"
                 />
               </th>
               <SortHeader label={labels.list.wbs} field="order" />
@@ -459,13 +457,11 @@ export function ListView({
                             </button>
                           </td>
                           <td className="px-3 py-2">
-                            <input
+                            <Checkbox
                               data-testid={`schedule-list-select-${task.id}`}
-                              type="checkbox"
                               aria-label={task.name || labels.badges.untitled}
                               checked={selectedIds.has(task.id)}
                               onChange={() => toggleSelect(task.id)}
-                              className="rounded border-border"
                             />
                           </td>
                           <td className="truncate px-3 py-2 text-[11px] text-fg-subtle">
@@ -502,11 +498,11 @@ export function ListView({
                               <div className="min-w-0 flex-1">
                                 <span className="line-clamp-2">{task.name || labels.badges.untitled}</span>
                                 <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-fg-subtle">
-                                  {isSummaryTask ? <Pill>{labels.badges.summary}</Pill> : null}
+                                  {isSummaryTask ? <Badge variant="secondary" className="px-2 py-0 text-[10px] font-medium">{labels.badges.summary}</Badge> : null}
                                   {hierarchy?.hasChildren ? (
-                                    <Pill>{labels.format.childCount(hierarchy.childCount)}</Pill>
+                                    <Badge variant="secondary" className="px-2 py-0 text-[10px] font-medium">{labels.format.childCount(hierarchy.childCount)}</Badge>
                                   ) : null}
-                                  <Pill>L{depth}</Pill>
+                                  <Badge variant="secondary" className="px-2 py-0 text-[10px] font-medium">L{depth}</Badge>
                                   {task.description ? (
                                     <span className="line-clamp-1">{task.description}</span>
                                   ) : null}
@@ -548,19 +544,19 @@ export function ListView({
                           </td>
                           <td className="px-3 py-2 text-xs text-fg-muted">
                             {variance.isBehind ? (
-                              <Pill tone="warning">
+                              <Badge variant="warning" className="px-2 py-0 text-[10px] font-medium">
                                 {labels.format.slipDays(
                                   Math.max(variance.finishDays ?? 0, variance.startDays ?? 0),
                                 )}
-                              </Pill>
+                              </Badge>
                             ) : variance.isAhead ? (
-                              <Pill tone="success">
+                              <Badge variant="success" className="px-2 py-0 text-[10px] font-medium">
                                 {labels.format.aheadDays(
                                   Math.min(variance.finishDays ?? 0, variance.startDays ?? 0),
                                 )}
-                              </Pill>
+                              </Badge>
                             ) : variance.hasVariance ? (
-                              <Pill>{labels.list.onBaseline}</Pill>
+                              <Badge variant="secondary" className="px-2 py-0 text-[10px] font-medium">{labels.list.onBaseline}</Badge>
                             ) : (
                               '—'
                             )}
@@ -574,14 +570,18 @@ export function ListView({
                             {assignments.length > 0 ? (
                               <div className="flex max-h-7 min-w-0 flex-wrap gap-1 overflow-hidden">
                                 {assignments.slice(0, MAX_INLINE_RESOURCES).map((assignment) => (
-                                  <Pill key={assignment.id}>
+                                  <Badge
+                                    key={assignment.id}
+                                    variant="secondary"
+                                    className="px-2 py-0 text-[10px] font-medium"
+                                  >
                                     {resourceById.get(assignment.resourceId)?.name ??
                                       assignment.role ??
                                       labels.list.resource}
-                                  </Pill>
+                                  </Badge>
                                 ))}
                                 {assignments.length > MAX_INLINE_RESOURCES ? (
-                                  <Pill>+{assignments.length - MAX_INLINE_RESOURCES}</Pill>
+                                  <Badge variant="secondary" className="px-2 py-0 text-[10px] font-medium">+{assignments.length - MAX_INLINE_RESOURCES}</Badge>
                                 ) : null}
                               </div>
                             ) : (
@@ -590,12 +590,11 @@ export function ListView({
                           </td>
                           <td className="px-3 py-2">
                             <div className="flex items-center gap-2">
-                              <div className="h-1.5 w-16 overflow-hidden rounded-full bg-border">
-                                <div
-                                  className="h-full rounded-full bg-primary"
-                                  style={{ width: `${progress * 100}%` }}
-                                />
-                              </div>
+                              <Progress
+                                value={progress * 100}
+                                aria-label={labels.columns.progress}
+                                className="h-1.5 w-16"
+                              />
                               <span className="text-[11px] text-fg-subtle">
                                 {Math.round(progress * 100)}%
                               </span>
@@ -683,23 +682,3 @@ export function ListView({
   )
 }
 
-function Pill({
-  children,
-  tone = 'neutral',
-}: {
-  children: React.ReactNode
-  tone?: 'neutral' | 'warning' | 'success'
-}) {
-  return (
-    <span
-      className={cn(
-        'shrink-0 rounded-full px-2 py-0.5',
-        tone === 'neutral' && 'bg-bg-subtle text-fg-muted',
-        tone === 'warning' && 'bg-warning-subtle text-warning',
-        tone === 'success' && 'bg-success-subtle text-success',
-      )}
-    >
-      {children}
-    </span>
-  )
-}

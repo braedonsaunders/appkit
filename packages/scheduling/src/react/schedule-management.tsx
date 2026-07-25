@@ -8,8 +8,8 @@
  */
 
 import { useState } from 'react'
-import { Plus, Star, Trash2, X } from 'lucide-react'
-import { Badge, Button, Input, Label, Select, Tabs, cn } from '@appkit/ui'
+import { Plus, Star, Trash2 } from 'lucide-react'
+import { Badge, Button, Checkbox, Dialog, Input, Label, Select, Tabs, cn } from '@appkit/ui'
 import type {
   ScheduleBaseline,
   ScheduleBaselineKind,
@@ -107,8 +107,6 @@ export function ScheduleManagementDialog({
   const [resourceCapacity, setResourceCapacity] = useState('1')
   const [resourceCalendarId, setResourceCalendarId] = useState('')
 
-  if (!open) return null
-
   const weekdayLabel = (key: string) =>
     new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(
       // 2024-01-07 was a Sunday, so index 0..6 maps cleanly onto the week.
@@ -116,36 +114,17 @@ export function ScheduleManagementDialog({
     )
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" data-testid="schedule-management">
-      <div className="absolute inset-0 bg-overlay/30 backdrop-blur-[1px]" onClick={onClose} />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={labels.toolbar.manageSchedule}
-        className="relative flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl"
-        style={{ height: 'min(88vh, 700px)' }}
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
-          <div>
-            <p className="text-[10px] font-semibold tracking-[0.18em] text-fg-subtle uppercase">
-              {labels.badges.schedule}
-            </p>
-            <h3 className="mt-1 text-base font-semibold text-fg">{labels.toolbar.manageSchedule}</h3>
-            <p className="mt-1 text-xs text-fg-muted">
-              {labels.format.taskCount(taskCount)} · {calendars.length}C / {resources.length}R
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={labels.editor.cancel}
-            className="text-fg-subtle transition-colors hover:text-fg"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex min-h-0 flex-1 flex-col px-5 py-4">
+    <Dialog
+      open={open}
+      onClose={onClose}
+      size="lg"
+      fullHeight
+      closeLabel={labels.editor.cancel}
+      title={labels.toolbar.manageSchedule}
+      description={`${labels.format.taskCount(taskCount)} · ${calendars.length}C / ${resources.length}R`}
+    >
+      <div data-testid="schedule-management" className="contents">
+        <div className="flex min-h-0 flex-1 flex-col px-6 pt-4 pb-6">
           <Tabs
             className="mb-4"
             value={tab}
@@ -191,11 +170,9 @@ export function ScheduleManagementDialog({
                     aria-label={labels.toolbar.baseline}
                   />
                   <label className="flex items-center gap-2 text-xs text-fg-muted">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={baselineIsPrimary}
                       onChange={(event) => setBaselineIsPrimary(event.target.checked)}
-                      className="rounded border-border"
                     />
                     {labels.menu.primary}
                   </label>
@@ -438,7 +415,7 @@ export function ScheduleManagementDialog({
           </div>
         </div>
       </div>
-    </div>
+    </Dialog>
   )
 }
 

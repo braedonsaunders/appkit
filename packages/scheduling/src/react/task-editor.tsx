@@ -13,8 +13,8 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Trash2, X } from 'lucide-react'
-import { Button, Input, Label, Select, Tabs, Textarea, cn } from '@appkit/ui'
+import { Plus, Trash2 } from 'lucide-react'
+import { Badge, Button, Dialog, Input, Label, Select, Slider, Tabs, Textarea } from '@appkit/ui'
 import { diffDays, parseDate } from '../dates'
 import { buildTaskHierarchyInfo, getTaskDescendantIds, sortTasksByOrder } from '../hierarchy'
 import { getTaskVariance, normalizeScheduleProgress } from '../insights'
@@ -290,48 +290,51 @@ export function TaskEditor({
     )
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" data-testid="task-editor">
-      <div className="absolute inset-0 bg-overlay/30 backdrop-blur-[1px]" onClick={onClose} />
-      <div
-        data-testid="task-editor-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-label={labels.editor.title}
-        className="relative flex w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl"
-        style={{ height: 'min(92vh, 780px)' }}
-      >
-        <div className="border-b border-border px-5 py-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold tracking-[0.18em] text-fg-subtle uppercase">
-                {labels.editor.title}
-              </p>
-              <h3 className="mt-1 truncate text-base font-semibold text-fg">
-                {task.name || labels.badges.untitled}
-              </h3>
-              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-fg-muted">
-                <Chip>{labels.status[status]}</Chip>
-                <Chip>{labels.taskType[effectiveTaskType]}</Chip>
-                <Chip>
-                  {labels.list.wbs} L{outlineLevel}
-                </Chip>
-                {phaseId ? (
-                  <Chip>{phases.find((phase) => phase.id === phaseId)?.name ?? labels.columns.phase}</Chip>
-                ) : null}
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={labels.editor.cancel}
-              className="text-fg-subtle transition-colors hover:text-fg"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-
-        <div className="grid min-h-0 flex-1 gap-0 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <Dialog
+      open
+      onClose={onClose}
+      size="xl"
+      fullHeight
+      closeLabel={labels.editor.cancel}
+      footer={
+        <>
+          <Button
+            variant="destructive"
+            size="sm"
+            className="mr-auto"
+            onClick={async () => {
+              if (await onDelete(task.id)) onClose()
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            {labels.editor.delete}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            {labels.editor.cancel}
+          </Button>
+          <Button size="sm" onClick={() => void handleSave()} data-testid="task-save">
+            {labels.editor.save}
+          </Button>
+        </>
+      }
+      title={task.name || labels.badges.untitled}
+      description={
+        <span className="flex flex-wrap items-center gap-1.5">
+          <Badge variant="secondary">{labels.status[status]}</Badge>
+          <Badge variant="secondary">{labels.taskType[effectiveTaskType]}</Badge>
+          <Badge variant="secondary">
+            {labels.list.wbs} L{outlineLevel}
+          </Badge>
+          {phaseId ? (
+            <Badge variant="secondary">
+              {phases.find((phase) => phase.id === phaseId)?.name ?? labels.columns.phase}
+            </Badge>
+          ) : null}
+        </span>
+      }
+    >
+      <div data-testid="task-editor-panel" className="contents">
+        <div className="mt-4 grid min-h-0 flex-1 gap-0 border-t border-border lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="flex min-h-0 flex-col px-5 py-4">
             <Tabs
               className="mb-4"
@@ -353,7 +356,7 @@ export function TaskEditor({
                   </Field>
 
                   <div className="grid gap-3 md:grid-cols-2">
-                    <Field label={labels.taskType.task}>
+                    <Field label={labels.columns.taskType}>
                       <Select
                         value={effectiveTaskType}
                         onChange={(event) => setTaskType(event.target.value as ScheduleTaskType)}
@@ -516,8 +519,7 @@ export function TaskEditor({
                     <Field
                       label={`${labels.columns.progress} (${Math.round((isMilestoneTask ? 0 : progress) * 100)}%)`}
                     >
-                      <input
-                        type="range"
+                      <Slider
                         min={0}
                         max={1}
                         step={0.05}
@@ -525,7 +527,6 @@ export function TaskEditor({
                         onChange={(event) => setProgress(Number.parseFloat(event.target.value))}
                         disabled={isMilestoneTask || isRollupLocked}
                         aria-label={labels.columns.progress}
-                        className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-border accent-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
                       />
                     </Field>
                   </div>
@@ -711,25 +712,6 @@ export function TaskEditor({
               {formError && <p className="mt-4 text-xs text-danger">{formError}</p>}
             </div>
 
-            <div className="mt-4 flex items-center gap-2 border-t border-border pt-4">
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={async () => {
-                  if (await onDelete(task.id)) onClose()
-                }}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                {labels.editor.delete}
-              </Button>
-              <div className="flex-1" />
-              <Button variant="ghost" size="sm" onClick={onClose}>
-                {labels.editor.cancel}
-              </Button>
-              <Button size="sm" onClick={() => void handleSave()} data-testid="task-save">
-                {labels.editor.save}
-              </Button>
-            </div>
           </div>
 
           <aside className="sched-scroll min-h-0 overflow-y-auto border-l border-border bg-bg-subtle px-5 py-4">
@@ -749,26 +731,26 @@ export function TaskEditor({
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {insights.criticalTaskIds.has(task.id) && (
-                    <Chip tone="primary">{labels.insights.critical}</Chip>
+                    <Badge>{labels.insights.critical}</Badge>
                   )}
                   {insights.overdueTaskIds.has(task.id) && (
-                    <Chip tone="danger">{labels.insights.overdue}</Chip>
+                    <Badge variant="destructive">{labels.insights.overdue}</Badge>
                   )}
-                  {variance.isBehind && <Chip tone="warning">{labels.insights.behindBaseline}</Chip>}
+                  {variance.isBehind && <Badge variant="warning">{labels.insights.behindBaseline}</Badge>}
                   {insights.violatingTaskIds.has(task.id) && (
-                    <Chip tone="warning">{labels.insights.dependencyViolation}</Chip>
+                    <Badge variant="warning">{labels.insights.dependencyViolation}</Badge>
                   )}
                   {insights.deadlineMissTaskIds.has(task.id) && (
-                    <Chip tone="danger">{labels.insights.deadlineMissed}</Chip>
+                    <Badge variant="destructive">{labels.insights.deadlineMissed}</Badge>
                   )}
                   {insights.constraintViolationTaskIds.has(task.id) && (
-                    <Chip tone="warning">{labels.insights.constraintViolation}</Chip>
+                    <Badge variant="warning">{labels.insights.constraintViolation}</Badge>
                   )}
                   {insights.actualDateGapTaskIds.has(task.id) && (
-                    <Chip tone="warning">{labels.insights.actualDateGap}</Chip>
+                    <Badge variant="warning">{labels.insights.actualDateGap}</Badge>
                   )}
                   {insights.resourceConflictTaskIds.has(task.id) && (
-                    <Chip tone="warning">{labels.insights.resourceConflict}</Chip>
+                    <Badge variant="warning">{labels.insights.resourceConflict}</Badge>
                   )}
                 </div>
               </Card>
@@ -797,7 +779,7 @@ export function TaskEditor({
           </aside>
         </div>
       </div>
-    </div>
+    </Dialog>
   )
 }
 
@@ -904,24 +886,3 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   )
 }
 
-function Chip({
-  children,
-  tone = 'neutral',
-}: {
-  children: React.ReactNode
-  tone?: 'neutral' | 'danger' | 'warning' | 'primary'
-}) {
-  return (
-    <span
-      className={cn(
-        'rounded-full px-2 py-1 text-[11px]',
-        tone === 'neutral' && 'bg-bg-subtle text-fg-muted',
-        tone === 'danger' && 'bg-danger-subtle text-danger',
-        tone === 'warning' && 'bg-warning-subtle text-warning',
-        tone === 'primary' && 'bg-primary-subtle text-primary',
-      )}
-    >
-      {children}
-    </span>
-  )
-}
