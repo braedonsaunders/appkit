@@ -64,6 +64,7 @@ function createNavigation(packages: PackageNavigationItem[]): SidebarNavGroup[] 
         { href: '/forms', label: 'Form builder', iconKey: 'clipboard', mobile: true },
         { href: '/forms/core', label: 'Form engine', iconKey: 'code' },
         { href: '/workflows', label: 'Workflows', iconKey: 'workflow' },
+        { href: '/scheduling', label: 'Scheduling', iconKey: 'calendar' },
         { href: '/reports', label: 'Reports', iconKey: 'library' },
         { href: '/design-studio', label: 'Design studio', iconKey: 'sparkles' },
         { href: '/customization', label: 'Customization', iconKey: 'wrench' },

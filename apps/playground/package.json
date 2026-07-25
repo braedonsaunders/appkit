@@ -33,6 +33,7 @@
     "@appkit/notifications": "workspace:*",
     "@appkit/pdf": "workspace:*",
     "@appkit/reports": "workspace:*",
+    "@appkit/scheduling": "workspace:*",
     "@appkit/scripts": "workspace:*",
     "@appkit/tenant": "workspace:*",
     "@appkit/tokens": "workspace:*",

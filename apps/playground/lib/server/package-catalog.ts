@@ -26,6 +26,7 @@ import notifications from '../../../../packages/notifications/package.json'
 import pdf from '../../../../packages/pdf/package.json'
 import reports from '../../../../packages/reports/package.json'
 import sandbox from '../../../../packages/sandbox/package.json'
+import scheduling from '../../../../packages/scheduling/package.json'
 import scripts from '../../../../packages/scripts/package.json'
 import sms from '../../../../packages/sms/package.json'
 import storage from '../../../../packages/storage/package.json'
@@ -92,7 +93,7 @@ export const PACKAGE_CATEGORIES: readonly {
     names: [
       '@appkit/analytics', '@appkit/dashboard', '@appkit/customization', '@appkit/forms-core',
       '@appkit/forms', '@appkit/forms-documents', '@appkit/forms-pdf', '@appkit/reports',
-      '@appkit/pdf', '@appkit/design-studio',
+      '@appkit/pdf', '@appkit/design-studio', '@appkit/scheduling',
     ],
   },
   {
@@ -145,6 +146,7 @@ const MANIFESTS: WorkspacePackageManifest[] = [
   pdf,
   reports,
   sandbox,
+  scheduling,
   scripts,
   sms,
   storage,
@@ -176,6 +178,7 @@ const DEMO_ROUTES: Record<string, string> = {
   '@appkit/apps': '/admin/apps',
   '@appkit/scripts': '/admin/scripts',
   '@appkit/workflows': '/workflows',
+  '@appkit/scheduling': '/scheduling',
   '@appkit/integrations': '/admin/integrations',
   '@appkit/sync': '/admin/integrations',
 }

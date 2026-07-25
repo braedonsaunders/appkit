@@ -1,0 +1,89 @@
+/* @appkit/scheduling — schedule-specific token channels.
+ *
+ * Imported once by the host, alongside `@appkit/tokens`:
+ *     @import '@appkit/scheduling/styles.css';
+ *
+ * Phase colours are a CATEGORICAL palette: eight hues chosen to stay
+ * distinguishable next to each other and to hold contrast against both the
+ * light and dark surfaces. Rebrand them here and every phase band, bar and
+ * legend follows. Nothing in the components hardcodes a colour. */
+
+:root {
+  --sched-phase-1: 59 130 246;
+  --sched-phase-2: 16 185 129;
+  --sched-phase-3: 245 158 11;
+  --sched-phase-4: 139 92 246;
+  --sched-phase-5: 244 63 94;
+  --sched-phase-6: 6 182 212;
+  --sched-phase-7: 249 115 22;
+  --sched-phase-8: 236 72 153;
+
+  /* Timeline chrome */
+  --sched-nonworking: 148 163 184; /* weekend/holiday column wash */
+  --sched-today: 220 38 38; /* the today line */
+  --sched-critical: 220 38 38; /* critical-path bars and links */
+  --sched-baseline: 100 116 139; /* baseline ghost bars */
+  --sched-progress: 255 255 255; /* progress fill over a bar */
+  --sched-link: 100 116 139; /* dependency arrows */
+  --sched-overload: 217 119 6; /* resource histogram over capacity */
+}
+
+.dark {
+  /* Lifted for contrast against dark surfaces; same hue order, so a phase
+     keeps its identity across themes. */
+  --sched-phase-1: 96 165 250;
+  --sched-phase-2: 52 211 153;
+  --sched-phase-3: 251 191 36;
+  --sched-phase-4: 167 139 250;
+  --sched-phase-5: 251 113 133;
+  --sched-phase-6: 34 211 238;
+  --sched-phase-7: 251 146 60;
+  --sched-phase-8: 244 114 182;
+
+  --sched-nonworking: 71 85 105;
+  --sched-today: 248 113 113;
+  --sched-critical: 248 113 113;
+  --sched-baseline: 148 163 184;
+  --sched-progress: 15 23 42;
+  --sched-link: 148 163 184;
+  --sched-overload: 251 191 36;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --sched-phase-1: 96 165 250;
+    --sched-phase-2: 52 211 153;
+    --sched-phase-3: 251 191 36;
+    --sched-phase-4: 167 139 250;
+    --sched-phase-5: 251 113 133;
+    --sched-phase-6: 34 211 238;
+    --sched-phase-7: 251 146 60;
+    --sched-phase-8: 244 114 182;
+
+    --sched-nonworking: 71 85 105;
+    --sched-today: 248 113 113;
+    --sched-critical: 248 113 113;
+    --sched-baseline: 148 163 184;
+    --sched-progress: 15 23 42;
+    --sched-link: 148 163 184;
+    --sched-overload: 251 191 36;
+  }
+}
+
+/* Diagonal hatch for non-working columns — readable without relying on colour
+   alone, which matters for the same reason status is never colour-only. */
+.sched-nonworking {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgb(var(--sched-nonworking) / 0.12),
+    rgb(var(--sched-nonworking) / 0.12) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
+/* The schedule grid scrolls in both axes with sticky headers; momentum
+   scrolling on trackpads otherwise detaches the header from the body. */
+.sched-scroll {
+  overscroll-behavior: contain;
+}

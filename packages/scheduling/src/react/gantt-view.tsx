@@ -1,0 +1,971 @@
+'use client'
+
+/**
+ * The Gantt: a resizable outline pane on the left, a scrolling timeline on the
+ * right, and the two kept in vertical lockstep.
+ *
+ * Three interactions carry most of the value and are worth reading for:
+ *  - the SPLITTER, which never lets either pane collapse below a usable width;
+ *  - TREE DRAG, where horizontal pointer position picks the outline depth, so
+ *    one gesture both reorders and re-parents;
+ *  - TIMELINE PAN, which drags the scroll region but yields to bar drags and
+ *    suppresses the click that would otherwise fire on release.
+ */
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ChevronDown, ChevronRight, GripVertical } from 'lucide-react'
+import { cn } from '@appkit/ui'
+import {
+  addDays,
+  diffDays,
+  formatISODate,
+  parseDate,
+  startOfMonth,
+  startOfNextMonth,
+  todayDate,
+} from '../dates'
+import { buildTaskHierarchyInfo, getSummaryTaskIds, getVisibleTasks } from '../hierarchy'
+import { getTaskVariance } from '../insights'
+import {
+  buildTimelineHeaderBands,
+  computePhaseDatesFromTasks,
+  generateColumns,
+  getBarPosition,
+  getTimelineBounds,
+  getTodayPosition,
+  groupTasksByPhase,
+} from '../timeline'
+import { phaseColor as phaseColorAt, resolvePhaseColor, scheduleColors } from '../palette'
+import type {
+  ScheduleCalendar,
+  ScheduleDependency,
+  ScheduleInsights,
+  SchedulePhase,
+  ScheduleTask,
+  ScheduleTaskPatchInput,
+  TimelineColumn,
+  ZoomLevel,
+} from '../types'
+import { GanttBar } from './gantt-bar'
+import { GanttDependencies } from './gantt-dependencies'
+import { MilestoneMarker } from './milestone-marker'
+import { useScheduleFormatters, useSchedulingLabels } from './context'
+
+export interface GanttViewProps {
+  tasks: ScheduleTask[]
+  dependencies: ScheduleDependency[]
+  insights: ScheduleInsights
+  phases: SchedulePhase[]
+  calendar: ScheduleCalendar | null
+  zoomLevel: ZoomLevel
+  /** Days the visible window is shifted from the plan's start. */
+  scrollOffset: number
+  dateWorkStart: string | null
+  dateWorkEnd: string | null
+  criticalTaskIds: Set<string>
+  showCriticalPath: boolean
+  showBaseline: boolean
+  /** Return `false` to reject an edit and roll the bar back. */
+  onUpdateTask: (taskId: string, patch: ScheduleTaskPatchInput) => void | boolean | Promise<boolean | void>
+  onReorderTask: (
+    taskId: string,
+    targetTaskId: string,
+    placement: 'before' | 'after' | 'inside',
+    depth?: number,
+  ) => void | boolean | Promise<boolean | void>
+  onClickTask: (task: ScheduleTask) => void
+  onContextMenu?: (e: React.MouseEvent, task: ScheduleTask) => void
+}
+
+const COL_MIN_WIDTH: Record<ZoomLevel, number> = { day: 56, week: 88, month: 120 }
+const DEFAULT_LEFT_PANEL_WIDTH = 360
+const MIN_LEFT_PANEL_WIDTH = 260
+const MAX_LEFT_PANEL_WIDTH = 560
+const MIN_TIMELINE_WIDTH = 420
+const SPLITTER_WIDTH = 4
+const HEADER_BAND_HEIGHT = 34
+const HEADER_ROW_HEIGHT = 40
+const PHASE_ROW_HEIGHT = 40
+const TASK_ROW_HEIGHT = 56
+const FOOTER_HEIGHT = 44
+const TREE_INDENT = 18
+const TREE_DROP_OFFSET = 20
+const MAX_DROP_DEPTH = 12
+const PAN_THRESHOLD_PX = 3
+const LEFT_GRID_COLUMNS = 'minmax(0,1fr) 54px 54px 34px'
+/** Below this the left pane hides its secondary chips rather than crushing them. */
+const COMPACT_LEFT_PANEL_WIDTH = 380
+
+export function GanttView({
+  tasks,
+  dependencies,
+  insights,
+  phases,
+  calendar,
+  zoomLevel,
+  scrollOffset,
+  dateWorkStart,
+  dateWorkEnd,
+  criticalTaskIds,
+  showCriticalPath,
+  showBaseline,
+  onUpdateTask,
+  onReorderTask,
+  onClickTask,
+  onContextMenu,
+}: GanttViewProps) {
+  const labels = useSchedulingLabels()
+  const formatters = useScheduleFormatters()
+  const [collapsedPhases, setCollapsedPhases] = useState<Set<string>>(new Set())
+  const [collapsedTaskIds, setCollapsedTaskIds] = useState<Set<string>>(new Set())
+  const [leftPanelWidth, setLeftPanelWidth] = useState(DEFAULT_LEFT_PANEL_WIDTH)
+  const [isResizing, setIsResizing] = useState(false)
+  const [isPanning, setIsPanning] = useState(false)
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null)
+  const [dropTarget, setDropTarget] = useState<{
+    taskId: string
+    placement: 'before' | 'after' | 'inside'
+    depth: number
+  } | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const leftScrollRef = useRef<HTMLDivElement>(null)
+  const scrollRegionRef = useRef<HTMLDivElement>(null)
+  const resizeStartX = useRef(0)
+  const resizeStartWidth = useRef(DEFAULT_LEFT_PANEL_WIDTH)
+  const panStartX = useRef(0)
+  const panStartScrollLeft = useRef(0)
+  const suppressTimelineClickRef = useRef(false)
+  const draggingTaskIdRef = useRef<string | null>(null)
+  const isSyncingVerticalScrollRef = useRef(false)
+
+  const clampLeftPanelWidth = useCallback((nextWidth: number) => {
+    const containerWidth = containerRef.current?.clientWidth ?? 0
+    const maxFromContainer =
+      containerWidth > 0
+        ? Math.min(
+            MAX_LEFT_PANEL_WIDTH,
+            Math.max(MIN_LEFT_PANEL_WIDTH, containerWidth - MIN_TIMELINE_WIDTH),
+          )
+        : MAX_LEFT_PANEL_WIDTH
+    return Math.max(MIN_LEFT_PANEL_WIDTH, Math.min(maxFromContainer, nextWidth))
+  }, [])
+
+  useEffect(() => {
+    const handleResize = () => setLeftPanelWidth((current) => clampLeftPanelWidth(current))
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [clampLeftPanelWidth])
+
+  /**
+   * The visible window. Each zoom level pads generously on both sides so a
+   * plan can be scrolled into its past and future without re-fetching, and
+   * guarantees a minimum span so a one-week job still fills the viewport.
+   */
+  const timelineRange = useMemo(() => {
+    const rawStart = parseDate(dateWorkStart) ?? todayDate()
+    const rawEnd = parseDate(dateWorkEnd) ?? addDays(rawStart, 90)
+    if (zoomLevel === 'month') {
+      const monthAnchor = startOfMonth(addDays(rawStart, scrollOffset))
+      const monthStart = startOfMonth(addDays(monthAnchor, -62))
+      const projectEnd = startOfNextMonth(rawEnd)
+      const today = todayDate()
+      const todayFutureEnd = new Date(today.getFullYear(), today.getMonth() + 13, 1, 12, 0, 0, 0)
+      const minimumFutureEnd = new Date(
+        monthStart.getFullYear(),
+        monthStart.getMonth() + 30,
+        1,
+        12,
+        0,
+        0,
+        0,
+      )
+      const monthEnd = [projectEnd, todayFutureEnd, minimumFutureEnd].reduce((latest, candidate) =>
+        candidate.getTime() > latest.getTime() ? candidate : latest,
+      )
+      return { start: monthStart, end: monthEnd }
+    }
+    if (zoomLevel === 'week') {
+      const start = addDays(rawStart, -56 + scrollOffset)
+      const projectEnd = addDays(rawEnd, 180 + scrollOffset)
+      const minimumEnd = addDays(start, 420)
+      return { start, end: projectEnd.getTime() > minimumEnd.getTime() ? projectEnd : minimumEnd }
+    }
+    const start = addDays(rawStart, -21 + scrollOffset)
+    const projectEnd = addDays(rawEnd, 90 + scrollOffset)
+    const minimumEnd = addDays(start, 120)
+    return { start, end: projectEnd.getTime() > minimumEnd.getTime() ? projectEnd : minimumEnd }
+  }, [dateWorkEnd, dateWorkStart, scrollOffset, zoomLevel])
+
+  const columns = useMemo(
+    () => generateColumns(timelineRange.start, timelineRange.end, zoomLevel, calendar, formatters),
+    [calendar, formatters, timelineRange.end, timelineRange.start, zoomLevel],
+  )
+
+  const timelineBounds = useMemo(() => getTimelineBounds(columns, zoomLevel), [columns, zoomLevel])
+  const headerBands = useMemo(() => buildTimelineHeaderBands(columns), [columns])
+  const phaseDates = useMemo(() => computePhaseDatesFromTasks(tasks, phases), [tasks, phases])
+  const groups = useMemo(
+    () => groupTasksByPhase(tasks, phases, phaseDates),
+    [tasks, phases, phaseDates],
+  )
+  const displayGroups = useMemo(
+    () =>
+      groups.map((group) => ({
+        ...group,
+        hierarchyInfo: buildTaskHierarchyInfo(group.tasks),
+        summaryTaskIds: getSummaryTaskIds(group.tasks),
+        visibleTasks: getVisibleTasks(group.tasks, collapsedTaskIds),
+      })),
+    [collapsedTaskIds, groups],
+  )
+  const todayPos = useMemo(
+    () => getTodayPosition(timelineBounds.startMs, timelineBounds.endMs),
+    [timelineBounds.endMs, timelineBounds.startMs],
+  )
+
+  const togglePhase = useCallback((phaseId: string) => {
+    setCollapsedPhases((previous) => {
+      const next = new Set(previous)
+      if (next.has(phaseId)) next.delete(phaseId)
+      else next.add(phaseId)
+      return next
+    })
+  }, [])
+
+  const toggleTask = useCallback((taskId: string) => {
+    setCollapsedTaskIds((previous) => {
+      const next = new Set(previous)
+      if (next.has(taskId)) next.delete(taskId)
+      else next.add(taskId)
+      return next
+    })
+  }, [])
+
+  const barStyle = useCallback(
+    (startDate: Date, endDate: Date) => {
+      const { left, width } = getBarPosition(
+        startDate,
+        endDate,
+        timelineBounds.startMs,
+        timelineBounds.endMs,
+      )
+      return { left: `${(left * 100).toFixed(2)}%`, width: `${(width * 100).toFixed(2)}%` }
+    },
+    [timelineBounds.endMs, timelineBounds.startMs],
+  )
+
+  /** Row centres for the dependency layer — the two must agree exactly. */
+  const timelineLayout = useMemo(() => {
+    const taskRowCenters = new Map<string, number>()
+    let y = 0
+
+    for (const group of displayGroups) {
+      if (group.phase) y += PHASE_ROW_HEIGHT
+
+      const isCollapsed = group.phase ? collapsedPhases.has(group.phase.id) : false
+      if (!isCollapsed) {
+        for (const task of group.visibleTasks) {
+          taskRowCenters.set(task.id, y + TASK_ROW_HEIGHT / 2)
+          y += TASK_ROW_HEIGHT
+        }
+      }
+    }
+
+    return { taskRowCenters, bodyHeight: y }
+  }, [collapsedPhases, displayGroups])
+
+  const minColWidth = COL_MIN_WIDTH[zoomLevel]
+  const timelineWidth = columns.length * minColWidth
+  const isCompactLeftPanel = leftPanelWidth < COMPACT_LEFT_PANEL_WIDTH
+
+  /**
+   * Bring the live part of the plan into view. The window is padded well
+   * before the start date so the past is reachable, which means scrollLeft 0
+   * shows empty grid — open on today (or the plan start) instead, a quarter of
+   * the way in so the immediate past stays visible.
+   */
+  useEffect(() => {
+    const region = scrollRegionRef.current
+    if (!region || columns.length === 0) return
+    const span = timelineBounds.endMs - timelineBounds.startMs
+    if (span <= 0) return
+    const focus = parseDate(dateWorkStart) ?? todayDate()
+    const anchorMs = Math.max(
+      timelineBounds.startMs,
+      Math.min(timelineBounds.endMs, focus.getTime()),
+    )
+    const fraction = (anchorMs - timelineBounds.startMs) / span
+    region.scrollLeft = Math.max(0, fraction * timelineWidth - region.clientWidth * 0.25)
+    // Re-anchors when the zoom or the pan step changes, not on every render,
+    // so it never fights the user's own scrolling.
+  }, [columns.length, dateWorkStart, timelineBounds.endMs, timelineBounds.startMs, timelineWidth, zoomLevel, scrollOffset])
+
+  const handleDragEnd = useCallback(
+    (taskId: string, newStart: Date, newEnd: Date) =>
+      onUpdateTask(taskId, {
+        startDate: formatISODate(newStart),
+        endDate: formatISODate(newEnd),
+        duration: diffDays(newEnd, newStart),
+      }),
+    [onUpdateTask],
+  )
+
+  const handleRowDragOver = useCallback(
+    (event: React.DragEvent<HTMLDivElement>, taskId: string, targetDepth: number) => {
+      const activeTaskId =
+        draggingTaskIdRef.current ?? draggingTaskId ?? event.dataTransfer.getData('text/plain') ?? null
+      if (!activeTaskId || activeTaskId === taskId) return
+      event.preventDefault()
+      event.dataTransfer.dropEffect = 'move'
+      const rect = event.currentTarget.getBoundingClientRect()
+      const relativeY = event.clientY - rect.top
+      const treeCell = event.currentTarget.querySelector<HTMLElement>('[data-schedule-tree-cell]')
+      const treeRect = treeCell?.getBoundingClientRect() ?? rect
+      const relativeTreeX = Math.max(0, event.clientX - treeRect.left)
+      // Horizontal position picks the outline depth; vertical picks before/after.
+      const depth = Math.max(
+        0,
+        Math.min(MAX_DROP_DEPTH, Math.round((relativeTreeX - TREE_DROP_OFFSET) / TREE_INDENT)),
+      )
+      const placement =
+        relativeY > rect.height * 0.28 &&
+        relativeY < rect.height * 0.72 &&
+        relativeTreeX >= TREE_DROP_OFFSET + targetDepth * TREE_INDENT + 12
+          ? 'inside'
+          : relativeY < rect.height / 2
+            ? 'before'
+            : 'after'
+      setDropTarget({ taskId, placement, depth })
+    },
+    [draggingTaskId],
+  )
+
+  const handleRowDrop = useCallback(
+    async (event: React.DragEvent<HTMLDivElement>, taskId: string) => {
+      event.preventDefault()
+      event.stopPropagation()
+      const activeTaskId =
+        draggingTaskIdRef.current ?? draggingTaskId ?? event.dataTransfer.getData('text/plain') ?? null
+      if (!activeTaskId || !dropTarget || dropTarget.taskId !== taskId) return
+      const didMove = await onReorderTask(activeTaskId, taskId, dropTarget.placement, dropTarget.depth)
+      if (didMove !== false) {
+        setDraggingTaskId(null)
+        draggingTaskIdRef.current = null
+        setDropTarget(null)
+      }
+    },
+    [draggingTaskId, dropTarget, onReorderTask],
+  )
+
+  const handleSplitPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      event.preventDefault()
+      resizeStartX.current = event.clientX
+      resizeStartWidth.current = leftPanelWidth
+      setIsResizing(true)
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
+
+      const handleMove = (moveEvent: PointerEvent) => {
+        setLeftPanelWidth(
+          clampLeftPanelWidth(resizeStartWidth.current + (moveEvent.clientX - resizeStartX.current)),
+        )
+      }
+
+      const handleUp = () => {
+        document.removeEventListener('pointermove', handleMove)
+        document.removeEventListener('pointerup', handleUp)
+        document.body.style.cursor = ''
+        document.body.style.userSelect = ''
+        setIsResizing(false)
+      }
+
+      document.addEventListener('pointermove', handleMove)
+      document.addEventListener('pointerup', handleUp, { once: true })
+    },
+    [clampLeftPanelWidth, leftPanelWidth],
+  )
+
+  const handleTimelinePointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return
+    const target = event.target as HTMLElement | null
+    // A press that starts on a bar is a bar drag, not a pan.
+    if (target?.closest('[data-testid^="gantt-bar-"]')) return
+
+    const region = scrollRegionRef.current
+    if (!region || region.scrollWidth <= region.clientWidth) return
+
+    event.preventDefault()
+    panStartX.current = event.clientX
+    panStartScrollLeft.current = region.scrollLeft
+    suppressTimelineClickRef.current = false
+    setIsPanning(true)
+    document.body.style.cursor = 'grabbing'
+    document.body.style.userSelect = 'none'
+
+    const handleMove = (moveEvent: PointerEvent) => {
+      const delta = moveEvent.clientX - panStartX.current
+      if (Math.abs(delta) > PAN_THRESHOLD_PX) suppressTimelineClickRef.current = true
+      region.scrollLeft = panStartScrollLeft.current - delta
+    }
+
+    const handleUp = () => {
+      document.removeEventListener('pointermove', handleMove)
+      document.removeEventListener('pointerup', handleUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      setIsPanning(false)
+    }
+
+    document.addEventListener('pointermove', handleMove)
+    document.addEventListener('pointerup', handleUp, { once: true })
+  }, [])
+
+  const handleTimelinePhaseClick = useCallback(
+    (phaseId: string) => {
+      if (suppressTimelineClickRef.current) {
+        suppressTimelineClickRef.current = false
+        return
+      }
+      togglePhase(phaseId)
+    },
+    [togglePhase],
+  )
+
+  /** Mirror one pane's vertical scroll onto the other without a feedback loop. */
+  const syncVerticalScroll = useCallback((source: 'left' | 'timeline') => {
+    if (isSyncingVerticalScrollRef.current) return
+
+    const sourceElement = source === 'left' ? leftScrollRef.current : scrollRegionRef.current
+    const targetElement = source === 'left' ? scrollRegionRef.current : leftScrollRef.current
+    if (!sourceElement || !targetElement) return
+    if (Math.abs(targetElement.scrollTop - sourceElement.scrollTop) < 1) return
+
+    isSyncingVerticalScrollRef.current = true
+    targetElement.scrollTop = sourceElement.scrollTop
+    requestAnimationFrame(() => {
+      isSyncingVerticalScrollRef.current = false
+    })
+  }, [])
+
+  return (
+    <div className="min-h-0 flex-1 overflow-hidden rounded-t-none rounded-b-lg border border-t-0 border-border bg-surface">
+      <div
+        ref={containerRef}
+        className="grid h-full min-h-0 min-w-0"
+        style={{ gridTemplateColumns: `${leftPanelWidth}px ${SPLITTER_WIDTH}px minmax(0, 1fr)` }}
+      >
+        <div
+          ref={leftScrollRef}
+          className="sched-scroll min-h-0 overflow-x-hidden overflow-y-auto bg-surface"
+          data-testid="gantt-left-panel"
+          onScroll={() => syncVerticalScroll('left')}
+        >
+          <div className="sticky top-0 z-30 bg-surface">
+            <div
+              className="flex items-center border-b border-border bg-bg-subtle px-4"
+              style={{ height: HEADER_BAND_HEIGHT }}
+            >
+              <span className="text-[11px] font-semibold tracking-wide text-fg-subtle uppercase">
+                {labels.badges.schedule}
+              </span>
+            </div>
+            <div
+              className="flex items-center border-b border-border bg-bg-subtle/60 px-4"
+              style={{ height: HEADER_ROW_HEIGHT }}
+            >
+              <div className="grid w-full items-center gap-2" style={{ gridTemplateColumns: LEFT_GRID_COLUMNS }}>
+                <span className="text-xs font-medium text-fg-muted">{labels.columns.name}</span>
+                <span className="text-xs font-medium text-fg-subtle">{labels.columns.start}</span>
+                <span className="text-xs font-medium text-fg-subtle">{labels.columns.finish}</span>
+                <span className="text-xs font-medium text-fg-subtle">{labels.columns.duration}</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            {displayGroups.map((group, groupIndex) => {
+              const phase = group.phase
+              const isCollapsed = phase ? collapsedPhases.has(phase.id) : false
+              const groupColor = resolvePhaseColor(phase?.color, groupIndex)
+
+              return (
+                <div key={phase?.id ?? 'standalone'}>
+                  {phase ? (
+                    <div
+                      className="flex cursor-pointer items-center gap-2 border-b border-border/50 bg-bg-subtle/40 px-3 transition-colors hover:bg-bg-subtle"
+                      style={{ height: PHASE_ROW_HEIGHT }}
+                      onClick={() => togglePhase(phase.id)}
+                    >
+                      {isCollapsed ? (
+                        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-fg-subtle" />
+                      ) : (
+                        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-fg-subtle" />
+                      )}
+                      <div
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: groupColor }}
+                      />
+                      <span className="truncate text-xs font-semibold text-fg">
+                        {phase.number ? `${phase.number}. ` : ''}
+                        {phase.name}
+                      </span>
+                      <span className="ml-auto shrink-0 text-[11px] text-fg-subtle">
+                        {labels.format.taskCount(group.tasks.length)}
+                      </span>
+                    </div>
+                  ) : null}
+
+                  {!isCollapsed &&
+                    group.visibleTasks.map((task) => {
+                      const variance = getTaskVariance(task)
+                      const totalFloat = insights.totalFloatByTask.get(task.id)
+                      const hierarchy = group.hierarchyInfo.get(task.id)
+                      const depth = hierarchy?.depth ?? task.outlineLevel ?? 0
+                      const isSummaryTask = group.summaryTaskIds.has(task.id)
+                      const isTaskCollapsed = collapsedTaskIds.has(task.id)
+                      const isDropBefore = dropTarget?.taskId === task.id && dropTarget.placement === 'before'
+                      const isDropAfter = dropTarget?.taskId === task.id && dropTarget.placement === 'after'
+                      const isDropInside = dropTarget?.taskId === task.id && dropTarget.placement === 'inside'
+                      const start = parseDate(task.startDate)
+                      const end = parseDate(task.endDate)
+                      const duration = start && end ? diffDays(end, start) : task.duration
+
+                      return (
+                        <div
+                          key={task.id}
+                          className={cn(
+                            'grid cursor-pointer items-center gap-1.5 border-b border-border/40 bg-surface px-3 py-2 transition-colors hover:bg-surface-hover',
+                            draggingTaskId === task.id && 'opacity-55',
+                            isDropBefore && 'border-t-2 border-t-primary',
+                            isDropAfter && 'border-b-2 border-b-primary',
+                            isDropInside && 'bg-primary-subtle shadow-[inset_3px_0_0_0_var(--color-primary)]',
+                          )}
+                          style={{ height: TASK_ROW_HEIGHT, gridTemplateColumns: LEFT_GRID_COLUMNS }}
+                          onClick={() => onClickTask(task)}
+                          onContextMenu={onContextMenu ? (event) => onContextMenu(event, task) : undefined}
+                          onDragOver={(event) => handleRowDragOver(event, task.id, depth)}
+                          onDragEnter={(event) => handleRowDragOver(event, task.id, depth)}
+                          onDragLeave={() => {
+                            if (dropTarget?.taskId === task.id) setDropTarget(null)
+                          }}
+                          onDrop={(event) => void handleRowDrop(event, task.id)}
+                        >
+                          <div
+                            data-schedule-tree-cell="true"
+                            className="min-w-0"
+                            style={{ paddingLeft: `${depth * TREE_INDENT + (phase ? 6 : 0)}px` }}
+                          >
+                            <div className="flex items-start gap-2">
+                              <button
+                                type="button"
+                                draggable
+                                onDragStart={(event) => {
+                                  event.dataTransfer.effectAllowed = 'move'
+                                  event.dataTransfer.setData('text/plain', task.id)
+                                  setDraggingTaskId(task.id)
+                                  draggingTaskIdRef.current = task.id
+                                  setDropTarget(null)
+                                }}
+                                onDragEnd={() => {
+                                  setDraggingTaskId(null)
+                                  draggingTaskIdRef.current = null
+                                  setDropTarget(null)
+                                }}
+                                onClick={(event) => event.stopPropagation()}
+                                className="mt-0.5 shrink-0 text-fg-subtle transition-colors hover:text-fg-muted"
+                                aria-label={`${labels.toolbar.indent}: ${task.name || labels.badges.untitled}`}
+                                title={labels.badges.reorderHint}
+                              >
+                                <GripVertical className="h-3.5 w-3.5" />
+                              </button>
+
+                              {hierarchy?.hasChildren ? (
+                                <button
+                                  type="button"
+                                  className="mt-0.5 shrink-0 text-fg-subtle transition-colors hover:text-fg"
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    toggleTask(task.id)
+                                  }}
+                                  aria-label={`${isTaskCollapsed ? labels.badges.expand : labels.badges.collapse}: ${task.name || labels.badges.untitled}`}
+                                >
+                                  {isTaskCollapsed ? (
+                                    <ChevronRight className="h-3.5 w-3.5" />
+                                  ) : (
+                                    <ChevronDown className="h-3.5 w-3.5" />
+                                  )}
+                                </button>
+                              ) : task.taskType === 'milestone' ? (
+                                <div className="pt-1">
+                                  <MilestoneMarker color={groupColor} size={8} />
+                                </div>
+                              ) : (
+                                <div
+                                  className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
+                                  style={{ backgroundColor: groupColor }}
+                                />
+                              )}
+
+                              <div className="min-w-0 flex-1">
+                                <span className="block truncate text-xs text-fg">
+                                  {task.name || labels.badges.untitled}
+                                </span>
+                                <div className="mt-1 flex max-h-5 min-w-0 flex-wrap items-center gap-1.5 overflow-hidden text-[10px] text-fg-subtle">
+                                  {!isCompactLeftPanel && isSummaryTask ? (
+                                    <Chip>{labels.badges.summary}</Chip>
+                                  ) : null}
+                                  {!isCompactLeftPanel && hierarchy?.hasChildren ? (
+                                    <Chip>{labels.format.childCount(hierarchy.childCount)}</Chip>
+                                  ) : null}
+                                  {task.assignee ? <span className="min-w-0 truncate">{task.assignee}</span> : null}
+                                  {!isCompactLeftPanel &&
+                                  typeof totalFloat === 'number' &&
+                                  Number.isFinite(totalFloat) ? (
+                                    <Chip tone={totalFloat <= 0 ? 'danger' : 'neutral'}>
+                                      {labels.format.floatDays(Math.round(totalFloat))}
+                                    </Chip>
+                                  ) : null}
+                                  {variance.isBehind ? (
+                                    <Chip tone="warning">
+                                      {labels.format.slipDays(
+                                        Math.max(variance.finishDays ?? 0, variance.startDays ?? 0),
+                                      )}
+                                    </Chip>
+                                  ) : null}
+                                  {variance.isAhead ? (
+                                    <Chip tone="success">
+                                      {labels.format.aheadDays(
+                                        Math.min(variance.finishDays ?? 0, variance.startDays ?? 0),
+                                      )}
+                                    </Chip>
+                                  ) : null}
+                                  {insights.overdueTaskIds.has(task.id) ? (
+                                    <Chip tone="danger">{labels.badges.overdue}</Chip>
+                                  ) : null}
+                                  {insights.violatingTaskIds.has(task.id) ? (
+                                    <Chip tone="warning">{labels.badges.logic}</Chip>
+                                  ) : null}
+                                  {insights.deadlineMissTaskIds.has(task.id) ? (
+                                    <Chip tone="danger">{labels.badges.deadline}</Chip>
+                                  ) : null}
+                                  {insights.constraintViolationTaskIds.has(task.id) ? (
+                                    <Chip tone="warning">{labels.badges.constraint}</Chip>
+                                  ) : null}
+                                  {insights.resourceConflictTaskIds.has(task.id) ? (
+                                    <Chip tone="warning">{labels.badges.resource}</Chip>
+                                  ) : null}
+                                  {insights.criticalTaskIds.has(task.id) ? (
+                                    <Chip tone="primary">{labels.badges.critical}</Chip>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="truncate text-[11px] text-fg-muted">
+                            {start ? formatters.shortDate(start) : '—'}
+                          </div>
+                          <div className="truncate text-[11px] text-fg-muted">
+                            {end ? formatters.shortDate(end) : '—'}
+                          </div>
+                          <div className="truncate text-[11px] text-fg-muted">
+                            {duration > 0
+                              ? labels.format.days(duration)
+                              : task.taskType === 'milestone'
+                                ? labels.badges.milestone
+                                : '—'}
+                          </div>
+                        </div>
+                      )
+                    })}
+                </div>
+              )
+            })}
+          </div>
+
+          <div
+            className="flex items-center border-t border-border bg-bg-subtle/60 px-4"
+            style={{ height: FOOTER_HEIGHT }}
+          >
+            <span className="text-xs font-medium text-fg-muted">
+              {labels.format.taskCount(tasks.length)} · {labels.format.phaseCount(phases.length)}
+            </span>
+          </div>
+        </div>
+
+        <div
+          data-testid="gantt-splitter"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label={labels.badges.resizeSplit}
+          className="group relative cursor-col-resize self-stretch"
+          onPointerDown={handleSplitPointerDown}
+        >
+          <div
+            className={cn(
+              'absolute inset-y-0 left-1/2 w-[2px] -translate-x-1/2 rounded-full bg-border transition-colors group-hover:bg-primary/80',
+              isResizing && 'bg-primary',
+            )}
+          />
+        </div>
+
+        <div
+          ref={scrollRegionRef}
+          data-testid="gantt-scroll-region"
+          className={cn(
+            'sched-scroll min-h-0 min-w-0 overflow-x-scroll overflow-y-auto select-none',
+            isPanning ? 'cursor-grabbing' : 'cursor-grab',
+          )}
+          onScroll={() => syncVerticalScroll('timeline')}
+          onPointerDown={handleTimelinePointerDown}
+        >
+          <div style={{ width: timelineWidth, minWidth: '100%' }}>
+            <div className="sticky top-0 z-20 bg-surface">
+              <div className="flex border-b border-border bg-bg-subtle" style={{ height: HEADER_BAND_HEIGHT }}>
+                {headerBands.map((band) => (
+                  <div
+                    key={band.key}
+                    className="flex items-center justify-center border-r border-border/50 px-2 text-center"
+                    style={{ width: band.span * minColWidth }}
+                  >
+                    <span className="text-[11px] font-medium text-fg-muted">{band.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div
+                className="relative flex border-b border-border bg-bg-subtle/60"
+                style={{ height: HEADER_ROW_HEIGHT }}
+              >
+                {columns.map((column, index) => (
+                  <HeaderColumn
+                    key={`${column.groupKey}-${index}`}
+                    column={column}
+                    minColWidth={minColWidth}
+                    index={index}
+                  />
+                ))}
+                {todayPos ? <TodayMarker left={todayPos} /> : null}
+              </div>
+            </div>
+
+            <div className="relative" style={{ height: timelineLayout.bodyHeight }}>
+              <GridLines columns={columns} minColWidth={minColWidth} />
+              {todayPos ? <TodayMarker left={todayPos} /> : null}
+
+              <div className="relative z-10">
+                {displayGroups.map((group, groupIndex) => {
+                  const phase = group.phase
+                  const isCollapsed = phase ? collapsedPhases.has(phase.id) : false
+                  const groupColor = resolvePhaseColor(phase?.color, groupIndex)
+                  const dates = group.phaseDates
+
+                  return (
+                    <div key={phase?.id ?? 'standalone'}>
+                      {phase ? (
+                        <div
+                          className="relative cursor-pointer border-b border-border/50 bg-bg-subtle/40 transition-colors hover:bg-bg-subtle"
+                          style={{ height: PHASE_ROW_HEIGHT }}
+                          onClick={() => handleTimelinePhaseClick(phase.id)}
+                        >
+                          {dates ? (
+                            <div
+                              className="absolute left-0 h-4 rounded opacity-30"
+                              style={{
+                                ...barStyle(dates.startDate, dates.endDate),
+                                top: 'calc(50% - 8px)',
+                                backgroundColor: groupColor,
+                              }}
+                            />
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      {!isCollapsed &&
+                        group.visibleTasks.map((task) => {
+                          const start = parseDate(task.startDate)
+                          const end = parseDate(task.endDate)
+                          const baselineStart = parseDate(task.baselineStart)
+                          const baselineEnd = parseDate(task.baselineEnd)
+                          const isCritical = showCriticalPath && criticalTaskIds.has(task.id)
+                          const hasChildren = group.hierarchyInfo.get(task.id)?.hasChildren ?? false
+                          const isSummaryTask = group.summaryTaskIds.has(task.id)
+
+                          return (
+                            <div
+                              key={task.id}
+                              className="relative border-b border-border/40 transition-colors hover:bg-surface-hover"
+                              style={{ height: TASK_ROW_HEIGHT }}
+                              onContextMenu={
+                                onContextMenu ? (event) => onContextMenu(event, task) : undefined
+                              }
+                            >
+                              {showBaseline && baselineStart && baselineEnd ? (
+                                <div
+                                  className="absolute h-3 rounded border border-dashed"
+                                  style={{
+                                    ...barStyle(baselineStart, baselineEnd),
+                                    top: 'calc(50% - 6px)',
+                                    borderColor: scheduleColors.baseline(0.5),
+                                    backgroundColor: scheduleColors.baseline(0.12),
+                                  }}
+                                />
+                              ) : null}
+
+                              {start && end && task.taskType !== 'milestone' ? (
+                                <GanttBar
+                                  taskId={task.id}
+                                  startDate={start}
+                                  endDate={end}
+                                  progress={task.progress}
+                                  color={groupColor}
+                                  isCritical={isCritical}
+                                  taskName={task.name}
+                                  timelineStartMs={timelineBounds.startMs}
+                                  timelineEndMs={timelineBounds.endMs}
+                                  variant={isSummaryTask ? 'summary' : 'task'}
+                                  // A parent's dates are derived; dragging it
+                                  // would silently contradict its children.
+                                  isDraggable={!hasChildren}
+                                  onDragEnd={(newStart, newEnd) => handleDragEnd(task.id, newStart, newEnd)}
+                                  onClick={() => onClickTask(task)}
+                                />
+                              ) : null}
+
+                              {start && task.taskType === 'milestone' ? (
+                                <div
+                                  className="absolute top-1/2 z-20"
+                                  style={{
+                                    left: `${(((start.getTime() - timelineBounds.startMs) / (timelineBounds.endMs - timelineBounds.startMs || 1)) * 100).toFixed(2)}%`,
+                                    transform: 'translate(-50%, -50%)',
+                                  }}
+                                >
+                                  <MilestoneMarker
+                                    color={isCritical ? scheduleColors.critical() : groupColor}
+                                    size={14}
+                                  />
+                                </div>
+                              ) : null}
+                            </div>
+                          )
+                        })}
+                    </div>
+                  )
+                })}
+              </div>
+
+              <GanttDependencies
+                dependencies={dependencies}
+                tasks={tasks}
+                taskRowCenters={timelineLayout.taskRowCenters}
+                timelineStartMs={timelineBounds.startMs}
+                timelineEndMs={timelineBounds.endMs}
+                timelineWidth={timelineWidth}
+                svgHeight={timelineLayout.bodyHeight}
+                criticalTaskIds={criticalTaskIds}
+                violatingDependencyIds={insights.violatingDependencyIds}
+                showCriticalPath={showCriticalPath}
+              />
+            </div>
+
+            <div
+              className="relative border-t border-border bg-bg-subtle/60"
+              style={{ height: FOOTER_HEIGHT }}
+            >
+              <GridLines columns={columns} minColWidth={minColWidth} />
+              {todayPos ? <TodayMarker left={todayPos} /> : null}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Chip({
+  children,
+  tone = 'neutral',
+}: {
+  children: React.ReactNode
+  tone?: 'neutral' | 'danger' | 'warning' | 'success' | 'primary'
+}) {
+  return (
+    <span
+      className={cn(
+        'shrink-0 rounded-full px-1.5 py-0.5',
+        tone === 'neutral' && 'bg-bg-subtle text-fg-muted',
+        tone === 'danger' && 'bg-danger-subtle text-danger',
+        tone === 'warning' && 'bg-warning-subtle text-warning',
+        tone === 'success' && 'bg-success-subtle text-success',
+        tone === 'primary' && 'bg-primary-subtle text-primary',
+      )}
+    >
+      {children}
+    </span>
+  )
+}
+
+function HeaderColumn({
+  column,
+  minColWidth,
+  index,
+}: {
+  column: TimelineColumn
+  minColWidth: number
+  index: number
+}) {
+  return (
+    <div
+      data-testid={`gantt-header-column-${index}`}
+      className={cn(
+        'flex shrink-0 flex-col justify-center border-r border-border/50 px-1 py-1.5 text-center',
+        column.isToday && 'bg-primary-subtle',
+        column.isNonWorking && 'sched-nonworking',
+      )}
+      style={{ width: minColWidth }}
+    >
+      <span
+        className={cn(
+          'text-[11px] leading-tight font-medium',
+          column.isToday ? 'text-primary' : 'text-fg-muted',
+        )}
+      >
+        {column.label}
+      </span>
+      {column.subLabel ? (
+        <span className="mt-0.5 text-[10px] leading-tight text-fg-subtle">{column.subLabel}</span>
+      ) : null}
+    </div>
+  )
+}
+
+function GridLines({ columns, minColWidth }: { columns: TimelineColumn[]; minColWidth: number }) {
+  return (
+    <div className="pointer-events-none absolute inset-0 flex">
+      {columns.map((column, index) => (
+        <div
+          key={`${column.groupKey}-${index}`}
+          className={cn(
+            'shrink-0 border-r border-border/40',
+            column.isToday && 'bg-primary-subtle',
+            column.isNonWorking && 'sched-nonworking',
+          )}
+          style={{ width: minColWidth }}
+        />
+      ))}
+    </div>
+  )
+}
+
+function TodayMarker({ left }: { left: string }) {
+  return (
+    <div
+      className="pointer-events-none absolute top-0 bottom-0 z-10 w-0.5"
+      style={{ left, backgroundColor: scheduleColors.today(0.6) }}
+    />
+  )
+}
+
+export { phaseColorAt as ganttPhaseColor }

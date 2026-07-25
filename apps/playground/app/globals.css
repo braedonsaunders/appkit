@@ -5,6 +5,7 @@
 @import '@appkit/reports/styles.css';
 @import '@appkit/forms/styles.css';
 @import '@appkit/workflows/styles.css';
+@import '@appkit/scheduling/styles.css';
 @import '@appkit/customization/styles.css';
 @import '@appkit/apps/styles.css';
 @import '@appkit/scripts/styles.css';
@@ -20,6 +21,7 @@
 @source '../../../packages/notifications/src';
 @source '../../../packages/storage/src';
 @source '../../../packages/workflows/src';
+@source '../../../packages/scheduling/src';
 @source '../../../packages/customization/src';
 
 /* The playground has a 56px sticky header; drawers sit beneath it. An app shell
