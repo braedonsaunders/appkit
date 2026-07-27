@@ -20,10 +20,11 @@ export type ReportStudioValue = { definition: CustomReportDefinition; schedule?:
 export type ReportStudioSaveResult =
   | { ok: true; value?: ReportStudioValue }
   | { ok: false; error: string }
+export type ReportStudioDeleteResult = { ok: true } | { ok: false; error: string }
 export type ReportStudioTemplate = { id: string; label: string; description: string; query: ReportCustomQuery }
 type StudioTab = 'data' | 'filter' | 'format'
 
-export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRecord = ReportDrillRecord>({ value, catalog, result, onChange, onPreview, onSave, onSaved, organization = 'Organization', logoUrl, primaryColor, currency = '', drill, exports: exportOptions, printHref, pdfHref, templates, autoPreviewMs = 500, autoSaveMs = 700, className }: {
+export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRecord = ReportDrillRecord>({ value, catalog, result, onChange, onPreview, onSave, onSaved, onDelete, onDeleted, organization = 'Organization', logoUrl, primaryColor, currency = '', drill, exports: exportOptions, printHref, pdfHref, templates, autoPreviewMs = 500, autoSaveMs = 700, className }: {
   value: ReportStudioValue
   catalog: ReportEntityCatalog
   result: ReportRunResult | null
@@ -32,6 +33,10 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
   onSave: (value: ReportStudioValue) => Promise<ReportStudioSaveResult>
   /** Called only after persistence succeeds. Framework navigation remains host-owned. */
   onSaved?: (value: ReportStudioValue, result: Extract<ReportStudioSaveResult, { ok: true }>) => void
+  /** Deletes a persisted definition. The host owns confirmation and durable persistence. */
+  onDelete?: (value: ReportStudioValue) => Promise<ReportStudioDeleteResult>
+  /** Called only after deletion succeeds. Framework navigation remains host-owned. */
+  onDeleted?: (value: ReportStudioValue) => void
   organization?: string
   logoUrl?: string | null
   primaryColor?: string | null
@@ -55,6 +60,7 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
   const [preview, setPreview] = React.useState(result)
   const [running, setRunning] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
+  const [deleting, setDeleting] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [tab, setTab] = React.useState<StudioTab>('data')
   const [drillTarget, setDrillTarget] = React.useState<TDrillTarget | null>(null)
@@ -94,6 +100,21 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
     if (!(await save())) return
     window.location.assign(pdfHref)
   }
+  async function remove() {
+    if (!onDelete) return
+    setDeleting(true); setError(null)
+    try {
+      const response = await onDelete(value)
+      if (!response.ok) {
+        setError(response.error)
+        return
+      }
+      onDeleted?.(value)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'The report could not be deleted.')
+    }
+    finally { setDeleting(false) }
+  }
 
   const previewKey = reportStudioPersistenceKey(value)
   const lastSavedKey = React.useRef(previewKey)
@@ -121,7 +142,7 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
     { key: 'format', label: 'Format', icon: Settings2 },
   ]
 
-  return <fieldset disabled={saving} aria-busy={saving} className={cn('app-scroll grid h-full min-h-0 flex-1 overflow-y-auto lg:grid-cols-3 lg:overflow-hidden', className)}>
+  return <fieldset disabled={saving || deleting} aria-busy={saving || deleting} className={cn('app-scroll grid h-full min-h-0 flex-1 overflow-y-auto lg:grid-cols-3 lg:overflow-hidden', className)}>
     <aside className="flex min-h-0 flex-col border-b border-border bg-surface lg:col-span-1 lg:border-r lg:border-b-0">
       <div className="shrink-0 space-y-3 border-b border-border p-4 lg:p-5">
         <Field label="Name"><Input value={definition.name} onChange={(event) => updateDefinition({ name: event.target.value, slug: slug(event.target.value) })} /></Field>
@@ -155,7 +176,7 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
         <div className="flex min-w-0 items-center gap-3">
           <div className="min-w-0"><h2 className="truncate text-sm font-semibold text-fg">{definition.name || 'Untitled report'}</h2><p className="truncate text-xs text-fg-muted">{entity?.label ?? 'Choose a source'} · {query.mode === 'summarize' ? 'Summary' : 'Detail rows'}</p></div>
         </div>
-        <div className="flex items-center gap-2">{exportOptions?.length ? <ReportExportMenu options={exportOptions} printHref={printHref} onError={(cause) => setError(cause.message)} /> : null}<Button type="button" variant="outline" size="sm" onClick={() => void run()} disabled={running}>{running ? <Loader2 className="size-4 animate-spin" /> : <Play size={14} />}Run</Button>{pdfHref ? <Button type="button" variant="outline" size="sm" onClick={() => void exportPdf()} disabled={saving}><FileText size={14} />PDF</Button> : null}<Button type="button" size="sm" onClick={() => void save()} disabled={saving}>{saving ? <Loader2 className="size-4 animate-spin" /> : <Save size={14} />}Save</Button></div>
+        <div className="flex items-center gap-2">{exportOptions?.length ? <ReportExportMenu options={exportOptions} printHref={printHref} onError={(cause) => setError(cause.message)} /> : null}{onDelete ? <Button type="button" variant="destructive" size="sm" onClick={() => void remove()} disabled={deleting}>{deleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 size={14} />}Delete</Button> : null}<Button type="button" variant="outline" size="sm" onClick={() => void run()} disabled={running}>{running ? <Loader2 className="size-4 animate-spin" /> : <Play size={14} />}Run</Button>{pdfHref ? <Button type="button" variant="outline" size="sm" onClick={() => void exportPdf()} disabled={saving}><FileText size={14} />PDF</Button> : null}<Button type="button" size="sm" onClick={() => void save()} disabled={saving}>{saving ? <Loader2 className="size-4 animate-spin" /> : <Save size={14} />}Save</Button></div>
       </header>
       <div className="app-scroll min-h-0 flex-1 overflow-auto p-4 lg:p-6">
         {error ? <div role="alert" className="mb-4 rounded-lg border border-danger/30 bg-danger-subtle px-3 py-2 text-sm text-danger">{error}</div> : null}

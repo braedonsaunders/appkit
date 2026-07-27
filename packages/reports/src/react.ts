@@ -1,4 +1,12 @@
-export { ReportStudio, ReportResultView, reportStudioTemplates, type ReportStudioTemplate, type ReportStudioValue } from './report-studio'
+export {
+  ReportStudio,
+  ReportResultView,
+  reportStudioTemplates,
+  type ReportStudioDeleteResult,
+  type ReportStudioSaveResult,
+  type ReportStudioTemplate,
+  type ReportStudioValue,
+} from './report-studio'
 export {
   ReportRunDetail,
   ReportRunHistory,
