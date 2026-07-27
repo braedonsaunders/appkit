@@ -472,7 +472,8 @@ templates, ordered/searchable columns, and debounced preview/autosave adapters;
 successful saves may return the persisted controlled value (for example, the
 server-assigned definition id), and `onSaved` gives framework hosts a
 post-commit navigation seam. Failed autosaves remain dirty and retry after the
-next debounce instead of being marked saved;
+next edit instead of being marked saved; controls are locked while persistence
+is in flight so a create cannot race a second create or overwrite newer edits;
 `ReportScheduleForm` preserves the production create/edit contract for daily,
 weekly, day-of-month, and nth-weekday delivery, member and external recipients,
 date bounds, timezone, report filters, and custom email copy;

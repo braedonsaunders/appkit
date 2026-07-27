@@ -121,7 +121,7 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
     { key: 'format', label: 'Format', icon: Settings2 },
   ]
 
-  return <div className={cn('app-scroll grid h-full min-h-0 flex-1 overflow-y-auto lg:grid-cols-3 lg:overflow-hidden', className)}>
+  return <fieldset disabled={saving} aria-busy={saving} className={cn('app-scroll grid h-full min-h-0 flex-1 overflow-y-auto lg:grid-cols-3 lg:overflow-hidden', className)}>
     <aside className="flex min-h-0 flex-col border-b border-border bg-surface lg:col-span-1 lg:border-r lg:border-b-0">
       <div className="shrink-0 space-y-3 border-b border-border p-4 lg:p-5">
         <Field label="Name"><Input value={definition.name} onChange={(event) => updateDefinition({ name: event.target.value, slug: slug(event.target.value) })} /></Field>
@@ -163,7 +163,7 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
       </div>
     </main>
     {drill ? <ReportDrillDrawer target={drillTarget} load={drill.load} onClose={() => setDrillTarget(null)} onOpenRecord={drill.onOpenRecord} /> : null}
-  </div>
+  </fieldset>
 }
 
 function RowsBuilder({ entity, query, onChange }: { entity: NonNullable<ReturnType<typeof reportEntity>>; query: ReportCustomQuery; onChange: (query: ReportCustomQuery) => void }) {
