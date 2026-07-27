@@ -20,7 +20,10 @@ export type ReportStudioValue = { definition: CustomReportDefinition; schedule?:
 export type ReportStudioSaveResult =
   | { ok: true; value?: ReportStudioValue }
   | { ok: false; error: string }
-export type ReportStudioDeleteResult = { ok: true } | { ok: false; error: string }
+export type ReportStudioDeleteResult =
+  | { ok: true }
+  | { ok: false; error: string }
+  | { ok: false; cancelled: true }
 export type ReportStudioTemplate = { id: string; label: string; description: string; query: ReportCustomQuery }
 type StudioTab = 'data' | 'filter' | 'format'
 
@@ -106,7 +109,7 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
     try {
       const response = await onDelete(value)
       if (!response.ok) {
-        setError(response.error)
+        if ('error' in response) setError(response.error)
         return
       }
       onDeleted?.(value)
