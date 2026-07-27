@@ -4,6 +4,11 @@ export type ReportEntityColumn = {
   key: string
   label: string
   kind: ReportColumnKind
+  /**
+   * Internal columns remain available to application-authored base filters but
+   * are never offered to report authors or emitted by custom queries.
+   */
+  hidden?: boolean
   /** Application-authored SQL expression. */
   expression?: string
   /** Source-compatible expression key used by the production catalogues. */
@@ -60,6 +65,10 @@ export function reportColumn(entity: ReportEntity, key: string): ReportEntityCol
   return entity.columns.find((column) => column.key === key) ?? null
 }
 
+export function visibleReportColumns(entity: ReportEntity): ReportEntityColumn[] {
+  return entity.columns.filter((column) => !column.hidden)
+}
+
 export function reportColumnExpression(entity: ReportEntity, key: string): string | null {
   const column = reportColumn(entity, key)
   if (!column) return null
@@ -85,9 +94,12 @@ export function reportTenantColumn(entity: ReportEntity): string {
 }
 
 export function defaultColumnsFor(entity: ReportEntity, limit = 7): string[] {
-  if (entity.defaultColumns?.length) return entity.defaultColumns.filter((key) => Boolean(reportColumn(entity, key)))
-  const operational = entity.columns.filter((column) => column.kind !== 'uuid' && column.key !== 'id' && column.key !== 'tenant_id' && column.key !== 'deleted_at')
-  return (operational.length ? operational : entity.columns).slice(0, limit).map((column) => column.key)
+  if (entity.defaultColumns?.length) {
+    return entity.defaultColumns.filter((key) => !reportColumn(entity, key)?.hidden)
+  }
+  const visible = visibleReportColumns(entity)
+  const operational = visible.filter((column) => column.kind !== 'uuid' && column.key !== 'id' && column.key !== 'tenant_id' && column.key !== 'deleted_at')
+  return (operational.length ? operational : visible).slice(0, limit).map((column) => column.key)
 }
 
 export function reportColumnOptions(column: ReportEntityColumn): { value: string; label: string }[] {

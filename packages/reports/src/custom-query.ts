@@ -39,6 +39,7 @@ export function compileCustomReport(
 ): CompiledCustomReport {
   const entity = catalog.entities.find((item) => item.key === query.entity)
   if (!entity) throw new Error(`Unknown report entity "${query.entity}"`)
+  assertVisibleQueryColumns(entity, query)
   return query.mode === 'summarize'
     ? compileSummary(entity, query, tenantId, options)
     : compileRows(entity, query, tenantId, options)
@@ -126,6 +127,26 @@ function toOutputColumn(entity: ReportEntity, key: string, label?: string): Repo
 function semanticType(entity: ReportEntity, key: string): ReportColumn['semanticType'] { const kind = reportColumn(entity, key)?.kind; return kind === 'number' ? 'number' : kind === 'date' || kind === 'timestamp' ? 'date' : kind === 'boolean' ? 'boolean' : kind === 'enum' ? 'category' : 'text' }
 function resolveLimit(value: number | null | undefined, maxRows = 10_000): number { const hard = Math.max(1, Math.min(10_000, Math.trunc(maxRows))); return Math.max(1, Math.min(hard, Number.isFinite(value) ? Math.trunc(value!) : 1000)) }
 function unique(values: string[]): string[] { return [...new Set(values)] }
+
+function assertVisibleQueryColumns(entity: ReportEntity, query: ReportCustomQuery): void {
+  const referenced = [
+    ...query.columns,
+    ...(query.groupBy ? [query.groupBy] : []),
+    ...(query.breakouts ?? []).map((breakout) => breakout.column),
+    ...(query.measures ?? []).flatMap((measure) => measure.column ? [measure.column] : []),
+    ...(query.sorts?.length ? query.sorts : query.sort ? [query.sort] : []).map((sort) => sort.column),
+    ...filterFields(query.filters),
+  ]
+  const hidden = unique(referenced.filter((key) => reportColumn(entity, key)?.hidden))
+  if (hidden.length) {
+    throw new Error(`Report query references internal column${hidden.length === 1 ? '' : 's'}: ${hidden.join(', ')}`)
+  }
+}
+
+function filterFields(group: ReportRuleGroup | null | undefined): string[] {
+  if (!group) return []
+  return group.rules.flatMap((rule) => 'rules' in rule ? filterFields(rule) : [rule.field])
+}
 
 function appendImplicitFilters(entity: ReportEntity, where: string[], parameters: SqlParameters): void {
   if (entity.softDeleteExpression) where.push(`${entity.softDeleteExpression} IS NULL`)

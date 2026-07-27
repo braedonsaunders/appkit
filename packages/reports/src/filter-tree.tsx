@@ -5,7 +5,7 @@ import { Plus, Trash2, X } from 'lucide-react'
 import { Button, Input, SearchSelect, Select, type SelectOption } from '@appkit/ui'
 import { operatorsForKind, type ReportFilterOperator, type ReportRule, type ReportRuleGroup } from './filters'
 import { PERIOD_PRESETS, PERIOD_PRESET_GROUP_LABELS, type PeriodPresetGroup } from './period-presets'
-import { reportColumnOptions, type ReportEntity } from './entities'
+import { reportColumnOptions, visibleReportColumns, type ReportEntity } from './entities'
 
 const GROUP_ORDER: PeriodPresetGroup[] = ['fiscal_year', 'fiscal_quarter', 'fiscal_half', 'period', 'calendar', 'rolling', 'days']
 type Node = ReportRule | ReportRuleGroup
@@ -20,10 +20,11 @@ export function defaultOperatorForColumn(
 
 /** Recursive nested and/or filter editor matching the tree consumed by the SQL compiler. */
 export function ReportFilterTree({ entity, group, onChange, depth = 0 }: { entity: ReportEntity; group: ReportRuleGroup; onChange: (group: ReportRuleGroup) => void; depth?: number }) {
+  const columns = visibleReportColumns(entity)
   const setRule = (index: number, rule: Node) => { const rules = [...group.rules]; rules[index] = rule; onChange({ ...group, rules }) }
   const remove = (index: number) => onChange({ ...group, rules: group.rules.filter((_, current) => current !== index) })
   const addRule = () => {
-    const column = entity.columns[0]
+    const column = columns[0]
     if (column) {
       const op = defaultOperatorForColumn(column)
       onChange({ ...group, rules: [...group.rules, { field: column.key, op, value: op === 'in' ? [] : '' }] })
@@ -37,18 +38,19 @@ export function ReportFilterTree({ entity, group, onChange, depth = 0 }: { entit
 }
 
 function RuleRow({ entity, rule, onChange, onRemove }: { entity: ReportEntity; rule: ReportRule; onChange: (rule: ReportRule) => void; onRemove: () => void }) {
-  const column = entity.columns.find((item) => item.key === rule.field) ?? entity.columns[0]
+  const columns = visibleReportColumns(entity)
+  const column = columns.find((item) => item.key === rule.field) ?? columns[0]
   const operators = column ? operatorsForKind(column.kind) : []
   const operator = operators.find((item) => item.key === rule.op) ?? operators[0]
   const options = column ? reportColumnOptions(column) : []
   const changeField = (field: string) => {
-    const nextColumn = entity.columns.find((item) => item.key === field)
+    const nextColumn = columns.find((item) => item.key === field)
     if (!nextColumn) return
     const nextOperator = defaultOperatorForColumn(nextColumn)
     onChange({ field, op: nextOperator, value: nextOperator === 'in' ? [] : '' })
   }
   return <div className="flex flex-wrap items-center gap-2">
-    <Select className="h-8 min-w-40" value={rule.field} onChange={(event) => changeField(event.target.value)}>{entity.columns.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</Select>
+    <Select className="h-8 min-w-40" value={rule.field} onChange={(event) => changeField(event.target.value)}>{columns.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</Select>
     <Select className="h-8 min-w-36" value={rule.op} onChange={(event) => {
       const op = event.target.value as ReportFilterOperator
       const needsList = operators.find((item) => item.key === op)?.needsValue === 'list'

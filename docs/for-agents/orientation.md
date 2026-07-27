@@ -469,6 +469,10 @@ lease-based idempotent run claiming. `@appkit/reports/react` preserves the
 production report surface: `ReportStudio` has the one-third scrolling build rail
 and two-thirds live paper preview, grouped searchable sources, catalogue-derived
 templates, ordered/searchable columns, and debounced preview/autosave adapters;
+successful saves may return the persisted controlled value (for example, the
+server-assigned definition id), and `onSaved` gives framework hosts a
+post-commit navigation seam. Failed autosaves remain dirty and retry after the
+next debounce instead of being marked saved;
 `ReportScheduleForm` preserves the production create/edit contract for daily,
 weekly, day-of-month, and nth-weekday delivery, member and external recipients,
 date bounds, timezone, report filters, and custom email copy;
@@ -502,7 +506,9 @@ nullable `columnLabels`. The entity boundary accepts both production catalogue
 families directly: expression/from/org-scope catalogues (`expr`, `from`,
 `orgColumn`) and physical-table/RLS catalogues (`table`, optional `sql`). AppKit
 normalizes those server-authored surfaces internally without requiring saved
-query migrations.
+query migrations. Application-owned catalogues may mark technical columns
+`hidden`; those columns remain usable by trusted `baseFilter` scope predicates
+but are excluded from the studio, defaults, and user-authored query plans.
 
 `@appkit/pdf` provides a pure-JS PDFKit report,
 table, and financial-statement renderer. Bounded template rendering is under

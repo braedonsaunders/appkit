@@ -5,6 +5,7 @@ import {
   compileCustomReport,
   createReportDefinitionRegistry,
   customReportResult,
+  defaultColumnsFor,
   resolveReportLayout,
   validateScheduleRecipients,
   type ReportEntityCatalog,
@@ -26,6 +27,43 @@ test('row report compiler scopes the tenant and binds every authored value', () 
   assert.match(compiled.sql, /r\.tenant_id = \$1/)
   assert.match(compiled.sql, /r\.status::text ILIKE \$2/)
   assert.doesNotMatch(compiled.sql, /open/)
+})
+
+test('internal columns support authored scope filters but never custom report output', () => {
+  const entity = {
+    ...catalog.entities[0]!,
+    columns: [
+      ...catalog.entities[0]!.columns,
+      {
+        key: 'template_id',
+        label: 'Template ID',
+        kind: 'uuid' as const,
+        expression: 'r.template_id',
+        hidden: true,
+      },
+    ],
+    defaultColumns: ['created_at', 'template_id', 'status'],
+    baseFilter: {
+      combinator: 'and' as const,
+      rules: [{ field: 'template_id', op: 'eq' as const, value: 'template-1' }],
+    },
+  }
+  assert.deepEqual(defaultColumnsFor(entity), ['created_at', 'status'])
+  const compiled = compileCustomReport(
+    { entity: 'records', mode: 'rows', columns: ['status'] },
+    'tenant-1',
+    { entities: [entity] },
+  )
+  assert.match(compiled.sql, /r\.template_id = \$2/)
+  assert.throws(
+    () =>
+      compileCustomReport(
+        { entity: 'records', mode: 'rows', columns: ['template_id'] },
+        'tenant-1',
+        { entities: [entity] },
+      ),
+    /internal column: template_id/,
+  )
 })
 
 test('flat multi-value dimensions compile set membership instead of whole-string equality', () => {
