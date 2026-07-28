@@ -5,6 +5,7 @@ import {
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
   clampHeadViewport,
+  MIN_HEAD_VIEWPORT,
   resolvePartUrl,
   sortLayers,
   type AvatarComposition,
@@ -198,42 +199,52 @@ export function ComposerStage({
   const startViewportMove = (event: React.PointerEvent) => {
     const start = { ...composition.headViewport }
     const origin = toCanvas(event)
+    // The committed value has to be the one the drag ended on. Reading
+    // `composition.headViewport` here would read the prop captured when the
+    // drag began and snap the frame back to where it started.
+    let latest = start
     drag(
       event,
-      (canvas) =>
-        onHeadViewport(
-          clampHeadViewport({
-            ...start,
-            x: start.x + (canvas.x - origin.x),
-            y: start.y + (canvas.y - origin.y),
-          }),
-          false,
-        ),
-      () => onHeadViewport(composition.headViewport, true),
+      (canvas) => {
+        latest = clampHeadViewport({
+          ...start,
+          x: start.x + (canvas.x - origin.x),
+          y: start.y + (canvas.y - origin.y),
+        })
+        onHeadViewport(latest, false)
+      },
+      () => onHeadViewport(latest, true),
     )
   }
 
   const startViewportResize = (event: React.PointerEvent, corner: Corner) => {
     const start = { ...composition.headViewport }
     const origin = toCanvas(event)
+    // The crop's aspect ratio is fixed — it is the shape the portrait renders
+    // at everywhere in the app — so the drag sets one size and both axes follow.
+    const ratio = start.height > 0 ? start.width / start.height : 1
+    const west = corner === 'nw' || corner === 'sw'
+    const north = corner === 'nw' || corner === 'ne'
+    let latest = start
     drag(
       event,
       (canvas) => {
-        const dx = canvas.x - origin.x
-        // The head frame stays square: a portrait frame is square, and a
-        // non-square crop would letterbox in every list row. The horizontal
-        // drag drives both axes.
-        const delta = corner === 'nw' || corner === 'sw' ? -dx : dx
-        const size = Math.max(40, start.width + delta)
-        const next: AvatarHeadViewport = {
-          width: size,
-          height: size,
-          x: corner === 'nw' || corner === 'sw' ? start.x + start.width - size : start.x,
-          y: corner === 'nw' || corner === 'ne' ? start.y + start.height - size : start.y,
-        }
-        onHeadViewport(clampHeadViewport(next), false)
+        // Project the pointer onto the frame's diagonal so dragging either way
+        // grows the frame, instead of the vertical drag doing nothing.
+        const dx = (west ? -1 : 1) * (canvas.x - origin.x)
+        const dy = (north ? -1 : 1) * (canvas.y - origin.y)
+        const width = Math.max(MIN_HEAD_VIEWPORT * ratio, start.width + (dx + dy * ratio) / 2)
+        const height = width / ratio
+        latest = clampHeadViewport({
+          width,
+          height,
+          // The opposite corner is the anchor: it stays put while you drag.
+          x: west ? start.x + start.width - width : start.x,
+          y: north ? start.y + start.height - height : start.y,
+        })
+        onHeadViewport(latest, false)
       },
-      () => onHeadViewport(composition.headViewport, true),
+      () => onHeadViewport(latest, true),
     )
   }
 
@@ -283,7 +294,13 @@ export function ComposerStage({
       ))}
 
       {guides.centerX ? (
-        <div className="pointer-events-none absolute inset-y-0 left-1/2 w-px bg-primary/70" />
+        <div
+          className="pointer-events-none absolute inset-y-0 left-1/2 w-px"
+          // Inline colour, not a `/70` utility: the consuming app's Tailwind
+          // only generates classes it finds in its own scanned sources, so an
+          // alpha modifier used nowhere else silently paints nothing.
+          style={{ backgroundColor: 'color-mix(in oklab, var(--color-primary) 70%, transparent)' }}
+        />
       ) : null}
 
       {mode === 'compose' && selectedBox && selectedCategoryId ? (
@@ -320,7 +337,10 @@ export function ComposerStage({
       {mode === 'headFraming' ? (
         <>
           {/* Everything outside the head frame dims, so the crop reads at a glance. */}
-          <div className="pointer-events-none absolute inset-0 bg-bg/70" />
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{ backgroundColor: 'color-mix(in oklab, var(--color-bg) 72%, transparent)' }}
+          />
           {/* The framed region, repainted at full strength through the dim. */}
           <div
             className="pointer-events-none absolute overflow-hidden"
@@ -375,8 +395,10 @@ export function ComposerStage({
                 type="button"
                 aria-label={`Resize head frame from ${corner}`}
                 onPointerDown={(event) => startViewportResize(event, corner)}
-                className="absolute size-3 cursor-nwse-resize rounded-full border-2 border-primary bg-surface"
-                style={cornerStyle(corner)}
+                className={`absolute size-3.5 rounded-full border-2 border-primary bg-surface ${
+                  corner === 'nw' || corner === 'se' ? 'cursor-nwse-resize' : 'cursor-nesw-resize'
+                }`}
+                style={cornerStyle(corner, 7)}
               />
             ))}
           </div>
@@ -389,11 +411,12 @@ export function ComposerStage({
 type Corner = 'nw' | 'ne' | 'sw' | 'se'
 const CORNERS: Corner[] = ['nw', 'ne', 'sw', 'se']
 
-function cornerStyle(corner: Corner): React.CSSProperties {
+/** Centre a handle on its corner: half the handle's own size. */
+function cornerStyle(corner: Corner, offset = 6): React.CSSProperties {
   return {
-    left: corner === 'nw' || corner === 'sw' ? -6 : undefined,
-    right: corner === 'ne' || corner === 'se' ? -6 : undefined,
-    top: corner === 'nw' || corner === 'ne' ? -6 : undefined,
-    bottom: corner === 'sw' || corner === 'se' ? -6 : undefined,
+    left: corner === 'nw' || corner === 'sw' ? -offset : undefined,
+    right: corner === 'ne' || corner === 'se' ? -offset : undefined,
+    top: corner === 'nw' || corner === 'ne' ? -offset : undefined,
+    bottom: corner === 'sw' || corner === 'se' ? -offset : undefined,
   }
 }

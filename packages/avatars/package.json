@@ -1,7 +1,7 @@
 {
   "name": "@appkit/avatars",
-  "version": "0.5.0",
-  "description": "Avatar parts library, composition model, and the composer \u2014 one full-body figure per subject, portraits derived by head viewport; plus AI image generation through the AI SDK provider layer.",
+  "version": "0.5.1",
+  "description": "Avatar parts library, composition model, and the composer — one full-body figure per subject, portraits derived by head viewport; plus AI image generation through the AI SDK provider layer.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {

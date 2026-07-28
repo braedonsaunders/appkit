@@ -272,10 +272,20 @@ export function viewportTransform(
   }
 }
 
-/** Clamp a head viewport to the stage, keeping it at least 40 units square. */
+/** Smallest head crop, in canvas units — below this the face is unreadable. */
+export const MIN_HEAD_VIEWPORT = 40
+
 export function clampHeadViewport(viewport: AvatarHeadViewport): AvatarHeadViewport {
-  const width = Math.min(CANVAS_WIDTH, Math.max(40, viewport.width))
-  const height = Math.min(CANVAS_HEIGHT, Math.max(40, viewport.height))
+  // The crop's aspect ratio is fixed — it is the shape every portrait in the
+  // app renders at — so clamping scales both axes by the same factor. Clamping
+  // them independently would let a frame dragged past an edge come back
+  // stretched, and the face would then render distorted everywhere it appears.
+  const ratio = viewport.height > 0 ? viewport.width / viewport.height : 1
+  let height = Math.max(MIN_HEAD_VIEWPORT, viewport.height)
+  let width = height * ratio
+  const shrink = Math.min(1, CANVAS_WIDTH / width, CANVAS_HEIGHT / height)
+  width *= shrink
+  height *= shrink
   return {
     width,
     height,
@@ -283,3 +293,4 @@ export function clampHeadViewport(viewport: AvatarHeadViewport): AvatarHeadViewp
     y: Math.min(CANVAS_HEIGHT - height, Math.max(0, viewport.y)),
   }
 }
+
