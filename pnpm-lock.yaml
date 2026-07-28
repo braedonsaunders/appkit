@@ -29,6 +29,9 @@ importers:
       '@appkit/apps':
         specifier: workspace:*
         version: link:../../packages/apps
+      '@appkit/avatars':
+        specifier: workspace:*
+        version: link:../../packages/avatars
       '@appkit/crypto':
         specifier: workspace:*
         version: link:../../packages/crypto
@@ -71,12 +74,18 @@ importers:
       '@appkit/jobs':
         specifier: workspace:*
         version: link:../../packages/jobs
+      '@appkit/mailbox':
+        specifier: workspace:*
+        version: link:../../packages/mailbox
       '@appkit/notifications':
         specifier: workspace:*
         version: link:../../packages/notifications
       '@appkit/pdf':
         specifier: workspace:*
         version: link:../../packages/pdf
+      '@appkit/process-sandbox':
+        specifier: workspace:*
+        version: link:../../packages/process-sandbox
       '@appkit/reports':
         specifier: workspace:*
         version: link:../../packages/reports
@@ -1018,6 +1027,19 @@ importers:
         version: 5.9.3
     publishDirectory: dist
 
+  packages/process-sandbox:
+    devDependencies:
+      '@types/node':
+        specifier: ^22
+        version: 22.20.1
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+    publishDirectory: dist
+
   packages/reports:
     dependencies:
       '@appkit/analytics':
@@ -1298,6 +1320,17 @@ importers:
       vitest:
         specifier: ^3.2.4
         version: 3.2.7(@types/debug@4.1.13)(@types/node@22.20.1)(jiti@2.7.0)(jsdom@29.1.1(@noble/hashes@2.2.0)(canvas@3.2.3))(lightningcss@1.32.0)(tsx@4.23.1)
+    publishDirectory: dist
+
+  packages/voice:
+    dependencies:
+      livekit-server-sdk:
+        specifier: ^2.14.0
+        version: 2.17.0
+    devDependencies:
+      '@types/node':
+        specifier: ^22
+        version: 22.20.1
     publishDirectory: dist
 
   packages/workflows:
@@ -1645,6 +1678,9 @@ packages:
   '@bramus/specificity@2.4.2':
     resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
     hasBin: true
+
+  '@bufbuild/protobuf@1.10.1':
+    resolution: {integrity: sha512-wJ8ReQbHxsAfXhrf9ixl0aYbZorRuOWpBNzm8pL8ftmSxQx/wnJD5Eg861NwJU/czy2VXFIebCeZnZrI9rktIQ==}
 
   '@changesets/apply-release-plan@7.1.1':
     resolution: {integrity: sha512-9qPCm/rLx/xoOFXIHGB229+4GOL76S4MC+7tyOuTsR6+1jYlfFDQORdvwR5hDA6y4FL2BPt3qpbcQIS+dW85LA==}
@@ -2527,6 +2563,9 @@ packages:
 
   '@lezer/lr@1.4.10':
     resolution: {integrity: sha512-rnCpTIBafOx4mRp43xOxDJbFipJm/c0cia/V5TiGlhmMa+wsSdoGmUN3w5Bqrks/09Q/D4tNAmWaT8p6NRi77A==}
+
+  '@livekit/protocol@1.50.4':
+    resolution: {integrity: sha512-L1uggNQAqyY21smQY8AllyOYbcv9Me9TaxwuLytL1R8ck9nbYPmQLNwEDi3pOFGAMa5F8I2nUi2Jc59W5awxlA==}
 
   '@manypkg/find-root@1.1.0':
     resolution: {integrity: sha512-mki5uBvhHzO8kYYix/WRy2WX8S3B5wdVSc9D6KcU5lQNglP2yt58/VfLuAK49glRXChosY8ap2oJ1qgma3GUVA==}
@@ -4840,6 +4879,9 @@ packages:
     resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
     hasBin: true
 
+  jose@5.10.0:
+    resolution: {integrity: sha512-s+3Al/p9g32Iq+oqXxkW//7jk2Vig6FF1CFqzVXoTUXt2qz89YWbL+OwS17NFYEvxC35n0FKeGO2LGYSxeM2Gg==}
+
   jose@6.2.4:
     resolution: {integrity: sha512-N8acGzVsQy6M/fjFcxtysNc4Q379TcM5dM/qKkNtsHFji88yANnXTr7BLeP75iPnFwBfQzM/jg2BZ9+HZrHCZA==}
 
@@ -5031,6 +5073,10 @@ packages:
 
   linkifyjs@4.3.3:
     resolution: {integrity: sha512-P8aEP5U/D1/IlTY2OeYsErdwh9bGuLE30NcXtKEjgdHcahveQoQwM2yZNsioQHsWFz0P7KKudisbrzCgR0sDHg==}
+
+  livekit-server-sdk@2.17.0:
+    resolution: {integrity: sha512-GWNEQrUD13UwZNrmosyTVFPgeBvSU2lFKGxdA4DaUI5F4sMb1cGeep/PPEE9vvRNELJYpxWS0ImS4gQmovKUDA==}
+    engines: {node: '>=18'}
 
   locate-path@5.0.0:
     resolution: {integrity: sha512-t7hw9pI+WvuwNJXwk5zVHpyhIqzg2qTlklJOf0mVxGSbe3Fp2VieZcduNYjaLDoy6p9uGpQEGWG87WpMKlNq8g==}
@@ -7009,6 +7055,8 @@ snapshots:
     dependencies:
       css-tree: 3.2.1
 
+  '@bufbuild/protobuf@1.10.1': {}
+
   '@changesets/apply-release-plan@7.1.1':
     dependencies:
       '@changesets/config': 3.1.4
@@ -7798,6 +7846,10 @@ snapshots:
   '@lezer/lr@1.4.10':
     dependencies:
       '@lezer/common': 1.5.2
+
+  '@livekit/protocol@1.50.4':
+    dependencies:
+      '@bufbuild/protobuf': 1.10.1
 
   '@manypkg/find-root@1.1.0':
     dependencies:
@@ -10036,6 +10088,8 @@ snapshots:
 
   jiti@2.7.0: {}
 
+  jose@5.10.0: {}
+
   jose@6.2.4: {}
 
   jotai-scope@0.7.2(jotai@2.11.0(@types/react@19.2.17)(react@19.2.7))(react@19.2.7):
@@ -10245,6 +10299,12 @@ snapshots:
       uc.micro: 2.1.0
 
   linkifyjs@4.3.3: {}
+
+  livekit-server-sdk@2.17.0:
+    dependencies:
+      '@bufbuild/protobuf': 1.10.1
+      '@livekit/protocol': 1.50.4
+      jose: 5.10.0
 
   locate-path@5.0.0:
     dependencies:
