@@ -1,0 +1,92 @@
+{
+  "name": "@appkit/superadmin",
+  "version": "0.1.0",
+  "description": "Instance-operator administration over the platform identity: manage the users who can sign in, their credentials, and active sessions, with guard rails and production React components.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./drizzle": "./src/drizzle.ts",
+    "./memory": "./src/memory.ts",
+    "./react": "./src/react.tsx",
+    "./package.json": "./package.json"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "build": "node ../../scripts/build-package.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "peerDependencies": {
+    "@appkit/db": "^0.2.0",
+    "@appkit/ui": "^0.1.1",
+    "drizzle-orm": "^0.45.2",
+    "lucide-react": "^1.24.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@appkit/db": {
+      "optional": true
+    },
+    "@appkit/ui": {
+      "optional": true
+    },
+    "drizzle-orm": {
+      "optional": true
+    },
+    "lucide-react": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@appkit/db": "workspace:*",
+    "@appkit/ui": "workspace:*",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "drizzle-orm": "^0.45.2",
+    "lucide-react": "^1.24.0",
+    "react": "^19",
+    "react-dom": "^19",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
+  },
+  "author": "Braedon Saunders",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/braedonsaunders/appkit.git",
+    "directory": "packages/superadmin"
+  },
+  "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/superadmin#readme",
+  "bugs": {
+    "url": "https://github.com/braedonsaunders/appkit/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "appkit",
+    "superadmin",
+    "administration",
+    "identity",
+    "sessions"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist",
+    "linkDirectory": false,
+    "provenance": true
+  }
+}
