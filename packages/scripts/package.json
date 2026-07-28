@@ -92,9 +92,11 @@
   },
   "keywords": [
     "appkit",
+    "application-framework",
+    "automation",
     "quickjs",
     "scripts",
-    "automation"
+    "typescript"
   ],
   "publishConfig": {
     "access": "public",

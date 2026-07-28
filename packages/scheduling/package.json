@@ -71,10 +71,10 @@
   "keywords": [
     "appkit",
     "application-framework",
-    "typescript",
-    "gantt",
     "critical-path",
-    "scheduling"
+    "gantt",
+    "scheduling",
+    "typescript"
   ],
   "publishConfig": {
     "access": "public",

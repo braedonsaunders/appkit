@@ -23,6 +23,16 @@ import { createSealer } from '@appkit/crypto'
 import { renderEmail } from '@appkit/email-render'
 import { EMAIL_PROVIDER_SPECS, buildTransport } from '@appkit/emails'
 import { sendMail, syncMailbox, verifyImap, verifySmtp } from '@appkit/mailbox'
+import {
+  XLSX_MIME_TYPE,
+  excelJsAvailable,
+  officeDocumentHtml,
+  renderWorkbook,
+  replaceTextInFodt,
+  resolveSoffice,
+  sanitizeOfficeHtml,
+  type WorkbookSpec,
+} from '@appkit/office'
 import { buildBubblewrapPlan } from '@appkit/process-sandbox'
 import { SMS_PROVIDER_SPECS, buildSmsTransport } from '@appkit/sms'
 import {
@@ -60,6 +70,7 @@ const PACKAGE_DEMOS = {
   emails: 'Email delivery',
   jobs: 'Background jobs',
   mailbox: 'Mailbox operations',
+  office: 'Office documents',
   'process-sandbox': 'Process isolation',
   scene: 'Character scene',
   superadmin: 'Instance administration',
@@ -126,6 +137,8 @@ function renderPackageDemo(
       return <JobsDemo recipients={boundedInteger(query.recipients, 620, 1, 1_000)} />
     case 'mailbox':
       return <MailboxDemo />
+    case 'office':
+      return <OfficeDemo project={queryValue(query.project, 'North Tower')} />
     case 'process-sandbox':
       return <ProcessSandboxDemo />
     case 'scene':
@@ -468,6 +481,220 @@ function MailboxDemo() {
         </Table>
       </CardContent>
     </Card>
+  )
+}
+
+const OFFICE_UNTRUSTED_DRAFT = [
+  '<h2>Site safety briefing</h2>',
+  '<script>alert("blocked")</script>',
+  '<p onclick="steal()">All visitors must wear a <strong>hard hat</strong> past the gate.</p>',
+  '<img src="https://example.com/tracking-pixel.png">',
+  '<div><ul><li>Check in at the trailer</li><li>High-visibility vest required</li></ul></div>',
+].join('\n')
+
+const OFFICE_FODT_SAMPLE =
+  '<office:document><office:body><office:text>' +
+  '<text:p>Wear a <text:span text:style-name="T1">hard hat</text:span> on site.</text:p>' +
+  '<text:p>Report incidents to the site office.</text:p>' +
+  '</office:text></office:body></office:document>'
+
+async function OfficeDemo({ project }: { project: string }) {
+  const safeProject = project.trim().slice(0, 80) || 'North Tower'
+
+  const sanitizedBody = sanitizeOfficeHtml(OFFICE_UNTRUSTED_DRAFT)
+  const documentHtml = officeDocumentHtml({
+    bodyHtml: `<h1>${safeProject} — weekly report</h1>${sanitizedBody}`,
+    title: `${safeProject} weekly report`,
+    branding: {
+      companyName: 'AppKit Demo Construction',
+      accentColor: '#1a4f8a',
+      footerText: `Prepared for ${safeProject} — confidential`,
+    },
+  })
+
+  const edits = [
+    { find: 'hard hat', replace: 'Type II hard hat' },
+    { find: 'site office', replace: 'safety coordinator' },
+    { find: 'scaffold permit', replace: 'work permit' },
+  ]
+  const { results: editResults } = replaceTextInFodt(OFFICE_FODT_SAMPLE, edits)
+
+  const workbookSpec: WorkbookSpec = {
+    creator: 'AppKit playground',
+    sheets: [
+      {
+        name: `${safeProject} costs`,
+        columns: [
+          { header: 'Cost code', key: 'code', width: 12 },
+          { header: 'Description', key: 'description' },
+          { header: 'Committed', key: 'committed', numFmt: '#,##0.00' },
+          { header: 'Invoiced', key: 'invoiced', numFmt: '#,##0.00' },
+        ],
+        rows: [
+          { code: '03-100', description: 'Concrete formwork', committed: 182_500, invoiced: 121_300.5 },
+          { code: '05-500', description: 'Structural steel erection', committed: 964_000, invoiced: 402_118.25 },
+          { code: '26-050', description: 'Electrical rough-in', committed: 310_750, invoiced: 88_402 },
+        ],
+        formulas: [
+          { cell: 'C5', formula: 'SUM(C2:C4)' },
+          { cell: 'D5', formula: 'SUM(D2:D4)' },
+        ],
+        freezeHeader: true,
+        autoFilter: true,
+      },
+    ],
+  }
+  const excelReady = await excelJsAvailable()
+  const workbookBytes = excelReady ? (await renderWorkbook(workbookSpec)).byteLength : null
+
+  const soffice = await resolveSoffice().then(
+    (path) => ({ ready: true as const, detail: path }),
+    (error: unknown) => ({
+      ready: false as const,
+      detail: error instanceof Error ? error.message : 'LibreOffice is not available.',
+    }),
+  )
+
+  const conversions = [
+    ['htmlToDocx(html)', 'docx:MS Word 2007 XML', 'Authored HTML becomes an editable Word document'],
+    ['htmlToPdf(html)', 'pdf', 'Authored HTML prints straight to PDF'],
+    ['docxToPdf(docx)', 'pdf', 'Renders an uploaded Word document for distribution'],
+    ['docxToText(docx)', 'txt:Text', 'Plain-text extraction for agents and search'],
+    ['replaceTextInDocx(docx, edits)', 'fodt round trip', 'Exact-match edits that keep formatting intact'],
+    ['pdfUnite(pdfs)', 'poppler pdfunite', 'Concatenates rendered PDFs into one book'],
+  ] as const
+
+  return (
+    <>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Author a printable document</CardTitle>
+            <CardDescription>
+              Untrusted draft markup is reduced to the print allowlist, then wrapped in a branded
+              letter-format document ready for LibreOffice conversion.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <form method="get" className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <label className="grid flex-1 gap-1.5 text-sm font-medium text-fg">
+                Project name
+                <Input name="project" defaultValue={safeProject} maxLength={80} />
+              </label>
+              <Button type="submit">Compose document</Button>
+            </form>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">Draft input</p>
+              <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-bg-subtle p-3 font-mono text-xs leading-5 text-fg">{OFFICE_UNTRUSTED_DRAFT}</pre>
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">Sanitized body</p>
+              <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-bg-subtle p-3 font-mono text-xs leading-5 text-fg">{sanitizedBody}</pre>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Rendered document</CardTitle>
+            <CardDescription>
+              The exact HTML that htmlToDocx and htmlToPdf hand to headless LibreOffice: 0.75in
+              margins, serif hierarchy, bordered tables, letterhead, and footer.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <iframe
+              title="Office document preview"
+              sandbox=""
+              srcDoc={documentHtml}
+              className="h-[26rem] w-full rounded-md border border-border bg-surface"
+            />
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Workbook from a declarative spec</CardTitle>
+            <CardDescription>
+              renderWorkbook turns typed sheets, number formats, formulas, and a frozen filtered
+              header into real .xlsx bytes through the optional exceljs adapter.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <DemoRow label="Sheet" value={`${safeProject} costs`} />
+            <DemoRow label="Columns" value={workbookSpec.sheets[0]!.columns.map((column) => column.header).join(', ')} />
+            <DemoRow label="Data rows" value={String(workbookSpec.sheets[0]!.rows.length)} />
+            <DemoRow label="Formulas" value={workbookSpec.sheets[0]!.formulas!.map((formula) => `${formula.cell} = ${formula.formula}`).join(', ')} mono />
+            <DemoRow label="Content type" value={XLSX_MIME_TYPE} mono />
+            {workbookBytes === null ? (
+              <Badge variant="secondary">Install the optional exceljs peer to generate workbooks</Badge>
+            ) : (
+              <Badge variant="success">Rendered a {workbookBytes.toLocaleString()}-byte workbook on this request</Badge>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Precision edits inside formatted text</CardTitle>
+            <CardDescription>
+              replaceTextInFodt splices exact-match plain-text edits across formatting runs; each
+              result reports its occurrence count, and replaceTextInDocx round-trips the same edits
+              through a Word document.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {edits.map((edit, index) => (
+              <div key={edit.find} className="grid gap-1 border-b border-border-subtle pb-3 last:border-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <span className="font-mono text-xs text-fg">
+                  {edit.find} {'->'} {edit.replace}
+                </span>
+                <Badge variant={editResults[index]!.count > 0 ? 'success' : 'secondary'}>
+                  {editResults[index]!.count > 0
+                    ? `${editResults[index]!.count} replaced`
+                    : 'Not present'}
+                </Badge>
+              </div>
+            ))}
+            <p className="rounded-md border border-border bg-bg-subtle p-3 text-sm leading-6 text-fg">
+              Character styles, lists, tables, and images survive because only text tokens are
+              rewritten — the surrounding markup is never touched.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Conversion runtime</CardTitle>
+          <CardDescription>
+            {soffice.ready
+              ? `LibreOffice resolved at ${soffice.detail}; conversions run in a disposable profile directory with a 180-second ceiling.`
+              : 'LibreOffice is not installed in this environment, so conversions are unavailable here. Install LibreOffice or set SOFFICE_PATH on the worker that renders documents.'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="overflow-x-auto p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Export</TableHead>
+                <TableHead>Engine filter</TableHead>
+                <TableHead>Responsibility</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {conversions.map(([name, filter, responsibility]) => (
+                <TableRow key={name}>
+                  <TableCell className="font-mono text-xs text-fg">{name}</TableCell>
+                  <TableCell className="font-mono text-xs text-fg-muted">{filter}</TableCell>
+                  <TableCell>{responsibility}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </>
   )
 }
 

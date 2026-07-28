@@ -35,6 +35,7 @@ test('server-oriented packages use dedicated, package-specific demos', () => {
     'emails',
     'jobs',
     'mailbox',
+    'office',
     'process-sandbox',
     'scene',
     'superadmin',

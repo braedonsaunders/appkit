@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
     '@appkit/forms',
   ],
   // Node-native server deps stay external to the bundle.
-  serverExternalPackages: ['pg', 'pdfkit', 'puppeteer-core'],
+  serverExternalPackages: ['pg', 'pdfkit', 'puppeteer-core', 'exceljs'],
 }
 
 export default nextConfig

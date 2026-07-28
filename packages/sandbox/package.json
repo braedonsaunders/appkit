@@ -10,7 +10,9 @@
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
-  "files": ["src"],
+  "files": [
+    "src"
+  ],
   "scripts": {
     "build": "node ../../scripts/build-package.mjs",
     "typecheck": "tsc --noEmit",
@@ -32,9 +34,20 @@
     "directory": "packages/sandbox"
   },
   "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/sandbox#readme",
-  "bugs": { "url": "https://github.com/braedonsaunders/appkit/issues" },
-  "engines": { "node": ">=22" },
-  "keywords": ["appkit", "quickjs", "sandbox", "user-code"],
+  "bugs": {
+    "url": "https://github.com/braedonsaunders/appkit/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "appkit",
+    "application-framework",
+    "quickjs",
+    "sandbox",
+    "typescript",
+    "user-code"
+  ],
   "publishConfig": {
     "access": "public",
     "directory": "dist",

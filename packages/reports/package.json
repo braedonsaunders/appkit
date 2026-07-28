@@ -69,12 +69,12 @@
   "keywords": [
     "appkit",
     "application-framework",
-    "typescript",
-    "report-builder",
-    "reporting",
     "business-intelligence",
     "pdf",
-    "scheduling"
+    "report-builder",
+    "reporting",
+    "scheduling",
+    "typescript"
   ],
   "publishConfig": {
     "access": "public",

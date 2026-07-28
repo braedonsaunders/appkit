@@ -85,10 +85,12 @@
   },
   "keywords": [
     "appkit",
+    "application-framework",
     "iam",
-    "rbac",
+    "multi-tenant",
     "permissions",
-    "multi-tenant"
+    "rbac",
+    "typescript"
   ],
   "publishConfig": {
     "access": "public",

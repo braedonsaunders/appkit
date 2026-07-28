@@ -99,10 +99,12 @@
   },
   "keywords": [
     "appkit",
+    "application-framework",
     "applications",
     "extensions",
     "quickjs",
-    "sandbox"
+    "sandbox",
+    "typescript"
   ],
   "publishConfig": {
     "access": "public",

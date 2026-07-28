@@ -52,11 +52,11 @@
     "@types/react-dom": "^19"
   },
   "keywords": [
-    "appkit",
-    "scene",
-    "avatars",
     "animation",
+    "appkit",
     "application-framework",
+    "avatars",
+    "scene",
     "typescript"
   ]
 }

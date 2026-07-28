@@ -25,6 +25,7 @@ import integrations from '../../../../packages/integrations/package.json'
 import jobs from '../../../../packages/jobs/package.json'
 import mailbox from '../../../../packages/mailbox/package.json'
 import notifications from '../../../../packages/notifications/package.json'
+import office from '../../../../packages/office/package.json'
 import pdf from '../../../../packages/pdf/package.json'
 import processSandbox from '../../../../packages/process-sandbox/package.json'
 import reports from '../../../../packages/reports/package.json'
@@ -107,7 +108,7 @@ export const PACKAGE_CATEGORIES: readonly {
     names: [
       '@appkit/analytics', '@appkit/dashboard', '@appkit/customization', '@appkit/forms-core',
       '@appkit/forms', '@appkit/forms-documents', '@appkit/forms-pdf', '@appkit/reports',
-      '@appkit/pdf', '@appkit/design-studio', '@appkit/scheduling',
+      '@appkit/office', '@appkit/pdf', '@appkit/design-studio', '@appkit/scheduling',
     ],
   },
   {
@@ -160,6 +161,7 @@ const MANIFESTS: WorkspacePackageManifest[] = [
   jobs,
   mailbox,
   notifications,
+  office,
   pdf,
   processSandbox,
   reports,
@@ -194,6 +196,7 @@ const DEMO_ROUTES: Record<string, string> = {
   '@appkit/forms-documents': '/forms',
   '@appkit/forms-pdf': '/forms',
   '@appkit/reports': '/reports',
+  '@appkit/office': '/packages/office/demo',
   '@appkit/pdf': '/reports',
   '@appkit/design-studio': '/design-studio',
   '@appkit/scheduling': '/scheduling',
