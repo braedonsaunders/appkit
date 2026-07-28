@@ -52,6 +52,7 @@ import {
 } from '@appkit/ui'
 import { getPackage } from '../../../../../lib/server/package-catalog'
 import { SceneDemoStage } from './scene-demo-stage'
+import { SuperadminDemo } from './superadmin-demo'
 
 const PACKAGE_DEMOS = {
   crypto: 'Secret sealing',
@@ -61,6 +62,7 @@ const PACKAGE_DEMOS = {
   mailbox: 'Mailbox operations',
   'process-sandbox': 'Process isolation',
   scene: 'Character scene',
+  superadmin: 'Instance administration',
   sms: 'SMS delivery',
   voice: 'Voice providers',
 } as const
@@ -128,6 +130,8 @@ function renderPackageDemo(
       return <ProcessSandboxDemo />
     case 'scene':
       return <SceneDemo />
+    case 'superadmin':
+      return <SuperadminDemo />
     case 'sms':
       return <SmsDemo provider={queryValue(query.provider, 'twilio')} />
     case 'voice':

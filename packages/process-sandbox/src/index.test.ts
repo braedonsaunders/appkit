@@ -111,10 +111,24 @@ test('rejects root and malformed launcher identities', () => {
   }
   assert.throws(
     () => buildBubblewrapPlan({ ...options, launcherIdentity: { uid: 0, gid: 0 } }),
-    /uid must be a positive safe integer/,
+    /uid must be an integer between 1 and 2147483647/,
   )
   assert.throws(
     () => buildBubblewrapPlan({ ...options, launcherIdentity: { uid: 1000, gid: -1 } }),
-    /gid must be a non-negative safe integer/,
+    /gid must be an integer between 0 and 2147483647/,
+  )
+  assert.throws(
+    () => buildBubblewrapPlan({
+      ...options,
+      launcherIdentity: { uid: 2_147_483_648, gid: 1000 },
+    }),
+    /uid must be an integer between 1 and 2147483647/,
+  )
+  assert.throws(
+    () => buildBubblewrapPlan({
+      ...options,
+      launcherIdentity: { uid: 1000, gid: 2_147_483_648 },
+    }),
+    /gid must be an integer between 0 and 2147483647/,
   )
 })

@@ -34,6 +34,7 @@ import scheduling from '../../../../packages/scheduling/package.json'
 import scripts from '../../../../packages/scripts/package.json'
 import sms from '../../../../packages/sms/package.json'
 import storage from '../../../../packages/storage/package.json'
+import superadmin from '../../../../packages/superadmin/package.json'
 import sync from '../../../../packages/sync/package.json'
 import tenant from '../../../../packages/tenant/package.json'
 import tokens from '../../../../packages/tokens/package.json'
@@ -114,7 +115,7 @@ export const PACKAGE_CATEGORIES: readonly {
     label: 'Application platform',
     description: 'Data, identity, authorization, events, jobs, storage, and communications.',
     names: [
-      '@appkit/db', '@appkit/tenant', '@appkit/auth', '@appkit/iam', '@appkit/api',
+      '@appkit/db', '@appkit/tenant', '@appkit/auth', '@appkit/iam', '@appkit/superadmin', '@appkit/api',
       '@appkit/events', '@appkit/jobs', '@appkit/notifications', '@appkit/storage',
       '@appkit/crypto', '@appkit/process-sandbox', '@appkit/email-render', '@appkit/emails',
       '@appkit/mailbox', '@appkit/sms', '@appkit/voice',
@@ -168,6 +169,7 @@ const MANIFESTS: WorkspacePackageManifest[] = [
   scripts,
   sms,
   storage,
+  superadmin,
   sync,
   tenant,
   tokens,
@@ -199,6 +201,7 @@ const DEMO_ROUTES: Record<string, string> = {
   '@appkit/tenant': '/dashboard/platform',
   '@appkit/auth': '/admin/users',
   '@appkit/iam': '/admin/roles',
+  '@appkit/superadmin': '/packages/superadmin/demo',
   '@appkit/api': '/api-docs',
   '@appkit/events': '/admin/audit',
   '@appkit/jobs': '/packages/jobs/demo',

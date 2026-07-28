@@ -44,6 +44,7 @@
     "@appkit/tokens": "workspace:*",
     "@appkit/sms": "workspace:*",
     "@appkit/storage": "workspace:*",
+    "@appkit/superadmin": "workspace:*",
     "@appkit/sync": "workspace:*",
     "@appkit/ui": "workspace:*",
     "@appkit/voice": "workspace:*",

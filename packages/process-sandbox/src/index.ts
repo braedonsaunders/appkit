@@ -8,6 +8,7 @@ export const DEFAULT_BUBBLEWRAP_PATH = '/usr/bin/bwrap'
 export const DEFAULT_PROCESS_PATH = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
 export const DEFAULT_READ_ONLY_PATHS = ['/usr', '/etc', '/opt', '/app'] as const
 export const DEFAULT_MASKED_PATHS = ['/data', '/home', '/root', '/var'] as const
+const MAX_PROCESS_ID = 2_147_483_647
 
 export interface ProcessSandboxLauncherIdentity {
   /** Host/container UID used to invoke the setuid bubblewrap executable. */
@@ -311,11 +312,15 @@ function cleanLauncherIdentity(
   identity: ProcessSandboxLauncherIdentity | undefined,
 ): ProcessSandboxLauncherIdentity | undefined {
   if (!identity) return undefined
-  if (!Number.isSafeInteger(identity.uid) || identity.uid < 1) {
-    throw new ProcessSandboxError('launcherIdentity.uid must be a positive safe integer.')
+  if (!Number.isInteger(identity.uid) || identity.uid < 1 || identity.uid > MAX_PROCESS_ID) {
+    throw new ProcessSandboxError(
+      `launcherIdentity.uid must be an integer between 1 and ${MAX_PROCESS_ID}.`,
+    )
   }
-  if (!Number.isSafeInteger(identity.gid) || identity.gid < 0) {
-    throw new ProcessSandboxError('launcherIdentity.gid must be a non-negative safe integer.')
+  if (!Number.isInteger(identity.gid) || identity.gid < 0 || identity.gid > MAX_PROCESS_ID) {
+    throw new ProcessSandboxError(
+      `launcherIdentity.gid must be an integer between 0 and ${MAX_PROCESS_ID}.`,
+    )
   }
   return { uid: identity.uid, gid: identity.gid }
 }

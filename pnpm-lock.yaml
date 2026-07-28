@@ -107,6 +107,9 @@ importers:
       '@appkit/storage':
         specifier: workspace:*
         version: link:../../packages/storage
+      '@appkit/superadmin':
+        specifier: workspace:*
+        version: link:../../packages/superadmin
       '@appkit/sync':
         specifier: workspace:*
         version: link:../../packages/sync
