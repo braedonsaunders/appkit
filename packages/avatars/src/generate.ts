@@ -167,6 +167,20 @@ export async function generateImages(
     )
   }
 
+  // Gemini-native image models reject n>1 — batch with per-image calls there;
+  // Imagen and OpenAI models batch natively.
+  const geminiNative = config.provider === 'google' && !request.model.startsWith('imagen')
+  if (geminiNative) {
+    const results = await Promise.all(
+      Array.from({ length: count }, () =>
+        generateImage({ model, prompt: request.prompt, size: '1024x1024' }),
+      ),
+    )
+    return {
+      images: results.flatMap((r) => r.images.map((image) => `data:${image.mediaType};base64,${image.base64}`)),
+      model: request.model,
+    }
+  }
   const result = await generateImage({
     model,
     prompt: request.prompt,
