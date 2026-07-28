@@ -981,6 +981,9 @@ importers:
         specifier: ^7.0.9
         version: 7.0.13
     devDependencies:
+      '@appkit/ui':
+        specifier: workspace:*
+        version: link:../ui
       '@types/mailparser':
         specifier: ^3.4.6
         version: 3.4.6
@@ -990,6 +993,21 @@ importers:
       '@types/nodemailer':
         specifier: ^7.0.4
         version: 7.0.12
+      '@types/react':
+        specifier: ^19
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.2.3(@types/react@19.2.17)
+      lucide-react:
+        specifier: ^1.24.0
+        version: 1.25.0(react@19.2.7)
+      react:
+        specifier: ^19
+        version: 19.2.7
+      react-dom:
+        specifier: ^19
+        version: 19.2.7(react@19.2.7)
     publishDirectory: dist
 
   packages/notifications:
