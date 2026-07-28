@@ -243,16 +243,19 @@ export const WalkingCharacter = React.memo(function WalkingCharacter({
         )}
         style={{ width: size, height: size, y: bounce, rotate }}
       >
-        {character.imageUrl ? (
+        {character.figure ?? character.imageUrl ? (
           // Only the artwork mirrors — text would read backwards.
-          <span className="block h-full w-full" style={{ transform: `scaleX(${state.facingRight ? 1 : -1})` }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={character.imageUrl}
-              alt=""
-              className="h-full w-full object-contain"
-              style={{ filter: `drop-shadow(0 ${2 * scale}px ${4 * scale}px rgba(0,0,0,0.18))` }}
-            />
+          <span
+            className="flex h-full w-full items-end justify-center"
+            style={{
+              transform: `scaleX(${state.facingRight ? 1 : -1})`,
+              filter: `drop-shadow(0 ${2 * scale}px ${4 * scale}px rgba(0,0,0,0.18))`,
+            }}
+          >
+            {character.figure ?? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={character.imageUrl} alt="" className="h-full w-full object-contain" />
+            )}
           </span>
         ) : (
           <span className="flex h-full w-full items-end justify-center">

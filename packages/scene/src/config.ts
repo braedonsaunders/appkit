@@ -8,6 +8,8 @@
  * and behind, characters near the bottom are large and in front.
  */
 
+import type * as React from 'react'
+
 export type SceneGroundConfig = {
   /** Horizon line, percent from the top. */
   horizonY: number
@@ -27,6 +29,13 @@ export type SceneCharacter = {
   name: string
   /** Standing, transparent-background full-body art. Falls back to initials. */
   imageUrl?: string
+  /**
+   * A rendered figure to use instead of `imageUrl` — for characters composed
+   * from layered parts rather than stored as one flattened image (see
+   * `@appkit/avatars/react`'s `ComposedAvatar`). It is stretched to the
+   * character's box and mirrored with it, exactly as the image would be.
+   */
+  figure?: React.ReactNode
   /** Multiplier on the scene walk speed (1 = normal). */
   walkSpeed?: number
   idleAnimation?: IdleAnimation
