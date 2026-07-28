@@ -91,10 +91,23 @@ export function SearchSelect({
   const searchRef = React.useRef<HTMLInputElement>(null)
   const triggerRef = React.useRef<HTMLButtonElement>(null)
   const dropRef = React.useRef<HTMLDivElement>(null)
-  const [pos, setPos] = React.useState<{ top: number; left: number; width: number } | null>(null)
+  const [pos, setPos] = React.useState<{ top: number; left: number; width: number; maxHeight: number } | null>(null)
   function place() {
     const r = triggerRef.current?.getBoundingClientRect()
-    if (r) setPos({ top: r.bottom + 6, left: r.left, width: r.width })
+    if (r) {
+      // Collision-aware: open upward when the space below is tight, and clamp
+      // the list to the available viewport space either way.
+      const margin = 8
+      const below = window.innerHeight - r.bottom - margin
+      const above = r.top - margin
+      const desired = 320
+      if (below >= Math.min(desired, 180) || below >= above) {
+        setPos({ top: r.bottom + 6, left: r.left, width: r.width, maxHeight: Math.min(desired, below) })
+      } else {
+        const maxHeight = Math.min(desired, above)
+        setPos({ top: Math.max(margin, r.top - 6 - maxHeight), left: r.left, width: r.width, maxHeight })
+      }
+    }
   }
 
   React.useEffect(() => {
@@ -329,11 +342,17 @@ export function SearchSelect({
             <div
               ref={dropRef}
               data-ui-overlay
-              style={{ position: 'fixed', top: pos.top, left: pos.left, width: Math.max(pos.width, 208) }}
-              className="z-[60] overflow-hidden rounded-xl border border-border bg-elevated shadow-lg"
+              style={{
+                position: 'fixed',
+                top: pos.top,
+                left: pos.left,
+                width: Math.max(pos.width, 208),
+                maxHeight: pos.maxHeight,
+              }}
+              className="z-[60] flex flex-col overflow-hidden rounded-xl border border-border bg-elevated shadow-lg"
             >
               {showSearch ? searchBox(false) : null}
-              <div className={cn('max-h-64 overflow-y-auto', showSearch && 'mt-1')}>{optionList}</div>
+              <div className={cn('min-h-0 flex-1 overflow-y-auto', showSearch && 'mt-1')}>{optionList}</div>
             </div>,
             document.body,
           )

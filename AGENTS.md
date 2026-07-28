@@ -44,6 +44,9 @@ imports it improves.
 - `packages/sandbox` — the shared governed QuickJS kernel: fresh WASM runtimes,
   frozen input, async host capabilities, logs, structured faults, and bounded
   memory, stack, time, and units.
+- `packages/process-sandbox` — fail-closed Linux process isolation for
+  workspace-bound coding agents and trusted workers: bubblewrap namespaces,
+  masked host roots, explicit writable mounts, and a cleared child environment.
 - `packages/scripts` — optional event, scheduled, endpoint, bulk, and
   opaque-origin client scripting over the sandbox, with jobs, React authoring,
   Drizzle persistence, and complete run auditing.
@@ -175,6 +178,12 @@ The full, generalized set is in
 8. **Commit atomically to local `main`.** Stage only files you intentionally
    touched (concurrent worktrees exist — never revert files you didn't edit). End
    commit messages with the Claude co-author trailer.
+9. **Every package ships with a playground proof.** Adding a package also means
+   adding it to the playground package catalogue, assigning its category and demo
+   route, and building a concise working showcase from the package's real exports.
+   A generic manifest-only detail page is not enough when behavior can be
+   demonstrated safely; server-only or environment-specific packages should render
+   a deterministic plan/readiness demo without performing privileged mutations.
 
 ## Application standards (owner directives — apply to every app built on appkit)
 
@@ -201,6 +210,12 @@ code shipped here:
 6. **Single-source feature gates; effective-dated config; append-only history.** One
    authoritative Features switchboard; price/policy changes are new effective-dated rows,
    never edits that reinterpret history; ledgers and decided records are append-only.
+**Rich text everywhere prose is edited.** Multi-line prose fields (notes, procedures, instructions, knowledge) use @appkit/editor's RichTextEditor — lists, headings, links, tables — never a bare Textarea. When storage is markdown, round-trip at the edge (md→HTML in, HTML→GFM out); the stored format stays human-readable.
+
+**Complex drawers get subtabs.** When a record drawer/flyout holds more than one section of data (a builder with duties + procedures + settings, a person with mailbox + memory + payroll), organize it with SubtabNav — never one long scroll of stacked sections.
+
+**No stacked tables.** Never stack multiple tables/lists vertically on one page — split them into SubtabNav sections (or SettingsShell nav). One list per view.
+
 7. **Both directions.**
 
 **Row interactions open Drawers.** Clicking a list/table row opens an `@appkit/ui` Drawer with the record's detail and actions — never an inline form below the table, never a bare navigation when a drawer fits. Full-page records are for deep surfaces (profiles, run timelines); everything else drawers. Apps check appkit before building anything fresh, and backfill
