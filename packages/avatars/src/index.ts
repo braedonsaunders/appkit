@@ -2,6 +2,7 @@ export {
   generateImages,
   listImageModels,
   buildPortraitPrompt,
+  buildFullBodyPrompt,
   IMAGE_MODELS,
   IMAGE_CAPABLE_PROVIDERS,
   type ImageAiConfig,

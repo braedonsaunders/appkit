@@ -193,6 +193,10 @@ export async function generateImages(
   }
 }
 
+/** The shared art direction — one house style across a whole roster. */
+const HOUSE_STYLE =
+  'flat vector illustration style, warm modern palette, clean simple shapes, soft even lighting, no photorealism, no text, no watermark, no logo, single subject only'
+
 /**
  * A consistent portrait prompt for staff avatars: one flat-illustration
  * head-and-shoulders portrait per subject, uniform style across a roster.
@@ -200,5 +204,16 @@ export async function generateImages(
 export function buildPortraitPrompt(subject: { description: string; tone?: string[] }): string {
   return `friendly professional head-and-shoulders portrait of ${subject.description}${
     subject.tone?.length ? `, personality: ${subject.tone.join(', ')}` : ''
-  }, flat vector illustration style, warm modern palette, simple solid background, clean shapes, consistent studio-portrait framing, centered, facing forward. Never photorealistic; no text, no watermark, no multiple people, no busy background.`
+  }, ${HOUSE_STYLE}, simple solid background, consistent studio-portrait framing, centered, facing forward.`
+}
+
+/**
+ * The standing full-body companion to the portrait: one character, feet to
+ * head, on a fully transparent background so it can be composited into a
+ * scene (a lobby, a desk, a room) and scaled by depth.
+ */
+export function buildFullBodyPrompt(subject: { description: string; tone?: string[] }): string {
+  return `full body standing character illustration of ${subject.description}${
+    subject.tone?.length ? `, personality: ${subject.tone.join(', ')}` : ''
+  }, ${HOUSE_STYLE}, entire body visible from head to feet, front-facing three-quarter view, relaxed natural standing pose, business-casual workwear, centered in frame with even margins, completely transparent background (PNG alpha), no ground, no shadow, no floor line, no background scenery, no cropping of the feet or head.`
 }
