@@ -144,6 +144,79 @@ test('session listing is live-only and annotates the operator session', async ()
   assert.equal(listed.rows[0]?.userEmail, 'owner@example.com')
 })
 
+const bootstrapTenant = { id: 'tenant-main', name: 'Main Co', slug: 'main-co' }
+
+test('tenant creation validates the slug, normalizes it, and refuses duplicates', async () => {
+  const { service } = createMemorySuperadminService({ users: [owner] })
+  const created = await service.createTenant({ name: '  Test Co ', slug: 'Test-Co' })
+  assert.equal(created.name, 'Test Co')
+  assert.equal(created.slug, 'test-co')
+  assert.equal(created.status, 'active')
+  assert.equal(created.memberCount, 0)
+  await assert.rejects(
+    () => service.createTenant({ name: 'Duplicate', slug: 'test-co' }),
+    SuperadminConflictError,
+  )
+  await assert.rejects(() => service.createTenant({ name: 'Bad', slug: 'Bad Slug!' }), /lowercase/)
+  await assert.rejects(() => service.createTenant({ name: '', slug: 'blank-name' }), /name is required/)
+})
+
+test('suspending the tenant the operator is working in is flagged, never silent', async () => {
+  const { service } = createMemorySuperadminService(
+    { users: [owner], tenants: [bootstrapTenant, { id: 'tenant-other', name: 'Other', slug: 'other' }] },
+    { actor: { userId: owner.id, tenantId: bootstrapTenant.id } },
+  )
+  const other = await service.setTenantStatus('tenant-other', 'suspended')
+  assert.equal(other.tenant.status, 'suspended')
+  assert.equal(other.suspendedCurrentTenant, false)
+  const own = await service.setTenantStatus(bootstrapTenant.id, 'suspended')
+  assert.equal(own.suspendedCurrentTenant, true)
+  const back = await service.setTenantStatus(bootstrapTenant.id, 'active')
+  assert.equal(back.tenant.status, 'active')
+  assert.equal(back.suspendedCurrentTenant, false)
+  await assert.rejects(() => service.setTenantStatus('missing', 'suspended'), SuperadminNotFoundError)
+})
+
+test('members are added by email of an existing account, once', async () => {
+  const { service } = createMemorySuperadminService(
+    { users: [owner, member], tenants: [bootstrapTenant] },
+    { actor: { userId: owner.id } },
+  )
+  const added = await service.addTenantMember(bootstrapTenant.id, { email: 'Member@Example.com' })
+  assert.equal(added.userId, member.id)
+  assert.equal(added.userEmail, 'member@example.com')
+  assert.equal(added.status, 'active')
+  await assert.rejects(
+    () => service.addTenantMember(bootstrapTenant.id, { email: 'member@example.com' }),
+    SuperadminConflictError,
+  )
+  await assert.rejects(
+    () => service.addTenantMember(bootstrapTenant.id, { email: 'nobody@example.com' }),
+    SuperadminNotFoundError,
+  )
+  const tenant = await service.getTenant(bootstrapTenant.id)
+  assert.equal(tenant?.memberCount, 1)
+})
+
+test('membership status changes and removal are scoped to the tenant', async () => {
+  const { service } = createMemorySuperadminService({
+    users: [owner, member],
+    tenants: [bootstrapTenant, { id: 'tenant-other', name: 'Other', slug: 'other' }],
+    memberships: [{ id: 'membership-1', tenantId: bootstrapTenant.id, userId: member.id }],
+  })
+  const suspendedMember = await service.setTenantMemberStatus(bootstrapTenant.id, 'membership-1', 'suspended')
+  assert.equal(suspendedMember.status, 'suspended')
+  // A suspended membership no longer counts toward the tenant's members.
+  assert.equal((await service.getTenant(bootstrapTenant.id))?.memberCount, 0)
+  await assert.rejects(
+    () => service.setTenantMemberStatus('tenant-other', 'membership-1', 'active'),
+    SuperadminNotFoundError,
+  )
+  await assert.rejects(() => service.removeTenantMember('tenant-other', 'membership-1'), SuperadminNotFoundError)
+  await service.removeTenantMember(bootstrapTenant.id, 'membership-1')
+  assert.deepEqual(await service.listTenantMembers(bootstrapTenant.id), [])
+})
+
 test('password management validates the target and the password', async () => {
   const { service, persistence } = createMemorySuperadminService(
     { users: [owner] },

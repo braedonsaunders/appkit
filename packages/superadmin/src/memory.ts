@@ -1,9 +1,13 @@
 import type {
-  PlatformUserRecord,
+  PlatformTenantRecord,
+  PlatformTenantStatus,
   StoredSessionRecord,
   SuperadminPersistence,
   SuperadminService,
   SuperadminServiceOptions,
+  TenantMemberRecord,
+  TenantMemberStatus,
+  PlatformUserRecord,
   UserWrite,
 } from './types'
 import { createSuperadminService } from './service'
@@ -29,18 +33,56 @@ export type MemorySessionSeed = {
   userAgent?: string | null
 }
 
+export type MemoryTenantSeed = {
+  id: string
+  name: string
+  slug: string
+  status?: PlatformTenantStatus
+  createdAt?: Date
+  updatedAt?: Date
+}
+
+export type MemoryMembershipSeed = {
+  id: string
+  tenantId: string
+  userId: string
+  displayName?: string
+  status?: TenantMemberStatus
+  joinedAt?: Date | null
+  createdAt?: Date
+}
+
+type MemoryMembership = {
+  id: string
+  tenantId: string
+  userId: string
+  displayName: string
+  status: TenantMemberStatus
+  joinedAt: Date | null
+  invitedBy: string | null
+  createdAt: Date
+}
+
 export type MemorySuperadminState = {
   users: Map<string, Omit<PlatformUserRecord, 'hasCredential' | 'activeSessionCount' | 'lastSeenAt'>>
   /** userId → password hash */
   credentials: Map<string, string>
   sessions: Map<string, { id: string; userId: string; createdAt: Date; expiresAt: Date; ipAddress: string | null; userAgent: string | null }>
+  tenants: Map<string, Omit<PlatformTenantRecord, 'memberCount'>>
+  memberships: Map<string, MemoryMembership>
 }
 
 export type MemorySuperadminPersistence = SuperadminPersistence & { state: MemorySuperadminState }
 
 /** In-memory persistence adapter for tests, previews, and local tooling. */
 export function createMemorySuperadminPersistence(
-  seed: { users?: MemoryUserSeed[]; credentials?: Record<string, string>; sessions?: MemorySessionSeed[] } = {},
+  seed: {
+    users?: MemoryUserSeed[]
+    credentials?: Record<string, string>
+    sessions?: MemorySessionSeed[]
+    tenants?: MemoryTenantSeed[]
+    memberships?: MemoryMembershipSeed[]
+  } = {},
   clock: { now?: () => Date; id?: () => string } = {},
 ): MemorySuperadminPersistence {
   const now = clock.now ?? (() => new Date())
@@ -78,6 +120,55 @@ export function createMemorySuperadminPersistence(
         },
       ]),
     ),
+    tenants: new Map(
+      (seed.tenants ?? []).map((tenant) => [
+        tenant.id,
+        {
+          id: tenant.id,
+          name: tenant.name,
+          slug: tenant.slug.toLocaleLowerCase(),
+          status: tenant.status ?? 'active',
+          createdAt: tenant.createdAt ?? now(),
+          updatedAt: tenant.updatedAt ?? now(),
+        },
+      ]),
+    ),
+    memberships: new Map(
+      (seed.memberships ?? []).map((membership) => [
+        membership.id,
+        {
+          id: membership.id,
+          tenantId: membership.tenantId,
+          userId: membership.userId,
+          displayName: membership.displayName ?? '',
+          status: membership.status ?? 'active',
+          joinedAt: membership.joinedAt ?? now(),
+          invitedBy: null,
+          createdAt: membership.createdAt ?? now(),
+        },
+      ]),
+    ),
+  }
+
+  function exposeTenant(tenant: NonNullable<ReturnType<MemorySuperadminState['tenants']['get']>>): PlatformTenantRecord {
+    const memberCount = [...state.memberships.values()].filter(
+      (membership) => membership.tenantId === tenant.id && membership.status === 'active',
+    ).length
+    return { ...tenant, memberCount }
+  }
+
+  function exposeMember(membership: MemoryMembership): TenantMemberRecord {
+    const user = state.users.get(membership.userId)
+    return {
+      membershipId: membership.id,
+      tenantId: membership.tenantId,
+      userId: membership.userId,
+      userName: user?.name ?? 'Unknown account',
+      userEmail: user?.email ?? '',
+      status: membership.status,
+      joinedAt: membership.joinedAt,
+      createdAt: membership.createdAt,
+    }
   }
 
   function activeSessions(userId?: string) {
@@ -213,6 +304,88 @@ export function createMemorySuperadminPersistence(
         userName: user?.name ?? 'Unknown account',
         userEmail: user?.email ?? '',
       }
+    },
+
+    async listTenants() {
+      return [...state.tenants.values()]
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id))
+        .map(exposeTenant)
+    },
+
+    async getTenant(tenantId) {
+      const tenant = state.tenants.get(tenantId)
+      return tenant ? exposeTenant(tenant) : null
+    },
+
+    async findTenantIdBySlug(slug) {
+      for (const tenant of state.tenants.values()) if (tenant.slug === slug) return tenant.id
+      return null
+    },
+
+    async insertTenant(input) {
+      const id = nextId()
+      const record = { id, name: input.name, slug: input.slug, status: 'active' as const, createdAt: now(), updatedAt: now() }
+      state.tenants.set(id, record)
+      return exposeTenant(record)
+    },
+
+    async setTenantStatus(tenantId, status) {
+      const tenant = state.tenants.get(tenantId)
+      if (!tenant) throw new Error(`Tenant not found: ${tenantId}`)
+      const next = { ...tenant, status, updatedAt: now() }
+      state.tenants.set(tenantId, next)
+      return exposeTenant(next)
+    },
+
+    async listTenantMembers(tenantId) {
+      return [...state.memberships.values()]
+        .filter((membership) => membership.tenantId === tenantId)
+        .map(exposeMember)
+        .sort((a, b) => a.userName.localeCompare(b.userName))
+    },
+
+    async getTenantMember(tenantId, membershipId) {
+      const membership = state.memberships.get(membershipId)
+      if (!membership || membership.tenantId !== tenantId) return null
+      return exposeMember(membership)
+    },
+
+    async findTenantMemberByUser(tenantId, userId) {
+      for (const membership of state.memberships.values()) {
+        if (membership.tenantId === tenantId && membership.userId === userId) return exposeMember(membership)
+      }
+      return null
+    },
+
+    async insertTenantMember(input) {
+      const id = nextId()
+      const record: MemoryMembership = {
+        id,
+        tenantId: input.tenantId,
+        userId: input.userId,
+        displayName: input.displayName,
+        status: 'active',
+        joinedAt: now(),
+        invitedBy: input.invitedBy ?? null,
+        createdAt: now(),
+      }
+      state.memberships.set(id, record)
+      return exposeMember(record)
+    },
+
+    async setTenantMemberStatus(tenantId, membershipId, status) {
+      const membership = state.memberships.get(membershipId)
+      if (!membership || membership.tenantId !== tenantId) throw new Error(`Membership not found: ${membershipId}`)
+      const next = { ...membership, status }
+      state.memberships.set(membershipId, next)
+      return exposeMember(next)
+    },
+
+    async deleteTenantMember(tenantId, membershipId) {
+      const membership = state.memberships.get(membershipId)
+      if (!membership || membership.tenantId !== tenantId) return false
+      state.memberships.delete(membershipId)
+      return true
     },
   }
 }

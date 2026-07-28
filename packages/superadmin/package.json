@@ -1,6 +1,6 @@
 {
   "name": "@appkit/superadmin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Instance-operator administration over the platform identity: manage the users who can sign in, their credentials, and active sessions, with guard rails and production React components.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -77,11 +77,13 @@
     "node": ">=22"
   },
   "keywords": [
-    "appkit",
-    "superadmin",
     "administration",
+    "appkit",
+    "application-framework",
     "identity",
-    "sessions"
+    "sessions",
+    "superadmin",
+    "typescript"
   ],
   "publishConfig": {
     "access": "public",

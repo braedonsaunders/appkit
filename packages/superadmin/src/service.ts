@@ -1,8 +1,12 @@
 import type {
+  AddTenantMemberInput,
+  CreateTenantInput,
   CreateUserInput,
+  PlatformTenantRecord,
   PlatformUserRecord,
   SuperadminService,
   SuperadminServiceOptions,
+  TenantMemberRecord,
   UpdateUserInput,
 } from './types'
 
@@ -25,6 +29,13 @@ const LAST_SUPER_ADMIN_MESSAGE =
   'This is the last active super admin. Grant another account super-admin access before changing this one.'
 
 /**
+ * Slugs are lowercase kebab: they end up in URLs, provisioning scripts, and
+ * support conversations, and are IMMUTABLE after creation (see
+ * PlatformTenantRecord.slug), so the format is validated strictly up front.
+ */
+const TENANT_SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/
+
+/**
  * Builds the instance-operator service over any persistence adapter. All guard
  * rails live here: the last active super admin can be neither deactivated nor
  * demoted, deactivation revokes the account's live sessions, and revoking the
@@ -45,6 +56,19 @@ export function createSuperadminService(options: SuperadminServiceOptions): Supe
     const user = await persistence.getUser(userId)
     if (!user) throw new SuperadminNotFoundError(`User not found: ${userId}`)
     return user
+  }
+
+  async function requireTenant(tenantId: string): Promise<PlatformTenantRecord> {
+    const tenant = await persistence.getTenant(tenantId)
+    if (!tenant) throw new SuperadminNotFoundError(`Tenant not found: ${tenantId}`)
+    return tenant
+  }
+
+  async function requireTenantMember(tenantId: string, membershipId: string): Promise<TenantMemberRecord> {
+    await requireTenant(tenantId)
+    const member = await persistence.getTenantMember(tenantId, membershipId)
+    if (!member) throw new SuperadminNotFoundError(`Membership not found: ${membershipId}`)
+    return member
   }
 
   return {
@@ -167,6 +191,75 @@ export function createSuperadminService(options: SuperadminServiceOptions): Supe
         revokedCount: 1,
         revokedCurrentSession: actor?.sessionId !== undefined && removed.id === actor.sessionId,
       }
+    },
+
+    async listTenants() {
+      return persistence.listTenants()
+    },
+
+    async getTenant(tenantId) {
+      return persistence.getTenant(tenantId)
+    },
+
+    async createTenant(input: CreateTenantInput) {
+      const name = input.name.trim()
+      const slug = input.slug.trim().toLocaleLowerCase()
+      if (!name) throw new Error('A tenant name is required.')
+      if (!TENANT_SLUG_PATTERN.test(slug)) {
+        throw new Error(
+          'Slugs are lowercase letters, digits, and hyphens (no leading/trailing hyphen), at most 63 characters — and cannot be changed after creation.',
+        )
+      }
+      const existing = await persistence.findTenantIdBySlug(slug)
+      if (existing) throw new SuperadminConflictError(`A tenant already uses the slug "${slug}".`)
+      return persistence.insertTenant({ name, slug })
+    },
+
+    async setTenantStatus(tenantId, status) {
+      await requireTenant(tenantId)
+      const tenant = await persistence.setTenantStatus(tenantId, status)
+      return {
+        tenant,
+        suspendedCurrentTenant:
+          status === 'suspended' && actor?.tenantId !== undefined && actor.tenantId === tenantId,
+      }
+    },
+
+    async listTenantMembers(tenantId) {
+      await requireTenant(tenantId)
+      return persistence.listTenantMembers(tenantId)
+    },
+
+    async addTenantMember(tenantId, input: AddTenantMemberInput) {
+      await requireTenant(tenantId)
+      const email = input.email.trim().toLocaleLowerCase()
+      if (!email) throw new Error('An email address is required.')
+      const userId = await persistence.findUserIdByEmail(email)
+      if (!userId) {
+        throw new SuperadminNotFoundError(
+          `No account exists for ${email}. Create the user first, then add them to the tenant.`,
+        )
+      }
+      const user = await requireUser(userId)
+      const already = await persistence.findTenantMemberByUser(tenantId, userId)
+      if (already) throw new SuperadminConflictError(`${email} is already a member of this tenant.`)
+      return persistence.insertTenantMember({
+        tenantId,
+        userId,
+        displayName: input.displayName?.trim() || user.name,
+        invitedBy: actor?.userId ?? null,
+      })
+    },
+
+    async setTenantMemberStatus(tenantId, membershipId, status) {
+      await requireTenantMember(tenantId, membershipId)
+      return persistence.setTenantMemberStatus(tenantId, membershipId, status)
+    },
+
+    async removeTenantMember(tenantId, membershipId) {
+      await requireTenant(tenantId)
+      const removed = await persistence.deleteTenantMember(tenantId, membershipId)
+      if (!removed) throw new SuperadminNotFoundError(`Membership not found: ${membershipId}`)
     },
   }
 }

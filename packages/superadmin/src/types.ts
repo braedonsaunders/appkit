@@ -77,6 +77,60 @@ export type UpdateUserInput = {
   emailVerified?: boolean
 }
 
+// --- Tenants ---------------------------------------------------------------
+
+export type PlatformTenantStatus = 'active' | 'suspended' | 'archived'
+export type TenantMemberStatus = 'active' | 'invited' | 'suspended'
+
+/** A tenant (workspace) of the installation, enriched with member presence. */
+export type PlatformTenantRecord = {
+  id: string
+  name: string
+  /**
+   * Immutable after creation: slugs are the tenant's stable external handle
+   * (URLs, provisioning scripts, support conversations), so renaming a tenant
+   * changes `name` only. There is deliberately no API to change a slug.
+   */
+  slug: string
+  status: PlatformTenantStatus
+  /** Memberships with status 'active'. */
+  memberCount: number
+  createdAt: Date
+  updatedAt: Date
+}
+
+/** A user's membership in a tenant, enriched with the account's identity. */
+export type TenantMemberRecord = {
+  membershipId: string
+  tenantId: string
+  userId: string
+  userName: string
+  userEmail: string
+  status: TenantMemberStatus
+  joinedAt: Date | null
+  createdAt: Date
+}
+
+export type CreateTenantInput = { name: string; slug: string }
+
+/** Result of a tenant activation change. */
+export type TenantStatusResult = {
+  tenant: PlatformTenantRecord
+  /**
+   * True when the operator suspended the tenant they are currently operating
+   * in (actor.tenantId) — the caller must surface this, because the operator's
+   * own workspace context just went away.
+   */
+  suspendedCurrentTenant: boolean
+}
+
+export type AddTenantMemberInput = {
+  /** Email of an existing platform account. Members are accounts; create the account first. */
+  email: string
+  /** Defaults to the account's name. */
+  displayName?: string
+}
+
 /** Result of a session-revocation operation. */
 export type RevokeSessionsResult = {
   revokedCount: number
@@ -102,6 +156,19 @@ export interface SuperadminService {
   revokeUserSessions(userId: string): Promise<RevokeSessionsResult>
   listSessions(query?: ListQuery<SessionSort>): Promise<SessionListResult>
   revokeSession(sessionId: string): Promise<RevokeSessionsResult>
+  listTenants(): Promise<PlatformTenantRecord[]>
+  getTenant(tenantId: string): Promise<PlatformTenantRecord | null>
+  createTenant(input: CreateTenantInput): Promise<PlatformTenantRecord>
+  /** Suspend or reactivate a tenant. Archival is out of scope for this surface. */
+  setTenantStatus(tenantId: string, status: 'active' | 'suspended'): Promise<TenantStatusResult>
+  listTenantMembers(tenantId: string): Promise<TenantMemberRecord[]>
+  addTenantMember(tenantId: string, input: AddTenantMemberInput): Promise<TenantMemberRecord>
+  setTenantMemberStatus(
+    tenantId: string,
+    membershipId: string,
+    status: TenantMemberStatus,
+  ): Promise<TenantMemberRecord>
+  removeTenantMember(tenantId: string, membershipId: string): Promise<void>
 }
 
 /** A session row as stored — the service annotates isCurrentSession. */
@@ -148,6 +215,27 @@ export interface SuperadminPersistence {
   deleteSessionsForUser(userId: string): Promise<string[]>
   /** Delete one session; returns it, or null if it did not exist. */
   deleteSession(sessionId: string): Promise<StoredSessionRecord | null>
+  listTenants(): Promise<PlatformTenantRecord[]>
+  getTenant(tenantId: string): Promise<PlatformTenantRecord | null>
+  findTenantIdBySlug(slug: string): Promise<string | null>
+  insertTenant(input: { name: string; slug: string }): Promise<PlatformTenantRecord>
+  setTenantStatus(tenantId: string, status: 'active' | 'suspended'): Promise<PlatformTenantRecord>
+  listTenantMembers(tenantId: string): Promise<TenantMemberRecord[]>
+  getTenantMember(tenantId: string, membershipId: string): Promise<TenantMemberRecord | null>
+  findTenantMemberByUser(tenantId: string, userId: string): Promise<TenantMemberRecord | null>
+  insertTenantMember(input: {
+    tenantId: string
+    userId: string
+    displayName: string
+    invitedBy?: string | null
+  }): Promise<TenantMemberRecord>
+  setTenantMemberStatus(
+    tenantId: string,
+    membershipId: string,
+    status: TenantMemberStatus,
+  ): Promise<TenantMemberRecord>
+  /** Returns false when the membership did not exist. */
+  deleteTenantMember(tenantId: string, membershipId: string): Promise<boolean>
 }
 
 export type SuperadminServiceOptions = {
@@ -159,8 +247,12 @@ export type SuperadminServiceOptions = {
    * exactly what sign-in verifies.
    */
   hashPassword: (password: string) => Promise<string>
-  /** The acting operator, used for self-revocation flagging. */
-  actor?: { userId?: string; sessionId?: string }
+  /**
+   * The acting operator, used for self-revocation flagging. `tenantId` is the
+   * tenant the operator is currently operating in, so suspending it can be
+   * flagged in the result rather than passing silently.
+   */
+  actor?: { userId?: string; sessionId?: string; tenantId?: string }
   /** Minimum accepted password length. Default 8, matching the auth runtime. */
   minPasswordLength?: number
 }

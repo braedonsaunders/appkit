@@ -19,8 +19,8 @@ import {
   cn,
   confirmDialog,
 } from '@appkit/ui'
-import { KeyRound, MonitorSmartphone, Search, ShieldCheck, UserPlus, Users } from 'lucide-react'
-import type { PlatformSessionRecord, PlatformUserRecord } from './types'
+import { Building2, KeyRound, MonitorSmartphone, Search, ShieldCheck, UserPlus, Users } from 'lucide-react'
+import type { PlatformSessionRecord, PlatformTenantRecord, PlatformUserRecord, TenantMemberRecord } from './types'
 
 /**
  * Server-action friendly result contract: the application owns the actions
@@ -623,6 +623,417 @@ export function PlatformSessionsAdmin({
         </Table>
       </div>
     </div>
+  )
+}
+
+export type PlatformTenantsActions = {
+  createTenant(input: { name: string; slug: string }): Promise<SuperadminActionResult>
+  setTenantStatus(tenantId: string, status: 'active' | 'suspended'): Promise<SuperadminActionResult>
+  addMember(tenantId: string, email: string): Promise<SuperadminActionResult>
+  setMemberStatus(
+    tenantId: string,
+    membershipId: string,
+    status: 'active' | 'suspended',
+  ): Promise<SuperadminActionResult>
+  removeMember(tenantId: string, membershipId: string): Promise<SuperadminActionResult>
+}
+
+export type PlatformTenantsAdminProps = {
+  tenants: PlatformTenantRecord[]
+  /** tenantId → members, preloaded by the server page and refreshed on revalidation. */
+  members: Record<string, TenantMemberRecord[]>
+  /** The tenant the operator is currently working in — suspending it is called out. */
+  currentTenantId?: string
+  actions: PlatformTenantsActions
+  title?: string
+  description?: string
+}
+
+/**
+ * Instance-operator tenant administration: every workspace of the
+ * installation, with activation, membership management, and creation.
+ */
+export function PlatformTenantsAdmin({
+  tenants,
+  members,
+  currentTenantId,
+  actions,
+  title = 'Tenants',
+  description = 'Every workspace on this installation. Suspending a tenant hides it from members immediately; its data is kept.',
+}: PlatformTenantsAdminProps) {
+  const [selectedId, setSelectedId] = React.useState<string | null>(null)
+  const [creating, setCreating] = React.useState(false)
+  const [notice, setNotice] = React.useState<{ tone: 'error' | 'success' | 'warning'; message: string } | null>(null)
+
+  const selected = tenants.find((tenant) => tenant.id === selectedId) ?? null
+
+  async function run(operation: () => Promise<SuperadminActionResult>, successMessage?: string): Promise<boolean> {
+    setNotice(null)
+    const result = await operation()
+    if (!result.ok) {
+      setNotice({ tone: 'error', message: result.message })
+      return false
+    }
+    const message = result.message ?? successMessage
+    if (message) setNotice({ tone: result.message ? 'warning' : 'success', message })
+    return true
+  }
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">{title}</h1>
+          <p className="mt-1 max-w-3xl text-sm text-fg-muted">{description}</p>
+        </div>
+        <Button onClick={() => setCreating(true)}>
+          <Building2 size={16} />
+          Add tenant
+        </Button>
+      </div>
+
+      {notice ? (
+        <div
+          role={notice.tone === 'error' ? 'alert' : 'status'}
+          className={cn(
+            'rounded-lg border px-4 py-3 text-sm',
+            notice.tone === 'error'
+              ? 'border-danger/30 bg-danger-subtle text-danger'
+              : notice.tone === 'warning'
+                ? 'border-warning/30 bg-warning-subtle text-warning'
+                : 'border-success/30 bg-success-subtle text-success',
+          )}
+        >
+          {notice.message}
+        </div>
+      ) : null}
+
+      <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+        <Table>
+          <TableHeader>
+            <TableRow noAnimate>
+              <TableHead>Name</TableHead>
+              <TableHead>Slug</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Members</TableHead>
+              <TableHead>Created</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {tenants.map((tenant) => (
+              <TableRow
+                key={tenant.id}
+                role="button"
+                tabIndex={0}
+                className="cursor-pointer"
+                onClick={() => setSelectedId(tenant.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    setSelectedId(tenant.id)
+                  }
+                }}
+              >
+                <TableCell>
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <span className="truncate font-medium text-fg">{tenant.name}</span>
+                    {tenant.id === currentTenantId ? <Badge variant="outline">Current</Badge> : null}
+                  </div>
+                </TableCell>
+                <TableCell className="font-mono text-xs text-fg-muted">{tenant.slug}</TableCell>
+                <TableCell>
+                  <Badge variant={tenant.status === 'active' ? 'success' : 'secondary'}>
+                    {tenant.status === 'active' ? 'Active' : tenant.status === 'suspended' ? 'Suspended' : 'Archived'}
+                  </Badge>
+                </TableCell>
+                <TableCell className="tabular-nums text-fg-muted">{tenant.memberCount}</TableCell>
+                <TableCell className="whitespace-nowrap text-fg-muted">{formatDateTime(tenant.createdAt)}</TableCell>
+              </TableRow>
+            ))}
+            {tenants.length === 0 ? (
+              <TableRow noAnimate>
+                <TableCell colSpan={5}>
+                  <EmptyState
+                    icon={<Building2 />}
+                    title="No tenants"
+                    description="Create the first workspace to get started."
+                    className="border-0 bg-transparent py-10 shadow-none"
+                  />
+                </TableCell>
+              </TableRow>
+            ) : null}
+          </TableBody>
+        </Table>
+      </div>
+
+      {selected ? (
+        <TenantDrawer
+          tenant={selected}
+          members={members[selected.id] ?? []}
+          isCurrentTenant={selected.id === currentTenantId}
+          onClose={() => setSelectedId(null)}
+          onSetStatus={(status) =>
+            run(
+              () => actions.setTenantStatus(selected.id, status),
+              status === 'active' ? 'Tenant reactivated.' : 'Tenant suspended.',
+            )
+          }
+          onAddMember={(email) => run(() => actions.addMember(selected.id, email), `${email} added.`)}
+          onSetMemberStatus={(membershipId, status) =>
+            run(
+              () => actions.setMemberStatus(selected.id, membershipId, status),
+              status === 'active' ? 'Membership reactivated.' : 'Membership suspended.',
+            )
+          }
+          onRemoveMember={(membershipId) => run(() => actions.removeMember(selected.id, membershipId), 'Member removed.')}
+        />
+      ) : null}
+
+      {creating ? (
+        <CreateTenantDrawer
+          onClose={() => setCreating(false)}
+          onCreate={async (input) => {
+            const saved = await run(() => actions.createTenant(input), `${input.name} created.`)
+            if (saved) setCreating(false)
+          }}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+function TenantDrawer({
+  tenant,
+  members,
+  isCurrentTenant,
+  onClose,
+  onSetStatus,
+  onAddMember,
+  onSetMemberStatus,
+  onRemoveMember,
+}: {
+  tenant: PlatformTenantRecord
+  members: TenantMemberRecord[]
+  isCurrentTenant: boolean
+  onClose: () => void
+  onSetStatus: (status: 'active' | 'suspended') => Promise<boolean>
+  onAddMember: (email: string) => Promise<boolean>
+  onSetMemberStatus: (membershipId: string, status: 'active' | 'suspended') => Promise<boolean>
+  onRemoveMember: (membershipId: string) => Promise<boolean>
+}) {
+  const [email, setEmail] = React.useState('')
+  const [busy, startBusy] = React.useTransition()
+  const suspended = tenant.status === 'suspended'
+
+  async function changeStatus(next: boolean) {
+    if (!next) {
+      const confirmed = await confirmDialog({
+        message: `Suspend ${tenant.name}?${isCurrentTenant ? ' This is the tenant you are currently working in — you will lose this workspace until it is reactivated.' : ''} Members lose access immediately; nothing is deleted.`,
+        confirmLabel: 'Suspend tenant',
+        tone: 'danger',
+      })
+      if (!confirmed) return
+    }
+    await onSetStatus(next ? 'active' : 'suspended')
+  }
+
+  return (
+    <Drawer
+      open
+      onClose={onClose}
+      size="lg"
+      title={
+        <span className="flex items-center gap-2">
+          {tenant.name}
+          <Badge variant={tenant.status === 'active' ? 'success' : 'secondary'}>
+            {tenant.status === 'active' ? 'Active' : tenant.status === 'suspended' ? 'Suspended' : 'Archived'}
+          </Badge>
+          {isCurrentTenant ? <Badge variant="outline">Current workspace</Badge> : null}
+        </span>
+      }
+      description={`Slug: ${tenant.slug} (permanent)`}
+    >
+      <div className="space-y-6">
+        <dl className="grid gap-4 rounded-xl border border-border bg-bg-subtle p-4 sm:grid-cols-2">
+          <Metric label="Slug" value={tenant.slug} mono />
+          <Metric label="Created" value={formatDateTime(tenant.createdAt)} />
+          <Metric label="Active members" value={String(tenant.memberCount)} />
+          <Metric label="Tenant ID" value={tenant.id} mono />
+        </dl>
+
+        <section className="divide-y divide-border rounded-xl border border-border">
+          <AccessRow
+            title="Tenant active"
+            description={
+              isCurrentTenant
+                ? 'This is the workspace you are working in right now. Suspending it takes it away from you too.'
+                : 'When off, members cannot use this workspace. Data is kept; reactivate any time.'
+            }
+            checked={!suspended && tenant.status === 'active'}
+            disabled={busy || tenant.status === 'archived'}
+            onChange={(next) => startBusy(() => changeStatus(next))}
+          />
+        </section>
+
+        <section className="space-y-4 rounded-xl border border-border p-4">
+          <div className="flex items-center gap-2">
+            <Users size={16} className="text-fg-muted" />
+            <h3 className="text-sm font-semibold text-fg">Members</h3>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-56 flex-1 space-y-2">
+              <Label htmlFor="superadmin-tenant-member-email">Add member by email</Label>
+              <Input
+                id="superadmin-tenant-member-email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="An existing account's email"
+              />
+            </div>
+            <Button
+              variant="outline"
+              disabled={busy || !email.includes('@')}
+              onClick={() =>
+                startBusy(async () => {
+                  if (await onAddMember(email.trim())) setEmail('')
+                })
+              }
+            >
+              <UserPlus size={16} />
+              Add member
+            </Button>
+          </div>
+          {members.length === 0 ? (
+            <p className="text-sm text-fg-muted">No members yet. Add an existing account by email.</p>
+          ) : (
+            <ul className="divide-y divide-border rounded-lg border border-border">
+              {members.map((member) => (
+                <li key={member.membershipId} className="flex flex-wrap items-center justify-between gap-3 px-3 py-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate text-sm font-medium text-fg">{member.userName}</span>
+                      <Badge
+                        variant={member.status === 'active' ? 'success' : member.status === 'invited' ? 'outline' : 'secondary'}
+                      >
+                        {member.status}
+                      </Badge>
+                    </div>
+                    <div className="truncate text-xs text-fg-muted">{member.userEmail}</div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={busy}
+                      onClick={() =>
+                        startBusy(async () => {
+                          await onSetMemberStatus(
+                            member.membershipId,
+                            member.status === 'active' ? 'suspended' : 'active',
+                          )
+                        })
+                      }
+                    >
+                      {member.status === 'active' ? 'Suspend' : 'Activate'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-danger"
+                      disabled={busy}
+                      onClick={() =>
+                        startBusy(async () => {
+                          const confirmed = await confirmDialog({
+                            message: `Remove ${member.userName} from ${tenant.name}? Their account remains; only this workspace access ends.`,
+                            confirmLabel: 'Remove member',
+                            tone: 'danger',
+                          })
+                          if (confirmed) await onRemoveMember(member.membershipId)
+                        })
+                      }
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+    </Drawer>
+  )
+}
+
+function CreateTenantDrawer({
+  onClose,
+  onCreate,
+}: {
+  onClose: () => void
+  onCreate: (input: { name: string; slug: string }) => Promise<void>
+}) {
+  const [name, setName] = React.useState('')
+  const [slug, setSlug] = React.useState('')
+  const [slugTouched, setSlugTouched] = React.useState(false)
+  const [busy, startBusy] = React.useTransition()
+  const valid = name.trim().length > 0 && /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(slug)
+
+  function suggestSlug(value: string): string {
+    return value
+      .toLocaleLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 63)
+  }
+
+  return (
+    <Drawer
+      open
+      onClose={onClose}
+      size="lg"
+      title="Add tenant"
+      description="Creates a new workspace. It starts empty, with no members — add them from the tenant's drawer."
+      footer={
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button disabled={!valid || busy} onClick={() => startBusy(() => onCreate({ name: name.trim(), slug }))}>
+            Create tenant
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="superadmin-create-tenant-name">Name</Label>
+          <Input
+            id="superadmin-create-tenant-name"
+            value={name}
+            onChange={(event) => {
+              setName(event.target.value)
+              if (!slugTouched) setSlug(suggestSlug(event.target.value))
+            }}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="superadmin-create-tenant-slug">Slug</Label>
+          <Input
+            id="superadmin-create-tenant-slug"
+            value={slug}
+            onChange={(event) => {
+              setSlugTouched(true)
+              setSlug(event.target.value.toLocaleLowerCase())
+            }}
+            placeholder="lowercase-and-hyphens"
+          />
+          <p className="text-xs text-fg-muted">
+            Permanent identifier — lowercase letters, digits, and hyphens. It cannot be changed after creation.
+          </p>
+        </div>
+      </div>
+    </Drawer>
   )
 }
 
