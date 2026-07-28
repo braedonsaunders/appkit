@@ -3,6 +3,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./styles.css": "./src/styles.css",
     "./package.json": "./package.json"
   },
   "main": "./src/index.ts",
@@ -35,8 +36,8 @@
     "provenance": true
   },
   "name": "@appkit/scene",
-  "version": "0.1.2",
-  "description": "Animated character scene: characters walk, idle, and scale with depth over a configurable ground \u2014 extracted from the OpenStudio homepage world.",
+  "version": "0.2.2",
+  "description": "Animated character scene: characters walk, idle, and scale with depth over a configurable ground — extracted from the OpenStudio homepage world.",
   "dependencies": {
     "@appkit/ui": "workspace:*",
     "framer-motion": "^12.34.0"

@@ -18,6 +18,12 @@ export type CharacterSceneProps = {
   config?: Partial<WalkingConfig>
   /** Rendered above the ground, inside the stage — cards, headings, actions. */
   children?: React.ReactNode
+  /**
+   * A painted stage — trees, fire, skyline — rendered over the gradients and
+   * under every character (see `scene-art.tsx`). Characters always walk in
+   * front of the art, exactly as OpenStudio layered its homepage world.
+   */
+  art?: React.ReactNode
   /** Keep characters out of the area the overlay content occupies. */
   contentZone?: { minX: number; maxX: number; minY: number; maxY: number }
   onSelect?: (id: string) => void
@@ -37,6 +43,7 @@ export function CharacterScene({
   ground = LOBBY_GROUND,
   config,
   children,
+  art,
   contentZone,
   onSelect,
   baseCharacterSize = 150,
@@ -70,19 +77,20 @@ export function CharacterScene({
     >
       <div
         className="absolute inset-0"
-        style={{ background: `linear-gradient(to bottom, ${ground.backdropStyle.colors.join(', ')})` }}
+        style={{ background: backgroundOf(ground.backdropStyle) }}
       />
       <div
         className="absolute inset-x-0 bottom-0"
-        style={{
-          top: `${ground.horizonY}%`,
-          background: `linear-gradient(to bottom, ${ground.groundStyle.colors.join(', ')})`,
-        }}
+        style={{ top: `${ground.horizonY}%`, background: backgroundOf(ground.groundStyle) }}
       />
-      <div
-        className="absolute inset-x-0 h-px opacity-40"
-        style={{ top: `${ground.horizonY}%`, background: 'var(--color-border)' }}
-      />
+      {art ? (
+        <div className="absolute inset-0 z-[5]">{art}</div>
+      ) : (
+        <div
+          className="absolute inset-x-0 h-px opacity-40"
+          style={{ top: `${ground.horizonY}%`, background: 'var(--color-border)' }}
+        />
+      )}
 
       {size.width > 0
         ? characters.map((character) => (
@@ -104,4 +112,9 @@ export function CharacterScene({
       {children ? <div className="relative z-[90] h-full">{children}</div> : null}
     </div>
   )
+}
+
+function backgroundOf(style: { colors?: string[]; css?: string }): string {
+  if (style.css) return style.css
+  return `linear-gradient(to bottom, ${(style.colors ?? []).join(', ')})`
 }

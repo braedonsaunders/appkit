@@ -16,3 +16,14 @@ export {
   type SceneGroundConfig,
   type WalkingConfig,
 } from './config'
+export {
+  SCENE_BACKDROPS,
+  SCENE_COMPONENTS,
+  SCENE_GROUNDS,
+  SCENE_HORIZONS,
+  SCENE_ORDER,
+  SceneArt,
+  sceneGround,
+  type SceneKind,
+  type SceneProps,
+} from './scene-art'

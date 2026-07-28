@@ -17,9 +17,14 @@ export type SceneGroundConfig = {
   walkableArea: { minX: number; maxX: number; minY: number; maxY: number }
   /** Character scale at the horizon (min) and at the front edge (max). */
   scaleRange: { min: number; max: number }
-  /** CSS backgrounds for the floor and the backdrop behind it. */
-  groundStyle: { colors: string[] }
-  backdropStyle: { colors: string[] }
+  /**
+   * CSS backgrounds for the floor and the backdrop behind it — either color
+   * stops for a plain top-to-bottom gradient, or a complete CSS background
+   * (`css`), which wins when both are given. The painted stages in
+   * `scene-art.tsx` use full gradient strings.
+   */
+  groundStyle: { colors?: string[]; css?: string }
+  backdropStyle: { colors?: string[]; css?: string }
 }
 
 export type IdleAnimation = 'bounce' | 'sway' | 'still' | 'dance'

@@ -1,0 +1,9 @@
+/*
+ * Register this package's components with Tailwind v4.
+ *
+ * The painted stages position their props with utility classes — including
+ * arbitrary values like `top-[72%]` — and a consuming app only generates the
+ * classes it finds in sources it scans. Without this import the campfire
+ * renders at the top of the sky instead of the middle of the clearing.
+ */
+@source './';

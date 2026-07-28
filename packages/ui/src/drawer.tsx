@@ -236,6 +236,12 @@ export function Drawer({
             'fixed inset-x-0 bottom-0 top-[var(--drawer-top,0px)]',
             stacked ? 'z-[55]' : 'z-50',
           )}
+          // Under the View Transitions API (PageTransition), a route change
+          // paints the page snapshot in the browser's top layer — above any
+          // z-index. Naming the drawer gives it its own top-layer group,
+          // stacked over the page group, so the page can never flash across
+          // an open drawer mid-navigation.
+          style={{ viewTransitionName: stacked ? 'appkit-drawer-nested' : 'appkit-drawer' }}
         >
           <motion.div
             initial={{ opacity: 0 }}
