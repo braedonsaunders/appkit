@@ -52,6 +52,7 @@ import {
 } from '@appkit/ui'
 import { getPackage } from '../../../../../lib/server/package-catalog'
 import { SceneDemoStage } from './scene-demo-stage'
+import { SuperadminDemo } from './superadmin-demo'
 
 const PACKAGE_DEMOS = {
   crypto: 'Secret sealing',
@@ -61,6 +62,7 @@ const PACKAGE_DEMOS = {
   mailbox: 'Mailbox operations',
   'process-sandbox': 'Process isolation',
   scene: 'Character scene',
+  superadmin: 'Instance administration',
   sms: 'SMS delivery',
   voice: 'Voice providers',
 } as const
@@ -128,6 +130,8 @@ function renderPackageDemo(
       return <ProcessSandboxDemo />
     case 'scene':
       return <SceneDemo />
+    case 'superadmin':
+      return <SuperadminDemo />
     case 'sms':
       return <SmsDemo provider={queryValue(query.provider, 'twilio')} />
     case 'voice':
@@ -478,6 +482,7 @@ function ProcessSandboxDemo() {
       CODEX_HOME: '/data/agent-home/users/user-one/.codex',
       HTTPS_PROXY: 'http://sandbox-egress.internal:3128',
     },
+    launcherIdentity: { uid: 1000, gid: 1000 },
   }, { pathExists: () => true })
 
   return (
@@ -489,6 +494,11 @@ function ProcessSandboxDemo() {
           <DemoRow label="Host data" value={plan.maskedPaths.join(', ')} mono />
           <DemoRow label="Writable" value={plan.writablePaths.join(', ')} mono />
           <DemoRow label="Environment" value="Cleared, then explicitly rebuilt" />
+          <DemoRow
+            label="Container launcher"
+            value={`${plan.launcherIdentity?.uid}:${plan.launcherIdentity?.gid} via setuid bubblewrap`}
+            mono
+          />
           <DemoRow label="Failure mode" value="Never falls back to an unsandboxed process" />
         </CardContent>
       </Card>

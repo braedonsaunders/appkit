@@ -28,13 +28,22 @@ const child = spawnBubblewrappedProcess({
     PATH: '/usr/local/bin:/usr/bin:/bin',
     CODEX_HOME: `${agentHomePath}/.codex`,
   },
+  launcherIdentity: { uid: 1000, gid: 1000 },
 })
 ```
+
+When the parent service runs as root inside a container, configure an
+unprivileged `launcherIdentity` and install bubblewrap setuid-root. AppKit
+invokes only the bubblewrap executable as that identity; the setuid helper
+creates the namespaces and drops all capabilities before the agent command is
+executed. This avoids granting `CAP_SYS_ADMIN` to the application container.
+Writable bind paths must be writable by the launcher identity.
 
 Do not fall back to an unsandboxed child process when this package reports an
 unsupported platform or missing bubblewrap binary. Desktop/single-user local
 execution is a separate, explicit deployment mode.
 
-Call `verifyProcessSandbox()` during a server's startup. It runs a minimal
-command inside the real sandbox so blocked namespace or mount syscalls are
-detected before the service accepts agent work.
+Call `verifyProcessSandbox({ launcherIdentity })` during a server's startup
+with the same launcher identity used for real agent processes. It runs a
+minimal command inside the real sandbox so blocked namespace or mount syscalls
+are detected before the service accepts agent work.

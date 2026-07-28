@@ -1,5 +1,11 @@
 # @appkit/process-sandbox
 
+## 0.1.3
+
+### Patch Changes
+
+- Support invoking setuid bubblewrap under an explicit unprivileged UID/GID, including an equivalent fail-closed startup verification, so root container services do not need `CAP_SYS_ADMIN`.
+
 ## 0.1.2
 
 ### Patch Changes
