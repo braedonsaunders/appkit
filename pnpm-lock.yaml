@@ -113,6 +113,9 @@ importers:
       '@appkit/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@appkit/voice':
+        specifier: workspace:*
+        version: link:../../packages/voice
       '@appkit/workflows':
         specifier: workspace:*
         version: link:../../packages/workflows
@@ -1084,6 +1087,32 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+    publishDirectory: dist
+
+  packages/scene:
+    dependencies:
+      '@appkit/ui':
+        specifier: workspace:*
+        version: link:../ui
+      framer-motion:
+        specifier: ^12.34.0
+        version: 12.42.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.7(react@19.2.7)
+    devDependencies:
+      '@types/node':
+        specifier: ^22
+        version: 22.20.1
+      '@types/react':
+        specifier: ^19
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.2.3(@types/react@19.2.17)
     publishDirectory: dist
 
   packages/scheduling:
