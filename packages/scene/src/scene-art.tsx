@@ -15,8 +15,27 @@ import * as React from 'react'
 import { useMemo, memo } from 'react'
 import { motion } from 'framer-motion'
 
-/** The stages that ship with the scene package. */
-export type SceneKind = 'beach' | 'campfire' | 'forest' | 'studio' | 'space' | 'rooftop'
+import {
+  BreakRoomScene,
+  ExecutiveScene,
+  OfficeScene,
+  ServerRoomScene,
+  WarehouseScene,
+} from './scene-art-office'
+
+/** The stages that ship with the scene package — leisure and work. */
+export type SceneKind =
+  | 'beach'
+  | 'campfire'
+  | 'forest'
+  | 'studio'
+  | 'space'
+  | 'rooftop'
+  | 'office'
+  | 'executive'
+  | 'warehouse'
+  | 'serverroom'
+  | 'breakroom'
 
 export interface SceneProps {
   isDark: boolean
@@ -26,7 +45,7 @@ export interface SceneProps {
 // hydration, so every "random" placement draws from this seeded generator
 // (mulberry32) instead of rnd(). Each useMemo re-seeds its own
 // sequence, which also keeps re-renders from reshuffling the sky.
-function seededRandom(seed: number): () => number {
+export function seededRandom(seed: number): () => number {
   let a = seed >>> 0
   return () => {
     a = (a + 0x6d2b79f5) >>> 0
@@ -46,6 +65,11 @@ export const SCENE_HORIZONS: Record<SceneKind, number> = {
   studio: 20,
   space: 35,
   rooftop: 25,
+  office: 30,
+  executive: 28,
+  warehouse: 26,
+  serverroom: 30,
+  breakroom: 30,
 }
 
 
@@ -3336,6 +3360,11 @@ export const SCENE_COMPONENTS: Record<SceneKind, React.FC<SceneProps>> = {
   forest: ForestScene,
   space: SpaceScene,
   rooftop: RooftopScene,
+  office: OfficeScene,
+  executive: ExecutiveScene,
+  warehouse: WarehouseScene,
+  serverroom: ServerRoomScene,
+  breakroom: BreakRoomScene,
 };
 
 // Day/Night backdrops for each scene
@@ -3363,6 +3392,26 @@ export const SCENE_BACKDROPS: Record<SceneKind, { day: string; night: string }> 
   rooftop: {
     day: 'linear-gradient(to bottom, #7dd3fc 0%, #bae6fd 30%, #e0f2fe 60%, #f0f9ff 100%)',
     night: 'linear-gradient(to bottom, #0c0a09 0%, #1c1917 30%, #292524 60%, #44403c 100%)',
+  },
+  office: {
+    day: 'linear-gradient(to bottom, #dbeafe 0%, #e2e8f0 55%, #cbd5e1 100%)',
+    night: 'linear-gradient(to bottom, #0b1220 0%, #0f172a 55%, #1e293b 100%)',
+  },
+  executive: {
+    day: 'linear-gradient(to bottom, #fde68a 0%, #fbcfe8 45%, #e0f2fe 100%)',
+    night: 'linear-gradient(to bottom, #020617 0%, #0f172a 50%, #1e1b4b 100%)',
+  },
+  warehouse: {
+    day: 'linear-gradient(to bottom, #e4e4e7 0%, #d4d4d8 60%, #a1a1aa 100%)',
+    night: 'linear-gradient(to bottom, #09090b 0%, #18181b 55%, #27272a 100%)',
+  },
+  serverroom: {
+    day: 'linear-gradient(to bottom, #1e293b 0%, #263449 60%, #334155 100%)',
+    night: 'linear-gradient(to bottom, #020617 0%, #081120 55%, #0c1a2e 100%)',
+  },
+  breakroom: {
+    day: 'linear-gradient(to bottom, #fef3c7 0%, #fde68a 50%, #fcd34d 100%)',
+    night: 'linear-gradient(to bottom, #1c1917 0%, #292524 55%, #3f2d20 100%)',
   },
 };
 
@@ -3392,10 +3441,52 @@ export const SCENE_GROUNDS: Record<SceneKind, { day: string; night: string }> = 
     day: 'linear-gradient(to bottom, #78716c 0%, #57534e 50%, #44403c 100%)',
     night: 'linear-gradient(to bottom, #44403c 0%, #292524 50%, #1c1917 100%)',
   },
+  office: {
+    day: 'linear-gradient(to bottom, #b8a08c 0%, #a08b78 50%, #8a7767 100%)',
+    night: 'linear-gradient(to bottom, #292524 0%, #201d1b 50%, #171412 100%)',
+  },
+  executive: {
+    day: 'linear-gradient(to bottom, #8a6a4f 0%, #75573f 50%, #5f4632 100%)',
+    night: 'linear-gradient(to bottom, #2a2018 0%, #201810 50%, #150f0a 100%)',
+  },
+  warehouse: {
+    day: 'linear-gradient(to bottom, #9ca3af 0%, #8a919d 50%, #6b7280 100%)',
+    night: 'linear-gradient(to bottom, #374151 0%, #2b3544 50%, #1f2937 100%)',
+  },
+  serverroom: {
+    day: 'linear-gradient(to bottom, #24303f 0%, #1b2532 50%, #131c27 100%)',
+    night: 'linear-gradient(to bottom, #0b1524 0%, #081019 50%, #04080f 100%)',
+  },
+  breakroom: {
+    day: 'linear-gradient(to bottom, #e7e5e4 0%, #d6d3d1 50%, #bcb8b5 100%)',
+    night: 'linear-gradient(to bottom, #3f3f46 0%, #34343a 50%, #26262b 100%)',
+  },
 };
 
 // Scene order for determining slide direction
-export const SCENE_ORDER: SceneKind[] = ['beach', 'campfire', 'forest', 'studio', 'space', 'rooftop'];
+export const SCENE_ORDER: SceneKind[] = [
+  'beach',
+  'campfire',
+  'forest',
+  'studio',
+  'space',
+  'rooftop',
+  'office',
+  'executive',
+  'warehouse',
+  'serverroom',
+  'breakroom',
+];
+
+/** The work environments — the subset an application about work reaches for. */
+export const OFFICE_SCENE_KINDS: SceneKind[] = [
+  'office',
+  'executive',
+  'warehouse',
+  'serverroom',
+  'breakroom',
+  'rooftop',
+];
 
 // Export individual scene components for direct usage
 export {
@@ -3423,6 +3514,11 @@ const SCENE_WALK_GEOMETRY: Record<
   studio: { walkableArea: { minX: 12, maxX: 88, minY: 28, maxY: 75 }, scaleRange: { min: 0.5, max: 1.2 } },
   space: { walkableArea: { minX: 15, maxX: 85, minY: 40, maxY: 80 }, scaleRange: { min: 0.45, max: 1.3 } },
   rooftop: { walkableArea: { minX: 8, maxX: 92, minY: 30, maxY: 80 }, scaleRange: { min: 0.45, max: 1.25 } },
+  office: { walkableArea: { minX: 8, maxX: 92, minY: 36, maxY: 82 }, scaleRange: { min: 0.45, max: 1.25 } },
+  executive: { walkableArea: { minX: 8, maxX: 92, minY: 34, maxY: 82 }, scaleRange: { min: 0.45, max: 1.25 } },
+  warehouse: { walkableArea: { minX: 10, maxX: 90, minY: 33, maxY: 82 }, scaleRange: { min: 0.45, max: 1.25 } },
+  serverroom: { walkableArea: { minX: 10, maxX: 90, minY: 37, maxY: 80 }, scaleRange: { min: 0.5, max: 1.2 } },
+  breakroom: { walkableArea: { minX: 8, maxX: 92, minY: 36, maxY: 82 }, scaleRange: { min: 0.45, max: 1.25 } },
 }
 
 /**

@@ -17,6 +17,7 @@ export {
   type WalkingConfig,
 } from './config'
 export {
+  OFFICE_SCENE_KINDS,
   SCENE_BACKDROPS,
   SCENE_COMPONENTS,
   SCENE_GROUNDS,
