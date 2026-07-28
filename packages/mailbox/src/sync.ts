@@ -2,6 +2,16 @@ import { ImapFlow } from 'imapflow'
 import { simpleParser, type AddressObject } from 'mailparser'
 import type { ImapCursor, InboundMessage, MailAddress, MailboxConnection, MailboxStore, SyncResult } from './types'
 
+/**
+ * XOAUTH2 when the caller minted an access token, LOGIN/PLAIN otherwise.
+ * imapflow negotiates the mechanism from the shape of this object.
+ */
+function imapAuth(conn: MailboxConnection): { user: string; pass: string } | { user: string; accessToken: string } {
+  return conn.accessToken
+    ? { user: conn.username, accessToken: conn.accessToken }
+    : { user: conn.username, pass: conn.password }
+}
+
 function stripAngles(id: string | undefined | null): string | null {
   if (!id) return null
   const trimmed = id.trim()
@@ -28,7 +38,7 @@ export async function syncMailbox(conn: MailboxConnection, store: MailboxStore):
     host: conn.imap.host,
     port: conn.imap.port,
     secure: conn.imap.secure,
-    auth: { user: conn.username, pass: conn.password },
+    auth: imapAuth(conn),
     logger: false,
   })
   await client.connect()
@@ -97,7 +107,7 @@ export async function verifyImap(conn: MailboxConnection): Promise<void> {
     host: conn.imap.host,
     port: conn.imap.port,
     secure: conn.imap.secure,
-    auth: { user: conn.username, pass: conn.password },
+    auth: imapAuth(conn),
     logger: false,
   })
   await client.connect()

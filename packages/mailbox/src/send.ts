@@ -6,6 +6,19 @@ function bracket(id: string): string {
 }
 
 /**
+ * XOAUTH2 when the caller minted an access token, LOGIN/PLAIN otherwise.
+ * Nodemailer sends the token as-is — refreshing it is the caller's job, so
+ * no clientId/clientSecret ever reaches the transport.
+ */
+function smtpAuth(
+  conn: MailboxConnection,
+): { user: string; pass: string } | { type: 'OAuth2'; user: string; accessToken: string } {
+  return conn.accessToken
+    ? { type: 'OAuth2', user: conn.username, accessToken: conn.accessToken }
+    : { user: conn.username, pass: conn.password }
+}
+
+/**
  * Send one message over the mailbox's SMTP endpoint. Reply threading is the
  * caller's contract: pass the answered Message-ID and the full chain so every
  * client threads the conversation correctly.
@@ -15,7 +28,7 @@ export async function sendMail(conn: MailboxConnection, args: SendMailArgs): Pro
     host: conn.smtp.host,
     port: conn.smtp.port,
     secure: conn.smtp.secure,
-    auth: { user: conn.username, pass: conn.password },
+    auth: smtpAuth(conn),
   })
   try {
     const info = await transport.sendMail({
@@ -51,7 +64,7 @@ export async function verifySmtp(conn: MailboxConnection): Promise<void> {
     host: conn.smtp.host,
     port: conn.smtp.port,
     secure: conn.smtp.secure,
-    auth: { user: conn.username, pass: conn.password },
+    auth: smtpAuth(conn),
   })
   try {
     await transport.verify()
