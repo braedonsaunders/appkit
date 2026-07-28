@@ -128,10 +128,15 @@ export function ComposedAvatar({
       aria-label={name ?? 'Avatar'}
     >
       <motion.div
-        className="absolute left-0 top-0 origin-top-left"
+        className="absolute left-0 top-0"
         style={{
           width: CANVAS_WIDTH,
           height: CANVAS_HEIGHT,
+          // The origin is inline, not `origin-top-left`: the crop maths assume
+          // the stage scales from its top-left corner, and a utility class the
+          // consuming app never generated would silently move the whole figure
+          // out of frame instead of failing loudly.
+          transformOrigin: '0 0',
           transform: `translate(${translateX}px, ${translateY}px) scale(${scale})`,
         }}
       >

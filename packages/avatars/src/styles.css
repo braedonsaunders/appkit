@@ -1,0 +1,10 @@
+/*
+ * Register this package's own components with Tailwind v4.
+ *
+ * A consuming app only generates the utility classes it finds in the sources
+ * it scans. Without this import the composer and the portrait renderer paint
+ * with classes that were never emitted — silently, since a missing class is
+ * not an error — which is how a head-framing dim and an avatar's transform
+ * origin both went missing at once.
+ */
+@source './';
