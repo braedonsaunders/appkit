@@ -112,6 +112,11 @@ sidebar via `navigationMode="topbar" | "sidebar"`. The registry supports the
 siblings' serializable `iconKey`, `id`, subgroup, exact-match, and mobile-pin
 fields; mobile uses the same data in a drawer and bottom tab bar. `TopNav`,
 `AppSidebar`, `SidebarNav`, and `MobileTabBar` are also exported directly.
+Hosts can tune top-level topbar typography and active/inactive emphasis through
+`topNavigationItemClassName`, `topNavigationActiveItemClassName`, and
+`topNavigationInactiveItemClassName` without changing sidebar or mobile
+navigation; the equivalent direct `TopNav` props omit the `topNavigation`
+prefix.
 `NavigationConfigEditor` provides the tenant-facing visibility and reordering
 surface. Its framework-neutral helpers reconcile saved stable keys with the
 current application registry, append newly shipped destinations, preserve

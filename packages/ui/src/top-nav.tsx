@@ -27,6 +27,9 @@ export function TopNav({
   moreLabel = 'More',
   ariaLabel = 'Primary navigation',
   className,
+  itemClassName,
+  activeItemClassName,
+  inactiveItemClassName,
 }: {
   groups: SidebarNavGroup[]
   pathname: string
@@ -34,6 +37,12 @@ export function TopNav({
   moreLabel?: string
   ariaLabel?: string
   className?: string
+  /** Shared typography/spacing overrides for every top-level navigation item. */
+  itemClassName?: string
+  /** Overrides applied only to the active top-level item. */
+  activeItemClassName?: string
+  /** Overrides applied only to inactive top-level items. */
+  inactiveItemClassName?: string
 }) {
   const activeHref = findActiveNavHref(pathname, groups)
   const [openIndex, setOpenIndex] = React.useState<number | null>(null)
@@ -134,7 +143,10 @@ export function TopNav({
           <span
             key={`${group.label}-${index}`}
             data-top-nav-measure="group"
-            className="flex h-14 shrink-0 items-center gap-1 whitespace-nowrap px-2 text-sm font-medium"
+            className={cn(
+              'flex h-14 shrink-0 items-center gap-1 whitespace-nowrap px-2 text-sm font-medium',
+              itemClassName,
+            )}
           >
             {group.items.length === 1 ? group.items[0]!.label : group.label}
             {group.items.length === 1 ? null : <ChevronDown size={12} className="opacity-50" />}
@@ -142,7 +154,10 @@ export function TopNav({
         ))}
         <span
           data-top-nav-measure="more"
-          className="flex h-14 shrink-0 items-center gap-1 whitespace-nowrap px-2 text-sm font-medium"
+          className={cn(
+            'flex h-14 shrink-0 items-center gap-1 whitespace-nowrap px-2 text-sm font-medium',
+            itemClassName,
+          )}
         >
           {moreLabel}
           <ChevronDown size={12} className="opacity-50" />
@@ -160,7 +175,10 @@ export function TopNav({
                 href: only.href,
                 className: cn(
                   'flex h-14 shrink-0 items-center whitespace-nowrap px-2 text-sm font-medium transition-colors',
-                  activeHref === only.href ? 'text-primary' : 'text-fg-muted hover:text-fg',
+                  itemClassName,
+                  activeHref === only.href
+                    ? cn('text-primary', activeItemClassName)
+                    : cn('text-fg-muted hover:text-fg', inactiveItemClassName),
                 ),
                 children: only.label,
               })}
@@ -185,7 +203,10 @@ export function TopNav({
                 onClick={() => enterMenu(index)}
                 className={cn(
                   'flex h-14 shrink-0 items-center gap-1 whitespace-nowrap px-2 text-sm font-medium transition-colors',
-                  groupActive ? 'text-primary' : 'text-fg-muted hover:text-fg',
+                  itemClassName,
+                  groupActive
+                    ? cn('text-primary', activeItemClassName)
+                    : cn('text-fg-muted hover:text-fg', inactiveItemClassName),
                 )}
               >
                 {group.label}
@@ -222,7 +243,10 @@ export function TopNav({
               onClick={() => enterMenu(MORE_MENU_INDEX)}
               className={cn(
                 'flex h-14 shrink-0 items-center gap-1 whitespace-nowrap px-2 text-sm font-medium transition-colors',
-                moreActive ? 'text-primary' : 'text-fg-muted hover:text-fg',
+                itemClassName,
+                moreActive
+                  ? cn('text-primary', activeItemClassName)
+                  : cn('text-fg-muted hover:text-fg', inactiveItemClassName),
               )}
             >
               {moreLabel}

@@ -34,6 +34,9 @@ export function AppShell({
   openNavigationLabel = 'Open navigation',
   menuLabel = 'Menu',
   primaryNavigationLabel = 'Primary navigation',
+  topNavigationItemClassName,
+  topNavigationActiveItemClassName,
+  topNavigationInactiveItemClassName,
   mobileTabCount = 4,
   showMobileTabs = true,
   children,
@@ -56,6 +59,12 @@ export function AppShell({
   openNavigationLabel?: string
   menuLabel?: string
   primaryNavigationLabel?: string
+  /** Shared typography/spacing overrides for topbar navigation items. */
+  topNavigationItemClassName?: string
+  /** Overrides applied only to the active topbar navigation item. */
+  topNavigationActiveItemClassName?: string
+  /** Overrides applied only to inactive topbar navigation items. */
+  topNavigationInactiveItemClassName?: string
   mobileTabCount?: number
   showMobileTabs?: boolean
   children: React.ReactNode
@@ -98,6 +107,9 @@ export function AppShell({
                 linkRender={linkRender}
                 moreLabel={moreLabel}
                 ariaLabel={primaryNavigationLabel}
+                itemClassName={topNavigationItemClassName}
+                activeItemClassName={topNavigationActiveItemClassName}
+                inactiveItemClassName={topNavigationInactiveItemClassName}
               />
               <div className="flex-1 lg:hidden" />
               {headerMiddle}

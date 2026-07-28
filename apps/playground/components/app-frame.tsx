@@ -184,6 +184,8 @@ function AppFrameContent({
             </Link>
           }
           navigationMode={navigation.mode}
+          topNavigationItemClassName="font-normal"
+          topNavigationInactiveItemClassName="text-fg-subtle hover:text-fg-muted"
           linkRender={nextLink}
           headerMiddle={
             <GlobalSearch
