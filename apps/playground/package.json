@@ -22,6 +22,7 @@
     "@appkit/dashboard": "workspace:*",
     "@appkit/db": "workspace:*",
     "@appkit/design-studio": "workspace:*",
+    "@appkit/email-render": "workspace:*",
     "@appkit/emails": "workspace:*",
     "@appkit/events": "workspace:*",
     "@appkit/forms": "workspace:*",

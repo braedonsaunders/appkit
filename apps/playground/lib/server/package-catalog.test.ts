@@ -23,7 +23,24 @@ test('the demo catalog has one unique route for every workspace package manifest
   assert.equal(new Set(PACKAGE_CATALOG.map((item) => item.slug)).size, PACKAGE_CATALOG.length)
   assert.equal(new Set(PACKAGE_CATEGORIES.flatMap((category) => category.names)).size, PACKAGE_CATALOG.length)
   for (const item of PACKAGE_CATALOG) {
-    assert.match(item.demoHref, /^\/[^#]*(?:#demo)?$/, `${item.name} must have an internal demo route`)
+    assert.match(item.demoHref, /^\/[^#]+$/, `${item.name} must have an internal demo route`)
     assert.notEqual(item.demoHref, `/packages/${item.slug}`, `${item.name} demo must not reload its detail page`)
+  }
+})
+
+test('server-oriented packages use dedicated, package-specific demos', () => {
+  for (const slug of [
+    'crypto',
+    'email-render',
+    'emails',
+    'jobs',
+    'mailbox',
+    'process-sandbox',
+    'scene',
+    'sms',
+    'voice',
+  ]) {
+    const item = PACKAGE_CATALOG.find((candidate) => candidate.slug === slug)
+    assert.equal(item?.demoHref, `/packages/${slug}/demo`)
   }
 })

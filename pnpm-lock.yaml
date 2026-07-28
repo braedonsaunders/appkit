@@ -47,6 +47,9 @@ importers:
       '@appkit/design-studio':
         specifier: workspace:*
         version: link:../../packages/design-studio
+      '@appkit/email-render':
+        specifier: workspace:*
+        version: link:../../packages/email-render
       '@appkit/emails':
         specifier: workspace:*
         version: link:../../packages/emails

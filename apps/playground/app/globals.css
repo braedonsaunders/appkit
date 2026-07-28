@@ -10,6 +10,7 @@
 @import '@appkit/apps/styles.css';
 @import '@appkit/scripts/styles.css';
 @import '@appkit/storage/styles.css';
+@import '@appkit/scene/styles.css';
 
 /* Scan the playground and shared component sources for class usage. */
 @source '../app';

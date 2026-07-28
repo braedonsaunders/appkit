@@ -391,7 +391,7 @@ an application store and permission/runtime adapters, while
 host-adapter shape.
 
 The runnable references are `/admin/scripts`, `/admin/apps`, and
-`/packages/process-sandbox`. They use the same server runtimes and database-free
+`/packages/process-sandbox/demo`. They use the same server runtimes and database-free
 stores public consumers receive; the preview iframe and QuickJS backend are
 real, while the OS sandbox page renders its real deterministic execution plan
 without performing a privileged spawn in the demo server.
@@ -755,8 +755,10 @@ is generated from the committed workspace manifests and links to a detail page
 for every publishable package, including its real exports, dependencies,
 optional peers, tags, source, and a working demo action. Interactive demos are
 reached from their owning package page instead of a parallel Demonstration
-menu. The catalogue inventory test fails when a package manifest is added
-without a page or demo target.
+menu. Server-oriented packages use dedicated `/packages/[slug]/demo` readiness
+views built from their real exports; they never borrow an unrelated admin
+screen or perform privileged mutations. The catalogue inventory test fails when
+a package manifest is added without a page or demo target.
 
 For the rules any app on this foundation must follow, see
 [`building-applications.md`](building-applications.md).

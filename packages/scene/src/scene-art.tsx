@@ -190,16 +190,16 @@ function BeachScene({ isDark }: SceneProps) {
       <div className="absolute left-0 right-0 top-0" style={{ height: `${config.horizonY}%` }}>
         <div className={`absolute inset-0 ${
           isDark
-            ? 'bg-gradient-to-b from-orange-400 via-pink-500 to-purple-600'
-            : 'bg-gradient-to-b from-sky-300 via-cyan-200 to-blue-300'
+            ? 'bg-gradient-to-b from-[var(--scene-orange-400)] via-[var(--scene-pink-500)] to-[var(--scene-purple-600)]'
+            : 'bg-gradient-to-b from-[var(--scene-sky-300)] via-[var(--scene-cyan-200)] to-[var(--scene-blue-300)]'
         }`} />
 
         {/* Sun/Moon at horizon */}
         <motion.div
           className={`absolute bottom-[15%] left-1/2 -translate-x-1/2 w-14 h-14 rounded-full ${
             isDark
-              ? 'bg-gradient-to-b from-yellow-300 to-orange-500'
-              : 'bg-gradient-to-b from-yellow-200 to-yellow-400'
+              ? 'bg-gradient-to-b from-[var(--scene-yellow-300)] to-[var(--scene-orange-500)]'
+              : 'bg-gradient-to-b from-[var(--scene-yellow-200)] to-[var(--scene-yellow-400)]'
           }`}
           style={{
             boxShadow: isDark
@@ -213,8 +213,8 @@ function BeachScene({ isDark }: SceneProps) {
         {/* Ocean strip at horizon */}
         <div className={`absolute bottom-0 left-0 right-0 h-[30%] ${
           isDark
-            ? 'bg-gradient-to-b from-purple-700 via-blue-700 to-cyan-600'
-            : 'bg-gradient-to-b from-blue-400 via-cyan-400 to-cyan-300'
+            ? 'bg-gradient-to-b from-[var(--scene-purple-700)] via-[var(--scene-blue-700)] to-[var(--scene-cyan-600)]'
+            : 'bg-gradient-to-b from-[var(--scene-blue-400)] via-[var(--scene-cyan-400)] to-[var(--scene-cyan-300)]'
         }`} />
 
         {/* Waves at waterline */}
@@ -236,12 +236,12 @@ function BeachScene({ isDark }: SceneProps) {
         {/* Sand gradient with perspective */}
         <div className={`absolute inset-0 ${
           isDark
-            ? 'bg-gradient-to-b from-amber-500 via-amber-400 to-amber-300'
-            : 'bg-gradient-to-b from-amber-300 via-amber-200 to-amber-100'
+            ? 'bg-gradient-to-b from-[var(--scene-amber-500)] via-[var(--scene-amber-400)] to-[var(--scene-amber-300)]'
+            : 'bg-gradient-to-b from-[var(--scene-amber-300)] via-[var(--scene-amber-200)] to-[var(--scene-amber-100)]'
         }`} />
 
         {/* Wet sand near water */}
-        <div className={`absolute top-0 left-0 right-0 h-[12%] ${isDark ? 'bg-amber-600/40' : 'bg-amber-400/30'}`} />
+        <div className={`absolute top-0 left-0 right-0 h-[12%] ${isDark ? 'bg-[var(--scene-amber-600)]/40' : 'bg-[var(--scene-amber-400)]/30'}`} />
 
         {/* Beach items at different depths */}
         {useMemo(() => [
@@ -262,15 +262,15 @@ function BeachScene({ isDark }: SceneProps) {
               opacity: 0.5 + item.scale * 0.4,
             }}
           >
-            {item.type === 'shell' && <div className="w-4 h-3 rounded-full bg-pink-200/70" />}
-            {item.type === 'towel' && <div className="w-16 h-8 rounded bg-red-400/60" />}
+            {item.type === 'shell' && <div className="w-4 h-3 rounded-full bg-[var(--scene-pink-200)]/70" />}
+            {item.type === 'towel' && <div className="w-16 h-8 rounded bg-[var(--scene-red-400)]/60" />}
             {item.type === 'umbrella' && (
               <div className="relative">
-                <div className="w-20 h-10 rounded-t-full bg-yellow-400/70" />
-                <div className="absolute top-8 left-1/2 w-1 h-8 bg-amber-800/60" />
+                <div className="w-20 h-10 rounded-t-full bg-[var(--scene-yellow-400)]/70" />
+                <div className="absolute top-8 left-1/2 w-1 h-8 bg-[var(--scene-amber-800)]/60" />
               </div>
             )}
-            {item.type === 'bucket' && <div className="w-6 h-5 rounded-b bg-blue-400/60" />}
+            {item.type === 'bucket' && <div className="w-6 h-5 rounded-b bg-[var(--scene-blue-400)]/60" />}
           </div>
         )), [])}
 
@@ -385,7 +385,7 @@ function BeachScene({ isDark }: SceneProps) {
             className="absolute opacity-20"
             style={{ left: `${30 + i * 8}%`, top: `${45 + (i % 2) * 3}%` }}
           >
-            <div className={`w-2 h-3 rounded-full ${isDark ? 'bg-amber-700' : 'bg-amber-500'}`} />
+            <div className={`w-2 h-3 rounded-full ${isDark ? 'bg-[var(--scene-amber-700)]' : 'bg-[var(--scene-amber-500)]'}`} />
           </div>
         )), [isDark])}
 
@@ -576,12 +576,12 @@ const LakeWater = memo(function LakeWater({ isDark }: { isDark: boolean }) {
     <div className="absolute left-0 right-0 bottom-[25%] h-[20%] overflow-hidden">
       <div className={`absolute inset-0 ${
         isDark
-          ? 'bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-900'
-          : 'bg-gradient-to-b from-sky-400 via-sky-300 to-teal-300'
+          ? 'bg-gradient-to-b from-[var(--scene-indigo-950)] via-[var(--scene-slate-900)] to-[var(--scene-slate-900)]'
+          : 'bg-gradient-to-b from-[var(--scene-sky-400)] via-[var(--scene-sky-300)] to-[var(--scene-teal-300)]'
       }`} />
       <div className={`absolute inset-0 opacity-30 ${
         isDark
-          ? 'bg-gradient-to-t from-transparent via-indigo-900 to-transparent'
+          ? 'bg-gradient-to-t from-transparent via-[var(--scene-indigo-900)] to-transparent'
           : 'bg-gradient-to-t from-transparent via-white to-transparent'
       }`} />
       <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
@@ -680,16 +680,16 @@ function CampfireScene({ isDark }: SceneProps) {
       <div className="absolute inset-0">
         <div className={`absolute inset-0 transition-colors duration-1000 ${
           isDark
-            ? 'bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900'
-            : 'bg-gradient-to-b from-sky-400 via-sky-300 to-blue-200'
+            ? 'bg-gradient-to-b from-[var(--scene-slate-950)] via-[var(--scene-indigo-950)] to-[var(--scene-slate-900)]'
+            : 'bg-gradient-to-b from-[var(--scene-sky-400)] via-[var(--scene-sky-300)] to-[var(--scene-blue-200)]'
         }`} />
         {isDark && <StarField count={120} maxTop={70} />}
         {isDark && <AuroraBorealis />}
         <motion.div
           className={`absolute rounded-full ${
             isDark
-              ? 'top-[10%] right-[15%] w-16 h-16 bg-slate-100'
-              : 'top-[8%] left-[10%] w-24 h-24 bg-yellow-300'
+              ? 'top-[10%] right-[15%] w-16 h-16 bg-[var(--scene-slate-100)]'
+              : 'top-[8%] left-[10%] w-24 h-24 bg-[var(--scene-yellow-300)]'
           }`}
           style={{
             boxShadow: isDark
@@ -710,8 +710,8 @@ function CampfireScene({ isDark }: SceneProps) {
       <div className="absolute left-0 right-0 bottom-0" style={{ height: '35%' }}>
         <div className={`absolute inset-0 ${
           isDark
-            ? 'bg-gradient-to-b from-emerald-900 via-slate-900 to-black'
-            : 'bg-gradient-to-b from-emerald-400 via-green-500 to-green-600'
+            ? 'bg-gradient-to-b from-[var(--scene-emerald-900)] via-[var(--scene-slate-900)] to-black'
+            : 'bg-gradient-to-b from-[var(--scene-emerald-400)] via-[var(--scene-green-500)] to-[var(--scene-green-600)]'
         }`} />
         <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40" />
       </div>
@@ -791,7 +791,7 @@ function CampfireScene({ isDark }: SceneProps) {
         {Array.from({ length: 12 }).map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-2 h-2 rounded-full bg-yellow-200"
+            className="absolute w-2 h-2 rounded-full bg-[var(--scene-yellow-200)]"
             style={{
               left: `${8 + i * 7.5}%`,
               top: `${15 + Math.sin(i * 0.5) * 2}%`,
@@ -1421,8 +1421,8 @@ function ForestScene({ isDark }: SceneProps) {
         {/* Base ground with moss gradient */}
         <div className={`absolute inset-0 ${
           isDark
-            ? 'bg-gradient-to-b from-emerald-950 via-green-950 to-slate-950'
-            : 'bg-gradient-to-b from-emerald-400 via-green-500 to-emerald-600'
+            ? 'bg-gradient-to-b from-[var(--scene-emerald-950)] via-[var(--scene-green-950)] to-[var(--scene-slate-950)]'
+            : 'bg-gradient-to-b from-[var(--scene-emerald-400)] via-[var(--scene-green-500)] to-[var(--scene-emerald-600)]'
         }`} />
 
         {/* Clearing spotlight effect - lighter center */}
@@ -2214,18 +2214,18 @@ function StudioScene({ isDark }: SceneProps) {
       {/* Recording indicator */}
       <div
         className={`absolute top-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-full border backdrop-blur-sm ${
-          isDark ? 'bg-red-950/60 border-red-500/50' : 'bg-red-100/90 border-red-300'
+          isDark ? 'bg-[var(--scene-red-950)]/60 border-[var(--scene-red-500)]/50' : 'bg-[var(--scene-red-100)]/90 border-[var(--scene-red-300)]'
         }`}
       >
         <motion.div
-          className="w-2.5 h-2.5 rounded-full bg-red-500"
+          className="w-2.5 h-2.5 rounded-full bg-[var(--scene-red-500)]"
           animate={{
             opacity: [0.4, 1, 0.4],
             scale: [1, 1.2, 1],
           }}
           transition={{ duration: 1, repeat: Infinity }}
         />
-        <span className={`text-xs font-bold tracking-wider ${isDark ? 'text-red-400' : 'text-red-600'}`}>
+        <span className={`text-xs font-bold tracking-wider ${isDark ? 'text-[var(--scene-red-400)]' : 'text-[var(--scene-red-600)]'}`}>
           REC
         </span>
       </div>
@@ -3091,8 +3091,8 @@ function RooftopScene({ isDark }: SceneProps) {
       <div className="absolute left-0 right-0 top-0" style={{ height: `${config.horizonY}%` }}>
         <div className={`absolute inset-0 ${
           isDark
-            ? 'bg-gradient-to-b from-slate-950 via-indigo-950 to-violet-950'
-            : 'bg-gradient-to-b from-sky-400 via-orange-200 to-rose-300'
+            ? 'bg-gradient-to-b from-[var(--scene-slate-950)] via-[var(--scene-indigo-950)] to-[var(--scene-violet-950)]'
+            : 'bg-gradient-to-b from-[var(--scene-sky-400)] via-[var(--scene-orange-200)] to-[var(--scene-rose-300)]'
         }`} />
 
         {/* Stars (night) */}
@@ -3102,8 +3102,8 @@ function RooftopScene({ isDark }: SceneProps) {
         <motion.div
           className={`absolute ${isDark ? 'top-[15%] right-[18%]' : 'top-[10%] right-[12%]'} rounded-full ${
             isDark
-              ? 'w-8 h-8 bg-gradient-to-br from-gray-100 to-gray-200'
-              : 'w-12 h-12 bg-gradient-to-br from-yellow-200 to-orange-400'
+              ? 'w-8 h-8 bg-gradient-to-br from-[var(--scene-gray-100)] to-[var(--scene-gray-200)]'
+              : 'w-12 h-12 bg-gradient-to-br from-[var(--scene-yellow-200)] to-[var(--scene-orange-400)]'
           }`}
           style={{
             boxShadow: isDark
@@ -3123,7 +3123,7 @@ function RooftopScene({ isDark }: SceneProps) {
             transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
           >
             <div className="relative">
-              <div className="w-1 h-1 rounded-full bg-red-500" />
+              <div className="w-1 h-1 rounded-full bg-[var(--scene-red-500)]" />
               <motion.div
                 className="absolute top-0 left-0 w-1 h-1 rounded-full bg-white"
                 animate={{ opacity: [1, 0, 1] }}
@@ -3156,8 +3156,8 @@ function RooftopScene({ isDark }: SceneProps) {
         {/* Rooftop floor - polished concrete */}
         <div className={`absolute inset-0 ${
           isDark
-            ? 'bg-gradient-to-b from-stone-800 via-stone-900 to-zinc-950'
-            : 'bg-gradient-to-b from-stone-400 via-stone-500 to-stone-600'
+            ? 'bg-gradient-to-b from-[var(--scene-stone-800)] via-[var(--scene-stone-900)] to-[var(--scene-zinc-950)]'
+            : 'bg-gradient-to-b from-[var(--scene-stone-400)] via-[var(--scene-stone-500)] to-[var(--scene-stone-600)]'
         }`} />
 
         {/* Floor tiles pattern */}
@@ -3276,7 +3276,7 @@ function RooftopScene({ isDark }: SceneProps) {
             style={{ left: `${lamp.x}%`, top: `${lamp.y}%` }}
           >
             <div className="relative">
-              <div className="w-0.5 h-8 bg-zinc-600 mx-auto" />
+              <div className="w-0.5 h-8 bg-[var(--scene-zinc-600)] mx-auto" />
               <motion.div
                 className="absolute -top-1 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full"
                 style={{
