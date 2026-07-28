@@ -1,0 +1,58 @@
+{
+  "name": "@appkit/mailbox",
+  "version": "0.1.0",
+  "description": "Mail engine: incremental IMAP sync + SMTP send with RFC-5322 threading, persistence-injected so the application owns the ledger.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "build": "node ../../scripts/build-package.mjs",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "imapflow": "^1.0.191",
+    "mailparser": "^3.7.5",
+    "nodemailer": "^7.0.9"
+  },
+  "devDependencies": {
+    "@types/mailparser": "^3.4.6",
+    "@types/node": "^22",
+    "@types/nodemailer": "^7.0.4"
+  },
+  "author": "Braedon Saunders",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/braedonsaunders/appkit.git",
+    "directory": "packages/mailbox"
+  },
+  "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/mailbox#readme",
+  "bugs": {
+    "url": "https://github.com/braedonsaunders/appkit/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "appkit",
+    "imap",
+    "smtp",
+    "email",
+    "application-framework",
+    "typescript"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist",
+    "linkDirectory": false,
+    "provenance": true
+  }
+}
