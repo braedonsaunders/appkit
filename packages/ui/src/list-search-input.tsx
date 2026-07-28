@@ -4,6 +4,11 @@ import * as React from 'react'
 import { Search, X } from 'lucide-react'
 import { Input } from './input'
 import { useListNav } from './list-nav'
+import {
+  applySearchInputEdit,
+  createSearchInputEditState,
+  reconcileSearchInputUrl,
+} from './list-search-input-state'
 
 /**
  * URL-driven search box: debounced 250ms, writes `?q=` (configurable) and
@@ -31,9 +36,13 @@ export function SearchInput({
     () => new URLSearchParams(nav?.search ?? '').get(paramKey) ?? '',
     [nav?.search, paramKey],
   )
-  const [edit, setEdit] = React.useState({ source: urlValue, value: urlValue })
-  const value = edit.source === urlValue ? edit.value : urlValue
-  const [, startTransition] = React.useTransition()
+  const [edit, setEdit] = React.useState(() => createSearchInputEditState(urlValue))
+  const [navigationPending, startTransition] = React.useTransition()
+  const value = edit.value
+
+  React.useEffect(() => {
+    setEdit((current) => reconcileSearchInputUrl(current, urlValue, navigationPending))
+  }, [navigationPending, urlValue])
 
   React.useEffect(() => {
     if (!nav) return
@@ -65,7 +74,9 @@ export function SearchInput({
         aria-label={searchLabel}
         placeholder={placeholder}
         value={value}
-        onChange={(e) => setEdit({ source: urlValue, value: e.target.value })}
+        onChange={(e) =>
+          setEdit(applySearchInputEdit(e.target.value, urlValue, navigationPending))
+        }
         // Hide the browser's native search clear (×) — we render our own.
         className="h-8 pl-9 pr-9 [&::-webkit-search-cancel-button]:hidden"
       />
@@ -73,7 +84,7 @@ export function SearchInput({
         <button
           type="button"
           aria-label={clearLabel}
-          onClick={() => setEdit({ source: urlValue, value: '' })}
+          onClick={() => setEdit(applySearchInputEdit('', urlValue, navigationPending))}
           className="absolute right-2.5 top-2 text-fg-subtle hover:text-fg-muted"
         >
           <X size={16} />

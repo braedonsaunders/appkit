@@ -41,6 +41,7 @@ import {
   Progress,
   RecordList,
   type RecordColumn,
+  SearchInput,
   SearchSelect,
   SearchSelectFilter,
   Separator,
@@ -480,6 +481,10 @@ export default function ComponentGallery() {
                 placeholder="Unassigned"
                 searchPlaceholder="Search people…"
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label>URL-backed search</Label>
+              <SearchInput placeholder="Search records…" paramKey="records_q" />
             </div>
             <div className="space-y-1.5">
               <Label>URL-backed filter</Label>

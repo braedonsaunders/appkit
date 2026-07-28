@@ -8,6 +8,10 @@ import {
 } from '@appkit/superadmin/react'
 
 const now = new Date('2026-07-28T12:00:00.000Z')
+const demoTenants = [
+  { id: 'workspace-main', name: 'Main workspace' },
+  { id: 'workspace-field', name: 'Field operations' },
+]
 
 const seedUsers: PlatformUserRecord[] = [
   {
@@ -102,6 +106,8 @@ export function SuperadminDemo() {
     <PlatformUsersAdmin
       users={users}
       currentUserId="operator"
+      tenants={demoTenants}
+      defaultTenantId="workspace-main"
       actions={actions}
       title="Platform users"
       description="A live package demo of installation-wide identity administration."

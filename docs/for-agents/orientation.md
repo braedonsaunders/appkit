@@ -167,10 +167,13 @@ tenant selection, and any post-acceptance domain effect.
   server query, and render `SearchInput`, `FilterChips` or
   `SearchSelectFilter`, `SortableTh`, and `Pagination`. Wire `ListNavProvider`
   once to the app router so controls soft-
-  navigate without full reloads. Use prefixed keys when several lists share a
-  route. `RecordList` remains the controlled choice for bounded, already-loaded
-  data; the IAM React package uses its paginated service boundary instead of
-  owning framework routes. Never render an unbounded or unsearchable table.
+  navigate without full reloads. `SearchInput` keeps the latest local edit
+  authoritative while overlapping route transitions settle, so a stale server
+  response cannot delete newer keystrokes. Use prefixed keys when several lists
+  share a route. `RecordList` remains the controlled choice for bounded,
+  already-loaded data; the IAM React package uses its paginated service boundary
+  instead of owning framework routes. Never render an unbounded or unsearchable
+  table.
 - **Bounded detail/setup tables** use `PagedTable` for rows already loaded into
   a drawer, detail tab, or setup page. It owns client search, ordering, and
   pagination but does not imitate a server-backed list. A column becomes

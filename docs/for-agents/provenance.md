@@ -56,7 +56,9 @@ Faithful or generalized extractions:
   grammar for package inventories; the compact settings layout remains the
   faithful default.
 - `RecordList` and URL-driven search/filter/sort/pagination are generalized from
-  reference A production list pages and navigation helpers.
+  reference A production list pages and navigation helpers. URL-backed search
+  preserves the latest local edit across overlapping streamed navigations, so
+  an older response cannot replace newer keystrokes.
 - `PagedTable` is copied from reference A `web/components/paged-table.tsx` with
   localized copy moved to props and raw palette values tokenized. Its bounded
   search, clamped pages, aligned cells, row classes, and source caller signature
