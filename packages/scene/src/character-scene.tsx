@@ -72,7 +72,11 @@ export function CharacterScene({
   return (
     <div
       ref={ref}
-      className={cn('relative w-full overflow-hidden rounded-xl border border-border', className)}
+      // `isolate` contains the scene's internal layering (characters 10–90,
+      // content 90) inside this element: without it those z-indexes join the
+      // page's stacking context and paint over application chrome like a z-50
+      // drawer portaled to <body>.
+      className={cn('isolate relative w-full overflow-hidden rounded-xl border border-border', className)}
       style={{ height }}
     >
       <div
