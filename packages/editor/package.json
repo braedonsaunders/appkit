@@ -1,6 +1,6 @@
 {
   "name": "@appkit/editor",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Optional TipTap rich-text authoring for AppKit forms and documents.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -23,7 +23,8 @@
     "@tiptap/extension-link": "^3.27.4",
     "@tiptap/extension-placeholder": "^3.27.4",
     "@tiptap/react": "^3.27.4",
-    "@tiptap/starter-kit": "^3.27.4"
+    "@tiptap/starter-kit": "^3.27.4",
+    "@tiptap/extension-table": "^3.27.4"
   },
   "peerDependencies": {
     "react": "^19.0.0",

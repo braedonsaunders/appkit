@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react'
 import { EditorContent, useEditor, useEditorState, type Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
+import { TableKit } from '@tiptap/extension-table'
 import Placeholder from '@tiptap/extension-placeholder'
 import { cn, useUiText } from '@appkit/ui'
 
@@ -65,6 +66,12 @@ export function RichTextEditor({
       Link.configure({
         openOnClick: false,
         HTMLAttributes: { class: 'text-primary underline underline-offset-2' },
+      }),
+      TableKit.configure({
+        table: {
+          resizable: false,
+          HTMLAttributes: { class: 'appkit-rte-table' },
+        },
       }),
       Placeholder.configure({ placeholder: t(placeholder ?? 'Start typing…') }),
     ],
@@ -161,6 +168,7 @@ function Toolbar({
       h2: e.isActive('heading', { level: 2 }),
       h3: e.isActive('heading', { level: 3 }),
       bulletList: e.isActive('bulletList'),
+      table: e.isActive('table'),
       orderedList: e.isActive('orderedList'),
       blockquote: e.isActive('blockquote'),
       codeBlock: e.isActive('codeBlock'),
@@ -236,6 +244,39 @@ function Toolbar({
         label={t('Numbered list')}
       >
         1.
+      </Btn>
+      <Sep />
+      <Btn
+        active={state.table}
+        disabled={disabled}
+        onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+        label={t('Insert table')}
+      >
+        <span aria-hidden="true">⊞</span>
+      </Btn>
+      <Btn
+        active={false}
+        disabled={disabled || !state.table}
+        onClick={() => editor.chain().focus().addRowAfter().run()}
+        label={t('Add row')}
+      >
+        <span aria-hidden="true">＋⇣</span>
+      </Btn>
+      <Btn
+        active={false}
+        disabled={disabled || !state.table}
+        onClick={() => editor.chain().focus().addColumnAfter().run()}
+        label={t('Add column')}
+      >
+        <span aria-hidden="true">＋⇢</span>
+      </Btn>
+      <Btn
+        active={false}
+        disabled={disabled || !state.table}
+        onClick={() => editor.chain().focus().deleteTable().run()}
+        label={t('Delete table')}
+      >
+        <span aria-hidden="true">⊟</span>
       </Btn>
       <Btn
         active={state.blockquote}
