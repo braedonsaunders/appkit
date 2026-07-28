@@ -176,6 +176,35 @@ The full, generalized set is in
    touched (concurrent worktrees exist — never revert files you didn't edit). End
    commit messages with the Claude co-author trailer.
 
+## Application standards (owner directives — apply to every app built on appkit)
+
+Distilled from production owner feedback; these bind appkit consumers and any example
+code shipped here:
+
+1. **Definition of done — UI or it doesn't exist.** An engine, schema, or service without
+   its management surface is an unfinished slice. Every capability ships in the same slice
+   with its operator screen, every knob a reasonable operator expects, visible state
+   (status / last activity / last error / audit trail), and discoverability from the admin
+   hub or the natural record page.
+2. **Tenant-configurable, never env.** Anything an operator would expect to control lives
+   tenant-scoped in the database and is editable in-app. Env is for deployment
+   infrastructure only.
+3. **Use the templates, not bespoke layouts.** Admin areas are `AdminHub`; settings areas
+   are `SettingsShell`/`SettingsSection`/`SettingsRow`; lists are `RecordList`/`PagedTable`;
+   secrets are `@appkit/crypto` sealers; queues are `@appkit/jobs`. Building a local
+   version of an existing primitive is a bug.
+4. **No free-text where finite options exist.** If the real options are enumerable at
+   runtime (models from a provider API, mailboxes, roles), load them and present a
+   searchable dropdown — first pass, not a follow-up.
+5. **Screen complexity on par with the production reference apps on the first pass.**
+   No thin placeholder UIs that need second and third passes.
+6. **Single-source feature gates; effective-dated config; append-only history.** One
+   authoritative Features switchboard; price/policy changes are new effective-dated rows,
+   never edits that reinterpret history; ledgers and decided records are append-only.
+7. **Both directions.** Apps check appkit before building anything fresh, and backfill
+   generalizable capabilities into appkit as new packages (committed here directly), then
+   consume them back via tarballs.
+
 ## Agent handoff
 
 End completed work with a condensed checklist: what you changed, what you
