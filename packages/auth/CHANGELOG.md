@@ -1,5 +1,12 @@
 # @appkit/auth
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies [a1d5d50]
+  - @appkit/ui@0.1.2
+
 ## 0.1.1
 
 ### Patch Changes

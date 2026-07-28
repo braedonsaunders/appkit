@@ -45,7 +45,7 @@
   },
   "peerDependencies": {
     "@appkit/db": "^0.2.0",
-    "@appkit/ui": "^0.1.1",
+    "@appkit/ui": "^0.1.2",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",

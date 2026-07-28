@@ -1,5 +1,15 @@
 # @appkit/ui
 
+## 0.1.2
+
+### Patch Changes
+
+- a1d5d50: Add `@appkit/scheduling`: critical-path scheduling with working calendars,
+  work-breakdown rollups, baselines, resource leveling, and the Gantt / list /
+  board authoring surface under `@appkit/scheduling/react`.
+
+  `@appkit/ui` gains a `calendar` navigation icon key.
+
 ## 0.1.1
 
 ### Patch Changes
