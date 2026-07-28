@@ -212,6 +212,8 @@ code shipped here:
    never edits that reinterpret history; ledgers and decided records are append-only.
 **Rich text everywhere prose is edited.** Multi-line prose fields (notes, procedures, instructions, knowledge) use @appkit/editor's RichTextEditor — lists, headings, links, tables — never a bare Textarea. When storage is markdown, round-trip at the edge (md→HTML in, HTML→GFM out); the stored format stays human-readable.
 
+**UI copy is professional SaaS language.** Never surface engineering-internal phrasing to operators: no "documented follow-up", "not wired up yet", "TODO", roadmap talk, or references to plugins/workers/branches. If a capability is unavailable, say what the operator can use instead in product terms ("Realtime calls are available with OpenAI voices; Google voices are coming soon") — and prefer not offering unavailable options at all over explaining why they fail.
+
 **Complex drawers get subtabs.** When a record drawer/flyout holds more than one section of data (a builder with duties + procedures + settings, a person with mailbox + memory + payroll), organize it with SubtabNav — never one long scroll of stacked sections.
 
 **No stacked tables.** Never stack multiple tables/lists vertically on one page — split them into SubtabNav sections (or SettingsShell nav). One list per view.
