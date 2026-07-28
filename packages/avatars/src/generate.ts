@@ -16,15 +16,122 @@ export type ImageAiConfig = {
 
 export type ImageModelId = string
 
+/**
+ * FALLBACK catalog only — the authoritative source is `listImageModels`,
+ * which queries the provider's live model API with the tenant's key.
+ * Providers retire image models without notice (Google's Imagen models, for
+ * example, return "no longer available to new users"), so callers should
+ * present the live list and reach for this catalog only when the live fetch
+ * fails — and it is the caller's decision to fall back, ideally while
+ * surfacing the provider's error.
+ */
 export const IMAGE_MODELS: { id: ImageModelId; name: string; provider: 'openai' | 'google' }[] = [
   { id: 'gpt-image-1', name: 'GPT Image 1', provider: 'openai' },
   { id: 'dall-e-3', name: 'DALL·E 3', provider: 'openai' },
-  { id: 'imagen-3.0-generate-002', name: 'Imagen 3', provider: 'google' },
-  { id: 'imagen-4.0-generate-001', name: 'Imagen 4', provider: 'google' },
+  { id: 'gemini-2.5-flash-image', name: 'Gemini 2.5 Flash Image (Nano Banana)', provider: 'google' },
+  { id: 'gemini-3.1-flash-image-preview', name: 'Gemini 3.1 Flash Image (Nano Banana 2)', provider: 'google' },
+  { id: 'gemini-3-pro-image-preview', name: 'Gemini 3 Pro Image (Nano Banana Pro)', provider: 'google' },
 ]
 
 /** Provider kinds (as named by @appkit/ai) that can generate images. */
 export const IMAGE_CAPABLE_PROVIDERS = ['openai', 'google'] as const
+
+export type ImageModelListing = {
+  id: ImageModelId
+  /** Provider display name, when the provider supplies one. */
+  name?: string
+}
+
+const LIST_TIMEOUT_MS = 15_000
+
+/**
+ * List the image-generation models the tenant's key can actually use, straight
+ * from the provider's model API. This is the authoritative list — prefer it
+ * over the static {@link IMAGE_MODELS} fallback catalog.
+ */
+export async function listImageModels(config: ImageAiConfig): Promise<ImageModelListing[]> {
+  if (config.provider === 'google') return listGoogleImageModels(config)
+  if (config.provider === 'openai') return listOpenAiImageModels(config)
+  throw new Error(
+    `Provider "${config.provider}" cannot generate images — use one of: ${IMAGE_CAPABLE_PROVIDERS.join(', ')}.`,
+  )
+}
+
+async function listGoogleImageModels(config: ImageAiConfig): Promise<ImageModelListing[]> {
+  const base = (config.baseUrl ?? 'https://generativelanguage.googleapis.com/v1beta').replace(/\/+$/, '')
+  const url = `${base}/models?key=${encodeURIComponent(config.apiKey)}&pageSize=1000`
+  const payload = await fetchModelList('Google', url, {})
+  const models = Array.isArray((payload as { models?: unknown }).models)
+    ? ((payload as { models: unknown[] }).models as {
+        name?: string
+        displayName?: string
+        supportedGenerationMethods?: string[]
+      }[])
+    : []
+  const listings: ImageModelListing[] = []
+  for (const model of models) {
+    if (typeof model?.name !== 'string') continue
+    const id = model.name.replace(/^models\//, '')
+    const supportsPredict =
+      Array.isArray(model.supportedGenerationMethods) &&
+      model.supportedGenerationMethods.includes('predict')
+    const isNativeImageModel = id.includes('image')
+    if (!supportsPredict && !isNativeImageModel) continue
+    listings.push({ id, ...(model.displayName ? { name: model.displayName } : {}) })
+  }
+  return listings.sort((a, b) => a.id.localeCompare(b.id))
+}
+
+async function listOpenAiImageModels(config: ImageAiConfig): Promise<ImageModelListing[]> {
+  const base = (config.baseUrl ?? 'https://api.openai.com/v1').replace(/\/+$/, '')
+  const payload = await fetchModelList('OpenAI', `${base}/models`, {
+    Authorization: `Bearer ${config.apiKey}`,
+  })
+  const models = Array.isArray((payload as { data?: unknown }).data)
+    ? ((payload as { data: unknown[] }).data as { id?: string }[])
+    : []
+  return models
+    .filter((model): model is { id: string } => typeof model?.id === 'string' && /^(gpt-image|dall-e)/.test(model.id))
+    .map((model) => ({ id: model.id }))
+    .sort((a, b) => a.id.localeCompare(b.id))
+}
+
+async function fetchModelList(
+  providerLabel: string,
+  url: string,
+  headers: Record<string, string>,
+): Promise<unknown> {
+  let response: Response
+  try {
+    response = await fetch(url, { headers, signal: AbortSignal.timeout(LIST_TIMEOUT_MS) })
+  } catch (error) {
+    if (error instanceof Error && error.name === 'TimeoutError') {
+      throw new Error(
+        `${providerLabel} model list request timed out after ${LIST_TIMEOUT_MS / 1000}s.`,
+      )
+    }
+    throw new Error(
+      `Could not reach the ${providerLabel} model list API: ${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
+  if (!response.ok) {
+    let detail = ''
+    try {
+      const body = (await response.json()) as { error?: { message?: string } }
+      if (typeof body?.error?.message === 'string') detail = ` — ${body.error.message}`
+    } catch {
+      // Non-JSON error body; the status line is all we have.
+    }
+    throw new Error(
+      `${providerLabel} model list request failed (HTTP ${response.status})${detail}`,
+    )
+  }
+  try {
+    return await response.json()
+  } catch {
+    throw new Error(`${providerLabel} model list API returned an unreadable response.`)
+  }
+}
 
 export type GenerateImagesRequest = {
   prompt: string

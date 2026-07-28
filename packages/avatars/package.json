@@ -1,6 +1,6 @@
 {
   "name": "@appkit/avatars",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "AI avatar/image generation through the AI SDK provider layer \u2014 pass your @appkit/ai tenant AiConfig; openai and google image models.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
