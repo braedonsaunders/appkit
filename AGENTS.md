@@ -201,7 +201,9 @@ code shipped here:
 6. **Single-source feature gates; effective-dated config; append-only history.** One
    authoritative Features switchboard; price/policy changes are new effective-dated rows,
    never edits that reinterpret history; ledgers and decided records are append-only.
-7. **Both directions.** Apps check appkit before building anything fresh, and backfill
+7. **Both directions.**
+
+**Row interactions open Drawers.** Clicking a list/table row opens an `@appkit/ui` Drawer with the record's detail and actions — never an inline form below the table, never a bare navigation when a drawer fits. Full-page records are for deep surfaces (profiles, run timelines); everything else drawers. Apps check appkit before building anything fresh, and backfill
    generalizable capabilities into appkit as new packages (committed here directly), then
    consume them back via tarballs.
 
