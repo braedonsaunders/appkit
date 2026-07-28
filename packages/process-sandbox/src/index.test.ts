@@ -23,6 +23,7 @@ test('builds a cleared, workspace-bound bubblewrap invocation', () => {
       OPENAI_API_KEY: 'test-key',
       EMPTY: undefined,
     },
+    launcherIdentity: { uid: 1000, gid: 1000 },
   }, { pathExists: allPathsExist })
 
   assert.equal(plan.command, '/usr/bin/bwrap')
@@ -46,6 +47,7 @@ test('builds a cleared, workspace-bound bubblewrap invocation', () => {
   assert.equal(plan.environment.PATH, DEFAULT_PROCESS_PATH)
   assert.ok(!('EMPTY' in plan.environment))
   assert.deepEqual(plan.args.slice(-5), ['--', '/usr/local/bin/codex', 'exec', '--json', 'Inspect the project'])
+  assert.deepEqual(plan.launcherIdentity, { uid: 1000, gid: 1000 })
 })
 
 test('requires an absolute cwd covered by an exposed mount', () => {
@@ -99,4 +101,20 @@ test('support detection is Linux and binary specific', () => {
   assert.equal(isProcessSandboxSupported({ platform: 'linux', pathExists: () => true }), true)
   assert.equal(isProcessSandboxSupported({ platform: 'linux', pathExists: () => false }), false)
   assert.equal(isProcessSandboxSupported({ platform: 'darwin', pathExists: () => true }), false)
+})
+
+test('rejects root and malformed launcher identities', () => {
+  const options = {
+    command: '/usr/bin/true',
+    cwd: '/workspace',
+    writablePaths: ['/workspace'],
+  }
+  assert.throws(
+    () => buildBubblewrapPlan({ ...options, launcherIdentity: { uid: 0, gid: 0 } }),
+    /uid must be a positive safe integer/,
+  )
+  assert.throws(
+    () => buildBubblewrapPlan({ ...options, launcherIdentity: { uid: 1000, gid: -1 } }),
+    /gid must be a non-negative safe integer/,
+  )
 })

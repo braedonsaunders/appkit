@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess, type StdioOptions } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { chown, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 
@@ -8,6 +8,13 @@ export const DEFAULT_BUBBLEWRAP_PATH = '/usr/bin/bwrap'
 export const DEFAULT_PROCESS_PATH = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
 export const DEFAULT_READ_ONLY_PATHS = ['/usr', '/etc', '/opt', '/app'] as const
 export const DEFAULT_MASKED_PATHS = ['/data', '/home', '/root', '/var'] as const
+
+export interface ProcessSandboxLauncherIdentity {
+  /** Host/container UID used to invoke the setuid bubblewrap executable. */
+  uid: number
+  /** Host/container GID used to invoke the setuid bubblewrap executable. */
+  gid: number
+}
 
 export interface ProcessSandboxOptions {
   command: string
@@ -23,6 +30,12 @@ export interface ProcessSandboxOptions {
   /** The complete child environment. Host process variables are never inherited implicitly. */
   environment?: Readonly<Record<string, string | undefined>>
   bubblewrapPath?: string
+  /**
+   * Optional unprivileged identity used only to invoke bubblewrap. This lets a
+   * root application process use Debian's setuid bubblewrap safely without
+   * granting CAP_SYS_ADMIN to the application container.
+   */
+  launcherIdentity?: ProcessSandboxLauncherIdentity
   stdio?: StdioOptions
 }
 
@@ -35,6 +48,7 @@ export interface BubblewrapPlan {
   writablePaths: string[]
   readOnlyPaths: string[]
   maskedPaths: string[]
+  launcherIdentity?: ProcessSandboxLauncherIdentity
 }
 
 export interface ProcessSandboxVerification {
@@ -86,6 +100,7 @@ export function buildBubblewrapPlan(
     'bubblewrapPath',
   )
   const environment = cleanEnvironment(options.environment)
+  const launcherIdentity = cleanLauncherIdentity(options.launcherIdentity)
   if (!('PATH' in environment)) environment.PATH = DEFAULT_PROCESS_PATH
 
   const args: string[] = [
@@ -138,6 +153,7 @@ export function buildBubblewrapPlan(
     writablePaths,
     readOnlyPaths,
     maskedPaths,
+    launcherIdentity,
   }
 }
 
@@ -170,6 +186,8 @@ export function spawnBubblewrappedProcess(options: ProcessSandboxOptions): Child
     // serializing secret values into bwrap argv via `--setenv`.
     env: plan.environment as NodeJS.ProcessEnv,
     stdio: options.stdio ?? ['ignore', 'pipe', 'pipe'],
+    uid: plan.launcherIdentity?.uid,
+    gid: plan.launcherIdentity?.gid,
   })
 }
 
@@ -180,6 +198,7 @@ export function spawnBubblewrappedProcess(options: ProcessSandboxOptions): Child
  */
 export async function verifyProcessSandbox(options: {
   bubblewrapPath?: string
+  launcherIdentity?: ProcessSandboxLauncherIdentity
   timeoutMs?: number
 } = {}): Promise<ProcessSandboxVerification> {
   const bubblewrapPath = options.bubblewrapPath ?? DEFAULT_BUBBLEWRAP_PATH
@@ -193,11 +212,23 @@ export async function verifyProcessSandbox(options: {
 
   const probeDir = await mkdtemp(`${tmpdir()}/appkit-process-sandbox-`)
   try {
+    const launcherIdentity = cleanLauncherIdentity(options.launcherIdentity)
+    if (launcherIdentity) {
+      try {
+        await chown(probeDir, launcherIdentity.uid, launcherIdentity.gid)
+      } catch (error) {
+        throw new ProcessSandboxError(
+          `Could not prepare the sandbox verification directory for launcher `
+            + `${launcherIdentity.uid}:${launcherIdentity.gid}: ${errorMessage(error)}`,
+        )
+      }
+    }
     const child = spawnBubblewrappedProcess({
       command: '/usr/bin/true',
       cwd: probeDir,
       writablePaths: [probeDir],
       bubblewrapPath,
+      launcherIdentity,
       environment: {},
       stdio: ['ignore', 'ignore', 'pipe'],
     })
@@ -274,4 +305,21 @@ function cleanEnvironment(
     if (typeof value === 'string') clean[key] = value
   }
   return clean
+}
+
+function cleanLauncherIdentity(
+  identity: ProcessSandboxLauncherIdentity | undefined,
+): ProcessSandboxLauncherIdentity | undefined {
+  if (!identity) return undefined
+  if (!Number.isSafeInteger(identity.uid) || identity.uid < 1) {
+    throw new ProcessSandboxError('launcherIdentity.uid must be a positive safe integer.')
+  }
+  if (!Number.isSafeInteger(identity.gid) || identity.gid < 0) {
+    throw new ProcessSandboxError('launcherIdentity.gid must be a non-negative safe integer.')
+  }
+  return { uid: identity.uid, gid: identity.gid }
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
 }

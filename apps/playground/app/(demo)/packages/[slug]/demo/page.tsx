@@ -478,6 +478,7 @@ function ProcessSandboxDemo() {
       CODEX_HOME: '/data/agent-home/users/user-one/.codex',
       HTTPS_PROXY: 'http://sandbox-egress.internal:3128',
     },
+    launcherIdentity: { uid: 1000, gid: 1000 },
   }, { pathExists: () => true })
 
   return (
@@ -489,6 +490,11 @@ function ProcessSandboxDemo() {
           <DemoRow label="Host data" value={plan.maskedPaths.join(', ')} mono />
           <DemoRow label="Writable" value={plan.writablePaths.join(', ')} mono />
           <DemoRow label="Environment" value="Cleared, then explicitly rebuilt" />
+          <DemoRow
+            label="Container launcher"
+            value={`${plan.launcherIdentity?.uid}:${plan.launcherIdentity?.gid} via setuid bubblewrap`}
+            mono
+          />
           <DemoRow label="Failure mode" value="Never falls back to an unsandboxed process" />
         </CardContent>
       </Card>
