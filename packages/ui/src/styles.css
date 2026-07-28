@@ -55,4 +55,7 @@
 
 /* Ensure Tailwind scans the primitives for class usage even when the app's own
  * content globs don't reach into node_modules. */
-@source '../src';
+/* The package is built with its JS files at the publish root, while this file
+   lives beside them. Scanning the current directory works both in the source
+   tree and in the packed artifact. */
+@source './';

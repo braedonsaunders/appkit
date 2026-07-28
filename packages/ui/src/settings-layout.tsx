@@ -197,7 +197,10 @@ export function AdminHub({
                           {card.icon}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <h3 className="truncate text-sm font-semibold text-fg">{card.title}</h3>
+                          <div className="flex min-w-0 items-center gap-2">
+                            <h3 className="truncate text-sm font-semibold text-fg">{card.title}</h3>
+                            {card.badge}
+                          </div>
                           {card.description ? (
                             <p className="truncate text-xs text-fg-muted">{card.description}</p>
                           ) : null}
@@ -319,6 +322,7 @@ export function SettingsShell({
   activeKey,
   onSelect,
   children,
+  contentWidth = 'narrow',
   linkRender = defaultLink,
 }: {
   title: string
@@ -329,8 +333,20 @@ export function SettingsShell({
   activeKey: string
   onSelect: (key: string) => void
   children: React.ReactNode
+  /**
+   * Bounds the active pane without changing the navigation shell.
+   * Settings forms stay narrow by default; record-heavy administration
+   * workspaces can opt into a wider or edge-to-edge canvas.
+   */
+  contentWidth?: 'narrow' | 'wide' | 'full'
   linkRender?: LinkRender
 }) {
+  const contentWidthClass = {
+    narrow: 'max-w-5xl',
+    wide: 'max-w-(--breakpoint-2xl)',
+    full: 'max-w-none',
+  }[contentWidth]
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="shrink-0 border-b border-border bg-surface px-3 py-3 sm:px-6">
@@ -350,7 +366,9 @@ export function SettingsShell({
           <SettingsNav groups={nav} activeKey={activeKey} onSelect={onSelect} />
         </aside>
         <div className="app-scroll min-h-0 flex-1 overflow-y-auto bg-bg-subtle">
-          <div className="mx-auto w-full max-w-5xl space-y-6 p-4 sm:p-6">{children}</div>
+          <div className={cn('mx-auto w-full space-y-6 p-4 sm:p-6', contentWidthClass)}>
+            {children}
+          </div>
         </div>
       </div>
     </div>

@@ -157,8 +157,8 @@ export function TopNav({
             data-top-nav-measure="group"
             className="flex h-14 shrink-0 items-center gap-1 whitespace-nowrap px-2 text-sm font-medium"
           >
-            {group.label}
-            <ChevronDown size={12} className="opacity-50" />
+            {group.items.length === 1 ? group.items[0]!.label : group.label}
+            {group.items.length === 1 ? null : <ChevronDown size={12} className="opacity-50" />}
           </span>
         ))}
         <span
@@ -173,6 +173,21 @@ export function TopNav({
       {visibleGroups.map((group, index) => {
         const open = openIndex === index
         const groupActive = groupContainsActiveHref(group, activeHref)
+        const only = group.items.length === 1 ? group.items[0] : undefined
+        if (only) {
+          return (
+            <React.Fragment key={group.id ?? `${group.label}-${index}`}>
+              {linkRender({
+                href: only.href,
+                className: cn(
+                  'flex h-14 shrink-0 items-center whitespace-nowrap px-2 text-sm font-medium transition-colors',
+                  activeHref === only.href ? 'text-primary' : 'text-fg-muted hover:text-fg',
+                ),
+                children: only.label,
+              })}
+            </React.Fragment>
+          )
+        }
         return (
           <Popover
             key={group.id ?? `${group.label}-${index}`}
@@ -242,14 +257,23 @@ export function TopNav({
             onMouseLeave={scheduleClose}
             onClick={() => setOpenIndex(null)}
           >
-            {overflowGroups.map((group, index) => (
-              <OverflowGroupRow
-                key={group.id ?? `${group.label}-${visibleCount + index}`}
-                group={group}
-                activeHref={activeHref}
-                linkRender={linkRender}
-              />
-            ))}
+            {overflowGroups.map((group, index) =>
+              group.items.length === 1 ? (
+                <MenuItemLink
+                  key={group.id ?? `${group.label}-${visibleCount + index}`}
+                  item={group.items[0]!}
+                  active={activeHref === group.items[0]!.href}
+                  linkRender={linkRender}
+                />
+              ) : (
+                <OverflowGroupRow
+                  key={group.id ?? `${group.label}-${visibleCount + index}`}
+                  group={group}
+                  activeHref={activeHref}
+                  linkRender={linkRender}
+                />
+              ),
+            )}
           </div>
         </Popover>
       ) : null}

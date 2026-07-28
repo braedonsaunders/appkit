@@ -3,9 +3,22 @@
 import * as React from 'react'
 import { cn } from './utils'
 
-export const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
-  ({ className, ...props }, ref) => (
-    <div className="w-full overflow-x-auto rounded-lg border border-border bg-surface shadow-sm">
+export type TableProps = React.HTMLAttributes<HTMLTableElement> & {
+  /**
+   * Classes for the table's scrolling surface. Use this to remove the default
+   * card treatment when the table already lives inside a bordered workspace.
+   */
+  containerClassName?: string
+}
+
+export const Table = React.forwardRef<HTMLTableElement, TableProps>(
+  ({ className, containerClassName, ...props }, ref) => (
+    <div
+      className={cn(
+        'w-full overflow-x-auto rounded-lg border border-border bg-surface shadow-sm',
+        containerClassName,
+      )}
+    >
       <table ref={ref} className={cn('w-full caption-bottom text-sm', className)} {...props} />
     </div>
   ),

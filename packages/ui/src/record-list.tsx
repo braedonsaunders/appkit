@@ -45,6 +45,12 @@ export type RecordListProps<Row> = {
   columns: RecordColumn<Row>[]
   rows: Row[]
   getRowId: (row: Row) => string
+  /** Root layout classes, including full-height flex layouts for workspaces. */
+  className?: string
+  /** Classes for the underlying Table's scrolling/card shell. */
+  tableContainerClassName?: string
+  /** Classes for the underlying table element. */
+  tableClassName?: string
   search?: { value: string; onChange: (v: string) => void; placeholder?: string }
   /** Filter chips or other toolbar-left content. */
   filters?: React.ReactNode
@@ -68,6 +74,9 @@ export function RecordList<Row>({
   columns,
   rows,
   getRowId,
+  className,
+  tableContainerClassName,
+  tableClassName,
   search,
   filters,
   toolbarActions,
@@ -136,7 +145,7 @@ export function RecordList<Row>({
   const to = pagination ? Math.min(pagination.page * pagination.perPage, pagination.total) : 0
 
   return (
-    <div className="space-y-3">
+    <div className={cn('space-y-3', className)}>
       {(search || filters || toolbarActions) ? (
         <div className="flex flex-wrap items-center gap-2">
           {search ? (
@@ -164,7 +173,7 @@ export function RecordList<Row>({
         />
       ) : (
         <>
-          <Table>
+          <Table className={tableClassName} containerClassName={tableContainerClassName}>
             <TableHeader>
               <TableRow noAnimate>
                 {columns.map((c) => {

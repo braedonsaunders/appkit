@@ -138,6 +138,11 @@ export {
   type ContextMenuController,
 } from './context-menu'
 export { SearchSelect, type SearchSelectProps, type SelectOption } from './search-select'
+export {
+  MultiSelect,
+  type MultiSelectProps,
+  type MultiSelectOption,
+} from './multi-select'
 export { Select, type SelectProps } from './select'
 export { Dialog, type DialogProps, type DialogSize } from './dialog'
 export {
@@ -184,6 +189,14 @@ export {
   type RecordCellKind,
   type RecordListLink,
 } from './record-list'
+export {
+  WorkspaceLauncher,
+  type WorkspaceLauncherProps,
+  type WorkspaceLaunchItem,
+  type WorkspaceLaunchBreakdown,
+  type WorkspaceLaunchSegment,
+  type WorkspaceLaunchTone,
+} from './workspace-launcher'
 export {
   Drawer,
   UrlDrawer,
