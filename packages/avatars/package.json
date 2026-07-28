@@ -1,7 +1,7 @@
 {
   "name": "@appkit/avatars",
   "version": "0.1.0",
-  "description": "AI avatar/image generation over Cloudflare Workers AI, Replicate, and Google Gemini — credentials injected, extracted from the OpenStudio production generator.",
+  "description": "AI avatar/image generation through the AI SDK provider layer \u2014 pass your @appkit/ai tenant AiConfig; openai and google image models.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {
@@ -46,5 +46,10 @@
     "directory": "dist",
     "linkDirectory": false,
     "provenance": true
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^3.0.91",
+    "@ai-sdk/openai": "^3.0.84",
+    "ai": "^6.0.224"
   }
 }
