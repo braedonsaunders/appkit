@@ -1,4 +1,5 @@
-CREATE TYPE "public"."domain_event_outbox_status" AS ENUM('pending', 'publishing', 'published');--> statement-breakpoint
+CREATE TYPE "public"."domain_event_outbox_status" AS ENUM('pending', 'publishing', 'published');
+--> statement-breakpoint
 CREATE TABLE "tenant_users" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"tenant_id" uuid NOT NULL,
@@ -127,17 +128,30 @@ CREATE TABLE "api_keys" (
 	"updated_by" uuid
 );
 --> statement-breakpoint
-ALTER TABLE "domain_event_effects" ADD CONSTRAINT "domain_event_effects_tenant_event_fk" FOREIGN KEY ("tenant_id","event_id") REFERENCES "public"."domain_event_outbox"("tenant_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE UNIQUE INDEX "tenant_users_tenant_user_key" ON "tenant_users" USING btree ("tenant_id","user_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "roles_tenant_key_key" ON "roles" USING btree ("tenant_id","key");--> statement-breakpoint
-CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants" USING btree ("slug");--> statement-breakpoint
-CREATE UNIQUE INDEX "users_email_key" ON "users" USING btree ("email");--> statement-breakpoint
-CREATE UNIQUE INDEX "domain_event_effects_event_effect_ux" ON "domain_event_effects" USING btree ("tenant_id","event_id","effect_key");--> statement-breakpoint
-CREATE INDEX "domain_event_effects_event_idx" ON "domain_event_effects" USING btree ("tenant_id","event_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "domain_event_outbox_tenant_id_id_ux" ON "domain_event_outbox" USING btree ("tenant_id","id");--> statement-breakpoint
-CREATE UNIQUE INDEX "domain_event_outbox_dedup_key" ON "domain_event_outbox" USING btree ("tenant_id","dedup_key");--> statement-breakpoint
-CREATE INDEX "domain_event_outbox_status_available_idx" ON "domain_event_outbox" USING btree ("status","available_at");--> statement-breakpoint
-CREATE INDEX "domain_event_outbox_status_claimed_idx" ON "domain_event_outbox" USING btree ("status","claimed_at");--> statement-breakpoint
-CREATE INDEX "domain_event_outbox_tenant_subject_idx" ON "domain_event_outbox" USING btree ("tenant_id","subject_id","created_at");--> statement-breakpoint
-CREATE UNIQUE INDEX "api_idempotency_key_scope" ON "api_idempotency_keys" USING btree ("api_key_id","idempotency_key");--> statement-breakpoint
+CREATE UNIQUE INDEX "tenant_users_tenant_user_key" ON "tenant_users" USING btree ("tenant_id","user_id");
+--> statement-breakpoint
+CREATE UNIQUE INDEX "roles_tenant_key_key" ON "roles" USING btree ("tenant_id","key");
+--> statement-breakpoint
+CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants" USING btree ("slug");
+--> statement-breakpoint
+CREATE UNIQUE INDEX "users_email_key" ON "users" USING btree ("email");
+--> statement-breakpoint
+CREATE UNIQUE INDEX "domain_event_effects_event_effect_ux" ON "domain_event_effects" USING btree ("tenant_id","event_id","effect_key");
+--> statement-breakpoint
+CREATE INDEX "domain_event_effects_event_idx" ON "domain_event_effects" USING btree ("tenant_id","event_id");
+--> statement-breakpoint
+CREATE UNIQUE INDEX "domain_event_outbox_tenant_id_id_ux" ON "domain_event_outbox" USING btree ("tenant_id","id");
+--> statement-breakpoint
+CREATE UNIQUE INDEX "domain_event_outbox_dedup_key" ON "domain_event_outbox" USING btree ("tenant_id","dedup_key");
+--> statement-breakpoint
+CREATE INDEX "domain_event_outbox_status_available_idx" ON "domain_event_outbox" USING btree ("status","available_at");
+--> statement-breakpoint
+CREATE INDEX "domain_event_outbox_status_claimed_idx" ON "domain_event_outbox" USING btree ("status","claimed_at");
+--> statement-breakpoint
+CREATE INDEX "domain_event_outbox_tenant_subject_idx" ON "domain_event_outbox" USING btree ("tenant_id","subject_id","created_at");
+--> statement-breakpoint
+CREATE UNIQUE INDEX "api_idempotency_key_scope" ON "api_idempotency_keys" USING btree ("api_key_id","idempotency_key");
+--> statement-breakpoint
 CREATE UNIQUE INDEX "api_keys_key_hash_key" ON "api_keys" USING btree ("key_hash");
+--> statement-breakpoint
+ALTER TABLE "domain_event_effects" ADD CONSTRAINT "domain_event_effects_tenant_event_fk" FOREIGN KEY ("tenant_id","event_id") REFERENCES "public"."domain_event_outbox"("tenant_id","id") ON DELETE cascade ON UPDATE no action;
