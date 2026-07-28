@@ -3,17 +3,21 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { GripVertical, Settings } from 'lucide-react'
+import { GripVertical, RotateCcw, Settings } from 'lucide-react'
 import {
+  buildDefaultNavigationConfig,
   Button,
   Input,
   type LinkRender,
+  NavigationConfigEditor,
+  type NavigationRegistryItem,
   SearchSelect,
   SettingsRow,
   SettingsSection,
   SettingsShell,
   type SettingsNavGroup,
-  Switch,
+  stampKnownNavigationItems,
+  type TenantNavigationConfig,
 } from '@appkit/ui'
 
 const nextLink: LinkRender = ({ href, children, className }) => (
@@ -22,7 +26,28 @@ const nextLink: LinkRender = ({ href, children, className }) => (
   </Link>
 )
 
-const NAV_ITEMS = ['Dashboard', 'Invoices', 'Expenses', 'Reports', 'Customers', 'Settings']
+const NAV_ITEMS: NavigationRegistryItem[] = [
+  {
+    key: 'dashboard',
+    label: 'Dashboard',
+    description: 'Workspace overview and current activity.',
+    iconKey: 'gauge',
+    required: true,
+  },
+  { key: 'invoices', label: 'Invoices', description: 'Customer billing records.', iconKey: 'file' },
+  { key: 'expenses', label: 'Expenses', description: 'Purchases and operating costs.', iconKey: 'wallet' },
+  { key: 'reports', label: 'Reports', description: 'Saved analysis and exports.', iconKey: 'activity' },
+  { key: 'customers', label: 'Customers', description: 'Organizations and contacts.', iconKey: 'users' },
+  {
+    key: 'settings',
+    label: 'Settings',
+    description: 'Workspace and navigation configuration.',
+    iconKey: 'settings',
+    required: true,
+  },
+]
+
+const NAV_STORAGE_KEY = 'appkit-demo:navigation:v1'
 
 const NAV: SettingsNavGroup[] = [
   {
@@ -148,22 +173,40 @@ function GeneralSettings() {
 }
 
 function NavigationSettings() {
-  const [visible, setVisible] = React.useState<Record<string, boolean>>(Object.fromEntries(NAV_ITEMS.map((n) => [n, true])))
+  const [config, setConfig] = React.useState<TenantNavigationConfig>(() =>
+    stampKnownNavigationItems(buildDefaultNavigationConfig(NAV_ITEMS), NAV_ITEMS),
+  )
+
+  React.useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(NAV_STORAGE_KEY)
+      if (stored) setConfig(JSON.parse(stored) as TenantNavigationConfig)
+    } catch {
+      // The complete default registry remains usable.
+    }
+  }, [])
+
+  const update = React.useCallback((next: TenantNavigationConfig) => {
+    setConfig(next)
+    try {
+      window.localStorage.setItem(NAV_STORAGE_KEY, JSON.stringify(next))
+    } catch {
+      // Persistence is optional in the database-free playground.
+    }
+  }, [])
+
   return (
-    <SettingsSection title="Sidebar navigation" description="Toggle which items appear in the main navigation.">
-      {NAV_ITEMS.map((item) => (
-        <SettingsRow
-          key={item}
-          title={
-            <span className="flex items-center gap-2">
-              <GripVertical className="size-4 text-fg-subtle" />
-              {item}
-            </span>
-          }
-        >
-          <Switch checked={!!visible[item]} onChange={(e) => setVisible((v) => ({ ...v, [item]: e.target.checked }))} />
-        </SettingsRow>
-      ))}
-    </SettingsSection>
+    <div className="space-y-3">
+      <NavigationConfigEditor registry={NAV_ITEMS} value={config} onChange={update} />
+      <Button
+        variant="outline"
+        onClick={() =>
+          update(stampKnownNavigationItems(buildDefaultNavigationConfig(NAV_ITEMS), NAV_ITEMS))
+        }
+      >
+        <RotateCcw className="size-4" aria-hidden />
+        Reset navigation
+      </Button>
+    </div>
   )
 }

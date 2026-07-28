@@ -41,7 +41,9 @@ the application uses them.
 destructive/link; sizes sm/md/lg/icon; `asChild`) · `Input` · `Textarea` ·
 `Label` · `Select` (searchable combobox, options-based, backed by `SearchSelect`)
 · `SearchSelect` (desktop dropdown + mobile bottom sheet, groups, hints,
-clearable, keyboard nav) · `Checkbox` · `Switch`.
+clearable, keyboard nav) · `MultiSelect` (searchable multi-value picker with
+selected-value chips, grouped options, select-all, and clear actions) ·
+`Checkbox` · `Switch`.
 
 **Authoring & capture** — `FileUploader` (single/multipart direct-upload
 protocol with progress and finalization) · `SignaturePad` (pointer/touch/stylus
@@ -65,19 +67,29 @@ backdrop, focus trap, scroll-lock, **expand-to-fullscreen**, stacked/nested) ·
 `Popover` (portal-positioned floating panel) · `ContextMenu` + `useContextMenu`
 (kebab / right-click menu, items array) · `Tooltip`.
 
-**Data display** — `Table` (+ `TableHeader/Body/Row/Head/Cell`, staggered rows) ·
-`RecordList` (controlled in-memory search/sort/pagination with typed columns —
-reference/amount/status/custom/actions) · URL list kit: `parseListParams` /
+**Data display** — `Table` (+ `TableHeader/Body/Row/Head/Cell`, staggered rows;
+use `containerClassName` to adapt its default card shell when embedded) ·
+`RecordList` (`className`, `tableContainerClassName`, and `tableClassName`
+support full-height embedded workspaces; controlled in-memory
+search/sort/pagination with typed reference/amount/status/custom/actions
+columns) · URL list kit: `parseListParams` /
 `parsePrefixedListParams`, `ListNavProvider`, `SearchInput`, `FilterChips`,
 `SortableTh` / `SortTh`, `Pagination` (shareable server-list state) · `LineGrid`
 (the **spreadsheet line editor**: Enter appends, Alt+↑/↓ moves, ⌘D/⌘⌫, data-driven
-columns) · `Badge` · `Avatar` (image + initials fallback) · `EmptyState` · `Card`
+columns) · `OrgChart` (parent-pointer hierarchies: server-rendered border
+connectors, collapsible branches, zoom, optional drag-to-reparent; the pure
+`buildOrgTree` / `canReparent` / `orgChartDescendantIds` helpers survive
+dangling parents and cycles) · `Badge` · `Avatar` (image + initials fallback) ·
+`EmptyState` · `Card`
 (+ parts) · `Tabs` (animated indicator) · `AnimatedNumber` (token-timed KPI
 counter) · `Sparkline` (tokenized SVG trend, optional area/min-max dots).
 
-**Dashboards & insights (`@appkit/dashboard/react`)** — `DashboardGrid` (responsive 12-column grid, view/edit
+**Dashboards & insights** — fixed product dashboards can import
+`DashboardMetricCard` and `DashboardPanel` from the dependency-light
+`@appkit/dashboard/primitives` entry (plus `primitives.css`) without installing
+the builder stack. `@appkit/dashboard/react` adds `DashboardGrid` (responsive 12-column grid, view/edit
 modes, drag/resize, remove, save/reset, categorized widget/card drawer) ·
-`DashboardMetricCard` · `DashboardPanel` · `InsightCard` · `InsightResultView` ·
+`InsightCard` · `InsightResultView` ·
 `AdvancedInsightResultView` (flat results plus typed pivots/heatmaps and fifteen
 visualization contracts) · `CardStudio` (source,
 measures, parsed formulas, dimensions, filters, visualization settings, live
@@ -91,12 +103,20 @@ dashboard system, not gallery mockups. Framework-neutral types remain at
 grouped accent cards, with an optional detailed layout for capability inventories)
 · `SettingsShell` (the **sidebar settings area** — fixed header + two-pane rail)
 + `SettingsNav` / `SettingsSection` / `SettingsRow`.
+`SettingsShell` keeps form-heavy settings panes narrow by default; use
+`contentWidth="wide"` or `contentWidth="full"` for record-heavy platform
+administration lists without rebuilding the shell.
 `AppShell` renders the same production-compatible navigation registry as the
 workspace-dropdown topbar (default) or shared collapsible
 sidebar via `navigationMode="topbar" | "sidebar"`. The registry supports the
 siblings' serializable `iconKey`, `id`, subgroup, exact-match, and mobile-pin
 fields; mobile uses the same data in a drawer and bottom tab bar. `TopNav`,
 `AppSidebar`, `SidebarNav`, and `MobileTabBar` are also exported directly.
+`NavigationConfigEditor` provides the tenant-facing visibility and reordering
+surface. Its framework-neutral helpers reconcile saved stable keys with the
+current application registry, append newly shipped destinations, preserve
+intentional tenant choices, and protect required recovery destinations. Apps
+own authorization and persist the resulting `TenantNavigationConfig`.
 `AccountMenu` is a bounded launcher with app-owned organization,
 language, theme, navigation-mode, elevated-access, and sign-out adapters.
 `GlobalSearch` owns keyboard/debounce/result interaction while the app supplies
@@ -147,10 +167,19 @@ tenant selection, and any post-acceptance domain effect.
   data; the IAM React package uses its paginated service boundary instead of
   owning framework routes. Never render an unbounded or unsearchable table.
 - **Bounded detail/setup tables** use `PagedTable` for rows already loaded into
-  a drawer, detail tab, or setup page. It owns client search and pagination but
-  does not imitate a server-backed list. Use `SubtabNav` in `Drawer.subtabs` and
-  `DetailPageLayout.subtabs` so those surfaces retain the source navigation
-  grammar.
+  a drawer, detail tab, or setup page. It owns client search, ordering, and
+  pagination but does not imitate a server-backed list. A column becomes
+  sortable by supplying `sortValue`; `defaultSort` seeds the ordering and
+  `onRowClick` makes rows activatable (open the record's `Drawer`). Use
+  `SubtabNav` in `Drawer.subtabs` and `DetailPageLayout.subtabs` so those
+  surfaces retain the source navigation grammar.
+- **Reporting hierarchies** use `OrgChart`. Feed it the flat records with a
+  `parentId`; it resolves the forest itself and never drops a record, so
+  dangling managers and edit-race cycles surface as extra top-level cards
+  instead of a hang. Supply `onReparent` to allow drag-to-reassign and re-check
+  `canReparent` in the server action — the chart's guard is the fast path, not
+  the rule. Keep a form-based "reports to" control on the record as well: HTML5
+  drag has no touch equivalent.
 - **Line-item editors** use `LineGrid` — columns are data (`text`/`amount`/
   `select`/`readonly`+`render`); it's controlled (rows in, rows out).
 - **Menus** use `useContextMenu()` + `<ContextMenu>` (kebab button →
@@ -159,7 +188,11 @@ tenant selection, and any post-acceptance domain effect.
 - **Toasts** are global + imperative (sonner-shaped): `toast.success('Saved', {
   description })`; mount one `<Toaster richColors closeButton />` at the app root.
 - **Admin** = `AdminHub` (landing grid of category cards) → `SettingsShell` (the
-  sidebar area) with content built from `SettingsSection` + `SettingsRow`.
+  sidebar area). Settings forms use `SettingsSection` + `SettingsRow`; platform
+  record pages use `contentWidth="full"` with `RecordList`, and rows open
+  `Drawer` details. Mode-specific administration shells must supply
+  `SettingsShell.back` so administrators can return to the normal product
+  without relying on browser history.
 - **Dashboard pages** load a user/role/default `DashboardLayout`, build a node
   registry from built-ins plus persisted cards, and pass both to
   `DashboardGrid` from `@appkit/dashboard/react`.
@@ -310,6 +343,18 @@ capabilities explicitly as synchronous-looking async functions. Do not expose a
 database client, fetch implementation, filesystem handle, or tenant-unscoped
 service to authored code.
 
+`@appkit/process-sandbox` is deliberately separate from that authored-code
+kernel. It owns the reusable Linux bubblewrap policy for full coding-agent or
+trusted-worker processes: process/IPC/UTS/cgroup namespaces, masked host data,
+read-only system roots, explicit writable workspace/home binds, a fresh
+`/proc`/`/dev`/`/tmp`/`/run`, and a fully cleared child environment. Applications
+inject the authenticated tenant's resolved paths, command, credentials, egress
+proxy variables, and resource policy. `spawnBubblewrappedProcess` fails closed
+on unsupported hosts or missing bind sources; `buildBubblewrapPlan` exposes the
+same deterministic plan for tests, audits, and readiness UI. Desktop
+single-user execution remains an explicit application mode and must never be an
+automatic server fallback.
+
 `@appkit/scripts` builds event, scheduled, endpoint, bulk, and browser-client
 automation on that kernel. The application supplies the trigger catalogue,
 mutable subject fields, tenant-bound read adapters, governed write functions,
@@ -345,9 +390,11 @@ an application store and permission/runtime adapters, while
 `createAppEndpointRuntime` preserves an existing authored backend global and
 host-adapter shape.
 
-The runnable references are `/admin/scripts` and `/admin/apps`. They use the
-same server runtimes and database-free stores public consumers receive; the
-preview iframe and QuickJS backend are real, not a simulated gallery.
+The runnable references are `/admin/scripts`, `/admin/apps`, and
+`/packages/process-sandbox`. They use the same server runtimes and database-free
+stores public consumers receive; the preview iframe and QuickJS backend are
+real, while the OS sandbox page renders its real deterministic execution plan
+without performing a privileged spawn in the demo server.
 
 ## 8. Scaffolding a new app
 
@@ -449,7 +496,10 @@ same feature-owned pattern under `@appkit/notifications/schema`.
   that seals or consumes credentials; local development has an explicit insecure
   fallback.
 - Existing applications can reproduce their current ciphertext profile with
-  `createSealer(secret, { hkdfInfo })`; email and SMS accept its `unsealSecret`
+  `createSealer(secret, { hkdfInfo })`. Applications with versioned compact
+  ciphertext, per-tenant HKDF salt, and record-bound AES-GCM additional data use
+  `createContextualSealer`; this permits a clean package cutover without
+  invalidating live credentials. Email and SMS accept an `unsealSecret`
   function explicitly. AppKit does not ship application-named crypto or
   transport entry points.
 - Email and SMS resolve the same platform policy: `disabled` suppresses delivery,

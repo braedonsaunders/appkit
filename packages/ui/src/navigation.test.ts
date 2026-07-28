@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   findActiveNavHref,
+  isFlatNavigation,
   selectMobileTabs,
   toBlocks,
   type SidebarNavGroup,
@@ -60,4 +61,15 @@ test('mobile tabs prioritize pins, deduplicate destinations, and preserve regist
     selectMobileTabs(groups, 4).map((item) => item.href),
     ['/dashboard', '/invoices', '/dashboard/settings', '/customers'],
   )
+})
+
+test('single-item groups opt into flat top-level navigation', () => {
+  assert.equal(
+    isFlatNavigation([
+      { id: 'dashboard', label: 'Dashboard', items: [{ href: '/', label: 'Dashboard' }] },
+      { id: 'quotes', label: 'Quotes', items: [{ href: '/quotes', label: 'Quotes' }] },
+    ]),
+    true,
+  )
+  assert.equal(isFlatNavigation(groups), false)
 })

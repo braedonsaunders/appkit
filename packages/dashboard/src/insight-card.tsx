@@ -1,37 +1,15 @@
-import * as React from 'react'
 import { resolveConditionalStyle, type AnalyticResult, type ConditionalRule, type QueryResult, type VisualizationKey, type VisualizationSettings } from '@appkit/analytics'
 import { cn } from '@appkit/ui'
+import { DashboardPanel } from './dashboard-primitives'
 
 const SERIES_COLORS = ['var(--color-primary)', 'var(--color-info)', 'var(--color-success)', 'var(--color-warning)', 'var(--color-danger)']
 
-export function DashboardMetricCard({ label, value, detail, icon, trend, tone = 'primary', className }: {
-  label: string
-  value: React.ReactNode
-  detail?: React.ReactNode
-  icon?: React.ReactNode
-  trend?: React.ReactNode
-  tone?: 'primary' | 'info' | 'success' | 'warning' | 'danger'
-  className?: string
-}) {
-  const tones = {
-    primary: { border: 'border-l-primary', icon: 'bg-primary-subtle text-primary' },
-    info: { border: 'border-l-info', icon: 'bg-info-subtle text-info' },
-    success: { border: 'border-l-success', icon: 'bg-success-subtle text-success' },
-    warning: { border: 'border-l-warning', icon: 'bg-warning-subtle text-warning' },
-    danger: { border: 'border-l-danger', icon: 'bg-danger-subtle text-danger' },
-  }
-  return <div className={cn('relative h-full overflow-hidden rounded-xl border border-border border-l-4 bg-surface p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md', tones[tone].border, className)}>
-    <div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="truncate text-xs font-semibold uppercase tracking-wider text-fg-subtle">{label}</div><div className="mt-3 truncate text-2xl font-semibold tabular-nums text-fg">{value}</div>{detail ? <div className="mt-1 truncate text-xs text-fg-muted">{detail}</div> : null}</div>{icon ? <span className={cn('grid size-9 shrink-0 place-items-center rounded-lg', tones[tone].icon)}>{icon}</span> : null}</div>
-    {trend ? <div className="absolute right-4 bottom-3 h-7 w-20 opacity-80">{trend}</div> : null}
-  </div>
-}
-
-export function DashboardPanel({ title, icon, actions, children, className }: { title: React.ReactNode; icon?: React.ReactNode; actions?: React.ReactNode; children: React.ReactNode; className?: string }) {
-  return <section className={cn('flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-sm', className)}>
-    <header className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-4"><h3 className="flex min-w-0 items-center gap-2 truncate text-sm font-semibold text-fg">{icon ? <span className="text-primary">{icon}</span> : null}{title}</h3>{actions}</header>
-    <div className="min-h-0 flex-1 p-4">{children}</div>
-  </section>
-}
+export { DashboardMetricCard, DashboardPanel } from './dashboard-primitives'
+export type {
+  DashboardMetricCardProps,
+  DashboardMetricTone,
+  DashboardPanelProps,
+} from './dashboard-primitives'
 
 export function InsightCard({ title, description, result, visualization, settings, className }: {
   title: string

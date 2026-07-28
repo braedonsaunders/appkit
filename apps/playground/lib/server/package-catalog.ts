@@ -3,6 +3,7 @@ import analytics from '../../../../packages/analytics/package.json'
 import api from '../../../../packages/api/package.json'
 import apps from '../../../../packages/apps/package.json'
 import auth from '../../../../packages/auth/package.json'
+import avatars from '../../../../packages/avatars/package.json'
 import createAppkit from '../../../../packages/create-appkit/package.json'
 import crypto from '../../../../packages/crypto/package.json'
 import customization from '../../../../packages/customization/package.json'
@@ -22,10 +23,13 @@ import i18n from '../../../../packages/i18n/package.json'
 import iam from '../../../../packages/iam/package.json'
 import integrations from '../../../../packages/integrations/package.json'
 import jobs from '../../../../packages/jobs/package.json'
+import mailbox from '../../../../packages/mailbox/package.json'
 import notifications from '../../../../packages/notifications/package.json'
 import pdf from '../../../../packages/pdf/package.json'
+import processSandbox from '../../../../packages/process-sandbox/package.json'
 import reports from '../../../../packages/reports/package.json'
 import sandbox from '../../../../packages/sandbox/package.json'
+import scene from '../../../../packages/scene/package.json'
 import scheduling from '../../../../packages/scheduling/package.json'
 import scripts from '../../../../packages/scripts/package.json'
 import sms from '../../../../packages/sms/package.json'
@@ -34,6 +38,7 @@ import sync from '../../../../packages/sync/package.json'
 import tenant from '../../../../packages/tenant/package.json'
 import tokens from '../../../../packages/tokens/package.json'
 import ui from '../../../../packages/ui/package.json'
+import voice from '../../../../packages/voice/package.json'
 import workflows from '../../../../packages/workflows/package.json'
 
 type ManifestValue = string | boolean | number | null | ManifestValue[] | { [key: string]: ManifestValue }
@@ -84,7 +89,15 @@ export const PACKAGE_CATEGORIES: readonly {
     key: 'foundation',
     label: 'Foundation',
     description: 'Scaffolding, tokens, interface primitives, localization, and rich text.',
-    names: ['create-appkit', '@appkit/tokens', '@appkit/ui', '@appkit/i18n', '@appkit/editor'],
+    names: [
+      'create-appkit',
+      '@appkit/tokens',
+      '@appkit/ui',
+      '@appkit/i18n',
+      '@appkit/editor',
+      '@appkit/avatars',
+      '@appkit/scene',
+    ],
   },
   {
     key: 'product',
@@ -103,7 +116,8 @@ export const PACKAGE_CATEGORIES: readonly {
     names: [
       '@appkit/db', '@appkit/tenant', '@appkit/auth', '@appkit/iam', '@appkit/api',
       '@appkit/events', '@appkit/jobs', '@appkit/notifications', '@appkit/storage',
-      '@appkit/crypto', '@appkit/email-render', '@appkit/emails', '@appkit/sms',
+      '@appkit/crypto', '@appkit/process-sandbox', '@appkit/email-render', '@appkit/emails',
+      '@appkit/mailbox', '@appkit/sms', '@appkit/voice',
     ],
   },
   {
@@ -123,6 +137,7 @@ const MANIFESTS: WorkspacePackageManifest[] = [
   api,
   apps,
   auth,
+  avatars,
   createAppkit,
   crypto,
   customization,
@@ -142,10 +157,13 @@ const MANIFESTS: WorkspacePackageManifest[] = [
   iam,
   integrations,
   jobs,
+  mailbox,
   notifications,
   pdf,
+  processSandbox,
   reports,
   sandbox,
+  scene,
   scheduling,
   scripts,
   sms,
@@ -154,6 +172,7 @@ const MANIFESTS: WorkspacePackageManifest[] = [
   tenant,
   tokens,
   ui,
+  voice,
   workflows,
 ]
 
@@ -175,6 +194,11 @@ const DEMO_ROUTES: Record<string, string> = {
   '@appkit/events': '/admin/audit',
   '@appkit/notifications': '/notifications',
   '@appkit/storage': '/attachments',
+  '@appkit/avatars': '/packages/avatars',
+  '@appkit/scene': '/packages/scene',
+  '@appkit/mailbox': '/packages/mailbox',
+  '@appkit/voice': '/packages/voice',
+  '@appkit/process-sandbox': '/packages/process-sandbox',
   '@appkit/apps': '/admin/apps',
   '@appkit/scripts': '/admin/scripts',
   '@appkit/workflows': '/workflows',

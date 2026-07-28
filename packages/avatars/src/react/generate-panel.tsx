@@ -130,7 +130,6 @@ export function GeneratePanel({
                     : 'overflow-hidden rounded-lg border border-border bg-bg-subtle transition-colors hover:border-primary'
                 }
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={uri} alt={`Option ${index + 1}`} className="aspect-square w-full object-contain" />
                 <span className="block px-1 pb-1 text-[11px] text-fg-muted">
                   {keptIndex === index ? 'in the library' : 'keep'}

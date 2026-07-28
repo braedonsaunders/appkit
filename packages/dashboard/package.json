@@ -1,6 +1,6 @@
 {
   "name": "@appkit/dashboard",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Optional dashboard layouts, insight cards, visual studio, and feature-owned persistence.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -10,6 +10,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./react": "./src/react.ts",
+    "./primitives": "./src/dashboard-primitives.tsx",
+    "./primitives.css": "./src/primitives.css",
     "./schema": "./src/schema.ts",
     "./styles.css": "./src/styles.css",
     "./package.json": "./package.json"
@@ -34,7 +36,7 @@
     "@appkit/db": "^0.2.0",
     "@appkit/ui": "^0.1.1",
     "drizzle-orm": "^0.45.2",
-    "lucide-react": "^1.24.0",
+    "lucide-react": ">=0.474.0 <2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-grid-layout": "^2.2.3"

@@ -89,6 +89,9 @@ importers:
       '@appkit/reports':
         specifier: workspace:*
         version: link:../../packages/reports
+      '@appkit/scene':
+        specifier: workspace:*
+        version: link:../../packages/scene
       '@appkit/scheduling':
         specifier: workspace:*
         version: link:../../packages/scheduling
@@ -381,10 +384,31 @@ importers:
       ai:
         specifier: ^6.0.224
         version: 6.0.230(zod@4.4.3)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.7(react@19.2.7)
     devDependencies:
+      '@appkit/ui':
+        specifier: workspace:*
+        version: link:../ui
       '@types/node':
         specifier: ^22
         version: 22.20.1
+      '@types/react':
+        specifier: ^19
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.2.3(@types/react@19.2.17)
+      framer-motion:
+        specifier: ^12.34.0
+        version: 12.42.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      lucide-react:
+        specifier: ^1.24.0
+        version: 1.25.0(react@19.2.7)
     publishDirectory: dist
 
   packages/create-appkit:
@@ -455,10 +479,11 @@ importers:
     publishDirectory: dist
 
   packages/dashboard:
-    devDependencies:
+    dependencies:
       '@appkit/analytics':
         specifier: workspace:*
         version: link:../analytics
+    devDependencies:
       '@appkit/db':
         specifier: workspace:*
         version: link:../db

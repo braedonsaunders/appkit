@@ -20,6 +20,19 @@ export type Sealer = {
   unsealSecret: (sealed: SealedSecret) => string | null
 }
 
+export type ContextualSecretContext = {
+  /** HKDF salt, normally a tenant id. */
+  salt: string | Uint8Array
+  /** AES-GCM additional authenticated data, normally a record/key identity. */
+  additionalData?: string | Uint8Array
+}
+
+export type ContextualSealer = {
+  /** Versioned base64 payload: version || nonce || auth tag || ciphertext. */
+  sealSecret: (plain: string, context: ContextualSecretContext) => string
+  unsealSecret: (sealed: string, context: ContextualSecretContext) => string | null
+}
+
 /** Build a sealer from an explicit source secret (HKDF-derived AES-256 key). */
 export function createSealer(
   sourceSecret: string,
@@ -55,6 +68,72 @@ export function createSealer(
       const decipher = createDecipheriv('aes-256-gcm', key, iv)
       decipher.setAuthTag(tag)
       return Buffer.concat([decipher.update(enc), decipher.final()]).toString('utf8')
+    } catch {
+      return null
+    }
+  }
+
+  return { sealSecret, unsealSecret }
+}
+
+/**
+ * Build a compact contextual sealer for tenant/record-bound credentials.
+ *
+ * This entry exists for applications whose persisted ciphertext must derive a
+ * different data key per tenant and bind the payload to a record identity.
+ * It also lets an existing application move its established versioned compact
+ * ciphertext into AppKit without rewriting live secrets.
+ */
+export function createContextualSealer(
+  sourceSecret: string | Uint8Array,
+  options: {
+    hkdfInfo?: string
+    sourceEncoding?: BufferEncoding
+    version?: number
+  } = {},
+): ContextualSealer {
+  const source = typeof sourceSecret === 'string'
+    ? Buffer.from(sourceSecret, options.sourceEncoding ?? 'utf8')
+    : Buffer.from(sourceSecret)
+  if (source.length === 0) throw new Error('Contextual sealer source secret cannot be empty.')
+  const info = Buffer.from(options.hkdfInfo ?? HKDF_INFO)
+  const version = options.version ?? 1
+  if (!Number.isInteger(version) || version < 0 || version > 255) {
+    throw new Error('Contextual sealer version must be an integer from 0 through 255.')
+  }
+
+  function deriveKey(context: ContextualSecretContext): Buffer {
+    const salt = bytes(context.salt)
+    if (salt.length === 0) throw new Error('Contextual sealer salt cannot be empty.')
+    return Buffer.from(hkdfSync('sha256', source, salt, info, 32))
+  }
+
+  function sealSecret(plain: string, context: ContextualSecretContext): string {
+    const iv = randomBytes(12)
+    const cipher = createCipheriv('aes-256-gcm', deriveKey(context), iv)
+    const additionalData = optionalBytes(context.additionalData)
+    if (additionalData) cipher.setAAD(additionalData)
+    const encrypted = Buffer.concat([cipher.update(plain, 'utf8'), cipher.final()])
+    return Buffer.concat([
+      Buffer.from([version]),
+      iv,
+      cipher.getAuthTag(),
+      encrypted,
+    ]).toString('base64')
+  }
+
+  function unsealSecret(sealed: string, context: ContextualSecretContext): string | null {
+    try {
+      const payload = Buffer.from(sealed, 'base64')
+      if (payload.length < 29 || payload[0] !== version) return null
+      const iv = payload.subarray(1, 13)
+      const tag = payload.subarray(13, 29)
+      const encrypted = payload.subarray(29)
+      const decipher = createDecipheriv('aes-256-gcm', deriveKey(context), iv)
+      const additionalData = optionalBytes(context.additionalData)
+      if (additionalData) decipher.setAAD(additionalData)
+      decipher.setAuthTag(tag)
+      return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8')
     } catch {
       return null
     }
@@ -100,4 +179,12 @@ export function sealSecret(plain: string): SealedSecret {
 
 export function unsealSecret(sealed: SealedSecret): string | null {
   return sealer().unsealSecret(sealed)
+}
+
+function bytes(value: string | Uint8Array): Buffer {
+  return typeof value === 'string' ? Buffer.from(value) : Buffer.from(value)
+}
+
+function optionalBytes(value: string | Uint8Array | undefined): Buffer | null {
+  return value === undefined ? null : bytes(value)
 }

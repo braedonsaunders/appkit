@@ -11,7 +11,13 @@ type Row = { id: string; name: string; amount: number }
 
 const columns: PagedColumn<Row>[] = [
   { key: 'name', header: 'Name', cell: (row) => row.name, search: (row) => row.name },
-  { key: 'amount', header: 'Amount', align: 'right', cell: (row) => `$${row.amount}` },
+  {
+    key: 'amount',
+    header: 'Amount',
+    align: 'right',
+    cell: (row) => `$${row.amount}`,
+    sortValue: (row) => row.amount,
+  },
 ]
 
 test('preserves the source paged-table call surface and first-page behavior', () => {
@@ -33,6 +39,49 @@ test('preserves the source paged-table call surface and first-page behavior', ()
   assert.doesNotMatch(markup, /Record 11/)
   assert.match(markup, /Showing/)
   assert.match(markup, /Page 1 of 2/)
+})
+
+test('orders by a sortable column and marks the active header', () => {
+  const rows: Row[] = [
+    { id: '1', name: 'Record A', amount: 30 },
+    { id: '2', name: 'Record B', amount: 10 },
+    { id: '3', name: 'Record C', amount: 20 },
+  ]
+  const markup = renderToStaticMarkup(React.createElement(PagedTable<Row>, {
+    rows,
+    columns,
+    empty: 'Nothing here',
+    rowKey: (row) => row.id,
+    defaultSort: { key: 'amount', dir: 'asc' },
+  }))
+  assert.match(markup, /aria-sort="ascending"/)
+  assert.match(markup, /aria-label="Sort by Amount"/)
+  assert.ok(markup.indexOf('Record B') < markup.indexOf('Record C'))
+  assert.ok(markup.indexOf('Record C') < markup.indexOf('Record A'))
+  // Columns without a sortValue stay inert headers.
+  assert.doesNotMatch(markup, /aria-label="Sort by Name"/)
+})
+
+test('marks rows as activatable only when a row handler is supplied', () => {
+  const rows: Row[] = [{ id: '1', name: 'Record A', amount: 1 }]
+  const inert = renderToStaticMarkup(React.createElement(PagedTable<Row>, {
+    rows,
+    columns,
+    empty: 'Nothing here',
+    rowKey: (row) => row.id,
+  }))
+  assert.doesNotMatch(inert, /cursor-pointer/)
+  const clickable = renderToStaticMarkup(React.createElement(PagedTable<Row>, {
+    rows,
+    columns,
+    empty: 'Nothing here',
+    rowKey: (row) => row.id,
+    onRowClick() {},
+    rowClassName: () => 'row-flag',
+  }))
+  assert.match(clickable, /cursor-pointer/)
+  // Caller row classes survive alongside the activation affordance.
+  assert.match(clickable, /row-flag/)
 })
 
 test('renders the supplied empty state without table chrome', () => {

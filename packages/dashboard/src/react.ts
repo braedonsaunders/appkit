@@ -8,11 +8,16 @@ export type {
   DashboardActionResult,
 } from './types'
 export {
-  DashboardMetricCard,
-  DashboardPanel,
   InsightCard,
   InsightResultView,
 } from './insight-card'
+export {
+  DashboardMetricCard,
+  DashboardPanel,
+  type DashboardMetricCardProps,
+  type DashboardMetricTone,
+  type DashboardPanelProps,
+} from './dashboard-primitives'
 export { CardStudio } from './card-studio'
 export { DashboardStudio, type DashboardStudioProps } from './dashboard-studio'
 export type {

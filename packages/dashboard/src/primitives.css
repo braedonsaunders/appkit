@@ -1,0 +1,3 @@
+/* Scan the packed dashboard primitive entry without pulling in the optional
+ * react-grid-layout styles used by DashboardGrid and DashboardStudio. */
+@source './';

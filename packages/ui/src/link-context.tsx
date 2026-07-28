@@ -27,6 +27,45 @@ export function UiLink({
   return <Link href={href} {...rest} />
 }
 
+/** How every navigation primitive renders one entry. */
+export type LinkRender = (props: {
+  href: string
+  children: React.ReactNode
+  className: string
+  title?: string
+  ariaCurrent?: 'page' | 'true'
+  role?: string
+  dataWalkthrough?: string
+}) => React.ReactNode
+
+/**
+ * The fallback every navigation primitive uses when the app passes no
+ * `linkRender`. It resolves through `UiLink`, so a `UiLinkProvider` at the root
+ * is enough to make the whole shell route client-side. A raw `<a>` here would
+ * full-reload the document on every click, which tears down the router and
+ * skips page transitions entirely.
+ */
+export const defaultLinkRender: LinkRender = ({
+  href,
+  children,
+  className,
+  title,
+  ariaCurrent,
+  role,
+  dataWalkthrough,
+}) => (
+  <UiLink
+    href={href}
+    className={className}
+    title={title}
+    aria-current={ariaCurrent}
+    role={role}
+    data-walkthrough={dataWalkthrough}
+  >
+    {children}
+  </UiLink>
+)
+
 export type BackLinkProps = { href: string; label: string; className?: string }
 export type BackLinkLike = React.ComponentType<BackLinkProps>
 export type BackLinkComponent = BackLinkLike

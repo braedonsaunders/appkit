@@ -60,7 +60,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { Popover } from './popover'
-import type { LinkRender } from './settings-layout'
+import { defaultLinkRender, type LinkRender } from './link-context'
 import { cn } from './utils'
 
 // This is the union of the production navigation icon registries.
@@ -149,6 +149,23 @@ export type SidebarNavGroup = {
 
 const EXPANDED_STORAGE_KEY = 'appkit.nav.expanded-workspaces'
 
+/**
+ * Single-item groups are top-level navigation links, not expandable
+ * workspaces. This is the same contract TopNav already uses and keeps the
+ * sidebar/mobile drawer faithful when an application chooses a flat menu.
+ */
+export function isFlatNavigation(groups: SidebarNavGroup[]): boolean {
+  return (
+    groups.length > 0 &&
+    groups.every(
+      (group) =>
+        group.items.length === 1 &&
+        !group.items[0]?.subgroup &&
+        !group.items[0]?.subgroupHref,
+    )
+  )
+}
+
 export function findActiveNavHref(
   pathname: string | null | undefined,
   groups: SidebarNavGroup[],
@@ -176,27 +193,6 @@ function matchesNavPath(pathname: string, href: string, exact?: boolean): boolea
   return pathname.startsWith(`${href}/`)
 }
 
-const defaultLink: LinkRender = ({
-  href,
-  children,
-  className,
-  title,
-  ariaCurrent,
-  role,
-  dataWalkthrough,
-}) => (
-  <a
-    href={href}
-    className={className}
-    title={title}
-    aria-current={ariaCurrent}
-    role={role}
-    data-walkthrough={dataWalkthrough}
-  >
-    {children}
-  </a>
-)
-
 /**
  * The shared navigation registry rendered as a desktop sidebar. Workspace
  * metadata (`id` + group icon) enables collapsible treatment; simpler groups
@@ -206,7 +202,7 @@ export function SidebarNav({
   groups,
   pathname,
   collapsed = false,
-  linkRender = defaultLink,
+  linkRender = defaultLinkRender,
 }: {
   groups: SidebarNavGroup[]
   pathname: string
@@ -214,6 +210,7 @@ export function SidebarNav({
   linkRender?: LinkRender
 }) {
   const activeHref = findActiveNavHref(pathname, groups)
+  const flatNavigation = isFlatNavigation(groups)
   const workspaceMode = groups.some((group) => group.id || group.iconKey || group.icon)
   const activeGroupId = groupKey(
     groups.find((group) => groupContainsActiveHref(group, activeHref)),
@@ -268,6 +265,31 @@ export function SidebarNav({
       persistExpandedGroups(next)
       return next
     })
+  }
+
+  if (flatNavigation) {
+    return (
+      <nav
+        ref={navRef}
+        className={cn(
+          'app-scroll flex-1 overflow-y-auto px-2 py-3',
+          collapsed && 'space-y-1',
+        )}
+      >
+        {groups.map((group, groupIndex) => {
+          const item = group.items[0]!
+          return (
+            <NavLink
+              key={group.id ?? `${item.href}-${groupIndex}`}
+              item={item}
+              active={activeHref === item.href}
+              collapsed={collapsed}
+              linkRender={linkRender}
+            />
+          )
+        })}
+      </nav>
+    )
   }
 
   if (!workspaceMode) {

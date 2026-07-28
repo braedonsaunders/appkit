@@ -15,36 +15,15 @@ import {
   type SidebarNavGroup,
   type SidebarNavItem,
 } from './sidebar-nav'
-import type { LinkRender } from './settings-layout'
+import { defaultLinkRender, type LinkRender } from './link-context'
 import { cn } from './utils'
 
 const MORE_MENU_INDEX = -1
 
-const defaultLink: LinkRender = ({
-  href,
-  children,
-  className,
-  title,
-  ariaCurrent,
-  role,
-  dataWalkthrough,
-}) => (
-  <a
-    href={href}
-    className={className}
-    title={title}
-    aria-current={ariaCurrent}
-    role={role}
-    data-walkthrough={dataWalkthrough}
-  >
-    {children}
-  </a>
-)
-
 export function TopNav({
   groups,
   pathname,
-  linkRender = defaultLink,
+  linkRender = defaultLinkRender,
   moreLabel = 'More',
   ariaLabel = 'Primary navigation',
   className,

@@ -253,7 +253,6 @@ export const WalkingCharacter = React.memo(function WalkingCharacter({
             }}
           >
             {character.figure ?? (
-              // eslint-disable-next-line @next/next/no-img-element
               <img src={character.imageUrl} alt="" className="h-full w-full object-contain" />
             )}
           </span>

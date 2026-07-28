@@ -89,6 +89,7 @@ export { MobileTabBar } from './mobile-tab-bar'
 export {
   SidebarNav,
   findActiveNavHref,
+  isFlatNavigation,
   selectMobileTabs,
   toBlocks,
   NavIcon,
@@ -96,6 +97,22 @@ export {
   type SidebarNavItem,
   type SidebarNavGroup,
 } from './sidebar-nav'
+export {
+  buildDefaultNavigationConfig,
+  reconcileNavigationConfig,
+  resolveNavigationItems,
+  stampKnownNavigationItems,
+  isTenantNavigationConfig,
+  type NavigationRegistryItem,
+  type NavigationItemConfig,
+  type TenantNavigationConfig,
+  type ResolvedNavigationItem,
+} from './navigation-config'
+export {
+  NavigationConfigEditor,
+  type NavigationConfigEditorProps,
+  type NavigationConfigEditorLabels,
+} from './navigation-config-editor'
 export { PageContainer, ListPageLayout, DetailPageLayout, WizardLayout } from './page-layout'
 export {
   parseListParams,
@@ -114,8 +131,25 @@ export { SearchInput } from './list-search-input'
 export { FilterChips, SearchSelectFilter, type FilterOption } from './filter-chips'
 export { SortableTh, SortTh } from './sortable-th'
 export { Pagination, type PaginationLabels } from './list-pagination'
-export { PagedTable, type PagedColumn, type PagedTableLabels, type PagedTableProps } from './paged-table'
+export {
+  PagedTable,
+  type PagedColumn,
+  type PagedSortValue,
+  type PagedTableLabels,
+  type PagedTableProps,
+  type PagedTableSort,
+} from './paged-table'
 export { SubtabNav, type SubtabItem, type SubtabNavProps } from './subtab-nav'
+export {
+  OrgChart,
+  buildOrgTree,
+  canReparent,
+  orgChartDescendantIds,
+  type OrgChartNode,
+  type OrgChartTreeNode,
+  type OrgChartLabels,
+  type OrgChartProps,
+} from './org-chart'
 export {
   AdminHub,
   SettingsShell,

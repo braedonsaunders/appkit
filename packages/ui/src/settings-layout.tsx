@@ -2,40 +2,11 @@
 
 import * as React from 'react'
 import { ArrowRight, ArrowUpRight, Check } from 'lucide-react'
-import { UiLink } from './link-context'
+import { defaultLinkRender, type LinkRender } from './link-context'
 import { PageHeader } from './page-header'
 import { cn } from './utils'
 
-export type LinkRender = (props: {
-  href: string
-  children: React.ReactNode
-  className: string
-  title?: string
-  ariaCurrent?: 'page' | 'true'
-  role?: string
-  dataWalkthrough?: string
-}) => React.ReactNode
-
-const defaultLink: LinkRender = ({
-  href,
-  children,
-  className,
-  title,
-  ariaCurrent,
-  role,
-  dataWalkthrough,
-}) => (
-  <UiLink
-    href={href}
-    className={className}
-    title={title}
-    aria-current={ariaCurrent}
-    role={role}
-    data-walkthrough={dataWalkthrough}
-  >
-    {children}
-  </UiLink>
-)
+export type { LinkRender }
 
 // ---------------------------------------------------------------------------
 // AdminHub — the settings LANDING page: grouped cards, each an accent-colored
@@ -91,7 +62,7 @@ export function AdminHub({
   description,
   actions,
   groups,
-  linkRender = defaultLink,
+  linkRender = defaultLinkRender,
 }: {
   title?: string
   description?: string
@@ -323,7 +294,7 @@ export function SettingsShell({
   onSelect,
   children,
   contentWidth = 'narrow',
-  linkRender = defaultLink,
+  linkRender = defaultLinkRender,
 }: {
   title: string
   description?: string

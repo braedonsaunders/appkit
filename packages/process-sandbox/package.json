@@ -1,7 +1,7 @@
 {
-  "name": "@appkit/crypto",
-  "version": "0.3.0",
-  "description": "Sealed secrets (AES-256-GCM, HKDF-derived key) — the single implementation for tenant credentials at rest.",
+  "name": "@appkit/process-sandbox",
+  "version": "0.1.2",
+  "description": "Fail-closed Linux process isolation with bubblewrap for workspace-bound coding agents and other trusted application workers.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {
@@ -21,15 +21,16 @@
   },
   "devDependencies": {
     "@types/node": "^22",
-    "tsx": "^4.19.2"
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
   },
   "author": "Braedon Saunders",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/braedonsaunders/appkit.git",
-    "directory": "packages/crypto"
+    "directory": "packages/process-sandbox"
   },
-  "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/crypto#readme",
+  "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/process-sandbox#readme",
   "bugs": {
     "url": "https://github.com/braedonsaunders/appkit/issues"
   },
@@ -38,8 +39,10 @@
   },
   "keywords": [
     "appkit",
-    "application-framework",
-    "typescript"
+    "sandbox",
+    "bubblewrap",
+    "agents",
+    "isolation"
   ],
   "publishConfig": {
     "access": "public",

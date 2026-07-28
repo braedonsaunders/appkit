@@ -8,14 +8,8 @@ import {
   selectMobileTabs,
   type SidebarNavGroup,
 } from './sidebar-nav'
-import type { LinkRender } from './settings-layout'
+import { defaultLinkRender, type LinkRender } from './link-context'
 import { cn } from './utils'
-
-const defaultLink: LinkRender = ({ href, children, className, ariaCurrent }) => (
-  <a href={href} className={className} aria-current={ariaCurrent}>
-    {children}
-  </a>
-)
 
 const tabClass = (active: boolean) =>
   cn(
@@ -28,7 +22,7 @@ export function MobileTabBar({
   groups,
   pathname,
   onOpenMenu,
-  linkRender = defaultLink,
+  linkRender = defaultLinkRender,
   tabCount = 4,
   menuLabel = 'Menu',
   ariaLabel = 'Primary navigation',

@@ -33,6 +33,9 @@ import {
   Label,
   LineGrid,
   type LineGridColumn,
+  OrgChart,
+  type OrgChartNode,
+  canReparent,
   PagedTable,
   type PagedColumn,
   Progress,
@@ -154,9 +157,21 @@ const ACTIVITY_ROWS: ActivityRow[] = [
   { id: '12', section: 'archived', action: 'Export generated', actor: 'Katherine Johnson', date: 'Jun 25' },
 ]
 const ACTIVITY_COLUMNS: PagedColumn<ActivityRow>[] = [
-  { key: 'action', header: 'Activity', cell: (row) => row.action, search: (row) => row.action },
-  { key: 'actor', header: 'By', cell: (row) => row.actor, search: (row) => row.actor },
-  { key: 'date', header: 'Date', align: 'right', cell: (row) => row.date },
+  {
+    key: 'action',
+    header: 'Activity',
+    cell: (row) => row.action,
+    search: (row) => row.action,
+    sortValue: (row) => row.action,
+  },
+  {
+    key: 'actor',
+    header: 'By',
+    cell: (row) => row.actor,
+    search: (row) => row.actor,
+    sortValue: (row) => row.actor,
+  },
+  { key: 'date', header: 'Date', align: 'right', cell: (row) => row.date, sortValue: (row) => row.date },
 ]
 
 type LineRow = { item: string; qty: string; rate: string; account: string }
@@ -183,12 +198,30 @@ const LINE_COLUMNS: LineGridColumn<LineRow>[] = [
   },
 ]
 
+const ORG_NODES: OrgChartNode[] = [
+  { id: 'ceo', name: 'Rae Okonjo', subtitle: 'Chief Executive', meta: 'rae@example.com' },
+  {
+    id: 'ops',
+    parentId: 'ceo',
+    name: 'Dana Reyes',
+    subtitle: 'Head of Operations',
+    badge: { label: 'Operations', variant: 'secondary' },
+  },
+  { id: 'finance', parentId: 'ceo', name: 'Priya Raman', subtitle: 'Controller' },
+  { id: 'support', parentId: 'ops', name: 'Mo Delacroix', subtitle: 'Support Lead' },
+  { id: 'dispatch', parentId: 'ops', name: 'Sam Hale', subtitle: 'Dispatcher' },
+  { id: 'ap', parentId: 'finance', name: 'Lin Zhou', subtitle: 'Accounts Payable' },
+  { id: 'alumni', parentId: 'finance', name: 'Chris Vale', subtitle: 'Bookkeeper', muted: true },
+]
+
 export default function ComponentGallery() {
   const [open, setOpen] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
   const [tab, setTab] = React.useState('overview')
   const [tableTab, setTableTab] = React.useState('recent')
   const [progress, setProgress] = React.useState(12)
+  const [org, setOrg] = React.useState<OrgChartNode[]>(ORG_NODES)
+  const [orgSelected, setOrgSelected] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     const id = setInterval(() => setProgress((p) => (p >= 96 ? 24 : p + 12)), 1400)
@@ -511,7 +544,7 @@ export default function ComponentGallery() {
 
         <Section
           title="Paged tables & subtabs"
-          description="Bounded in-memory tables with search, pagination, row renderers, and detail-style subtab navigation."
+          description="Bounded in-memory tables with search, sortable columns, pagination, clickable rows, and detail-style subtab navigation."
           i={9}
         >
           <SubtabNav
@@ -531,6 +564,39 @@ export default function ComponentGallery() {
             searchable
             empty={<p className="text-sm text-fg-muted">No activity</p>}
             rowKey={(row) => row.id}
+            defaultSort={{ key: 'date', dir: 'desc' }}
+            onRowClick={(row) => toast.info(row.action, { description: `${row.actor} · ${row.date}` })}
+          />
+        </Section>
+
+        {/* Org chart */}
+        <Section
+          title="Org chart"
+          description="A parent-pointer hierarchy: collapsible branches, zoom, and drag a card onto another to change who it reports to (drop on the pill to move it to the top level)."
+          i={9}
+        >
+          <OrgChart
+            nodes={org}
+            selectedId={orgSelected}
+            onSelect={(id) => {
+              setOrgSelected(id)
+              const node = org.find((n) => n.id === id)
+              if (node) toast.info(node.name, { description: node.subtitle })
+            }}
+            onReparent={(childId, parentId) => {
+              if (!canReparent(org, childId, parentId)) return
+              setOrg((current) =>
+                current.map((node) => (node.id === childId ? { ...node, parentId } : node)),
+              )
+              const child = org.find((n) => n.id === childId)
+              const parent = org.find((n) => n.id === parentId)
+              toast.success(`${child?.name} now reports to ${parent?.name ?? 'nobody'}`)
+            }}
+            toolbar={
+              <Button variant="outline" size="sm" onClick={() => setOrg(ORG_NODES)}>
+                Reset hierarchy
+              </Button>
+            }
           />
         </Section>
 

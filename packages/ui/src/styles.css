@@ -6,7 +6,13 @@
 
 /* Browser-native route handoff. Apps opt in by placing their changing page
    boundary in React's ViewTransition with class `appkit-page-transition`.
-   The shell stays live and fixed; only the page canvas is snapshotted. */
+   The shell stays live and fixed; only the page canvas is snapshotted.
+
+   The choreography is a lift-and-settle crossfade: the outgoing canvas clears
+   quickly while the incoming one rises the last few pixels into place on the
+   decelerating token easing. Exit is deliberately shorter than entrance so the
+   two snapshots overlap only briefly — long enough to read as a crossfade,
+   short enough that text never ghosts against itself. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
@@ -14,7 +20,7 @@
 }
 
 ::view-transition-group(.appkit-page-transition) {
-  animation-duration: var(--duration-base);
+  animation-duration: var(--duration-slow);
   animation-timing-function: var(--ease-out);
 }
 
@@ -23,24 +29,38 @@
 }
 
 ::view-transition-old(.appkit-page-transition) {
-  animation: none;
-  opacity: 0;
+  animation: appkit-page-out var(--duration-fast) var(--ease-in-out) both;
   mix-blend-mode: normal;
 }
 
 ::view-transition-new(.appkit-page-transition) {
-  animation: appkit-page-in var(--duration-base) var(--ease-out) both;
+  animation: appkit-page-in var(--duration-slow) var(--ease-out) both;
   mix-blend-mode: normal;
+}
+
+@keyframes appkit-page-out {
+  from {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    translate: 0 -4px;
+    scale: 0.995;
+  }
 }
 
 @keyframes appkit-page-in {
   from {
-    opacity: 0.9;
-    translate: 0 1px;
+    opacity: 0;
+    translate: 0 12px;
+    scale: 0.99;
   }
   to {
     opacity: 1;
     translate: 0 0;
+    scale: 1;
   }
 }
 
@@ -51,6 +71,91 @@
     animation-duration: 0.001ms !important;
     animation-delay: 0ms !important;
   }
+}
+
+/* OrgChart connectors. The hierarchy is plain nested lists; the elbows between
+   a card and its reports are borders on pseudo-elements, so the whole chart
+   renders identically on the server and needs no measurement pass. Geometry:
+   the children list reserves `--appkit-org-drop` above each card, the sibling
+   rail sits halfway up that gap, and stems close the two halves. */
+.appkit-org-canvas {
+  --appkit-org-drop: 2.5rem;
+  --appkit-org-gap: 1.25rem;
+  width: max-content;
+  min-width: 100%;
+}
+
+.appkit-org-children {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  gap: var(--appkit-org-gap);
+  margin: 0;
+  padding: var(--appkit-org-drop) 0 0;
+  list-style: none;
+}
+
+/* Stem down out of the parent card to the sibling rail. */
+.appkit-org-children::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: calc(var(--appkit-org-drop) / 2);
+  border-left: 1px solid var(--color-border-strong);
+}
+
+.appkit-org-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  list-style: none;
+}
+
+/* The two halves of the rail joining this card to its siblings. */
+.appkit-org-item::before,
+.appkit-org-item::after {
+  content: '';
+  position: absolute;
+  top: calc(var(--appkit-org-drop) / -2);
+  width: 50%;
+  border-top: 1px solid var(--color-border-strong);
+}
+
+.appkit-org-item::before {
+  right: 50%;
+}
+
+.appkit-org-item::after {
+  left: 50%;
+}
+
+.appkit-org-item:first-child::before,
+.appkit-org-item:last-child::after {
+  border-top: 0;
+}
+
+/* Stem from the rail down into this card. */
+.appkit-org-stem {
+  position: absolute;
+  top: calc(var(--appkit-org-drop) / -2);
+  left: 50%;
+  height: calc(var(--appkit-org-drop) / 2);
+  border-left: 1px solid var(--color-border-strong);
+}
+
+/* Top level: no parent above it, so no rail and no stems. */
+.appkit-org-roots {
+  padding-top: 0;
+  gap: calc(var(--appkit-org-gap) * 2);
+  align-items: flex-start;
+}
+
+.appkit-org-roots::before,
+.appkit-org-item--root::before,
+.appkit-org-item--root::after {
+  content: none;
 }
 
 /* Ensure Tailwind scans the primitives for class usage even when the app's own
