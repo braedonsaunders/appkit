@@ -1,6 +1,6 @@
 {
   "name": "@appkit/process-sandbox",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Fail-closed Linux process isolation with bubblewrap for workspace-bound coding agents and other trusted application workers.",
   "license": "AGPL-3.0-or-later",
   "type": "module",

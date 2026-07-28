@@ -5,19 +5,20 @@ trusted application workers.
 
 The package owns the reusable bubblewrap policy: user, process, IPC, UTS and
 cgroup namespaces; capability dropping; an explicitly rebuilt environment;
-read-only system roots; masked host data; a private PID namespace with its own
-procfs; fresh `/dev`, `/tmp`, and `/run`; and an explicit set of writable
+read-only system roots; masked host data; a private PID namespace; fresh
+`/dev`, `/tmp`, and `/run`; and an explicit set of writable
 binds. Secret environment values are
 passed in the sanitized child environment rather than serialized into process
 arguments. The consuming application still owns authentication,
 tenant-to-workspace resolution, egress policy, resource limits, and the command
 being launched.
 
-The isolated procfs is enabled by default so native runtimes can safely resolve
-their executable through `/proc/self/exe`. It contains only processes in the
-sandbox's private PID namespace; it is not a bind of the host or application
-container's `/proc`. Set `mountProc: false` only for a constrained workload
-that does not require procfs. The startup verifier exercises the same default.
+Procfs is unavailable by default for compatibility with container hosts that
+prohibit nested proc mounts. A consumer can set `mountProc: true` to mount a
+fresh procfs scoped to the sandbox's private PID namespace. For native runtimes
+that only require `current_exe()`, prefer `syntheticSelfExecutable`: AppKit
+creates only `/proc/self/exe` as a symlink to that explicitly approved absolute
+path, exposing no process metadata. The two modes are mutually exclusive.
 
 The working directory may be a writable bind for build/edit agents or a
 read-only bind for question-and-answer and inspection workers.
@@ -35,6 +36,7 @@ const child = spawnBubblewrappedProcess({
     CODEX_HOME: `${agentHomePath}/.codex`,
   },
   launcherIdentity: { uid: 1000, gid: 1000 },
+  syntheticSelfExecutable: '/usr/local/bin/codex',
 })
 ```
 

@@ -1,5 +1,14 @@
 # @appkit/process-sandbox
 
+## 0.1.5
+
+### Patch Changes
+
+- Add a synthetic `/proc/self/exe` mode for native agent runtimes on container
+  hosts that prohibit nested procfs mounts. It exposes only an explicitly
+  approved executable path and no process metadata.
+- Keep procfs opt-in and reject simultaneous real-proc and synthetic-self modes.
+
 ## 0.1.4
 
 ### Patch Changes

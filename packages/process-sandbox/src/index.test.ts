@@ -33,10 +33,9 @@ test('builds a cleared, workspace-bound bubblewrap invocation', () => {
   ])
   assert.ok(plan.args.includes('--unshare-user'))
   assert.ok(plan.args.includes('--unshare-pid'))
-  const procIndex = plan.args.indexOf('--proc')
-  assert.ok(procIndex >= 0)
-  assert.equal(plan.args[procIndex + 1], '/proc')
-  assert.equal(plan.mountProc, true)
+  assert.ok(!plan.args.includes('--proc'))
+  assert.ok(!plan.args.includes('/proc'))
+  assert.equal(plan.mountProc, false)
   assert.ok(plan.args.includes('--cap-drop'))
   assert.ok(plan.args.includes('ALL'))
   assert.ok(plan.args.includes('--die-with-parent'))
@@ -52,17 +51,46 @@ test('builds a cleared, workspace-bound bubblewrap invocation', () => {
   assert.deepEqual(plan.launcherIdentity, { uid: 1000, gid: 1000 })
 })
 
-test('can omit procfs only when a constrained consumer explicitly opts out', () => {
+test('can mount a private procfs when the container host permits it', () => {
   const plan = buildBubblewrapPlan({
     command: '/usr/bin/true',
     cwd: '/workspace',
     writablePaths: ['/workspace'],
-    mountProc: false,
+    mountProc: true,
+  }, { pathExists: allPathsExist })
+
+  assert.equal(plan.mountProc, true)
+  const procIndex = plan.args.indexOf('--proc')
+  assert.ok(procIndex >= 0)
+  assert.equal(plan.args[procIndex + 1], '/proc')
+})
+
+test('can expose only an approved synthetic self executable without procfs', () => {
+  const executable = '/usr/local/bin/codex'
+  const plan = buildBubblewrapPlan({
+    command: '/usr/bin/node',
+    cwd: '/workspace',
+    writablePaths: ['/workspace'],
+    syntheticSelfExecutable: executable,
   }, { pathExists: allPathsExist })
 
   assert.equal(plan.mountProc, false)
+  assert.equal(plan.syntheticSelfExecutable, executable)
   assert.ok(!plan.args.includes('--proc'))
-  assert.ok(!plan.args.includes('/proc'))
+  assert.deepEqual(
+    plan.args.slice(plan.args.indexOf('--dir', plan.args.indexOf('--tmpfs'))).slice(0, 7),
+    ['--dir', '/proc', '--dir', '/proc/self', '--symlink', executable, '/proc/self/exe'],
+  )
+  assert.throws(
+    () => buildBubblewrapPlan({
+      command: '/usr/bin/node',
+      cwd: '/workspace',
+      writablePaths: ['/workspace'],
+      mountProc: true,
+      syntheticSelfExecutable: executable,
+    }, { pathExists: allPathsExist }),
+    /mutually exclusive/,
+  )
 })
 
 test('requires an absolute cwd covered by an exposed mount', () => {

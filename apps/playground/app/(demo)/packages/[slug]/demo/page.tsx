@@ -710,6 +710,7 @@ function ProcessSandboxDemo() {
       HTTPS_PROXY: 'http://sandbox-egress.internal:3128',
     },
     launcherIdentity: { uid: 1000, gid: 1000 },
+    syntheticSelfExecutable: '/usr/local/bin/codex',
   }, { pathExists: () => true })
 
   return (
@@ -720,7 +721,11 @@ function ProcessSandboxDemo() {
           <DemoRow label="Namespaces" value="PID, IPC, UTS, and cgroup" />
           <DemoRow
             label="Process view"
-            value={plan.mountProc ? 'Private procfs for the isolated PID namespace' : 'Unavailable'}
+            value={plan.syntheticSelfExecutable
+              ? `Synthetic self executable only · ${plan.syntheticSelfExecutable}`
+              : plan.mountProc
+                ? 'Private procfs for the isolated PID namespace'
+                : 'Unavailable'}
           />
           <DemoRow label="Host data" value={plan.maskedPaths.join(', ')} mono />
           <DemoRow label="Writable" value={plan.writablePaths.join(', ')} mono />

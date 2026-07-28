@@ -29,11 +29,16 @@ export interface ProcessSandboxOptions {
   /** Host roots replaced with empty tmpfs mounts before writable binds are layered on top. */
   maskedPaths?: readonly string[]
   /**
-   * Mount a fresh procfs for the sandbox's private PID namespace. Enabled by
-   * default because native agent runtimes commonly resolve their own executable
-   * through `/proc/self/exe`. This never exposes the host/container PID view.
+   * Mount a fresh procfs for the sandbox's private PID namespace. Disabled by
+   * default because some container hosts prohibit nested procfs mounts.
    */
   mountProc?: boolean
+  /**
+   * Absolute approved executable exposed as a synthetic `/proc/self/exe`
+   * symlink when procfs is unavailable. This supports native runtimes that use
+   * `current_exe()` without exposing any process metadata.
+   */
+  syntheticSelfExecutable?: string
   /** The complete child environment. Host process variables are never inherited implicitly. */
   environment?: Readonly<Record<string, string | undefined>>
   bubblewrapPath?: string
@@ -56,6 +61,7 @@ export interface BubblewrapPlan {
   readOnlyPaths: string[]
   maskedPaths: string[]
   mountProc: boolean
+  syntheticSelfExecutable?: string
   launcherIdentity?: ProcessSandboxLauncherIdentity
 }
 
@@ -109,7 +115,20 @@ export function buildBubblewrapPlan(
   )
   const environment = cleanEnvironment(options.environment)
   const launcherIdentity = cleanLauncherIdentity(options.launcherIdentity)
-  const mountProc = options.mountProc ?? true
+  const mountProc = options.mountProc ?? false
+  const syntheticSelfExecutable = options.syntheticSelfExecutable
+    ? absolutePath(options.syntheticSelfExecutable, 'syntheticSelfExecutable')
+    : undefined
+  if (mountProc && syntheticSelfExecutable) {
+    throw new ProcessSandboxError(
+      'mountProc and syntheticSelfExecutable are mutually exclusive.',
+    )
+  }
+  if (syntheticSelfExecutable && !pathExists(syntheticSelfExecutable)) {
+    throw new ProcessSandboxError(
+      `Synthetic self executable does not exist: ${syntheticSelfExecutable}`,
+    )
+  }
   if (!('PATH' in environment)) environment.PATH = DEFAULT_PROCESS_PATH
 
   const args: string[] = [
@@ -127,6 +146,13 @@ export function buildBubblewrapPlan(
     '--tmpfs', '/tmp',
     '--tmpfs', '/run',
     ...(mountProc ? ['--proc', '/proc'] : []),
+    ...(syntheticSelfExecutable
+      ? [
+          '--dir', '/proc',
+          '--dir', '/proc/self',
+          '--symlink', syntheticSelfExecutable, '/proc/self/exe',
+        ]
+      : []),
     ...readOnlyPaths.flatMap((path) => ['--ro-bind', path, path]),
   ]
 
@@ -164,6 +190,7 @@ export function buildBubblewrapPlan(
     readOnlyPaths,
     maskedPaths,
     mountProc,
+    syntheticSelfExecutable,
     launcherIdentity,
   }
 }
