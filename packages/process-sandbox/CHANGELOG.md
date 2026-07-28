@@ -1,5 +1,15 @@
 # @appkit/process-sandbox
 
+## 0.1.4
+
+### Patch Changes
+
+- Mount a fresh procfs inside the private PID namespace by default so native
+  agent runtimes can resolve `/proc/self/exe` without exposing the host or
+  application container's process view.
+- Expose an explicit `mountProc: false` escape hatch for constrained workloads
+  and surface the effective choice in the auditable bubblewrap plan.
+
 ## 0.1.3
 
 ### Patch Changes

@@ -28,6 +28,12 @@ export interface ProcessSandboxOptions {
   readOnlyPaths?: readonly string[]
   /** Host roots replaced with empty tmpfs mounts before writable binds are layered on top. */
   maskedPaths?: readonly string[]
+  /**
+   * Mount a fresh procfs for the sandbox's private PID namespace. Enabled by
+   * default because native agent runtimes commonly resolve their own executable
+   * through `/proc/self/exe`. This never exposes the host/container PID view.
+   */
+  mountProc?: boolean
   /** The complete child environment. Host process variables are never inherited implicitly. */
   environment?: Readonly<Record<string, string | undefined>>
   bubblewrapPath?: string
@@ -49,6 +55,7 @@ export interface BubblewrapPlan {
   writablePaths: string[]
   readOnlyPaths: string[]
   maskedPaths: string[]
+  mountProc: boolean
   launcherIdentity?: ProcessSandboxLauncherIdentity
 }
 
@@ -102,6 +109,7 @@ export function buildBubblewrapPlan(
   )
   const environment = cleanEnvironment(options.environment)
   const launcherIdentity = cleanLauncherIdentity(options.launcherIdentity)
+  const mountProc = options.mountProc ?? true
   if (!('PATH' in environment)) environment.PATH = DEFAULT_PROCESS_PATH
 
   const args: string[] = [
@@ -118,6 +126,7 @@ export function buildBubblewrapPlan(
     ...maskedPaths.flatMap((path) => ['--tmpfs', path]),
     '--tmpfs', '/tmp',
     '--tmpfs', '/run',
+    ...(mountProc ? ['--proc', '/proc'] : []),
     ...readOnlyPaths.flatMap((path) => ['--ro-bind', path, path]),
   ]
 
@@ -154,6 +163,7 @@ export function buildBubblewrapPlan(
     writablePaths,
     readOnlyPaths,
     maskedPaths,
+    mountProc,
     launcherIdentity,
   }
 }

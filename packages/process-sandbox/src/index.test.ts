@@ -33,8 +33,10 @@ test('builds a cleared, workspace-bound bubblewrap invocation', () => {
   ])
   assert.ok(plan.args.includes('--unshare-user'))
   assert.ok(plan.args.includes('--unshare-pid'))
-  assert.ok(!plan.args.includes('--proc'))
-  assert.ok(!plan.args.includes('/proc'))
+  const procIndex = plan.args.indexOf('--proc')
+  assert.ok(procIndex >= 0)
+  assert.equal(plan.args[procIndex + 1], '/proc')
+  assert.equal(plan.mountProc, true)
   assert.ok(plan.args.includes('--cap-drop'))
   assert.ok(plan.args.includes('ALL'))
   assert.ok(plan.args.includes('--die-with-parent'))
@@ -48,6 +50,19 @@ test('builds a cleared, workspace-bound bubblewrap invocation', () => {
   assert.ok(!('EMPTY' in plan.environment))
   assert.deepEqual(plan.args.slice(-5), ['--', '/usr/local/bin/codex', 'exec', '--json', 'Inspect the project'])
   assert.deepEqual(plan.launcherIdentity, { uid: 1000, gid: 1000 })
+})
+
+test('can omit procfs only when a constrained consumer explicitly opts out', () => {
+  const plan = buildBubblewrapPlan({
+    command: '/usr/bin/true',
+    cwd: '/workspace',
+    writablePaths: ['/workspace'],
+    mountProc: false,
+  }, { pathExists: allPathsExist })
+
+  assert.equal(plan.mountProc, false)
+  assert.ok(!plan.args.includes('--proc'))
+  assert.ok(!plan.args.includes('/proc'))
 })
 
 test('requires an absolute cwd covered by an exposed mount', () => {
