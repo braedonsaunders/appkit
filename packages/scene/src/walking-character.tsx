@@ -243,24 +243,27 @@ export const WalkingCharacter = React.memo(function WalkingCharacter({
         )}
         style={{ width: size, height: size, y: bounce, rotate }}
       >
-        <span className="block h-full w-full" style={{ transform: `scaleX(${state.facingRight ? 1 : -1})` }}>
-          {character.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
+        {character.imageUrl ? (
+          // Only the artwork mirrors — text would read backwards.
+          <span className="block h-full w-full" style={{ transform: `scaleX(${state.facingRight ? 1 : -1})` }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={character.imageUrl}
               alt=""
               className="h-full w-full object-contain"
               style={{ filter: `drop-shadow(0 ${2 * scale}px ${4 * scale}px rgba(0,0,0,0.18))` }}
             />
-          ) : (
+          </span>
+        ) : (
+          <span className="flex h-full w-full items-end justify-center">
             <span
-              className="flex h-full w-full items-center justify-center rounded-full bg-primary-subtle font-semibold text-primary"
-              style={{ fontSize: 22 * scale }}
+              className="flex items-center justify-center rounded-full border border-border bg-primary-subtle font-semibold text-primary"
+              style={{ width: size * 0.42, height: size * 0.42, fontSize: 15 * scale }}
             >
               {character.name.charAt(0)}
             </span>
-          )}
-        </span>
+          </span>
+        )}
       </motion.button>
       <div
         className="pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-md bg-elevated/90 px-2 py-0.5 text-center opacity-0 shadow-sm backdrop-blur-sm transition-opacity group-hover:opacity-100"
