@@ -1,11 +1,13 @@
 {
   "name": "@appkit/avatars",
-  "version": "0.3.0",
-  "description": "AI avatar/image generation through the AI SDK provider layer \u2014 pass your @appkit/ai tenant AiConfig; openai and google image models.",
+  "version": "0.4.0",
+  "description": "Avatar parts library, composition model, and the composer \u2014 one full-body figure per subject, portraits derived by head viewport; plus AI image generation through the AI SDK provider layer.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./composition": "./src/composition.ts",
+    "./react": "./src/react.ts",
     "./package.json": "./package.json"
   },
   "main": "./src/index.ts",
@@ -18,8 +20,37 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
+  "peerDependencies": {
+    "@appkit/ui": "^0.1.1",
+    "framer-motion": "^12.34.0",
+    "lucide-react": "^1.24.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@appkit/ui": {
+      "optional": true
+    },
+    "framer-motion": {
+      "optional": true
+    },
+    "lucide-react": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
   "devDependencies": {
-    "@types/node": "^22"
+    "@appkit/ui": "workspace:*",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "framer-motion": "^12.34.0",
+    "lucide-react": "^1.24.0"
   },
   "author": "Braedon Saunders",
   "repository": {
