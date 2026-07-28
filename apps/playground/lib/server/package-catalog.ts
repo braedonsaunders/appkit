@@ -74,7 +74,7 @@ export interface PackageCatalogItem {
   peerDependencies: Record<string, string>
   optionalPeers: string[]
   category: PackageCategoryKey
-  demoHref?: string
+  demoHref: string
 }
 
 export type PackageCategoryKey = 'foundation' | 'product' | 'platform' | 'extensions'
@@ -180,29 +180,43 @@ const DEMO_ROUTES: Record<string, string> = {
   'create-appkit': '/dashboard/platform',
   '@appkit/tokens': '/components',
   '@appkit/ui': '/components',
+  '@appkit/i18n': '/components',
+  '@appkit/editor': '/forms',
+  '@appkit/avatars': '/avatars',
+  '@appkit/scene': '/packages/scene#demo',
   '@appkit/analytics': '/insights',
   '@appkit/dashboard': '/dashboard',
   '@appkit/customization': '/customization',
   '@appkit/forms-core': '/forms/core',
   '@appkit/forms': '/forms',
+  '@appkit/forms-documents': '/forms',
   '@appkit/forms-pdf': '/forms',
   '@appkit/reports': '/reports',
   '@appkit/pdf': '/reports',
   '@appkit/design-studio': '/design-studio',
+  '@appkit/scheduling': '/scheduling',
+  '@appkit/db': '/dashboard/platform',
+  '@appkit/tenant': '/dashboard/platform',
+  '@appkit/auth': '/admin/users',
   '@appkit/iam': '/admin/roles',
   '@appkit/api': '/api-docs',
   '@appkit/events': '/admin/audit',
+  '@appkit/jobs': '/packages/jobs#demo',
   '@appkit/notifications': '/notifications',
   '@appkit/storage': '/attachments',
-  '@appkit/avatars': '/packages/avatars',
-  '@appkit/scene': '/packages/scene',
-  '@appkit/mailbox': '/packages/mailbox',
-  '@appkit/voice': '/packages/voice',
-  '@appkit/process-sandbox': '/packages/process-sandbox',
+  '@appkit/crypto': '/admin/integrations',
+  '@appkit/process-sandbox': '/packages/process-sandbox#demo',
+  '@appkit/email-render': '/admin/integrations',
+  '@appkit/emails': '/admin/integrations',
+  '@appkit/mailbox': '/packages/mailbox#demo',
+  '@appkit/sms': '/admin/integrations',
+  '@appkit/voice': '/packages/voice#demo',
+  '@appkit/ai': '/dashboard/platform',
+  '@appkit/sandbox': '/admin/scripts',
+  '@appkit/endpoints': '/api-docs',
   '@appkit/apps': '/admin/apps',
   '@appkit/scripts': '/admin/scripts',
   '@appkit/workflows': '/workflows',
-  '@appkit/scheduling': '/scheduling',
   '@appkit/integrations': '/admin/integrations',
   '@appkit/sync': '/admin/integrations',
 }
@@ -214,6 +228,8 @@ const categoryByName = new Map(
 export const PACKAGE_CATALOG: readonly PackageCatalogItem[] = MANIFESTS.map((manifest) => {
   const category = categoryByName.get(manifest.name)
   if (!category) throw new Error(`Package category missing for ${manifest.name}`)
+  const demoHref = DEMO_ROUTES[manifest.name]
+  if (!demoHref) throw new Error(`Package demo missing for ${manifest.name}`)
   return {
     name: manifest.name,
     slug: manifest.name.replace(/^@appkit\//, ''),
@@ -232,7 +248,7 @@ export const PACKAGE_CATALOG: readonly PackageCatalogItem[] = MANIFESTS.map((man
       .filter(([, meta]) => meta.optional)
       .map(([name]) => name),
     category,
-    demoHref: DEMO_ROUTES[manifest.name],
+    demoHref,
   }
 }).sort((left, right) => {
   const categoryOrder = PACKAGE_CATEGORIES.findIndex((category) => category.key === left.category)

@@ -750,11 +750,13 @@ browser-local persistence.
 The working references are `/workflows`, `/admin/integrations`,
 `/notifications`, and `/customization`.
 
-The playground top navigation separates **Demonstration** from **Packages**.
-`/packages` is generated from the committed workspace manifests and links to a
-detail page for every publishable package, including its real exports,
-dependencies, optional peers, tags, source, and available live reference. The
-catalogue inventory test fails when a package manifest is added without a page.
+The playground uses **Packages** as its single showcase navigation. `/packages`
+is generated from the committed workspace manifests and links to a detail page
+for every publishable package, including its real exports, dependencies,
+optional peers, tags, source, and a working demo action. Interactive demos are
+reached from their owning package page instead of a parallel Demonstration
+menu. The catalogue inventory test fails when a package manifest is added
+without a page or demo target.
 
 For the rules any app on this foundation must follow, see
 [`building-applications.md`](building-applications.md).

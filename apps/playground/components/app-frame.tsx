@@ -55,26 +55,6 @@ export interface PackageNavigationItem {
 function createNavigation(packages: PackageNavigationItem[]): SidebarNavGroup[] {
   return [
     {
-      id: 'demonstration',
-      label: 'Demonstration',
-      iconKey: 'layers',
-      items: [
-        { href: '/dashboard', label: 'Dashboard', iconKey: 'gauge', exact: true, mobile: true },
-        { href: '/insights', label: 'Insight cards', iconKey: 'library', mobile: true },
-        { href: '/forms', label: 'Form builder', iconKey: 'clipboard', mobile: true },
-        { href: '/forms/core', label: 'Form engine', iconKey: 'code' },
-        { href: '/workflows', label: 'Workflows', iconKey: 'workflow' },
-        { href: '/scheduling', label: 'Scheduling', iconKey: 'calendar' },
-        { href: '/reports', label: 'Reports', iconKey: 'library' },
-        { href: '/design-studio', label: 'Design studio', iconKey: 'sparkles' },
-        { href: '/customization', label: 'Customization', iconKey: 'wrench' },
-        { href: '/attachments', label: 'Attachments', iconKey: 'file' },
-        { href: '/notifications', label: 'Notifications', iconKey: 'bell' },
-        { href: '/dashboard/platform', label: 'Platform', iconKey: 'package', mobile: true },
-        { href: '/components', label: 'Components', iconKey: 'sparkles' },
-      ],
-    },
-    {
       id: 'packages',
       label: 'Packages',
       iconKey: 'package',
@@ -199,7 +179,7 @@ function AppFrameContent({
           groups={navigationGroups}
           pathname={pathname}
           brand={
-            <Link href="/dashboard" aria-label="appkit home" className="inline-flex rounded-md focus-visible:ring-2 focus-visible:ring-ring">
+            <Link href="/packages" aria-label="appkit packages" className="inline-flex rounded-md focus-visible:ring-2 focus-visible:ring-ring">
               <AppkitLogo />
             </Link>
           }

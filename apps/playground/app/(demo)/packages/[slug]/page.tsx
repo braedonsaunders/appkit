@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import type { ReactNode } from 'react'
 import { ArrowUpRight, Boxes, Play } from 'lucide-react'
 import {
   Badge,
@@ -71,6 +72,7 @@ export default async function PackagePage({ params }: PackagePageProps) {
   const category = PACKAGE_CATEGORIES.find((candidate) => candidate.key === item.category)
   const runtimeDependencies = Object.entries(item.dependencies)
   const peers = Object.entries(item.peerDependencies)
+  const showcase = packageShowcase(item.name)
 
   return (
     <DetailPageLayout
@@ -85,11 +87,9 @@ export default async function PackagePage({ params }: PackagePageProps) {
           }}
           actions={
             <>
-              {item.demoHref ? (
-                <Button asChild variant="secondary" size="sm">
-                  <Link href={item.demoHref}><Play className="size-4" /> Open demo</Link>
-                </Button>
-              ) : null}
+              <Button asChild variant="secondary" size="sm">
+                <Link href={item.demoHref}><Play className="size-4" /> Open demo</Link>
+              </Button>
               {item.homepage ? (
                 <Button asChild variant="outline" size="sm">
                   <a href={item.homepage} target="_blank" rel="noreferrer">Source <ArrowUpRight className="size-4" /></a>
@@ -110,12 +110,11 @@ export default async function PackagePage({ params }: PackagePageProps) {
         ))}
       </div>
 
-      {item.name === '@appkit/jobs' ? <JobsPackageShowcase /> : null}
-      {item.name === '@appkit/avatars' ? <AvatarsPackageShowcase /> : null}
-      {item.name === '@appkit/mailbox' ? <MailboxPackageShowcase /> : null}
-      {item.name === '@appkit/process-sandbox' ? <ProcessSandboxShowcase /> : null}
-      {item.name === '@appkit/scene' ? <ScenePackageShowcase /> : null}
-      {item.name === '@appkit/voice' ? <VoicePackageShowcase /> : null}
+      {showcase ? (
+        <section id="demo" aria-label={`${item.name} demo`} className="scroll-mt-24">
+          {showcase}
+        </section>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(280px,0.5fr)]">
         <Card>
@@ -191,6 +190,25 @@ export default async function PackagePage({ params }: PackagePageProps) {
       ) : null}
     </DetailPageLayout>
   )
+}
+
+function packageShowcase(name: string): ReactNode {
+  switch (name) {
+    case '@appkit/jobs':
+      return <JobsPackageShowcase />
+    case '@appkit/avatars':
+      return <AvatarsPackageShowcase />
+    case '@appkit/mailbox':
+      return <MailboxPackageShowcase />
+    case '@appkit/process-sandbox':
+      return <ProcessSandboxShowcase />
+    case '@appkit/scene':
+      return <ScenePackageShowcase />
+    case '@appkit/voice':
+      return <VoicePackageShowcase />
+    default:
+      return null
+  }
 }
 
 const JOB_PROFILES: readonly { label: string; profile: QueueProfile }[] = [

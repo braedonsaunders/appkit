@@ -22,4 +22,8 @@ test('the demo catalog has one unique route for every workspace package manifest
   )
   assert.equal(new Set(PACKAGE_CATALOG.map((item) => item.slug)).size, PACKAGE_CATALOG.length)
   assert.equal(new Set(PACKAGE_CATEGORIES.flatMap((category) => category.names)).size, PACKAGE_CATALOG.length)
+  for (const item of PACKAGE_CATALOG) {
+    assert.match(item.demoHref, /^\/[^#]*(?:#demo)?$/, `${item.name} must have an internal demo route`)
+    assert.notEqual(item.demoHref, `/packages/${item.slug}`, `${item.name} demo must not reload its detail page`)
+  }
 })
