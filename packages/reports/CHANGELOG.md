@@ -1,5 +1,15 @@
 # @appkit/reports
 
+## 0.2.1
+
+### Patch Changes
+
+- 1e69bf8: Replace schedule-time rolling-days and raw JSON controls with the same compiler-native filter tree used by report definitions. Hosts provide the authorized report entity with each schedule definition.
+- Updated dependencies [0c2dde7]
+- Updated dependencies [0c2dde7]
+- Updated dependencies [a1d5d50]
+  - @appkit/ui@0.1.7
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,7 +1,7 @@
 {
   "name": "@appkit/avatars",
   "version": "0.5.0",
-  "description": "Avatar parts library, composition model, and the composer \u2014 one full-body figure per subject, portraits derived by head viewport; plus AI image generation through the AI SDK provider layer.",
+  "description": "Avatar parts library, composition model, and the composer — one full-body figure per subject, portraits derived by head viewport; plus AI image generation through the AI SDK provider layer.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {
@@ -21,7 +21,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
-    "@appkit/ui": "^0.1.1",
+    "@appkit/ui": "^0.1.7",
     "framer-motion": "^12.34.0",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",

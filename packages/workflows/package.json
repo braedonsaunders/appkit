@@ -30,9 +30,9 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
-    "@appkit/forms": "^0.2.0",
+    "@appkit/forms": "^0.2.1",
     "@appkit/forms-core": "^0.1.1",
-    "@appkit/ui": "^0.1.1",
+    "@appkit/ui": "^0.1.7",
     "@appkit/db": "^0.2.0",
     "drizzle-orm": "^0.45.2",
     "@xyflow/react": "^12.10.0",

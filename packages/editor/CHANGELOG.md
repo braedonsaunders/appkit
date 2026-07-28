@@ -1,5 +1,14 @@
 # @appkit/editor
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [0c2dde7]
+- Updated dependencies [0c2dde7]
+- Updated dependencies [a1d5d50]
+  - @appkit/ui@0.1.7
+
 ## 0.1.1
 
 ### Patch Changes
