@@ -6,20 +6,16 @@ import {
   Badge,
   Button,
   Drawer,
-  EmptyState,
   Input,
   Label,
+  RecordList,
+  Select,
   Switch,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
   cn,
   confirmDialog,
+  type RecordColumn,
 } from '@appkit/ui'
-import { Building2, KeyRound, MonitorSmartphone, Search, ShieldCheck, UserPlus, Users } from 'lucide-react'
+import { Building2, KeyRound, MonitorSmartphone, ShieldCheck, UserPlus, Users } from 'lucide-react'
 import type { PlatformSessionRecord, PlatformTenantRecord, PlatformUserRecord, TenantMemberRecord } from './types'
 
 /**
@@ -35,6 +31,8 @@ export type PlatformUsersActions = {
     email: string
     password: string
     isSuperAdmin?: boolean
+    /** The workspace the new account joins — chosen explicitly in the drawer. */
+    tenantId: string
   }): Promise<SuperadminActionResult>
   updateUser(
     userId: string,
@@ -48,6 +46,10 @@ export type PlatformUsersAdminProps = {
   users: PlatformUserRecord[]
   /** The signed-in operator, so their own row is labeled and guarded in copy. */
   currentUserId?: string
+  /** Workspaces a new account can join — typically the active tenants. */
+  tenants: { id: string; name: string }[]
+  /** Preselected workspace in the Add-user drawer — typically the operator's current tenant. */
+  defaultTenantId: string
   actions: PlatformUsersActions
   title?: string
   description?: string
@@ -61,28 +63,96 @@ export type PlatformUsersAdminProps = {
 export function PlatformUsersAdmin({
   users,
   currentUserId,
+  tenants,
+  defaultTenantId,
   actions,
   title = 'Users',
   description = 'Every account that can sign in to this installation. Deactivating an account blocks sign-in immediately and ends its sessions.',
 }: PlatformUsersAdminProps) {
   const [query, setQuery] = React.useState('')
   const [status, setStatus] = React.useState<'all' | 'active' | 'inactive'>('all')
+  const [sort, setSort] = React.useState<{ key: string; dir: 'asc' | 'desc' }>({ key: 'name', dir: 'asc' })
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
   const [creating, setCreating] = React.useState(false)
   const [notice, setNotice] = React.useState<{ tone: 'error' | 'success'; message: string } | null>(null)
 
-  const filtered = users.filter((user) => {
-    if (status !== 'all' && user.isActive !== (status === 'active')) return false
-    if (!query.trim()) return true
+  const filtered = React.useMemo(() => {
     const needle = query.trim().toLocaleLowerCase()
-    return user.name.toLocaleLowerCase().includes(needle) || user.email.toLocaleLowerCase().includes(needle)
-  })
+    const base = users.filter((user) => {
+      if (status !== 'all' && user.isActive !== (status === 'active')) return false
+      if (!needle) return true
+      return user.name.toLocaleLowerCase().includes(needle) || user.email.toLocaleLowerCase().includes(needle)
+    })
+    const dir = sort.dir === 'asc' ? 1 : -1
+    return [...base].sort((a, b) => {
+      const key = sort.key as keyof PlatformUserRecord
+      return String(a[key] ?? '').localeCompare(String(b[key] ?? '')) * dir
+    })
+  }, [users, query, status, sort])
   const counts = {
     all: users.length,
     active: users.filter((user) => user.isActive).length,
     inactive: users.filter((user) => !user.isActive).length,
   }
   const selected = users.find((user) => user.id === selectedId) ?? null
+
+  const columns = React.useMemo<RecordColumn<PlatformUserRecord>[]>(
+    () => [
+      {
+        key: 'name',
+        label: 'Name',
+        sortable: true,
+        render: (user) => (
+          <div className="flex items-center gap-3">
+            <Avatar name={user.name} src={user.image ?? undefined} size={32} />
+            <div className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate font-medium text-fg">{user.name}</span>
+              {user.id === currentUserId ? <Badge variant="outline">You</Badge> : null}
+              {user.isSuperAdmin ? <Badge variant="warning">Super admin</Badge> : null}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'email',
+        label: 'Email',
+        sortable: true,
+        render: (user) => <span className="text-fg-muted">{user.email}</span>,
+      },
+      {
+        key: 'isActive',
+        label: 'Status',
+        render: (user) => (
+          <Badge variant={user.isActive ? 'success' : 'secondary'}>{user.isActive ? 'Active' : 'Deactivated'}</Badge>
+        ),
+      },
+      {
+        key: 'hasCredential',
+        label: 'Sign-in',
+        render: (user) => (
+          <div className="flex flex-wrap gap-1">
+            <Badge variant={user.hasCredential ? 'secondary' : 'outline'}>
+              {user.hasCredential ? 'Password' : 'No credential'}
+            </Badge>
+            {user.emailVerified ? null : <Badge variant="outline">Unverified</Badge>}
+          </div>
+        ),
+      },
+      {
+        key: 'activeSessionCount',
+        label: 'Sessions',
+        render: (user) => <span className="tabular-nums text-fg-muted">{user.activeSessionCount}</span>,
+      },
+      {
+        key: 'lastSeenAt',
+        label: 'Last seen',
+        render: (user) => (
+          <span className="whitespace-nowrap text-fg-muted">{formatDateTime(user.lastSeenAt)}</span>
+        ),
+      },
+    ],
+    [currentUserId],
+  )
 
   async function run(operation: () => Promise<SuperadminActionResult>, successMessage?: string): Promise<boolean> {
     setNotice(null)
@@ -98,50 +168,9 @@ export function PlatformUsersAdmin({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-5">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">{title}</h1>
-          <p className="mt-1 max-w-3xl text-sm text-fg-muted">{description}</p>
-        </div>
-        <Button onClick={() => setCreating(true)}>
-          <UserPlus size={16} />
-          Add user
-        </Button>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-64 flex-1 sm:max-w-md">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-subtle" />
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search name or email…"
-            className="pl-9"
-          />
-        </div>
-        <div className="flex max-w-full overflow-x-auto rounded-lg border border-border bg-surface p-1" aria-label="Filter users by status">
-          {(
-            [
-              { value: 'all', label: 'All' },
-              { value: 'active', label: 'Active' },
-              { value: 'inactive', label: 'Deactivated' },
-            ] as const
-          ).map((filter) => (
-            <button
-              key={filter.value}
-              type="button"
-              aria-pressed={status === filter.value}
-              onClick={() => setStatus(filter.value)}
-              className={cn(
-                'flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors',
-                status === filter.value ? 'bg-primary-subtle text-primary' : 'text-fg-muted hover:bg-surface-hover hover:text-fg',
-              )}
-            >
-              <span>{filter.label}</span>
-              <span className="tabular-nums text-fg-subtle">{counts[filter.value]}</span>
-            </button>
-          ))}
-        </div>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-fg">{title}</h1>
+        <p className="mt-1 max-w-3xl text-sm text-fg-muted">{description}</p>
       </div>
 
       {notice ? (
@@ -158,74 +187,56 @@ export function PlatformUsersAdmin({
         </div>
       ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-border bg-surface">
-        <Table>
-          <TableHeader>
-            <TableRow noAnimate>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Sign-in</TableHead>
-              <TableHead>Sessions</TableHead>
-              <TableHead>Last seen</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((user) => (
-              <TableRow
-                key={user.id}
-                role="button"
-                tabIndex={0}
-                className="cursor-pointer"
-                onClick={() => setSelectedId(user.id)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    setSelectedId(user.id)
-                  }
-                }}
+      <RecordList
+        columns={columns}
+        rows={filtered}
+        getRowId={(user) => user.id}
+        search={{ value: query, onChange: setQuery, placeholder: 'Search name or email…' }}
+        sort={sort}
+        onSortChange={(key) =>
+          setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }))
+        }
+        filters={
+          <div
+            className="flex max-w-full overflow-x-auto rounded-lg border border-border bg-surface p-1"
+            aria-label="Filter users by status"
+          >
+            {(
+              [
+                { value: 'all', label: 'All' },
+                { value: 'active', label: 'Active' },
+                { value: 'inactive', label: 'Deactivated' },
+              ] as const
+            ).map((filter) => (
+              <button
+                key={filter.value}
+                type="button"
+                aria-pressed={status === filter.value}
+                onClick={() => setStatus(filter.value)}
+                className={cn(
+                  'flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors',
+                  status === filter.value ? 'bg-primary-subtle text-primary' : 'text-fg-muted hover:bg-surface-hover hover:text-fg',
+                )}
               >
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <Avatar name={user.name} src={user.image ?? undefined} size={32} />
-                    <div className="flex min-w-0 items-center gap-1.5">
-                      <span className="truncate font-medium text-fg">{user.name}</span>
-                      {user.id === currentUserId ? <Badge variant="outline">You</Badge> : null}
-                      {user.isSuperAdmin ? <Badge variant="warning">Super admin</Badge> : null}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell className="text-fg-muted">{user.email}</TableCell>
-                <TableCell>
-                  <Badge variant={user.isActive ? 'success' : 'secondary'}>{user.isActive ? 'Active' : 'Deactivated'}</Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    <Badge variant={user.hasCredential ? 'secondary' : 'outline'}>
-                      {user.hasCredential ? 'Password' : 'No credential'}
-                    </Badge>
-                    {user.emailVerified ? null : <Badge variant="outline">Unverified</Badge>}
-                  </div>
-                </TableCell>
-                <TableCell className="tabular-nums text-fg-muted">{user.activeSessionCount}</TableCell>
-                <TableCell className="whitespace-nowrap text-fg-muted">{formatDateTime(user.lastSeenAt)}</TableCell>
-              </TableRow>
+                <span>{filter.label}</span>
+                <span className="tabular-nums text-fg-subtle">{counts[filter.value]}</span>
+              </button>
             ))}
-            {filtered.length === 0 ? (
-              <TableRow noAnimate>
-                <TableCell colSpan={6}>
-                  <EmptyState
-                    icon={<Users />}
-                    title="No users found"
-                    description="Try a different search or filter."
-                    className="border-0 bg-transparent py-10 shadow-none"
-                  />
-                </TableCell>
-              </TableRow>
-            ) : null}
-          </TableBody>
-        </Table>
-      </div>
+          </div>
+        }
+        toolbarActions={
+          <Button onClick={() => setCreating(true)}>
+            <UserPlus size={16} />
+            Add user
+          </Button>
+        }
+        onRowClick={(user) => setSelectedId(user.id)}
+        empty={{
+          icon: <Users />,
+          title: 'No users found',
+          description: 'Try a different search or filter.',
+        }}
+      />
 
       {selected ? (
         <UserDrawer
@@ -240,6 +251,8 @@ export function PlatformUsersAdmin({
 
       {creating ? (
         <CreateUserDrawer
+          tenants={tenants}
+          defaultTenantId={defaultTenantId}
           onClose={() => setCreating(false)}
           onCreate={async (input) => {
             const saved = await run(() => actions.createUser(input), `${input.email} can now sign in.`)
@@ -434,18 +447,29 @@ function UserDrawer({
 }
 
 function CreateUserDrawer({
+  tenants,
+  defaultTenantId,
   onClose,
   onCreate,
 }: {
+  tenants: { id: string; name: string }[]
+  defaultTenantId: string
   onClose: () => void
-  onCreate: (input: { name: string; email: string; password: string; isSuperAdmin?: boolean }) => Promise<void>
+  onCreate: (input: {
+    name: string
+    email: string
+    password: string
+    isSuperAdmin?: boolean
+    tenantId: string
+  }) => Promise<void>
 }) {
   const [name, setName] = React.useState('')
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
+  const [tenantId, setTenantId] = React.useState(defaultTenantId)
   const [isSuperAdmin, setIsSuperAdmin] = React.useState(false)
   const [busy, startBusy] = React.useTransition()
-  const valid = name.trim().length > 0 && email.includes('@') && password.length >= 8
+  const valid = name.trim().length > 0 && email.includes('@') && password.length >= 8 && tenantId.length > 0
 
   return (
     <Drawer
@@ -461,7 +485,7 @@ function CreateUserDrawer({
           </Button>
           <Button
             disabled={!valid || busy}
-            onClick={() => startBusy(() => onCreate({ name, email, password, isSuperAdmin }))}
+            onClick={() => startBusy(() => onCreate({ name, email, password, isSuperAdmin, tenantId }))}
           >
             Create user
           </Button>
@@ -483,6 +507,25 @@ function CreateUserDrawer({
               onChange={(event) => setEmail(event.target.value)}
             />
           </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="superadmin-create-tenant">Workspace</Label>
+          <Select
+            id="superadmin-create-tenant"
+            required
+            value={tenantId}
+            onChange={(event) => setTenantId(event.target.value)}
+            placeholder="Choose a workspace"
+          >
+            {tenants.map((tenant) => (
+              <option key={tenant.id} value={tenant.id}>
+                {tenant.name}
+              </option>
+            ))}
+          </Select>
+          <p className="text-xs text-fg-muted">
+            The workspace this account joins on creation. Move or add memberships later from Tenants.
+          </p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="superadmin-create-password">Password</Label>
@@ -530,6 +573,85 @@ export function PlatformSessionsAdmin({
   const [notice, setNotice] = React.useState<{ tone: 'error' | 'warning'; message: string } | null>(null)
   const [busy, startBusy] = React.useTransition()
 
+  const columns = React.useMemo<RecordColumn<PlatformSessionRecord>[]>(
+    () => [
+      {
+        key: 'userName',
+        label: 'User',
+        render: (session) => (
+          <div>
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="truncate font-medium text-fg">{session.userName}</span>
+              {session.isCurrentSession ? <Badge variant="outline">This session</Badge> : null}
+            </div>
+            <div className="truncate text-xs text-fg-muted">{session.userEmail}</div>
+          </div>
+        ),
+      },
+      {
+        key: 'createdAt',
+        label: 'Signed in',
+        render: (session) => (
+          <span className="whitespace-nowrap text-fg-muted">{formatDateTime(session.createdAt)}</span>
+        ),
+      },
+      {
+        key: 'expiresAt',
+        label: 'Expires',
+        render: (session) => (
+          <span className="whitespace-nowrap text-fg-muted">{formatDateTime(session.expiresAt)}</span>
+        ),
+      },
+      {
+        key: 'ipAddress',
+        label: 'IP address',
+        render: (session) => <span className="font-mono text-xs text-fg-muted">{session.ipAddress || '—'}</span>,
+      },
+      {
+        key: 'userAgent',
+        label: 'Device',
+        render: (session) => (
+          <span className="block max-w-64 truncate text-xs text-fg-muted" title={session.userAgent ?? undefined}>
+            {session.userAgent || '—'}
+          </span>
+        ),
+      },
+      {
+        key: 'revoke',
+        label: '',
+        kind: 'actions',
+        render: (session) => (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-danger"
+            disabled={busy}
+            onClick={(event) => {
+              event.stopPropagation()
+              startBusy(async () => {
+                const confirmed = await confirmDialog({
+                  message: session.isCurrentSession
+                    ? 'Revoke the session you are using right now? You will be signed out.'
+                    : `Revoke ${session.userName}'s session? That device is signed out immediately.`,
+                  confirmLabel: 'Revoke session',
+                  tone: 'danger',
+                })
+                if (!confirmed) return
+                setNotice(null)
+                const result = await actions.revokeSession(session.id)
+                if (!result.ok) setNotice({ tone: 'error', message: result.message })
+                else if (result.message) setNotice({ tone: 'warning', message: result.message })
+              })
+            }}
+          >
+            Revoke
+          </Button>
+        ),
+      },
+    ],
+    [actions, busy],
+  )
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-5">
       <div>
@@ -551,77 +673,16 @@ export function PlatformSessionsAdmin({
         </div>
       ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-border bg-surface">
-        <Table>
-          <TableHeader>
-            <TableRow noAnimate>
-              <TableHead>User</TableHead>
-              <TableHead>Signed in</TableHead>
-              <TableHead>Expires</TableHead>
-              <TableHead>IP address</TableHead>
-              <TableHead>Device</TableHead>
-              <TableHead aria-label="Actions" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sessions.map((session) => (
-              <TableRow key={session.id} noAnimate>
-                <TableCell>
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="truncate font-medium text-fg">{session.userName}</span>
-                    {session.isCurrentSession ? <Badge variant="outline">This session</Badge> : null}
-                  </div>
-                  <div className="truncate text-xs text-fg-muted">{session.userEmail}</div>
-                </TableCell>
-                <TableCell className="whitespace-nowrap text-fg-muted">{formatDateTime(session.createdAt)}</TableCell>
-                <TableCell className="whitespace-nowrap text-fg-muted">{formatDateTime(session.expiresAt)}</TableCell>
-                <TableCell className="font-mono text-xs text-fg-muted">{session.ipAddress || '—'}</TableCell>
-                <TableCell className="max-w-64 truncate text-xs text-fg-muted" title={session.userAgent ?? undefined}>
-                  {session.userAgent || '—'}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-danger"
-                    disabled={busy}
-                    onClick={() =>
-                      startBusy(async () => {
-                        const confirmed = await confirmDialog({
-                          message: session.isCurrentSession
-                            ? 'Revoke the session you are using right now? You will be signed out.'
-                            : `Revoke ${session.userName}'s session? That device is signed out immediately.`,
-                          confirmLabel: 'Revoke session',
-                          tone: 'danger',
-                        })
-                        if (!confirmed) return
-                        setNotice(null)
-                        const result = await actions.revokeSession(session.id)
-                        if (!result.ok) setNotice({ tone: 'error', message: result.message })
-                        else if (result.message) setNotice({ tone: 'warning', message: result.message })
-                      })
-                    }
-                  >
-                    Revoke
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-            {sessions.length === 0 ? (
-              <TableRow noAnimate>
-                <TableCell colSpan={6}>
-                  <EmptyState
-                    icon={<MonitorSmartphone />}
-                    title="No active sessions"
-                    description="Nobody is signed in right now."
-                    className="border-0 bg-transparent py-10 shadow-none"
-                  />
-                </TableCell>
-              </TableRow>
-            ) : null}
-          </TableBody>
-        </Table>
-      </div>
+      <RecordList
+        columns={columns}
+        rows={sessions}
+        getRowId={(session) => session.id}
+        empty={{
+          icon: <MonitorSmartphone />,
+          title: 'No active sessions',
+          description: 'Nobody is signed in right now.',
+        }}
+      />
     </div>
   )
 }
@@ -663,9 +724,62 @@ export function PlatformTenantsAdmin({
 }: PlatformTenantsAdminProps) {
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
   const [creating, setCreating] = React.useState(false)
+  const [sort, setSort] = React.useState<{ key: string; dir: 'asc' | 'desc' }>({ key: 'name', dir: 'asc' })
   const [notice, setNotice] = React.useState<{ tone: 'error' | 'success' | 'warning'; message: string } | null>(null)
 
   const selected = tenants.find((tenant) => tenant.id === selectedId) ?? null
+
+  const columns = React.useMemo<RecordColumn<PlatformTenantRecord>[]>(
+    () => [
+      {
+        key: 'name',
+        label: 'Name',
+        sortable: true,
+        render: (tenant) => (
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate font-medium text-fg">{tenant.name}</span>
+            {tenant.id === currentTenantId ? <Badge variant="outline">Current</Badge> : null}
+          </div>
+        ),
+      },
+      {
+        key: 'slug',
+        label: 'Slug',
+        sortable: true,
+        render: (tenant) => <span className="font-mono text-xs text-fg-muted">{tenant.slug}</span>,
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        render: (tenant) => (
+          <Badge variant={tenant.status === 'active' ? 'success' : 'secondary'}>
+            {tenant.status === 'active' ? 'Active' : tenant.status === 'suspended' ? 'Suspended' : 'Archived'}
+          </Badge>
+        ),
+      },
+      {
+        key: 'memberCount',
+        label: 'Members',
+        render: (tenant) => <span className="tabular-nums text-fg-muted">{tenant.memberCount}</span>,
+      },
+      {
+        key: 'createdAt',
+        label: 'Created',
+        render: (tenant) => (
+          <span className="whitespace-nowrap text-fg-muted">{formatDateTime(tenant.createdAt)}</span>
+        ),
+      },
+    ],
+    [currentTenantId],
+  )
+
+  const sorted = React.useMemo(() => {
+    const dir = sort.dir === 'asc' ? 1 : -1
+    return [...tenants].sort((a, b) => {
+      const key = sort.key as keyof PlatformTenantRecord
+      return String(a[key] ?? '').localeCompare(String(b[key] ?? '')) * dir
+    })
+  }, [tenants, sort])
 
   async function run(operation: () => Promise<SuperadminActionResult>, successMessage?: string): Promise<boolean> {
     setNotice(null)
@@ -708,63 +822,21 @@ export function PlatformTenantsAdmin({
         </div>
       ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-border bg-surface">
-        <Table>
-          <TableHeader>
-            <TableRow noAnimate>
-              <TableHead>Name</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Members</TableHead>
-              <TableHead>Created</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {tenants.map((tenant) => (
-              <TableRow
-                key={tenant.id}
-                role="button"
-                tabIndex={0}
-                className="cursor-pointer"
-                onClick={() => setSelectedId(tenant.id)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    setSelectedId(tenant.id)
-                  }
-                }}
-              >
-                <TableCell>
-                  <div className="flex min-w-0 items-center gap-1.5">
-                    <span className="truncate font-medium text-fg">{tenant.name}</span>
-                    {tenant.id === currentTenantId ? <Badge variant="outline">Current</Badge> : null}
-                  </div>
-                </TableCell>
-                <TableCell className="font-mono text-xs text-fg-muted">{tenant.slug}</TableCell>
-                <TableCell>
-                  <Badge variant={tenant.status === 'active' ? 'success' : 'secondary'}>
-                    {tenant.status === 'active' ? 'Active' : tenant.status === 'suspended' ? 'Suspended' : 'Archived'}
-                  </Badge>
-                </TableCell>
-                <TableCell className="tabular-nums text-fg-muted">{tenant.memberCount}</TableCell>
-                <TableCell className="whitespace-nowrap text-fg-muted">{formatDateTime(tenant.createdAt)}</TableCell>
-              </TableRow>
-            ))}
-            {tenants.length === 0 ? (
-              <TableRow noAnimate>
-                <TableCell colSpan={5}>
-                  <EmptyState
-                    icon={<Building2 />}
-                    title="No tenants"
-                    description="Create the first workspace to get started."
-                    className="border-0 bg-transparent py-10 shadow-none"
-                  />
-                </TableCell>
-              </TableRow>
-            ) : null}
-          </TableBody>
-        </Table>
-      </div>
+      <RecordList
+        columns={columns}
+        rows={sorted}
+        getRowId={(tenant) => tenant.id}
+        sort={sort}
+        onSortChange={(key) =>
+          setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }))
+        }
+        onRowClick={(tenant) => setSelectedId(tenant.id)}
+        empty={{
+          icon: <Building2 />,
+          title: 'No tenants',
+          description: 'Create the first workspace to get started.',
+        }}
+      />
 
       {selected ? (
         <TenantDrawer
