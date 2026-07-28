@@ -1,6 +1,6 @@
 {
   "name": "@appkit/mailbox",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Mail engine: incremental IMAP sync + SMTP send with RFC-5322 threading, persistence-injected so the application owns the ledger.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -43,10 +43,10 @@
   },
   "keywords": [
     "appkit",
+    "application-framework",
+    "email",
     "imap",
     "smtp",
-    "email",
-    "application-framework",
     "typescript"
   ],
   "publishConfig": {

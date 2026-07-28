@@ -6,6 +6,7 @@ export type {
   MailAddress,
   MailboxConnection,
   MailboxStore,
+  OutboundAttachment,
   SendMailArgs,
   SendMailResult,
   SyncResult,

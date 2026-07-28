@@ -27,6 +27,14 @@ export async function sendMail(conn: MailboxConnection, args: SendMailArgs): Pro
       html: args.html,
       inReplyTo: args.inReplyTo ? bracket(args.inReplyTo) : undefined,
       references: args.references?.length ? args.references.map(bracket).join(' ') : undefined,
+      attachments: args.attachments?.length
+        ? args.attachments.map((a) => ({
+            filename: a.filename,
+            content: Buffer.isBuffer(a.content) ? a.content : Buffer.from(a.content),
+            contentType: a.contentType,
+            cid: a.contentId,
+          }))
+        : undefined,
     })
     return {
       messageId: info.messageId.replace(/^<|>$/g, ''),

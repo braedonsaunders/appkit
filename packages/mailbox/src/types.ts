@@ -46,6 +46,14 @@ export type MailboxStore = {
   saveInbound: (message: InboundMessage) => Promise<void>
 }
 
+export type OutboundAttachment = {
+  filename: string
+  content: Buffer | Uint8Array
+  contentType?: string
+  /** Content-ID for inline references from the HTML body (`cid:` URLs). */
+  contentId?: string
+}
+
 export type SendMailArgs = {
   to: MailAddress[]
   cc?: MailAddress[]
@@ -56,6 +64,7 @@ export type SendMailArgs = {
   inReplyTo?: string
   references?: string[]
   fromName?: string
+  attachments?: OutboundAttachment[]
 }
 
 export type SendMailResult = {
