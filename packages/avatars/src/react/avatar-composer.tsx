@@ -15,6 +15,7 @@ import { ComposedAvatar } from './composed-avatar'
 import { ComposerStage, type StageMode } from './composer-stage'
 import { LayerPanel } from './layer-panel'
 import { PartLibraryPanel } from './part-library-panel'
+import { GeneratePanel, type PartGenerator } from './generate-panel'
 import { TransformControls } from './transform-controls'
 import { useCompositionState } from './use-composition-state'
 
@@ -29,7 +30,7 @@ import { useCompositionState } from './use-composition-state'
  * application.
  */
 /** The left rail holds one panel at a time so both columns stay on screen. */
-type RailTab = 'parts' | 'layers'
+type RailTab = 'parts' | 'layers' | 'generate'
 
 export function AvatarComposer({
   composition: initialComposition,
@@ -42,6 +43,7 @@ export function AvatarComposer({
   stageWidth = 340,
   subjectName,
   generateAction,
+  generator,
 }: {
   composition: AvatarComposition
   parts: readonly AvatarPart[]
@@ -56,6 +58,8 @@ export function AvatarComposer({
   subjectName?: string
   /** A route into part generation, shown when the library is thin. */
   generateAction?: React.ReactNode
+  /** Supply this and the rail grows a Draw tab that fills the library in place. */
+  generator?: PartGenerator
 }) {
   const state = useCompositionState(initialComposition, categories)
   const [mode, setMode] = React.useState<StageMode>('compose')
@@ -168,6 +172,7 @@ export function AvatarComposer({
             tabs={[
               { key: 'parts', label: 'Parts' },
               { key: 'layers', label: 'Layers', count: state.orderedCategoryIds.length },
+              ...(generator ? [{ key: 'generate', label: 'Draw' }] : []),
             ]}
             active={rail}
             onSelect={(key) => setRail(key as RailTab)}
@@ -181,6 +186,18 @@ export function AvatarComposer({
                 placedPartIds={placedPartIds}
                 activeCategoryId={state.selectedCategoryId}
                 onPlace={state.place}
+              />
+            ) : rail === 'generate' && generator ? (
+              <GeneratePanel
+                categories={categories}
+                generator={generator}
+                defaultCategoryId={state.selectedCategoryId}
+                onKept={(part, categoryId) => {
+                  // Straight onto the figure: drawing a part is only useful if
+                  // you can see it on the person you are building.
+                  const category = categories.find((entry) => entry.id === categoryId)
+                  if (part && category) state.place(part, category)
+                }}
               />
             ) : (
               <LayerPanel

@@ -84,7 +84,6 @@ export function LayerPanel({
                 >
                   <div className="size-9 shrink-0 overflow-hidden rounded border border-border bg-bg-subtle">
                     {part ? (
-                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={resolvePartUrl(part, placement.colorVariant)}
                         alt=""

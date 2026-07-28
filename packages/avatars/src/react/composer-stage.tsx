@@ -273,7 +273,6 @@ export function ComposerStage({
             opacity: layer.placement.hidden ? 0.18 : layer.opacity,
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={resolvePartUrl(layer.part, layer.placement.colorVariant)}
             alt=""
@@ -351,7 +350,6 @@ export function ComposerStage({
                       opacity: layer.opacity,
                     }}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={resolvePartUrl(layer.part, layer.placement.colorVariant)}
                       alt=""

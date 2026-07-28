@@ -128,7 +128,6 @@ export function PartLibraryPanel({
                               : 'border-border hover:border-primary'
                           }`}
                         >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={resolvePartUrl(part)}
                             alt={part.name}

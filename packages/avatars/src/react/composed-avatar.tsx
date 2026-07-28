@@ -184,7 +184,6 @@ function PartLayer({
           }
         : {})}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={layer.url}
         alt=""
