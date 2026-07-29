@@ -153,6 +153,9 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 | `@appkit/customization` | Versioned form layouts, custom fields, and the production record-list system: saved views, subtabs, search, filters, sorting, paging, drill-through, designers, plus optional memory and tenant-scoped Drizzle persistence. Your app supplies its record catalogue once; AppKit keeps every editor, validator, and store on that contract. |
 | `@appkit/design-studio` | Bounded multi-artboard print design, safe HTML/print output, and an interactive Fabric workspace with transforms, layers, zoom, and full property editing.                     |
 | `@appkit/i18n`          | Tenant locale policy, request negotiation, user overrides, and localized authored content.                                                                                    |
+| `@appkit/scheduling`    | Project scheduling: CPM critical path, calendars, resource leveling, baselines, and a Gantt/list/board authoring surface.                                                     |
+| `@appkit/avatars`       | Avatar parts library, composition model, and composer — one full-body figure per subject with portraits derived by head viewport — plus AI image generation.                  |
+| `@appkit/scene`         | Animated character scene: characters walk, idle, and scale with depth over a configurable ground.                                                                            |
 
 Bind customization to your records once and retain key-based calls throughout
 the application:
@@ -185,6 +188,8 @@ product’s record names, routes, queries, or permissions inside AppKit.
 | `@appkit/scripts`   | Event, scheduled, endpoint, bulk, and opaque-origin client scripts with a production CodeMirror editor, run/log inspection, vetoes, allowed mutations, cron, jobs, auditing, Drizzle storage, and a bound cutover runtime. |
 | `@appkit/apps`      | Installable app manifests and ZIPs, a nested file browser and syntax editors, immutable versions, storage, capabilities, QuickJS backends, opaque-origin preview, bridge SDK, run inspection, marketplace, memory, Drizzle, and bound lifecycle adapters. |
 | `@appkit/ai`        | Provider-neutral bounded agents, streaming React UI, and production analysis, extraction, document, vision, writing, digest, and model helpers. |
+| `@appkit/superadmin` | Instance-operator administration over platform identity: the users who can sign in, their credentials, and active sessions, with guard rails and production React components. |
+| `@appkit/process-sandbox` | Fail-closed Linux process isolation with bubblewrap, for workspace-bound coding agents and other trusted application workers. |
 
 ### Analytics, workflows, and connectivity
 
@@ -211,6 +216,10 @@ product’s record names, routes, queries, or permissions inside AppKit.
 | `@appkit/crypto`          | AES-256-GCM sealed secrets with configurable HKDF-derived application keys.                                                        |
 | `@appkit/jobs`            | Lazy BullMQ/Redis runtime plus production email, notification/push, PDF/document, report, scheduled, outbound, script, sandbox, migration, and capture queues with exact retries, retention, validation, deterministic IDs, schedule reconciliation, worker profiles, rate limits, and hardened Web Push. |
 | `@appkit/storage`         | Tenant-owned S3 objects plus the optional production attachment workspace: upload, search, type filters, paging, preview, download, expansion, removal, HTTP adapters, and database-free memory adapters. |
+| `@appkit/mailbox`         | Incremental IMAP sync and SMTP send with RFC-5322 threading, persistence injected so the app owns the ledger, plus the three-pane operator inbox. |
+| `@appkit/office`          | HTML to .docx/.pdf through headless LibreOffice, plain-text precision edits inside .docx, PDF concatenation, and declarative .xlsx workbooks. |
+| `@appkit/voice`           | Per-agent voice configuration, speech-provider catalogues and key verification (Deepgram, ElevenLabs, OpenAI Realtime, Gemini Live), and LiveKit token minting. |
+| `@appkit/telephony`       | Carrier phone-number provisioning and the SIP trunk the numbers arrive on, with sealed-secret config and an injectable carrier adapter. |
 
 ## Modular by construction
 
