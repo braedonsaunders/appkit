@@ -91,7 +91,16 @@ export function SearchSelect({
   const searchRef = React.useRef<HTMLInputElement>(null)
   const triggerRef = React.useRef<HTMLButtonElement>(null)
   const dropRef = React.useRef<HTMLDivElement>(null)
-  const [pos, setPos] = React.useState<{ top: number; left: number; width: number; maxHeight: number } | null>(null)
+  // The menu is anchored from the edge that touches the trigger: `top` when it
+  // opens downward, `bottom` when it opens upward. Anchoring an upward menu by
+  // its top would place it a full maxHeight above the trigger no matter how
+  // short the list actually is — a three-option menu would float hundreds of
+  // pixels clear of the field it belongs to.
+  const [pos, setPos] = React.useState<
+    | { edge: 'top'; offset: number; left: number; width: number; maxHeight: number }
+    | { edge: 'bottom'; offset: number; left: number; width: number; maxHeight: number }
+    | null
+  >(null)
   function place() {
     const r = triggerRef.current?.getBoundingClientRect()
     if (r) {
@@ -102,10 +111,15 @@ export function SearchSelect({
       const above = r.top - margin
       const desired = 320
       if (below >= Math.min(desired, 180) || below >= above) {
-        setPos({ top: r.bottom + 6, left: r.left, width: r.width, maxHeight: Math.min(desired, below) })
+        setPos({ edge: 'top', offset: r.bottom + 6, left: r.left, width: r.width, maxHeight: Math.min(desired, below) })
       } else {
-        const maxHeight = Math.min(desired, above)
-        setPos({ top: Math.max(margin, r.top - 6 - maxHeight), left: r.left, width: r.width, maxHeight })
+        setPos({
+          edge: 'bottom',
+          offset: Math.max(margin, window.innerHeight - r.top + 6),
+          left: r.left,
+          width: r.width,
+          maxHeight: Math.min(desired, above),
+        })
       }
     }
   }
@@ -344,7 +358,7 @@ export function SearchSelect({
               data-ui-overlay
               style={{
                 position: 'fixed',
-                top: pos.top,
+                [pos.edge]: pos.offset,
                 left: pos.left,
                 width: Math.max(pos.width, 208),
                 maxHeight: pos.maxHeight,
