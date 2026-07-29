@@ -1,0 +1,214 @@
+/* Chrome for the email designer. Plain CSS — no Tailwind, no UI kit — so the
+ * package drops into any app. Every color is a custom property scoped to
+ * `.ak-ed`, so a host restyles the surface by overriding the ones it cares
+ * about (or by setting them on a parent element).
+ *
+ * GrapesJS's own stylesheet is pulled in here so a host needs a single import:
+ *   import '@appkit/email-designer/styles.css'
+ * If your bundler does not resolve bare specifiers in CSS `@import`, drop this
+ * line and import 'grapesjs/dist/css/grapes.min.css' from your client entry. */
+@import 'grapesjs/dist/css/grapes.min.css';
+
+.ak-ed {
+  --ak-ed-surface: #ffffff;
+  --ak-ed-rail: #f8fafc;
+  --ak-ed-border: #e2e8f0;
+  --ak-ed-ink: #0f172a;
+  --ak-ed-muted: #64748b;
+  --ak-ed-accent: #0d9488;
+  --ak-ed-accent-soft: #f0fdfa;
+  --ak-ed-radius: 6px;
+  --ak-ed-rail-width: minmax(200px, 1fr);
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--ak-ed-surface);
+  color: var(--ak-ed-ink);
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ak-ed {
+    --ak-ed-surface: #0f172a;
+    --ak-ed-rail: #0b1220;
+    --ak-ed-border: #1e293b;
+    --ak-ed-ink: #e2e8f0;
+    --ak-ed-muted: #94a3b8;
+    --ak-ed-accent-soft: #042f2e;
+  }
+}
+
+/* One grid row sized minmax(0,1fr) so the rail scrolls inside the fixed-height
+ * container. Without it the row sizes to its content and the overflow is
+ * clipped by the wrapper — the "cannot scroll to the bottom" bug. */
+.ak-ed__layout {
+  display: grid;
+  grid-template-columns: var(--ak-ed-rail-width) 2fr;
+  grid-template-rows: minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+}
+
+.ak-ed__rail {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px;
+  border-right: 1px solid var(--ak-ed-border);
+  background: var(--ak-ed-rail);
+}
+
+.ak-ed__canvas {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ak-ed__frame {
+  height: 100%;
+}
+
+/* --- palette ------------------------------------------------------------- */
+
+.ak-ed-palette {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 24px;
+}
+
+.ak-ed-palette__empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ak-ed-muted);
+}
+
+.ak-ed-palette__heading {
+  margin: 0 0 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ak-ed-muted);
+}
+
+.ak-ed-palette__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.ak-ed-palette__block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 6px;
+  border: 1px solid var(--ak-ed-border);
+  border-radius: var(--ak-ed-radius);
+  background: var(--ak-ed-surface);
+  color: var(--ak-ed-ink);
+  font-size: 10px;
+  line-height: 1.25;
+  text-align: center;
+  cursor: grab;
+  transition:
+    border-color 0.12s ease,
+    color 0.12s ease,
+    background 0.12s ease;
+}
+
+.ak-ed-palette__block:hover,
+.ak-ed-palette__block:focus-visible {
+  border-color: var(--ak-ed-accent);
+  background: var(--ak-ed-accent-soft);
+  outline: none;
+}
+
+.ak-ed-palette__block:active {
+  cursor: grabbing;
+}
+
+.ak-ed-palette__glyph {
+  font-size: 13px;
+  color: var(--ak-ed-muted);
+}
+
+.ak-ed-palette__label {
+  overflow-wrap: anywhere;
+}
+
+/* --- table toolbar ------------------------------------------------------- */
+
+.ak-ed-tabletools {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  transform: translateX(-50%);
+  border: 1px solid var(--ak-ed-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ak-ed-surface) 95%, transparent);
+  box-shadow: 0 8px 20px rgb(15 23 42 / 12%);
+  backdrop-filter: blur(4px);
+}
+
+.ak-ed-tabletools__label {
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ak-ed-muted);
+}
+
+.ak-ed-tabletools__btn {
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ak-ed-ink);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ak-ed-tabletools__btn:hover {
+  background: var(--ak-ed-accent-soft);
+  color: var(--ak-ed-accent);
+}
+
+.ak-ed-tabletools__sep {
+  width: 1px;
+  height: 16px;
+  margin: 0 2px;
+  background: var(--ak-ed-border);
+}
+
+.ak-ed-tabletools__width {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--ak-ed-muted);
+}
+
+.ak-ed-tabletools__width input {
+  width: 60px;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--ak-ed-border);
+  border-radius: 4px;
+  background: var(--ak-ed-surface);
+  color: var(--ak-ed-ink);
+  font: inherit;
+  font-size: 11px;
+}

@@ -202,6 +202,7 @@ product’s record names, routes, queries, or permissions inside AppKit.
 | Package                   | What it gives your app                                                                                                             |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | `@appkit/email-render`    | Bounded templates, loops, conditions, sanitization, escaped merge values, subjects, recipients, attachments, HTML, and plain text. |
+| `@appkit/email-designer`  | Drag-and-drop message and signature authoring: email-safe blocks, merge fields, repeating tables, table tools, and a sanitize/inline/expand compile pipeline. |
 | `@appkit/emails`          | Resend, SendGrid, Mailgun, Postmark, secure SMTP, and development-only loopback SMTP behind one tenant-aware contract.            |
 | `@appkit/sms`             | Twilio, Vonage, MessageBird, Plivo, and Telnyx with strict addressing and credential-safe failures.                                |
 | `@appkit/pdf`             | Pure-JS PDFKit reports/statements plus optional authored-template and hardened Chromium rendering entries.                         |

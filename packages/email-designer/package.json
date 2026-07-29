@@ -1,0 +1,96 @@
+{
+  "name": "@appkit/email-designer",
+  "version": "0.1.0",
+  "description": "Drag-and-drop email and signature designer: GrapesJS authoring surface, merge-field blocks, and an email-safe compile pipeline.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./react": "./src/react.ts",
+    "./inline": "./src/inline.ts",
+    "./styles.css": "./src/styles.css",
+    "./package.json": "./package.json"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "build": "node ../../scripts/build-package.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@appkit/email-render": "workspace:*"
+  },
+  "peerDependencies": {
+    "@grapesjs/react": "^2.0.0",
+    "grapesjs": "^0.22.16",
+    "juice": "^12.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@grapesjs/react": {
+      "optional": true
+    },
+    "grapesjs": {
+      "optional": true
+    },
+    "juice": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@grapesjs/react": "^2.0.0",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "grapesjs": "^0.22.16",
+    "juice": "^12.0.0",
+    "react": "^19",
+    "react-dom": "^19",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.9"
+  },
+  "author": "Braedon Saunders",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/braedonsaunders/appkit.git",
+    "directory": "packages/email-designer"
+  },
+  "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/email-designer#readme",
+  "bugs": {
+    "url": "https://github.com/braedonsaunders/appkit/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "appkit",
+    "application-framework",
+    "email",
+    "email-signature",
+    "email-template",
+    "grapesjs",
+    "typescript",
+    "wysiwyg"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist",
+    "linkDirectory": false,
+    "provenance": true
+  }
+}
