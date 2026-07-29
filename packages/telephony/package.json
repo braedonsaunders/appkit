@@ -1,6 +1,6 @@
 {
   "name": "@appkit/telephony",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Carrier telephony — buy phone numbers and provision the SIP trunk they arrive on, via fetch, with sealed-secret config and an injectable carrier adapter.",
   "license": "AGPL-3.0-or-later",
   "type": "module",

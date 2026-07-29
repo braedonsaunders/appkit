@@ -22,7 +22,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
-    "@appkit/ui": "^0.1.1",
+    "@appkit/ui": "^0.1.10",
     "framer-motion": "^12.34.0",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
