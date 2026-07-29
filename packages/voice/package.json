@@ -35,7 +35,7 @@
     "provenance": true
   },
   "name": "@appkit/voice",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Voice layer seam: per-agent voice config types, speech-provider catalogs and key verification (Deepgram, ElevenLabs, OpenAI Realtime, Gemini Live), and LiveKit access-token minting — credentials injected, never env.",
   "dependencies": {
     "livekit-server-sdk": "^2.14.0"
