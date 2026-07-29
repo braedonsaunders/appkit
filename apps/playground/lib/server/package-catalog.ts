@@ -11,6 +11,7 @@ import dashboard from '../../../../packages/dashboard/package.json'
 import db from '../../../../packages/db/package.json'
 import designStudio from '../../../../packages/design-studio/package.json'
 import editor from '../../../../packages/editor/package.json'
+import emailDesigner from '../../../../packages/email-designer/package.json'
 import emailRender from '../../../../packages/email-render/package.json'
 import emails from '../../../../packages/emails/package.json'
 import endpoints from '../../../../packages/endpoints/package.json'
@@ -119,8 +120,8 @@ export const PACKAGE_CATEGORIES: readonly {
     names: [
       '@appkit/db', '@appkit/tenant', '@appkit/auth', '@appkit/iam', '@appkit/superadmin', '@appkit/api',
       '@appkit/events', '@appkit/jobs', '@appkit/notifications', '@appkit/storage',
-      '@appkit/crypto', '@appkit/process-sandbox', '@appkit/email-render', '@appkit/emails',
-      '@appkit/mailbox', '@appkit/sms', '@appkit/telephony', '@appkit/voice',
+      '@appkit/crypto', '@appkit/process-sandbox', '@appkit/email-render', '@appkit/email-designer',
+      '@appkit/emails', '@appkit/mailbox', '@appkit/sms', '@appkit/telephony', '@appkit/voice',
     ],
   },
   {
@@ -148,6 +149,7 @@ const MANIFESTS: WorkspacePackageManifest[] = [
   db,
   designStudio,
   editor,
+  emailDesigner,
   emailRender,
   emails,
   endpoints,
@@ -215,6 +217,7 @@ const DEMO_ROUTES: Record<string, string> = {
   '@appkit/crypto': '/packages/crypto/demo',
   '@appkit/process-sandbox': '/packages/process-sandbox/demo',
   '@appkit/email-render': '/packages/email-render/demo',
+  '@appkit/email-designer': '/email-designer',
   '@appkit/emails': '/packages/emails/demo',
   '@appkit/mailbox': '/packages/mailbox/demo',
   '@appkit/sms': '/packages/sms/demo',
