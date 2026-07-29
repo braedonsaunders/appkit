@@ -41,6 +41,7 @@
     "@appkit/scene": "workspace:*",
     "@appkit/scheduling": "workspace:*",
     "@appkit/scripts": "workspace:*",
+    "@appkit/telephony": "workspace:*",
     "@appkit/tenant": "workspace:*",
     "@appkit/tokens": "workspace:*",
     "@appkit/sms": "workspace:*",

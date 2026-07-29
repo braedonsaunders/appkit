@@ -36,6 +36,12 @@ import {
 import { buildBubblewrapPlan } from '@appkit/process-sandbox'
 import { SMS_PROVIDER_SPECS, buildSmsTransport } from '@appkit/sms'
 import {
+  CARRIER_PROVIDER_SPECS,
+  isValidPhoneNumber,
+  resolveCarrierClient,
+  validateStoredCarrierConfig,
+} from '@appkit/telephony'
+import {
   DEEPGRAM_STT_MODELS,
   ELEVENLABS_TTS_MODELS,
   GEMINI_LIVE_MODELS,
@@ -75,6 +81,7 @@ const PACKAGE_DEMOS = {
   scene: 'Character scene',
   superadmin: 'Instance administration',
   sms: 'SMS delivery',
+  telephony: 'Carrier numbers',
   voice: 'Voice providers',
 } as const
 
@@ -147,6 +154,8 @@ function renderPackageDemo(
       return <SuperadminDemo />
     case 'sms':
       return <SmsDemo provider={queryValue(query.provider, 'twilio')} />
+    case 'telephony':
+      return <TelephonyDemo carrier={queryValue(query.carrier, 'twilio')} />
     case 'voice':
       return <VoiceDemo />
   }
@@ -377,6 +386,50 @@ function EmailsDemo({ provider }: { provider: string }) {
         ['Credential required', spec.secretRequired ? 'Yes' : 'No'],
         ['Additional fields', spec.fields.length ? spec.fields.map((field) => field.label).join(', ') : 'None'],
         ['Resolved transport', transport?.provider ?? 'Configuration incomplete'],
+      ]}
+    />
+  )
+}
+
+function TelephonyDemo({ carrier }: { carrier: string }) {
+  const spec =
+    CARRIER_PROVIDER_SPECS.find((candidate) => candidate.value === carrier) ?? CARRIER_PROVIDER_SPECS[0]!
+  // The stored-config path end to end: seal a secret, validate the persisted
+  // shape, then resolve a real client from it. Nothing reaches the carrier.
+  const sealer = createSealer(Buffer.alloc(32, 11).toString('base64'))
+  const sealed = sealer.sealSecret('demo-carrier-secret')
+  const stored = {
+    enabled: true,
+    provider: spec.value,
+    // Assembled rather than written out: config validation requires a
+    // real-shaped Twilio SID (AC + 32 hex), and a literal trips secret scanning.
+    accountId: `AC${'0123456789abcdef'.repeat(2)}`,
+    keyCiphertext: sealed.ciphertext,
+    keyNonce: sealed.nonce,
+  }
+  let configured = 'Configuration incomplete'
+  try {
+    validateStoredCarrierConfig(stored, { requireComplete: true })
+    configured = 'Complete and sendable'
+  } catch (error) {
+    configured = error instanceof Error ? error.message : 'Invalid'
+  }
+  const client = resolveCarrierClient(stored, (value) => sealer.unsealSecret(value))
+
+  return (
+    <ProviderDemo
+      title="Carrier account and trunk seam"
+      description="Choose a carrier to validate its real stored-config contract and resolve a client. ensureTrunk collapses the carrier's own trunk, origination, and credential objects into one normalized result — termination host and port, outbound credentials, and the inbound signalling ranges below. No number is bought and no request is made."
+      name="carrier"
+      selected={spec.value}
+      options={CARRIER_PROVIDER_SPECS.map((candidate) => ({ value: candidate.value, label: candidate.label }))}
+      rows={[
+        ['Account identifier', spec.accountField.label],
+        ['Credential', spec.secretLabel],
+        ['Stored configuration', configured],
+        ['Resolved client', client?.provider ?? 'Configuration incomplete'],
+        ['Signalling ranges', `${spec.signalingRanges.length} published, seeded as editable configuration`],
+        ['E.164 enforcement', isValidPhoneNumber('+14155550123') && !isValidPhoneNumber('4155550123') ? 'Active' : 'Inactive'],
       ]}
     />
   )

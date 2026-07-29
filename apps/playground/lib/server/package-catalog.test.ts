@@ -40,6 +40,7 @@ test('server-oriented packages use dedicated, package-specific demos', () => {
     'scene',
     'superadmin',
     'sms',
+    'telephony',
     'voice',
   ]) {
     const item = PACKAGE_CATALOG.find((candidate) => candidate.slug === slug)

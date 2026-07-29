@@ -37,6 +37,7 @@ import sms from '../../../../packages/sms/package.json'
 import storage from '../../../../packages/storage/package.json'
 import superadmin from '../../../../packages/superadmin/package.json'
 import sync from '../../../../packages/sync/package.json'
+import telephony from '../../../../packages/telephony/package.json'
 import tenant from '../../../../packages/tenant/package.json'
 import tokens from '../../../../packages/tokens/package.json'
 import ui from '../../../../packages/ui/package.json'
@@ -119,7 +120,7 @@ export const PACKAGE_CATEGORIES: readonly {
       '@appkit/db', '@appkit/tenant', '@appkit/auth', '@appkit/iam', '@appkit/superadmin', '@appkit/api',
       '@appkit/events', '@appkit/jobs', '@appkit/notifications', '@appkit/storage',
       '@appkit/crypto', '@appkit/process-sandbox', '@appkit/email-render', '@appkit/emails',
-      '@appkit/mailbox', '@appkit/sms', '@appkit/voice',
+      '@appkit/mailbox', '@appkit/sms', '@appkit/telephony', '@appkit/voice',
     ],
   },
   {
@@ -173,6 +174,7 @@ const MANIFESTS: WorkspacePackageManifest[] = [
   storage,
   superadmin,
   sync,
+  telephony,
   tenant,
   tokens,
   ui,
@@ -216,6 +218,7 @@ const DEMO_ROUTES: Record<string, string> = {
   '@appkit/emails': '/packages/emails/demo',
   '@appkit/mailbox': '/packages/mailbox/demo',
   '@appkit/sms': '/packages/sms/demo',
+  '@appkit/telephony': '/packages/telephony/demo',
   '@appkit/voice': '/packages/voice/demo',
   '@appkit/ai': '/dashboard/platform',
   '@appkit/sandbox': '/admin/scripts',
