@@ -84,6 +84,12 @@ dangling parents and cycles) · `Badge` · `Avatar` (image + initials fallback) 
 (+ parts) · `Tabs` (animated indicator) · `AnimatedNumber` (token-timed KPI
 counter) · `Sparkline` (tokenized SVG trend, optional area/min-max dots).
 
+**Layout measurement** — `useElementSize()` returns `[ref, { width, height }]`
+from a `ResizeObserver`, for the layouts that have to do their own arithmetic
+(depth scaling, fit-the-viewport stages). Attach the ref and the size follows
+every resize. Available from `@appkit/ui` and, for consumers that want the hook
+without the component barrel, from `@appkit/ui/use-element-size`.
+
 **Dashboards & insights** — fixed product dashboards can import
 `DashboardMetricCard` and `DashboardPanel` from the dependency-light
 `@appkit/dashboard/primitives` entry (plus `primitives.css`) without installing

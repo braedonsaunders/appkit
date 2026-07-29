@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { cn } from '@appkit/ui'
+import { cn, useElementSize } from '@appkit/ui'
 import {
   DEFAULT_WALKING_CONFIG,
   LOBBY_GROUND,
@@ -9,7 +9,6 @@ import {
   type SceneGroundConfig,
   type WalkingConfig,
 } from './config'
-import { useElementSize } from './use-animation-frame'
 import { WalkingCharacter } from './walking-character'
 
 export type CharacterSceneProps = {

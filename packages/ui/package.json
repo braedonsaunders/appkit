@@ -10,6 +10,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./page-transition": "./src/page-transition.tsx",
+    "./use-element-size": "./src/use-element-size.ts",
     "./styles.css": "./src/styles.css",
     "./package.json": "./package.json"
   },

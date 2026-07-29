@@ -259,3 +259,4 @@ export {
   type AttachmentKind,
 } from './upload-limits'
 export { SignaturePad, type SignaturePadProps } from './signature-pad'
+export { useElementSize } from './use-element-size'
