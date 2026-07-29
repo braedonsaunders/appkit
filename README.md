@@ -3,6 +3,10 @@
 </p>
 
 <p align="center">
+  <img src=".github/codeflow-card.svg" alt="CodeFlow card — codebase scale and structure snapshot" width="100%" />
+</p>
+
+<p align="center">
   <strong>A production application foundation you can adopt one package at a time.</strong><br />
   Design system, app shell, multi-tenancy, forms, analytics, workflows, integrations, documents, communications, and more—composable without becoming inseparable.
 </p>
