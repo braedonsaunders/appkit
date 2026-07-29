@@ -1,3 +1,4 @@
+import agentTools from '../../../../packages/agent-tools/package.json'
 import ai from '../../../../packages/ai/package.json'
 import analytics from '../../../../packages/analytics/package.json'
 import api from '../../../../packages/api/package.json'
@@ -129,13 +130,14 @@ export const PACKAGE_CATEGORIES: readonly {
     label: 'Automation and extensions',
     description: 'AI, governed code, installable apps, workflows, integrations, and sync.',
     names: [
-      '@appkit/ai', '@appkit/sandbox', '@appkit/endpoints', '@appkit/scripts', '@appkit/apps',
+      '@appkit/ai', '@appkit/agent-tools', '@appkit/sandbox', '@appkit/endpoints', '@appkit/scripts', '@appkit/apps',
       '@appkit/workflows', '@appkit/integrations', '@appkit/sync',
     ],
   },
 ]
 
 const MANIFESTS: WorkspacePackageManifest[] = [
+  agentTools,
   ai,
   analytics,
   api,
@@ -215,6 +217,7 @@ const DEMO_ROUTES: Record<string, string> = {
   '@appkit/notifications': '/notifications',
   '@appkit/storage': '/attachments',
   '@appkit/crypto': '/packages/crypto/demo',
+  '@appkit/agent-tools': '/packages/agent-tools/demo',
   '@appkit/process-sandbox': '/packages/process-sandbox/demo',
   '@appkit/email-render': '/packages/email-render/demo',
   '@appkit/email-designer': '/email-designer',

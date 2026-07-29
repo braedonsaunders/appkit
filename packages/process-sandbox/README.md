@@ -6,12 +6,41 @@ trusted application workers.
 The package owns the reusable bubblewrap policy: user, process, IPC, UTS and
 cgroup namespaces; capability dropping; an explicitly rebuilt environment;
 read-only system roots; masked host data; a private PID namespace; fresh
-`/dev`, `/tmp`, and `/run`; and an explicit set of writable
-binds. Secret environment values are
-passed in the sanitized child environment rather than serialized into process
-arguments. The consuming application still owns authentication,
-tenant-to-workspace resolution, egress policy, resource limits, and the command
-being launched.
+`/dev`, `/tmp`, and `/run`; an explicit set of writable binds; optional network
+namespace isolation; and optional kernel resource ceilings. Secret environment
+values are passed in the sanitized child environment rather than serialized
+into process arguments. The consuming application still owns authentication,
+tenant-to-workspace resolution, and the command being launched.
+
+## Network policy
+
+`network` defaults to `'host'`, which is the behavior of every release before
+network policy existed — package installs and agents that call an API keep
+working across an upgrade. Pass `network: 'none'` for commands that have no
+business reaching out; the child then has only a loopback interface, with no
+DNS and no access to services the application container can reach.
+
+```ts
+const child = spawnBubblewrappedProcess({
+  command: '/opt/tools/ripgrep/rg',
+  args: ['--json', pattern],
+  cwd: workspacePath,
+  writablePaths: [workspacePath],
+  network: 'none',
+  limits: { cpuSeconds: 30, addressSpaceBytes: 1_073_741_824, processes: 64 },
+})
+```
+
+## Resource limits
+
+`limits` maps to `prlimit(1)` running inside the namespace, so the ceilings
+apply to the command and everything it forks. Soft and hard values are set
+together, which means the child cannot raise them. Requesting a limit on a host
+without util-linux throws rather than running the command unbounded — silently
+dropping a ceiling would fail open on exactly the hosts the caller was trying
+to protect. `verifyProcessSandbox()` reports `resourceLimitsSupported` and
+`networkIsolationSupported` so a readiness screen can show what this host can
+actually enforce.
 
 Procfs is unavailable by default for compatibility with container hosts that
 prohibit nested proc mounts. A consumer can set `mountProc: true` to mount a

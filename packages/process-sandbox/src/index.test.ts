@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   buildBubblewrapPlan,
+  DEFAULT_PRLIMIT_PATH,
   DEFAULT_PROCESS_PATH,
   isProcessSandboxSupported,
   ProcessSandboxError,
@@ -49,6 +50,85 @@ test('builds a cleared, workspace-bound bubblewrap invocation', () => {
   assert.ok(!('EMPTY' in plan.environment))
   assert.deepEqual(plan.args.slice(-5), ['--', '/usr/local/bin/codex', 'exec', '--json', 'Inspect the project'])
   assert.deepEqual(plan.launcherIdentity, { uid: 1000, gid: 1000 })
+  assert.equal(plan.network, 'host')
+  assert.ok(!plan.args.includes('--unshare-net'))
+  assert.deepEqual(plan.limits, {})
+})
+
+test('keeps the host network namespace by default and unshares it on request', () => {
+  const options = {
+    command: '/usr/bin/true',
+    cwd: '/workspace',
+    writablePaths: ['/workspace'],
+  }
+  const shared = buildBubblewrapPlan(options, { pathExists: allPathsExist })
+  assert.equal(shared.network, 'host')
+  assert.ok(!shared.args.includes('--unshare-net'))
+
+  const isolated = buildBubblewrapPlan({ ...options, network: 'none' }, { pathExists: allPathsExist })
+  assert.equal(isolated.network, 'none')
+  assert.ok(isolated.args.includes('--unshare-net'))
+  // Isolation is declared alongside the other namespaces, before any mount work.
+  assert.ok(isolated.args.indexOf('--unshare-net') < isolated.args.indexOf('--cap-drop'))
+})
+
+test('applies kernel resource ceilings through prlimit inside the namespace', () => {
+  const plan = buildBubblewrapPlan({
+    command: '/usr/bin/rg',
+    args: ['--json', 'needle'],
+    cwd: '/workspace',
+    writablePaths: ['/workspace'],
+    limits: { cpuSeconds: 30, addressSpaceBytes: 1_073_741_824, processes: 64 },
+  }, { pathExists: allPathsExist })
+
+  assert.deepEqual(plan.limits, {
+    cpuSeconds: 30,
+    addressSpaceBytes: 1_073_741_824,
+    processes: 64,
+  })
+  assert.deepEqual(plan.args.slice(plan.args.indexOf('--')), [
+    '--',
+    DEFAULT_PRLIMIT_PATH,
+    '--cpu=30:30',
+    '--as=1073741824:1073741824',
+    '--nproc=64:64',
+    '--',
+    '/usr/bin/rg',
+    '--json',
+    'needle',
+  ])
+})
+
+test('fails closed when resource ceilings are requested without prlimit', () => {
+  assert.throws(
+    () => buildBubblewrapPlan({
+      command: '/usr/bin/true',
+      cwd: '/workspace',
+      writablePaths: ['/workspace'],
+      limits: { cpuSeconds: 5 },
+    }, { pathExists: (path) => path !== DEFAULT_PRLIMIT_PATH }),
+    /prlimit was not found/,
+  )
+  assert.throws(
+    () => buildBubblewrapPlan({
+      command: '/usr/bin/true',
+      cwd: '/workspace',
+      writablePaths: ['/workspace'],
+      limits: { cpuSeconds: 0 },
+    }, { pathExists: allPathsExist }),
+    /limits.cpuSeconds must be a positive integer/,
+  )
+})
+
+test('leaves argv free of prlimit when no ceilings are requested', () => {
+  const plan = buildBubblewrapPlan({
+    command: '/usr/bin/true',
+    cwd: '/workspace',
+    writablePaths: ['/workspace'],
+    limits: {},
+  }, { pathExists: (path) => path !== DEFAULT_PRLIMIT_PATH })
+
+  assert.deepEqual(plan.args.slice(-2), ['--', '/usr/bin/true'])
 })
 
 test('can mount a private procfs when the container host permits it', () => {

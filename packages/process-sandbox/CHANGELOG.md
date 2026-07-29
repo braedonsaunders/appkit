@@ -1,5 +1,21 @@
 # @appkit/process-sandbox
 
+## 0.2.0
+
+### Minor Changes
+
+- Add `network: 'none' | 'host'` network namespace policy. The default stays
+  `'host'`, preserving prior behavior for network-dependent workers; `'none'`
+  adds `--unshare-net` so the child has only a loopback interface.
+- Add `limits` kernel resource ceilings (CPU seconds, address space, file size,
+  processes, open files) enforced by `prlimit(1)` inside the namespace with soft
+  and hard values set together. Requesting a ceiling on a host without prlimit
+  throws instead of running the command unbounded.
+- `verifyProcessSandbox()` now probes network isolation and reports
+  `networkIsolationSupported` and `resourceLimitsSupported`, so readiness
+  screens can show what a host can actually enforce. `BubblewrapPlan` gained
+  `network` and `limits`.
+
 ## 0.1.5
 
 ### Patch Changes

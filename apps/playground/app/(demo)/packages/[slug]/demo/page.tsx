@@ -33,6 +33,15 @@ import {
   sanitizeOfficeHtml,
   type WorkbookSpec,
 } from '@appkit/office'
+import {
+  DEFAULT_AGENT_TOOL_POLICY,
+  agentToolScope,
+  defineAgentTool,
+  evaluateAgentToolPolicy,
+  isSafeAgentTool,
+  type AgentToolManifest,
+  type AgentToolPolicyMode,
+} from '@appkit/agent-tools'
 import { buildBubblewrapPlan } from '@appkit/process-sandbox'
 import { SMS_PROVIDER_SPECS, buildSmsTransport } from '@appkit/sms'
 import {
@@ -71,6 +80,7 @@ import { SceneDemoStage } from './scene-demo-stage'
 import { SuperadminDemo } from './superadmin-demo'
 
 const PACKAGE_DEMOS = {
+  'agent-tools': 'Managed agent tools',
   crypto: 'Secret sealing',
   'email-render': 'Email rendering',
   emails: 'Email delivery',
@@ -134,6 +144,8 @@ function renderPackageDemo(
   query: Record<string, string | string[] | undefined>,
 ): ReactNode {
   switch (slug) {
+    case 'agent-tools':
+      return <AgentToolsDemo mode={queryValue(query.mode, DEFAULT_AGENT_TOOL_POLICY.execute) as AgentToolPolicyMode} />
     case 'crypto':
       return <CryptoDemo />
     case 'email-render':
@@ -748,6 +760,176 @@ async function OfficeDemo({ project }: { project: string }) {
         </CardContent>
       </Card>
     </>
+  )
+}
+
+const AGENT_TOOL_CATALOGUE: readonly AgentToolManifest[] = [
+  defineAgentTool({
+    id: 'ripgrep',
+    name: 'ripgrep',
+    description: 'Fast recursive search across the files in a workspace.',
+    sourceKind: 'npm-package',
+    risk: 'low',
+    packageName: '@microsoft/ripgrep-prebuilt',
+    packageVersion: '0.1.2',
+    capabilities: ['search'],
+    bins: [{ name: 'rg', bin: 'rg', healthCheckArgs: ['--version'] }],
+    limits: { cpuSeconds: 30, processes: 32 },
+  }),
+  defineAgentTool({
+    id: 'imagemagick',
+    name: 'ImageMagick',
+    description: 'Convert, crop, and inspect images already in the workspace.',
+    sourceKind: 'binary-path',
+    risk: 'medium',
+    binaryPath: '/usr/bin/convert',
+    capabilities: ['images'],
+    bins: [{ name: 'convert', bin: 'convert' }],
+    limits: { cpuSeconds: 60, addressSpaceBytes: 1_073_741_824 },
+  }),
+  defineAgentTool({
+    id: 'uploader',
+    name: 'Artifact uploader',
+    description: 'Pushes a finished artifact to a remote host.',
+    sourceKind: 'npm-package',
+    risk: 'high',
+    packageName: 'uploader-cli',
+    packageVersion: '2.0.0',
+    capabilities: ['transfer'],
+    bins: [{ name: 'upload', bin: 'upload' }],
+    requiresNetwork: true,
+  }),
+]
+
+const AGENT_TOOL_MODES: readonly { value: AgentToolPolicyMode; label: string }[] = [
+  { value: 'allow_safe', label: 'allow_safe — low risk and offline runs unreviewed' },
+  { value: 'approval', label: 'approval — every run asks a person' },
+  { value: 'allow_all', label: 'allow_all — every run proceeds' },
+  { value: 'deny', label: 'deny — no run is permitted' },
+]
+
+function AgentToolsDemo({ mode }: { mode: AgentToolPolicyMode }) {
+  const selected = AGENT_TOOL_MODES.some((option) => option.value === mode)
+    ? mode
+    : DEFAULT_AGENT_TOOL_POLICY.execute
+  const decisions = AGENT_TOOL_CATALOGUE.map((manifest) => ({
+    manifest,
+    gate: evaluateAgentToolPolicy({ mode: selected, manifest, action: 'execute' }),
+    // The sandbox contract a run of this tool would actually get.
+    plan: buildBubblewrapPlan({
+      command: `/data/agent-tools/tenant-one/${manifest.id}/node_modules/.bin/${manifest.bins[0]?.bin ?? manifest.id}`,
+      args: ['--help'],
+      cwd: '/data/agent-homes/tenant-one/person-one',
+      writablePaths: ['/data/agent-homes/tenant-one/person-one'],
+      readOnlyPaths: ['/usr', '/etc', '/opt', `/data/agent-tools/tenant-one/${manifest.id}`],
+      environment: { HOME: '/data/agent-homes/tenant-one/person-one', LANG: 'C.UTF-8' },
+      network: manifest.requiresNetwork ? 'host' : 'none',
+      ...(manifest.limits ? { limits: manifest.limits } : {}),
+    }, { pathExists: () => true }),
+  }))
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Execution gate</CardTitle>
+          <CardDescription>
+            Each tool is evaluated against the selected policy mode using the package&apos;s real
+            manifest and policy exports. Nothing is installed and no process is spawned.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <form method="get" className="flex flex-wrap items-end gap-3">
+            <label className="grid gap-1.5 text-sm font-medium text-fg">
+              Execution policy
+              <Select name="mode" defaultValue={selected}>
+                {AGENT_TOOL_MODES.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </Select>
+            </label>
+            <Button type="submit">Evaluate</Button>
+          </form>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tool</TableHead>
+                <TableHead>Risk</TableHead>
+                <TableHead>Network</TableHead>
+                <TableHead>Decision</TableHead>
+                <TableHead>Why</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {decisions.map(({ manifest, gate }) => (
+                <TableRow key={manifest.id}>
+                  <TableCell className="font-medium text-fg">{manifest.name}</TableCell>
+                  <TableCell>
+                    <Badge variant={manifest.risk === 'low' ? 'secondary' : 'outline'}>{manifest.risk}</Badge>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {manifest.requiresNetwork ? 'host' : 'none'}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={gate.outcome === 'allow' ? 'default' : gate.outcome === 'deny' ? 'destructive' : 'outline'}>
+                      {gate.outcome === 'ask' ? 'asks a person' : gate.outcome}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-fg-muted">{gate.reason}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Isolation per tool</CardTitle>
+            <CardDescription>Resolved by the package, then handed to @appkit/process-sandbox.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {decisions.map(({ manifest, plan }) => (
+              <DemoRow
+                key={manifest.id}
+                label={manifest.name}
+                value={`network ${plan.network} · writable ${plan.writablePaths.length} path · ${
+                  Object.keys(plan.limits).length > 0
+                    ? Object.entries(plan.limits).map(([key, value]) => `${key} ${value}`).join(', ')
+                    : 'no ceilings declared'
+                }`}
+                mono
+              />
+            ))}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Grant scope</CardTitle>
+            <CardDescription>
+              An approval covers the exact question it answered. These digests are what the runtime
+              matches a stored grant against.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <DemoRow
+              label="upload ./report.pdf"
+              value={agentToolScope({ action: 'execute', toolId: 'uploader', detail: { command: 'upload', argv: ['./report.pdf'] } })}
+              mono
+            />
+            <DemoRow
+              label="upload /etc/shadow"
+              value={agentToolScope({ action: 'execute', toolId: 'uploader', detail: { command: 'upload', argv: ['/etc/shadow'] } })}
+              mono
+            />
+            <DemoRow
+              label="Safe without review"
+              value={AGENT_TOOL_CATALOGUE.filter(isSafeAgentTool).map((manifest) => manifest.name).join(', ') || 'None'}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   )
 }
 

@@ -5,10 +5,42 @@ import { tmpdir } from 'node:os'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 
 export const DEFAULT_BUBBLEWRAP_PATH = '/usr/bin/bwrap'
+export const DEFAULT_PRLIMIT_PATH = '/usr/bin/prlimit'
 export const DEFAULT_PROCESS_PATH = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
 export const DEFAULT_READ_ONLY_PATHS = ['/usr', '/etc', '/opt', '/app'] as const
 export const DEFAULT_MASKED_PATHS = ['/data', '/home', '/root', '/var'] as const
 const MAX_PROCESS_ID = 2_147_483_647
+
+/**
+ * Whether the child shares the host network namespace.
+ *
+ * `'none'` unshares it, leaving the child with only a loopback interface: no
+ * DNS, no outbound sockets, no access to services the application container can
+ * reach. `'host'` keeps today's behavior and is the default so that existing
+ * network-dependent workers (package installs, coding agents calling an API)
+ * keep working when this package is upgraded. Callers running untrusted or
+ * merely untrusted-input-handling commands should pass `'none'` explicitly.
+ */
+export type ProcessSandboxNetwork = 'none' | 'host'
+
+/**
+ * Kernel resource ceilings applied to the child. These are enforced by
+ * `prlimit(1)` inside the sandbox rather than by bubblewrap, so a host that
+ * requests them without util-linux present fails closed instead of running the
+ * command unbounded.
+ */
+export interface ProcessSandboxLimits {
+  /** RLIMIT_CPU — CPU seconds before the kernel sends SIGKILL. */
+  cpuSeconds?: number
+  /** RLIMIT_AS — maximum address space in bytes. */
+  addressSpaceBytes?: number
+  /** RLIMIT_FSIZE — largest file the child may create, in bytes. */
+  fileSizeBytes?: number
+  /** RLIMIT_NPROC — maximum processes/threads, which bounds fork bombs. */
+  processes?: number
+  /** RLIMIT_NOFILE — maximum open file descriptors. */
+  openFiles?: number
+}
 
 export interface ProcessSandboxLauncherIdentity {
   /** Host/container UID used to invoke the setuid bubblewrap executable. */
@@ -43,6 +75,16 @@ export interface ProcessSandboxOptions {
   environment?: Readonly<Record<string, string | undefined>>
   bubblewrapPath?: string
   /**
+   * Whether the child keeps the host network namespace. Defaults to `'host'`,
+   * which preserves the behavior of every release before network policy
+   * existed; pass `'none'` for commands that have no business reaching out.
+   */
+  network?: ProcessSandboxNetwork
+  /** Kernel resource ceilings for the child. Requires prlimit on the host. */
+  limits?: ProcessSandboxLimits
+  /** Absolute prlimit executable used when `limits` are requested. */
+  prlimitPath?: string
+  /**
    * Optional unprivileged identity used only to invoke bubblewrap. This lets a
    * root application process use Debian's setuid bubblewrap safely without
    * granting CAP_SYS_ADMIN to the application container.
@@ -61,6 +103,9 @@ export interface BubblewrapPlan {
   readOnlyPaths: string[]
   maskedPaths: string[]
   mountProc: boolean
+  network: ProcessSandboxNetwork
+  /** The ceilings actually applied, after validation. Empty when none were requested. */
+  limits: ProcessSandboxLimits
   syntheticSelfExecutable?: string
   launcherIdentity?: ProcessSandboxLauncherIdentity
 }
@@ -68,6 +113,10 @@ export interface BubblewrapPlan {
 export interface ProcessSandboxVerification {
   supported: true
   bubblewrapPath: string
+  /** Whether prlimit is present, and so whether `limits` can be enforced. */
+  resourceLimitsSupported: boolean
+  /** Whether the host permitted `--unshare-net` during verification. */
+  networkIsolationSupported: boolean
 }
 
 export class ProcessSandboxError extends Error {
@@ -130,6 +179,21 @@ export function buildBubblewrapPlan(
     )
   }
   if (!('PATH' in environment)) environment.PATH = DEFAULT_PROCESS_PATH
+  const network = options.network ?? 'host'
+  if (network !== 'none' && network !== 'host') {
+    throw new ProcessSandboxError(`network must be 'none' or 'host'; received ${String(network)}.`)
+  }
+  const limits = cleanLimits(options.limits)
+  const limitArguments = prlimitArguments(limits)
+  const prlimitPath = absolutePath(options.prlimitPath ?? DEFAULT_PRLIMIT_PATH, 'prlimitPath')
+  if (limitArguments.length > 0 && !pathExists(prlimitPath)) {
+    // Fail closed: silently dropping a requested ceiling would run the command
+    // unbounded on exactly the hosts the caller was trying to protect.
+    throw new ProcessSandboxError(
+      `Resource limits were requested but prlimit was not found at ${prlimitPath}. `
+        + 'Install util-linux or configure prlimitPath.',
+    )
+  }
 
   const args: string[] = [
     '--unshare-user',
@@ -139,6 +203,7 @@ export function buildBubblewrapPlan(
     '--unshare-ipc',
     '--unshare-uts',
     '--unshare-cgroup-try',
+    ...(network === 'none' ? ['--unshare-net'] : []),
     '--cap-drop', 'ALL',
     '--new-session',
     '--die-with-parent',
@@ -180,7 +245,14 @@ export function buildBubblewrapPlan(
     '--chdir', cwd,
   )
 
-  args.push('--', options.command, ...(options.args ?? []))
+  // prlimit runs inside the namespace and execs the real command, so the
+  // ceilings apply to the command and everything it forks.
+  args.push(
+    '--',
+    ...(limitArguments.length > 0 ? [prlimitPath, ...limitArguments, '--'] : []),
+    options.command,
+    ...(options.args ?? []),
+  )
   return {
     command: bubblewrapPath,
     args,
@@ -190,6 +262,8 @@ export function buildBubblewrapPlan(
     readOnlyPaths,
     maskedPaths,
     mountProc,
+    network,
+    limits,
     syntheticSelfExecutable,
     launcherIdentity,
   }
@@ -236,6 +310,7 @@ export function spawnBubblewrappedProcess(options: ProcessSandboxOptions): Child
  */
 export async function verifyProcessSandbox(options: {
   bubblewrapPath?: string
+  prlimitPath?: string
   launcherIdentity?: ProcessSandboxLauncherIdentity
   timeoutMs?: number
 } = {}): Promise<ProcessSandboxVerification> {
@@ -261,59 +336,83 @@ export async function verifyProcessSandbox(options: {
         )
       }
     }
-    const child = spawnBubblewrappedProcess({
-      command: '/usr/bin/true',
-      cwd: probeDir,
-      writablePaths: [probeDir],
+    const timeoutMs = options.timeoutMs ?? 10_000
+    const probe = (network: ProcessSandboxNetwork): Promise<void> =>
+      runVerificationProbe({
+        command: '/usr/bin/true',
+        cwd: probeDir,
+        writablePaths: [probeDir],
+        bubblewrapPath,
+        launcherIdentity,
+        environment: {},
+        network,
+        stdio: ['ignore', 'ignore', 'pipe'],
+      }, timeoutMs)
+
+    // The baseline probe must pass; a host that cannot unshare the network
+    // namespace is still usable, so that result is reported rather than thrown.
+    await probe('host')
+    let networkIsolationSupported = true
+    try {
+      await probe('none')
+    } catch {
+      networkIsolationSupported = false
+    }
+
+    return {
+      supported: true,
       bubblewrapPath,
-      launcherIdentity,
-      environment: {},
-      stdio: ['ignore', 'ignore', 'pipe'],
-    })
-
-    await new Promise<void>((resolvePromise, rejectPromise) => {
-      let stderr = ''
-      let settled = false
-      const timeout = setTimeout(() => {
-        if (settled) return
-        settled = true
-        child.kill('SIGKILL')
-        rejectPromise(new ProcessSandboxError('Bubblewrap verification timed out.'))
-      }, options.timeoutMs ?? 10_000)
-
-      child.stderr?.on('data', (chunk) => {
-        stderr += String(chunk)
-      })
-      child.once('error', (error) => {
-        if (settled) return
-        settled = true
-        clearTimeout(timeout)
-        rejectPromise(
-          new ProcessSandboxError(`Bubblewrap verification failed: ${error.message}`),
-        )
-      })
-      child.once('exit', (code, signal) => {
-        if (settled) return
-        settled = true
-        clearTimeout(timeout)
-        if (code === 0) {
-          resolvePromise()
-          return
-        }
-        const detail = stderr.trim()
-        rejectPromise(
-          new ProcessSandboxError(
-            `Bubblewrap verification exited with code ${code ?? 'unknown'}`
-              + `${signal ? ` (${signal})` : ''}${detail ? `: ${detail}` : '.'}`,
-          ),
-        )
-      })
-    })
-
-    return { supported: true, bubblewrapPath }
+      resourceLimitsSupported: existsSync(options.prlimitPath ?? DEFAULT_PRLIMIT_PATH),
+      networkIsolationSupported,
+    }
   } finally {
     await rm(probeDir, { recursive: true, force: true })
   }
+}
+
+function runVerificationProbe(
+  options: ProcessSandboxOptions,
+  timeoutMs: number,
+): Promise<void> {
+  const child = spawnBubblewrappedProcess(options)
+  return new Promise<void>((resolvePromise, rejectPromise) => {
+    let stderr = ''
+    let settled = false
+    const timeout = setTimeout(() => {
+      if (settled) return
+      settled = true
+      child.kill('SIGKILL')
+      rejectPromise(new ProcessSandboxError('Bubblewrap verification timed out.'))
+    }, timeoutMs)
+
+    child.stderr?.on('data', (chunk) => {
+      stderr += String(chunk)
+    })
+    child.once('error', (error) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timeout)
+      rejectPromise(
+        new ProcessSandboxError(`Bubblewrap verification failed: ${error.message}`),
+      )
+    })
+    child.once('exit', (code, signal) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timeout)
+      if (code === 0) {
+        resolvePromise()
+        return
+      }
+      const detail = stderr.trim()
+      rejectPromise(
+        new ProcessSandboxError(
+          `Bubblewrap verification exited with code ${code ?? 'unknown'}`
+            + `${signal ? ` (${signal})` : ''}${detail ? `: ${detail}` : '.'}`,
+        ),
+      )
+    })
+  })
 }
 
 function absolutePath(value: string, field: string): string {
@@ -343,6 +442,36 @@ function cleanEnvironment(
     if (typeof value === 'string') clean[key] = value
   }
   return clean
+}
+
+const LIMIT_FLAGS: readonly (readonly [keyof ProcessSandboxLimits, string])[] = [
+  ['cpuSeconds', '--cpu'],
+  ['addressSpaceBytes', '--as'],
+  ['fileSizeBytes', '--fsize'],
+  ['processes', '--nproc'],
+  ['openFiles', '--nofile'],
+]
+
+function cleanLimits(limits: ProcessSandboxLimits | undefined): ProcessSandboxLimits {
+  const clean: ProcessSandboxLimits = {}
+  if (!limits) return clean
+  for (const [field] of LIMIT_FLAGS) {
+    const value = limits[field]
+    if (value === undefined) continue
+    if (!Number.isInteger(value) || value < 1) {
+      throw new ProcessSandboxError(`limits.${field} must be a positive integer.`)
+    }
+    clean[field] = value
+  }
+  return clean
+}
+
+function prlimitArguments(limits: ProcessSandboxLimits): string[] {
+  return LIMIT_FLAGS.flatMap(([field, flag]) => {
+    const value = limits[field]
+    // prlimit takes soft:hard; setting both makes the ceiling unraisable by the child.
+    return value === undefined ? [] : [`${flag}=${value}:${value}`]
+  })
 }
 
 function cleanLauncherIdentity(
