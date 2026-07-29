@@ -8,7 +8,6 @@ import type {
   AgentToolStore,
 } from './store'
 
-type Db = NodePgDatabase<Record<string, never>>
 type ToolRow = typeof agentTools.$inferSelect
 type ApprovalRow = typeof agentToolApprovals.$inferSelect
 type RunRow = typeof agentToolRuns.$inferSelect
@@ -87,7 +86,9 @@ function date(value: string | undefined): Date | null {
  * row-level security is the outer boundary and these predicates are the inner
  * one.
  */
-export function createDrizzleAgentToolStore(db: Db): AgentToolStore {
+export function createDrizzleAgentToolStore<TSchema extends Record<string, unknown>>(
+  db: NodePgDatabase<TSchema>,
+): AgentToolStore {
   return {
     async listTools(tenantId) {
       const rows = await db
