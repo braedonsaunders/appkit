@@ -4,9 +4,31 @@ import { CharacterScene, SceneArt, sceneGround, type SceneCharacter } from '@app
 import { useTheme } from '@appkit/ui'
 
 const CHARACTERS: SceneCharacter[] = [
-  { id: 'aria', name: 'Aria', idleAnimation: 'sway', status: { label: 'Reviewing', tone: 'active' } },
-  { id: 'marcus', name: 'Marcus', walkSpeed: 0.85, idleAnimation: 'bounce', status: { label: 'Planning', tone: 'busy' } },
-  { id: 'nora', name: 'Nora', walkSpeed: 1.15, idleAnimation: 'dance', status: { label: 'Available', tone: 'idle' } },
+  {
+    id: 'aria',
+    name: 'Aria',
+    title: 'Researcher',
+    idleAnimation: 'sway',
+    status: { label: 'working', tone: 'busy', detail: 'reading supplier pricing' },
+    speech: { text: 'Three suppliers so far — the third is cheapest but the lead time is six weeks.', kind: 'think' },
+  },
+  {
+    id: 'marcus',
+    name: 'Marcus',
+    title: 'Customer Service',
+    walkSpeed: 0.85,
+    idleAnimation: 'bounce',
+    status: { label: 'needs you', tone: 'waiting', detail: 'waiting on a decision' },
+    speech: { text: 'Can I send this quote to Birla Carbon?', kind: 'say' },
+  },
+  {
+    id: 'nora',
+    name: 'Nora',
+    title: 'Office Administrator',
+    walkSpeed: 1.15,
+    idleAnimation: 'dance',
+    status: { label: 'free', tone: 'idle' },
+  },
 ]
 
 export function SceneDemoStage() {
