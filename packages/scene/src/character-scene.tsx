@@ -50,6 +50,21 @@ export function CharacterScene({
   height = 420,
 }: CharacterSceneProps) {
   const [ref, size] = useElementSize<HTMLDivElement>()
+
+  /**
+   * The last size this stage genuinely had.
+   *
+   * A measured size of zero is almost never "the stage has no width" — it is
+   * the frame before a ResizeObserver has reported, which happens again on
+   * every re-render that relayouts the page. Rendering the cast only when the
+   * width is non-zero therefore unmounted every character for a frame and
+   * remounted them, and before positions were remembered that scattered the
+   * whole floor whenever a flyout opened or closed. Once a real width is
+   * known, it is kept.
+   */
+  const lastMeasured = React.useRef({ width: 0, height: 0 })
+  if (size.width > 0 && size.height > 0) lastMeasured.current = size
+  const measured = size.width > 0 ? size : lastMeasured.current
   const positions = React.useRef(new Map<string, { x: number; y: number }>())
 
   const walking = React.useMemo<WalkingConfig>(() => {
@@ -95,15 +110,15 @@ export function CharacterScene({
         />
       )}
 
-      {size.width > 0
+      {measured.width > 0
         ? characters.map((character) => (
             <WalkingCharacter
               key={character.id}
               character={character}
               ground={ground}
               config={walking}
-              containerWidth={size.width}
-              containerHeight={size.height}
+              containerWidth={measured.width}
+              containerHeight={measured.height}
               baseSize={baseCharacterSize}
               onPositionChange={handlePosition}
               getOtherPositions={getOtherPositions}

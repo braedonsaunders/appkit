@@ -64,6 +64,16 @@ function pushOutOfZones(point: Position, ground: SceneGroundConfig, config: Walk
   return clampToWalkable(x, y, ground.walkableArea)
 }
 
+/**
+ * Where each character was standing, remembered across mounts.
+ *
+ * Module-level on purpose: the whole point is to outlive the component, and a
+ * character's place on the floor is not something any one render owns. Keyed by
+ * character id, so it holds a handful of entries for as long as the tab is
+ * open — the cast of an office, not an unbounded cache.
+ */
+const LAST_POSITION = new Map<string, { x: number; y: number; facingRight: boolean }>()
+
 type CharacterState = {
   x: number
   y: number
@@ -103,14 +113,22 @@ export const WalkingCharacter = React.memo(function WalkingCharacter({
   onSelect,
 }: WalkingCharacterProps) {
   const [state, setState] = React.useState<CharacterState>(() => {
-    const start = biasedSpawn(ground, config)
+    // Where this character was standing last time it was mounted, if it has
+    // been. Opening and closing a record flyout re-renders the page, and any
+    // remount used to hand everybody a brand new random spot — so the whole
+    // cast teleported the moment you closed a panel. An office does not
+    // rearrange itself because somebody opened a drawer.
+    const remembered = LAST_POSITION.get(character.id)
+    const start = remembered
+      ? clampToWalkable(remembered.x, remembered.y, ground.walkableArea)
+      : biasedSpawn(ground, config)
     return {
       x: start.x,
       y: start.y,
       targetX: start.x,
       targetY: start.y,
       phase: 'idle',
-      facingRight: Math.random() > 0.5,
+      facingRight: remembered?.facingRight ?? Math.random() > 0.5,
       timer: config.idleDuration[0] + Math.random() * (config.idleDuration[1] - config.idleDuration[0]),
     }
   })
@@ -206,8 +224,9 @@ export const WalkingCharacter = React.memo(function WalkingCharacter({
   }, containerWidth > 0 && containerHeight > 0)
 
   React.useEffect(() => {
+    LAST_POSITION.set(character.id, { x: state.x, y: state.y, facingRight: state.facingRight })
     onPositionChange?.(character.id, { x: state.x, y: state.y })
-  }, [character.id, state.x, state.y, onPositionChange])
+  }, [character.id, state.x, state.y, state.facingRight, onPositionChange])
 
   const scale = calculateScale(state.y, ground)
   const size = baseSize * scale
