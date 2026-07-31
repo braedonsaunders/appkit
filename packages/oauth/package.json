@@ -1,0 +1,50 @@
+{
+  "name": "@appkit/oauth",
+  "version": "0.1.0",
+  "description": "OAuth 2.1 client for connecting to MCP and other API servers — protected-resource discovery (RFC 9728), authorization-server metadata (RFC 8414), dynamic client registration (RFC 7591), PKCE, code exchange, and refresh, over hardened public-HTTPS egress.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "build": "node ../../scripts/build-package.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsx": "^4.19.2"
+  },
+  "author": "Braedon Saunders",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/braedonsaunders/appkit.git",
+    "directory": "packages/oauth"
+  },
+  "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/oauth#readme",
+  "bugs": {
+    "url": "https://github.com/braedonsaunders/appkit/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "appkit",
+    "application-framework",
+    "typescript"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist",
+    "linkDirectory": false,
+    "provenance": true
+  }
+}

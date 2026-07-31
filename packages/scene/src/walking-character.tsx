@@ -15,6 +15,7 @@ import {
   type SceneGroundConfig,
   type WalkingConfig,
 } from './config'
+import { CharacterBadges } from './character-badges'
 import { useSceneAnimationFrame } from './use-animation-frame'
 
 type Position = { x: number; y: number }
@@ -267,13 +268,26 @@ export const WalkingCharacter = React.memo(function WalkingCharacter({
           </span>
         )}
       </motion.button>
+      {/*
+        Identity on hover, activity always. The status used to live in here,
+        which meant the one thing a person opens the scene to find out — is
+        anybody actually working — was invisible until they hovered, and could
+        only be read one character at a time.
+      */}
       <div
-        className="pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-md bg-elevated/90 px-2 py-0.5 text-center opacity-0 shadow-sm backdrop-blur-sm transition-opacity group-hover:opacity-100"
+        className={cn(
+          'pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-elevated/90 px-2 py-0.5',
+          'text-center opacity-0 shadow-sm backdrop-blur-sm transition-opacity group-hover:opacity-100',
+          // Sits below the status pill when there is one, so neither covers the
+          // other and the pair reads as one stack.
+          character.status ? 'top-full mt-7' : 'top-full mt-1',
+        )}
         style={{ fontSize: Math.max(10, 11 * scale) }}
       >
         <span className="font-medium text-fg">{character.name}</span>
-        {character.status ? <span className="ml-1.5 text-fg-muted">{character.status.label}</span> : null}
+        {character.title ? <span className="ml-1.5 text-fg-muted">{character.title}</span> : null}
       </div>
+      <CharacterBadges character={character} scale={scale} size={size} />
     </motion.div>
   )
 })

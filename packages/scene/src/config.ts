@@ -32,6 +32,8 @@ export type IdleAnimation = 'bounce' | 'sway' | 'still' | 'dance'
 export type SceneCharacter = {
   id: string
   name: string
+  /** Their role, shown beside the name on hover. */
+  title?: string
   /** Standing, transparent-background full-body art. Falls back to initials. */
   imageUrl?: string
   /**
@@ -44,8 +46,33 @@ export type SceneCharacter = {
   /** Multiplier on the scene walk speed (1 = normal). */
   walkSpeed?: number
   idleAnimation?: IdleAnimation
-  /** Optional status dot + label shown under the character. */
-  status?: { label: string; tone: 'active' | 'busy' | 'idle' }
+  /**
+   * What this character is doing, shown as a pill beside them whether or not
+   * anyone is hovering.
+   *
+   * A stage full of characters wandering about conveys that the office is
+   * populated and nothing at all about whether anybody is working. The name
+   * card on hover answers "who is that"; this answers "what is going on", which
+   * is the question somebody actually opens this screen to ask.
+   */
+  status?: {
+    label: string
+    tone: 'active' | 'busy' | 'idle' | 'waiting' | 'trouble'
+    /** A second line — what it is working on, in a few words. */
+    detail?: string
+  }
+  /**
+   * Something the character is saying right now, drawn as a bubble above them.
+   *
+   * Short-lived by nature: pass it while it is true and drop it when it stops
+   * being. Long text is clamped rather than allowed to cover the scene — a
+   * speech bubble is a glance, not a transcript.
+   */
+  speech?: {
+    text: string
+    /** Distinguishes thinking-to-itself from talking to somebody. */
+    kind?: 'say' | 'think'
+  }
 }
 
 export type WalkingConfig = {
