@@ -278,9 +278,9 @@ export const WalkingCharacter = React.memo(function WalkingCharacter({
         className={cn(
           'pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-elevated/90 px-2 py-0.5',
           'text-center opacity-0 shadow-sm backdrop-blur-sm transition-opacity group-hover:opacity-100',
-          // Sits below the status pill when there is one, so neither covers the
-          // other and the pair reads as one stack.
-          character.status ? 'top-full mt-7' : 'top-full mt-1',
+          // The same spot the status pill occupies: hovering swaps one label
+          // for the other rather than stacking two under a walking figure.
+          'top-full mt-1',
         )}
         style={{ fontSize: Math.max(10, 11 * scale) }}
       >

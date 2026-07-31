@@ -1,6 +1,6 @@
 export { CharacterScene, type CharacterSceneProps } from './character-scene'
 export { WalkingCharacter, type WalkingCharacterProps } from './walking-character'
-export { CharacterBadges, CharacterSpeech, CharacterStatus } from './character-badges'
+export { CharacterBadges, CharacterSpeech, CharacterStatus, type SceneActivity } from './character-badges'
 export { useSceneAnimationFrame } from './use-animation-frame'
 // Re-exported because a scene is the thing that needs to measure its own box,
 // and every consumer of this package already reaches for it here. Dropping it

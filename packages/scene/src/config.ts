@@ -56,10 +56,26 @@ export type SceneCharacter = {
    * is the question somebody actually opens this screen to ask.
    */
   status?: {
+    /**
+     * ONE SHORT WORD, from a vocabulary the consumer controls: "working",
+     * "reading", "on a call", "needs you", "free".
+     *
+     * Deliberately not a sentence. A label beside a walking figure has almost
+     * no room, and the first version of this put prose here and clipped it —
+     * every character wore the same grey "needs… waiting on a deci…", which is
+     * unreadable, identical across the cast, and worse than showing nothing.
+     * Anything that needs a sentence belongs in `speech`, above the head,
+     * where there is room for one.
+     */
     label: string
     tone: 'active' | 'busy' | 'idle' | 'waiting' | 'trouble'
-    /** A second line — what it is working on, in a few words. */
-    detail?: string
+    /**
+     * What KIND of work, drawn as a small animated glyph. This is what makes
+     * the pill readable at a glance and different per character without any
+     * more words: an arc going round, a page being scanned, a magnifier
+     * sweeping, an equaliser for talking.
+     */
+    activity?: 'working' | 'reading' | 'searching' | 'talking' | 'writing' | 'waiting' | 'idle'
   }
   /**
    * Something the character is saying right now, drawn as a bubble above them.
