@@ -301,7 +301,7 @@ function FolderRail({
 }: {
   mailboxes: MailboxOption[]
   activeMailboxId: string
-  onSwitchMailbox: (id: string) => void
+  onSwitchMailbox?: ((id: string) => void) | undefined
   folder: MailFolderKey
   folderCounts: Partial<Record<MailFolderKey, number>> | undefined
   onSwitchFolder: (key: MailFolderKey) => void
@@ -324,16 +324,26 @@ function FolderRail({
     </div>
   )
 
+  // A control that changes nothing is worse than no control: on a surface that
+  // is one mailbox — an inbox opened on the person it belongs to — a picker
+  // offering that same mailbox reads as an invitation to go somewhere else.
+  // So the switcher appears only where there is somewhere to switch to, which
+  // is both a second mailbox and a handler willing to go there.
+  const switcher =
+    onSwitchMailbox && mailboxes.length > 1 ? (
+      <MailboxSwitcher
+        mailboxes={mailboxes}
+        activeMailboxId={activeMailboxId}
+        onSwitchMailbox={onSwitchMailbox}
+        copy={copy}
+        className={variant === 'flyout' ? 'border-b border-border pb-3' : 'border-b border-border px-3 pb-3'}
+      />
+    ) : null
+
   if (variant === 'flyout') {
     return (
       <div className="flex h-full flex-col">
-        <MailboxSwitcher
-          mailboxes={mailboxes}
-          activeMailboxId={activeMailboxId}
-          onSwitchMailbox={onSwitchMailbox}
-          copy={copy}
-          className="border-b border-border pb-3"
-        />
+        {switcher}
         <div className="min-h-0 flex-1 overflow-y-auto pt-2">{nav}</div>
       </div>
     )
@@ -344,13 +354,7 @@ function FolderRail({
         <Mail size={18} className="text-primary" />
         <span className="text-base font-semibold text-fg">{copy.title}</span>
       </div>
-      <MailboxSwitcher
-        mailboxes={mailboxes}
-        activeMailboxId={activeMailboxId}
-        onSwitchMailbox={onSwitchMailbox}
-        copy={copy}
-        className="border-b border-border px-3 pb-3"
-      />
+      {switcher}
       <nav className="app-scroll min-h-0 flex-1 overflow-y-auto px-2 py-2">{nav}</nav>
     </aside>
   )
@@ -776,7 +780,11 @@ function ComposePanel({
 export type MailboxInboxProps = {
   mailboxes: MailboxOption[]
   activeMailboxId: string
-  onSwitchMailbox: (id: string) => void
+  /**
+   * Where switching mailbox goes. Omit it — or pass a single mailbox — on a
+   * surface that is about one mailbox, and the switcher is not rendered.
+   */
+  onSwitchMailbox?: ((id: string) => void) | undefined
   folder: MailFolderKey
   folderCounts?: Partial<Record<MailFolderKey, number>>
   onSwitchFolder: (key: MailFolderKey) => void
