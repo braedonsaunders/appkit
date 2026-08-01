@@ -68,6 +68,16 @@ export type RecordListProps<Row> = {
   /** Supply an app router Link for reference cells (falls back to <a>). */
   linkRender?: RecordListLink
   onRowClick?: (row: Row) => void
+  /**
+   * The row whose record is open, or is being opened.
+   *
+   * Lists that open a record over themselves need this twice over: once so the
+   * list behind the drawer still says which of its rows the drawer belongs to,
+   * and once so a click has somewhere to land while the record loads. Without
+   * it a row click is silent until the record arrives, which on a slow record
+   * reads as a click that did nothing.
+   */
+  activeRowId?: string | null
 }
 
 export function RecordList<Row>({
@@ -86,6 +96,7 @@ export function RecordList<Row>({
   empty,
   linkRender,
   onRowClick,
+  activeRowId,
 }: RecordListProps<Row>) {
   const renderLink: RecordListLink =
     linkRender ??
@@ -213,15 +224,23 @@ export function RecordList<Row>({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((row) => (
-                <TableRow
-                  key={getRowId(row)}
-                  onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  className={onRowClick ? 'cursor-pointer' : undefined}
-                >
-                  {columns.map((c) => cell(row, c))}
-                </TableRow>
-              ))}
+              {rows.map((row) => {
+                const rowId = getRowId(row)
+                const active = activeRowId != null && activeRowId === rowId
+                return (
+                  <TableRow
+                    key={rowId}
+                    // TableRow already dresses a selected row; this is the same
+                    // state, not a second look for it.
+                    data-state={active ? 'selected' : undefined}
+                    aria-selected={active || undefined}
+                    onClick={onRowClick ? () => onRowClick(row) : undefined}
+                    className={onRowClick ? 'cursor-pointer' : undefined}
+                  >
+                    {columns.map((c) => cell(row, c))}
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
 
