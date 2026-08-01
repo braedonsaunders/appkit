@@ -9,7 +9,23 @@ import { domainToASCII } from 'node:url'
 const DEFAULT_TIMEOUT_MS = 15_000
 const DEFAULT_MAX_RESPONSE_BYTES = 1024 * 1024
 const DEFAULT_MAX_REQUEST_BYTES = 2 * 1024 * 1024
-const MAX_TIMEOUT_MS = 120_000
+/**
+ * The longest a caller may ask to wait.
+ *
+ * Two minutes is right for the webhooks and API calls this guard was written
+ * for, and wrong for the one class of request that legitimately runs longer: a
+ * reasoning model working through a tool-using turn. Those routinely pass two
+ * minutes, and because the cap is enforced here rather than negotiated, the
+ * socket was destroyed mid-generation — the caller saw a timeout, the provider
+ * had billed nothing, and an agent run that was most of the way through its
+ * work was thrown away with it.
+ *
+ * The ceiling still exists, because an unbounded wait is how a worker wedges.
+ * It is now high enough that a caller with a genuinely long request can ask for
+ * what it needs, and every caller still states its own timeout — this only
+ * stops them asking for the absurd.
+ */
+const MAX_TIMEOUT_MS = 900_000
 const MAX_RESPONSE_BYTES = 16 * 1024 * 1024
 const MAX_REQUEST_BYTES = 16 * 1024 * 1024
 const MAX_REDIRECTS = 5

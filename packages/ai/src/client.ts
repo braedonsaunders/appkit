@@ -14,7 +14,20 @@ import { generateText, type LanguageModel } from 'ai'
 
 const MAX_AI_REQUEST_BYTES = 16 * 1024 * 1024
 const MAX_AI_RESPONSE_BYTES = 16 * 1024 * 1024
-const AI_REQUEST_TIMEOUT_MS = 120_000
+/**
+ * How long one model call may take before the transport gives up on it.
+ *
+ * This is not a budget — the caller's own loop governs how much work an agent
+ * may do — it is only the point past which a socket is assumed dead. Two
+ * minutes turned out to be inside the normal range for a reasoning model
+ * answering with tool calls: measured runs on several hosted models spent
+ * longer than that on a single step, and each one died on this timeout having
+ * produced nothing, billed nothing, and lost every step that came before it.
+ *
+ * Ten minutes is comfortably past the slowest observed step while still
+ * catching a connection that has genuinely gone away.
+ */
+const AI_REQUEST_TIMEOUT_MS = 600_000
 
 export type AiProvider =
   | 'anthropic'
