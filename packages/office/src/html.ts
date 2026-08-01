@@ -30,6 +30,14 @@ export type OfficeDocumentHtmlInput = {
    * missing. Defaults to portrait.
    */
   orientation?: 'portrait' | 'landscape'
+  /**
+   * Table density. `compact` sets tabular type smaller and tightens cell
+   * padding, which is what a table with more columns than a page has room for
+   * actually needs — landscape buys width once, and a fourteen-column
+   * financial summary still wants the last column back. Prose is unaffected;
+   * only tables change. Defaults to normal.
+   */
+  density?: 'normal' | 'compact'
 }
 
 const ALLOWED_TAGS = new Set([
@@ -370,7 +378,7 @@ function assertHexColor(value: string): string {
   return value
 }
 
-function printStylesheet(accent: string, orientation: 'portrait' | 'landscape'): string {
+function printStylesheet(accent: string, orientation: 'portrait' | 'landscape', density: 'normal' | 'compact'): string {
   return `
 @page { size: letter ${orientation}; margin: 0.75in; }
 html, body { margin: 0; padding: 0; }
@@ -397,7 +405,7 @@ blockquote {
 }
 table { width: 100%; border-collapse: collapse; margin: 0 0 10pt; page-break-inside: auto; }
 tr { page-break-inside: avoid; }
-th, td { border: 0.75pt solid #8c8c8c; padding: 4pt 6pt; text-align: left; vertical-align: top; }
+th, td { border: 0.75pt solid #8c8c8c; padding: ${density === 'compact' ? '1.5pt 2.5pt' : '4pt 6pt'}; text-align: left; vertical-align: top; font-size: ${density === 'compact' ? '7pt' : '11pt'}; }
 th { background-color: #efefef; font-weight: bold; }
 a { color: ${accent}; }
 hr { border: none; border-top: 0.75pt solid #b4b4b4; margin: 12pt 0; }
@@ -448,7 +456,7 @@ export function officeDocumentHtml(input: OfficeDocumentHtmlInput): string {
 <meta charset="utf-8">
 <title>${title}</title>
 <style>
-${printStylesheet(accent, input.orientation ?? 'portrait')}
+${printStylesheet(accent, input.orientation ?? 'portrait', input.density ?? 'normal')}
 </style>
 </head>
 <body>
