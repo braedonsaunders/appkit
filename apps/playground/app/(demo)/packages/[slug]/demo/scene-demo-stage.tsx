@@ -9,7 +9,7 @@ const CHARACTERS: SceneCharacter[] = [
     name: 'Aria',
     title: 'Researcher',
     idleAnimation: 'sway',
-    status: { label: 'working', tone: 'busy', detail: 'reading supplier pricing' },
+    status: { label: 'working', tone: 'busy', activity: 'reading' },
     speech: { text: 'Three suppliers so far — the third is cheapest but the lead time is six weeks.', kind: 'think' },
   },
   {
@@ -18,7 +18,7 @@ const CHARACTERS: SceneCharacter[] = [
     title: 'Customer Service',
     walkSpeed: 0.85,
     idleAnimation: 'bounce',
-    status: { label: 'needs you', tone: 'waiting', detail: 'waiting on a decision' },
+    status: { label: 'needs you', tone: 'waiting', activity: 'waiting' },
     speech: { text: 'Can I send this quote to Birla Carbon?', kind: 'say' },
   },
   {

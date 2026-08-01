@@ -27,6 +27,7 @@ import integrations from '../../../../packages/integrations/package.json'
 import jobs from '../../../../packages/jobs/package.json'
 import mailbox from '../../../../packages/mailbox/package.json'
 import notifications from '../../../../packages/notifications/package.json'
+import oauth from '../../../../packages/oauth/package.json'
 import office from '../../../../packages/office/package.json'
 import pdf from '../../../../packages/pdf/package.json'
 import processSandbox from '../../../../packages/process-sandbox/package.json'
@@ -121,7 +122,7 @@ export const PACKAGE_CATEGORIES: readonly {
     names: [
       '@appkit/db', '@appkit/tenant', '@appkit/auth', '@appkit/iam', '@appkit/superadmin', '@appkit/api',
       '@appkit/events', '@appkit/jobs', '@appkit/notifications', '@appkit/storage',
-      '@appkit/crypto', '@appkit/process-sandbox', '@appkit/email-render', '@appkit/email-designer',
+      '@appkit/crypto', '@appkit/oauth', '@appkit/process-sandbox', '@appkit/email-render', '@appkit/email-designer',
       '@appkit/emails', '@appkit/mailbox', '@appkit/sms', '@appkit/telephony', '@appkit/voice',
     ],
   },
@@ -166,6 +167,7 @@ const MANIFESTS: WorkspacePackageManifest[] = [
   jobs,
   mailbox,
   notifications,
+  oauth,
   office,
   pdf,
   processSandbox,
@@ -217,6 +219,7 @@ const DEMO_ROUTES: Record<string, string> = {
   '@appkit/notifications': '/notifications',
   '@appkit/storage': '/attachments',
   '@appkit/crypto': '/packages/crypto/demo',
+  '@appkit/oauth': '/dashboard/platform',
   '@appkit/agent-tools': '/packages/agent-tools/demo',
   '@appkit/process-sandbox': '/packages/process-sandbox/demo',
   '@appkit/email-render': '/packages/email-render/demo',
