@@ -22,6 +22,14 @@ export type OfficeDocumentHtmlInput = {
   bodyHtml: string
   title?: string
   branding?: OfficeBranding
+  /**
+   * Page orientation. Portrait suits prose and narrow tables; landscape exists
+   * because a wide table has nowhere else to go — a fourteen-column financial
+   * summary rendered portrait simply loses its right-hand columns off the edge
+   * of the sheet, silently, with no indication in the output that anything is
+   * missing. Defaults to portrait.
+   */
+  orientation?: 'portrait' | 'landscape'
 }
 
 const ALLOWED_TAGS = new Set([
@@ -362,9 +370,9 @@ function assertHexColor(value: string): string {
   return value
 }
 
-function printStylesheet(accent: string): string {
+function printStylesheet(accent: string, orientation: 'portrait' | 'landscape'): string {
   return `
-@page { size: letter; margin: 0.75in; }
+@page { size: letter ${orientation}; margin: 0.75in; }
 html, body { margin: 0; padding: 0; }
 body {
   background-color: #ffffff;
@@ -440,7 +448,7 @@ export function officeDocumentHtml(input: OfficeDocumentHtmlInput): string {
 <meta charset="utf-8">
 <title>${title}</title>
 <style>
-${printStylesheet(accent)}
+${printStylesheet(accent, input.orientation ?? 'portrait')}
 </style>
 </head>
 <body>
