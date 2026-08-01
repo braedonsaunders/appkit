@@ -1,6 +1,6 @@
 {
   "name": "@appkit/mailbox",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Mail engine: incremental IMAP sync + SMTP send with RFC-5322 threading, persistence-injected so the application owns the ledger, plus the three-pane operator inbox.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -22,7 +22,7 @@
   "dependencies": {
     "imapflow": "^1.0.191",
     "mailparser": "^3.7.5",
-    "nodemailer": "^7.0.9"
+    "nodemailer": "^9.0.1"
   },
   "peerDependencies": {
     "@appkit/ui": "^0.1.10",

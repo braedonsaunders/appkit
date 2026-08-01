@@ -1,6 +1,6 @@
 {
   "name": "@appkit/emails",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Email delivery — Resend, SendGrid, Mailgun, Postmark, and SMTP transports with sealed-secret config and platform→tenant policy.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -22,11 +22,11 @@
   },
   "dependencies": {
     "@appkit/crypto": "workspace:*",
-    "nodemailer": "^6.9.16"
+    "nodemailer": "^9.0.1"
   },
   "devDependencies": {
     "@types/node": "^22",
-    "@types/nodemailer": "^6.4.17",
+    "@types/nodemailer": "^7.0.4",
     "tsx": "^4.19.2"
   },
   "author": "Braedon Saunders",
