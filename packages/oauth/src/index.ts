@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'node:crypto'
+import { constants, createHash, createSign, randomBytes } from 'node:crypto'
 import { getJson, postForm, postJson } from './egress'
 
 /**
@@ -24,6 +24,18 @@ export type OAuthAuthorization = {
   /** Present when the server offers RFC 7591 dynamic client registration. */
   registrationEndpoint?: string
   scopesSupported?: string[]
+  /** RFC 8414 `grant_types_supported` — which flows this server will run. */
+  grantTypesSupported?: string[]
+  /** RFC 8414 `token_endpoint_auth_methods_supported`. */
+  tokenEndpointAuthMethodsSupported?: string[]
+  /**
+   * RFC 8414 `token_endpoint_auth_signing_alg_values_supported` — the algorithms
+   * a `private_key_jwt` client assertion may be signed with. Worth reading
+   * rather than assuming: servers that mandate RSA-PSS (NetSuite) reject an
+   * RS256 assertion as `invalid_grant`, which is indistinguishable from a wrong
+   * key unless the caller was told the algorithm up front.
+   */
+  tokenEndpointAuthSigningAlgValuesSupported?: string[]
 }
 
 export type OAuthClient = {
@@ -72,16 +84,24 @@ function readAuthorizationServerMetadata(
   const tokenEndpoint = document.token_endpoint
   if (typeof authorizationEndpoint !== 'string' || typeof tokenEndpoint !== 'string') return null
   const registrationEndpoint = document.registration_endpoint
-  const scopesSupported = document.scopes_supported
+  const stringList = (value: unknown): string[] | undefined =>
+    Array.isArray(value) && value.length > 0 && value.every((item) => typeof item === 'string')
+      ? (value as string[])
+      : undefined
+  const scopesSupported = stringList(document.scopes_supported)
+  const grantTypesSupported = stringList(document.grant_types_supported)
+  const authMethods = stringList(document.token_endpoint_auth_methods_supported)
+  const authSigningAlgs = stringList(document.token_endpoint_auth_signing_alg_values_supported)
   return {
     resource,
     issuer,
     authorizationEndpoint,
     tokenEndpoint,
     ...(typeof registrationEndpoint === 'string' ? { registrationEndpoint } : {}),
-    ...(Array.isArray(scopesSupported) && scopesSupported.every((scope) => typeof scope === 'string')
-      ? { scopesSupported: scopesSupported as string[] }
-      : {}),
+    ...(scopesSupported ? { scopesSupported } : {}),
+    ...(grantTypesSupported ? { grantTypesSupported } : {}),
+    ...(authMethods ? { tokenEndpointAuthMethodsSupported: authMethods } : {}),
+    ...(authSigningAlgs ? { tokenEndpointAuthSigningAlgValuesSupported: authSigningAlgs } : {}),
   }
 }
 
@@ -261,6 +281,130 @@ export async function refreshTokens(input: {
   )
   const tokens = readTokens(payload, new URL(input.authorization.tokenEndpoint).hostname)
   return tokens.refreshToken ? tokens : { ...tokens, refreshToken: input.refreshToken }
+}
+
+// --- Client credentials (machine to machine) ----------------------------------
+
+/**
+ * The JWS algorithms a client assertion may be signed with. Servers advertise
+ * what they accept in `token_endpoint_auth_signing_alg_values_supported`; RSA
+ * keys sign PS256 or RS256, EC keys sign the ES family.
+ */
+export const CLIENT_ASSERTION_ALGORITHMS = ['PS256', 'RS256', 'ES256', 'ES384', 'ES512'] as const
+
+export type ClientAssertionAlgorithm = (typeof CLIENT_ASSERTION_ALGORITHMS)[number]
+
+export function isClientAssertionAlgorithm(value: string): value is ClientAssertionAlgorithm {
+  return (CLIENT_ASSERTION_ALGORITHMS as readonly string[]).includes(value)
+}
+
+/**
+ * A confidential client that proves itself with a signed assertion instead of
+ * a shared secret (RFC 7523 `private_key_jwt`). The private key never leaves
+ * this process; the authorization server holds only the matching certificate.
+ */
+export type PrivateKeyJwtClient = {
+  clientId: string
+  /** PEM-encoded private key (PKCS#8 or PKCS#1). */
+  privateKey: string
+  algorithm: ClientAssertionAlgorithm
+  /**
+   * The assertion's `kid` header, when the server identifies the certificate
+   * by one — NetSuite's Certificate ID, issued when the public certificate is
+   * mapped to an entity and role.
+   */
+  keyId?: string
+}
+
+const b64url = (value: string | Buffer): string =>
+  (typeof value === 'string' ? Buffer.from(value, 'utf8') : value).toString('base64url')
+
+/** How long a client assertion is valid. Short: it is used once, immediately. */
+const ASSERTION_LIFETIME_S = 60
+
+function signAssertion(signingInput: string, client: PrivateKeyJwtClient): Buffer {
+  const { algorithm, privateKey } = client
+  // Node names the digest, not the JWS algorithm, and needs to be told the
+  // padding and the signature encoding separately — the defaults are PKCS#1
+  // and DER, neither of which is what JWS specifies for PS* or ES*.
+  if (algorithm === 'PS256') {
+    return createSign('sha256').update(signingInput).sign({
+      key: privateKey,
+      padding: constants.RSA_PKCS1_PSS_PADDING,
+      saltLength: constants.RSA_PSS_SALTLEN_DIGEST,
+    })
+  }
+  if (algorithm === 'RS256') {
+    return createSign('sha256').update(signingInput).sign({ key: privateKey })
+  }
+  const digest = algorithm === 'ES256' ? 'sha256' : algorithm === 'ES384' ? 'sha384' : 'sha512'
+  // 'ieee-p1363' is the raw r||s pair JWS wants; Node's default DER encoding
+  // is silently accepted by the signer and rejected by every verifier.
+  return createSign(digest).update(signingInput).sign({ key: privateKey, dsaEncoding: 'ieee-p1363' })
+}
+
+/**
+ * Build the RFC 7523 client assertion proving control of the client's key.
+ * Exported so a caller can verify a key parses and signs before storing it,
+ * without spending a token request to find out.
+ */
+export function createClientAssertion(input: {
+  client: PrivateKeyJwtClient
+  /** The assertion's audience — the token endpoint it will be presented to. */
+  audience: string
+}): string {
+  const now = Math.floor(Date.now() / 1000)
+  const header = b64url(
+    JSON.stringify({
+      alg: input.client.algorithm,
+      typ: 'JWT',
+      ...(input.client.keyId ? { kid: input.client.keyId } : {}),
+    }),
+  )
+  const claims = b64url(
+    JSON.stringify({
+      iss: input.client.clientId,
+      sub: input.client.clientId,
+      aud: input.audience,
+      iat: now,
+      exp: now + ASSERTION_LIFETIME_S,
+      jti: randomBytes(16).toString('hex'),
+    }),
+  )
+  const signingInput = `${header}.${claims}`
+  return `${signingInput}.${b64url(signAssertion(signingInput, input.client))}`
+}
+
+/**
+ * Mint an access token with the client-credentials grant, authenticating with
+ * a `private_key_jwt` assertion.
+ *
+ * This flow issues no refresh token, and that is the point of reaching for it:
+ * there is no rotating credential to persist, race, or let lapse. The standing
+ * secret is the key pair, whose certificate the operator rotates on their own
+ * schedule. Every call mints from scratch, so a failure is transient rather
+ * than terminal — unlike a refresh token, which is destroyed by its own use.
+ */
+export async function mintClientCredentialsToken(input: {
+  authorization: Pick<OAuthAuthorization, 'tokenEndpoint' | 'resource'>
+  client: PrivateKeyJwtClient
+  scope?: string
+}): Promise<OAuthTokens> {
+  const assertion = createClientAssertion({
+    client: input.client,
+    audience: input.authorization.tokenEndpoint,
+  })
+  const payload = await postForm(
+    input.authorization.tokenEndpoint,
+    new URLSearchParams({
+      grant_type: 'client_credentials',
+      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion: assertion,
+      ...(input.authorization.resource ? { resource: input.authorization.resource } : {}),
+      ...(input.scope ? { scope: input.scope } : {}),
+    }),
+  )
+  return readTokens(payload, new URL(input.authorization.tokenEndpoint).hostname)
 }
 
 export { assertPublicHttpsEndpoint } from './egress'
