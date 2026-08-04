@@ -54,6 +54,10 @@ export function Dialog({
   const reduce = useReducedMotion()
   const [mounted, setMounted] = React.useState(false)
   const panelRef = React.useRef<HTMLDivElement>(null)
+  const onCloseRef = React.useRef(onClose)
+  React.useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
   React.useEffect(() => setMounted(true), [])
 
   React.useEffect(() => {
@@ -66,13 +70,18 @@ export function Dialog({
     const focusTimer = window.setTimeout(() => {
       const panel = panelRef.current
       if (!panel) return
+      // React's autoFocus may already have placed focus inside the dialog.
+      // Do not steal it, and prefer an explicit autofocus target before the
+      // first DOM-order control (which is often the corner close button).
+      if (panel.contains(document.activeElement)) return
+      const preferred = panel.querySelector<HTMLElement>('[autofocus]')
       const first = panel.querySelector<HTMLElement>(focusablesSelector)
-      ;(first ?? panel).focus()
+      ;(preferred ?? first ?? panel).focus()
     }, 0)
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         if (document.querySelector('[data-ui-overlay]')) return
-        onClose()
+        onCloseRef.current()
         return
       }
       if (e.key !== 'Tab') return
@@ -104,7 +113,7 @@ export function Dialog({
       document.removeEventListener('keydown', onKey)
       if (previouslyFocused && document.contains(previouslyFocused)) previouslyFocused.focus()
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!mounted || typeof document === 'undefined') return null
 

@@ -137,6 +137,10 @@ export function Drawer({
   }, [initialFullscreen, open])
 
   const panelRef = React.useRef<HTMLElement>(null)
+  const onCloseRef = React.useRef(onClose)
+  React.useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   // Esc + scroll lock. Stacked-aware: a base drawer ignores Esc while a nested
   // drawer or a floating overlay is on top.
@@ -146,7 +150,7 @@ export function Drawer({
       if (e.key !== 'Escape') return
       if (document.querySelector('[data-ui-overlay]')) return
       if (!stacked && document.querySelector('[data-drawer-layer="nested"]')) return
-      onClose()
+      onCloseRef.current()
     }
     document.addEventListener('keydown', onKey)
     if (openDrawerCount === 0) originalBodyOverflow = document.body.style.overflow
@@ -160,7 +164,7 @@ export function Drawer({
         originalBodyOverflow = null
       }
     }
-  }, [open, onClose, stacked])
+  }, [open, stacked])
 
   // Focus management: move focus in on open, trap Tab, restore on close.
   React.useEffect(() => {
@@ -170,8 +174,10 @@ export function Drawer({
       if (!stacked && document.querySelector('[data-drawer-layer="nested"]')) return
       const panel = panelRef.current
       if (!panel) return
+      if (panel.contains(document.activeElement)) return
+      const preferred = panel.querySelector<HTMLElement>('[autofocus]')
       const first = panel.querySelector<HTMLElement>(FOCUSABLE)
-      ;(first ?? panel).focus()
+      ;(preferred ?? first ?? panel).focus()
     }, 0)
 
     function onKeyDown(e: KeyboardEvent) {
