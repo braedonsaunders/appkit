@@ -115,11 +115,18 @@ export async function htmlToDocx(html: string): Promise<Buffer> {
   return sofficeConvert(input, 'document.html', 'docx:MS Word 2007 XML')
 }
 
-/** Render a full HTML document (see `officeDocumentHtml`) straight to a PDF. */
+/**
+ * Render a full HTML document (see `officeDocumentHtml`) to a PDF.
+ *
+ * This deliberately takes the same HTML -> DOCX -> PDF route as an operator
+ * exporting the generated Word document. LibreOffice 7.4's headless HTML
+ * import inserts a completely blank first page when it is exported directly
+ * to PDF (even for a one-line document); importing the HTML to DOCX first is
+ * stable on that production version and on current LibreOffice releases.
+ */
 export async function htmlToPdf(html: string): Promise<Buffer> {
-  const input = Buffer.from(html, 'utf8')
-  assertConvertibleBytes(input.byteLength, 'The HTML document')
-  return sofficeConvert(input, 'document.html', 'pdf')
+  const docx = await htmlToDocx(html)
+  return docxToPdf(docx)
 }
 
 /** Render an existing .docx to a PDF. */

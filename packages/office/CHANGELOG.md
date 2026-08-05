@@ -12,3 +12,5 @@
   trip (`replaceTextInFodt`, `replaceTextInDocx`), PDFs concatenate with poppler
   (`pdfUnite`), and declarative sheet specs render to .xlsx through the optional
   `exceljs` peer (`renderWorkbook`).
+- Route HTML-to-PDF conversion through the stable DOCX importer so LibreOffice
+  7.4 does not add a blank first page to generated PDFs.
