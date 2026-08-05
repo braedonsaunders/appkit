@@ -4,6 +4,8 @@ import { chown, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 
+export * from './supervisor'
+
 export const DEFAULT_BUBBLEWRAP_PATH = '/usr/bin/bwrap'
 export const DEFAULT_PRLIMIT_PATH = '/usr/bin/prlimit'
 export const DEFAULT_PROCESS_PATH = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'

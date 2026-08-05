@@ -1,7 +1,7 @@
 {
   "name": "@appkit/process-sandbox",
-  "version": "0.2.0",
-  "description": "Fail-closed Linux process isolation with bubblewrap, network namespace policy, and kernel resource ceilings for workspace-bound coding agents and other trusted application workers.",
+  "version": "0.3.0",
+  "description": "Fail-closed Linux process isolation plus supervised execution, bounded replay, reattachment, cancellation, network policy, and resource ceilings.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {

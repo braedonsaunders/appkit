@@ -1,5 +1,16 @@
 # @appkit/process-sandbox
 
+## 0.3.0
+
+### Minor Changes
+
+- Add `ProcessSandboxSupervisor` for request-independent execution with stable
+  idempotency keys, lifecycle states, cancellation and timeout escalation.
+- Add bounded stdout/stderr event replay, long-poll reattachment, retained
+  terminal results, explicit disposal, expiry, capacity limits, and health
+  statistics. The default launcher remains the fail-closed bubblewrap policy;
+  an equivalent backend can be injected behind the same child-process contract.
+
 ## 0.2.0
 
 ### Minor Changes

@@ -12,6 +12,49 @@ values are passed in the sanitized child environment rather than serialized
 into process arguments. The consuming application still owns authentication,
 tenant-to-workspace resolution, and the command being launched.
 
+## Supervised executions
+
+`ProcessSandboxSupervisor` decouples a command from the request that started
+it. A caller can safely retry a start with the same execution ID, poll from the
+last event sequence after a disconnect, cancel it, or retrieve its bounded
+terminal result until retention expires. Stream replay and final output are
+bounded separately, so slow or disconnected consumers cannot create an
+unbounded host-memory log.
+
+```ts
+const supervisor = new ProcessSandboxSupervisor({
+  defaultTimeoutMs: 120_000,
+  defaultRetentionMs: 15 * 60_000,
+  maxOutputBytes: 64 * 1024,
+})
+
+const started = supervisor.start({
+  executionId: request.idempotencyKey,
+  maxOutputBytes: request.outputLimit,
+  process: {
+    command: '/usr/bin/sh',
+    args: ['-lc', request.command],
+    cwd: workspacePath,
+    writablePaths: [workspacePath],
+    network: 'none',
+  },
+})
+
+let sequence = started.latestSequence
+while (true) {
+  const update = await supervisor.waitForUpdate(started.executionId, sequence)
+  if (!update) throw new Error('Execution expired')
+  sequence = update.latestSequence
+  if (update.result) break
+}
+```
+
+The built-in launcher remains `spawnBubblewrappedProcess`. An adapter for a
+different isolation backend may be supplied through `launcher`, but the adapter
+is responsible for providing equivalent confinement and a normal Node
+`ChildProcess` lifecycle. The supervisor does not weaken or replace the
+bubblewrap boundary.
+
 ## Network policy
 
 `network` defaults to `'host'`, which is the behavior of every release before
