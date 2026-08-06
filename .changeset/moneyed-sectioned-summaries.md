@@ -13,7 +13,10 @@ Production report-engine upgrades ported from the source platform.
   `latest` measure without one fails loudly.
 - Summarize sections: a summarize query whose `groupBy` names an un-binned
   breakout shapes per-bucket titled `summary` groups with that column lifted
-  out of the table.
+  out of the table. Sectioned enum breakouts order by their catalogue option
+  position instead of alphabetically (a payroll journal lists earnings before
+  deductions before employer contributions), and grand-total rows keep that
+  ledger order.
 - `totals: { sections, grand }` for sectioned summaries: per-section subtotal
   rows at the first non-section breakout level plus a final Grand totals group,
   computed as exact decimal sums over the raw aggregates. Additive measures and

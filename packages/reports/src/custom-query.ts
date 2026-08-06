@@ -1,4 +1,4 @@
-import { reportColumn, reportColumnExpression, reportEntityFrom, reportTenantColumn, type ReportEntity, type ReportEntityCatalog } from './entities'
+import { reportColumn, reportColumnExpression, reportColumnOptions, reportEntityFrom, reportTenantColumn, type ReportEntity, type ReportEntityCatalog } from './entities'
 import { compileReportRuleGroup, SqlParameters, type ReportRuleGroup } from './filters'
 import type { ReportColumn, ReportGroup, ReportRowScopeRule, ReportRunResult } from './types'
 
@@ -99,16 +99,31 @@ function compileSummary(entity: ReportEntity, query: ReportCustomQuery, tenantId
   const measureSql = measures.map((item, index) => `${measureExpression(entity, item)} AS "m${index}"`)
   const select = [...dimensionSql, ...measureSql]
   const limit = resolveLimit(query.limit, options.maxRows)
+  // Display-level sectioning by one un-binned breakout; the shaper splits per bucket.
+  const sectionIndex = query.groupBy ? breakouts.findIndex((item) => item.column === query.groupBy && !item.bin) : -1
+  // Sectioned summaries read as a ledger: enum dims follow their CATALOG
+  // option order (a payroll journal lists earnings before deductions before
+  // employer contributions), other dims keep ordinal ascending.
+  const dimOrder = (item: ReportBreakout, index: number): string => {
+    if (sectionIndex >= 0 && !item.bin) {
+      const column = reportColumn(entity, item.column)
+      const values = column?.kind === 'enum' ? reportColumnOptions(column).map((option) => option.value) : []
+      if (values.length) {
+        // Option values are catalogue-authored constants, single-quoted safely.
+        const list = values.map((value) => `'${value.replaceAll("'", "''")}'`).join(', ')
+        return `array_position(ARRAY[${list}]::text[], ${reportColumnExpression(entity, item.column)}) ASC NULLS LAST`
+      }
+    }
+    return `${index + 1}`
+  }
   const group = breakouts.length ? `GROUP BY ${breakouts.map((_, index) => index + 1).join(', ')}` : ''
-  const order = breakouts.length ? `ORDER BY ${breakouts.map((_, index) => index + 1).join(', ')}` : ''
+  const order = breakouts.length ? `ORDER BY ${breakouts.map(dimOrder).join(', ')}` : ''
   const sql = [`SELECT ${select.join(', ')}`, `FROM ${reportEntityFrom(entity)}`, `WHERE ${where.join(' AND ')}`, group, order, `LIMIT ${limit + 1}`].filter(Boolean).join('\n')
   const columns: ReportColumn[] = [
     ...breakouts.map((item, index) => ({ key: `d${index}`, label: item.label ?? reportColumn(entity, item.column)?.label ?? item.column, semanticType: semanticType(entity, item.column), align: 'left' as const })),
     // Counts are plain numbers even over money columns; every other aggregate keeps its column's semantics.
     ...measures.map((item, index) => ({ key: `m${index}`, label: item.label ?? measureLabel(entity, item), semanticType: item.fn === 'count' || item.fn === 'count_distinct' || !item.column ? 'number' as const : semanticType(entity, item.column), align: 'right' as const })),
   ]
-  // Display-level sectioning by one un-binned breakout; the shaper splits per bucket.
-  const sectionIndex = query.groupBy ? breakouts.findIndex((item) => item.column === query.groupBy && !item.bin) : -1
   const totals = sectionIndex >= 0 && query.totals
     ? { ...(query.totals.sections === true ? { sections: true } : {}), ...(query.totals.grand === true ? { grand: true } : {}) }
     : null
@@ -212,7 +227,8 @@ export function customReportResult(compiled: CompiledCustomReport, rows: Record<
       })
       const grandRows: Record<string, unknown>[] = []
       const grandKeys: (ReportRowScopeRule[] | null)[] = []
-      for (const [, entry] of [...combos.entries()].sort(([a], [b]) => (a < b ? -1 : 1))) {
+      // Insertion order = the query's ledger order (enum dims by catalog).
+      for (const entry of combos.values()) {
         const dims: Record<string, unknown> = {}
         breakouts.forEach((_, i) => { if (i !== sectionIndex) dims[`d${i}`] = entry.rows[0]![`d${i}`] })
         grandRows.push({ ...dims, ...totalCells(entry.rows) })

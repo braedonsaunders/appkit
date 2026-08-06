@@ -128,6 +128,7 @@ const payCatalog: ReportEntityCatalog = { entities: [{
   latestOrderExpr: 'l.pay_date DESC, l.id DESC',
   columns: [
     { key: 'employee', label: 'Employee', kind: 'text', expression: 'l.employee' },
+    { key: 'line_kind', label: 'Kind', kind: 'enum', expression: 'l.line_kind', options: ['earning', 'deduction', 'employer_contribution'] },
     { key: 'pay_date', label: 'Pay date', kind: 'date', expression: 'l.pay_date' },
     { key: 'amount', label: 'Amount', kind: 'money', expression: 'l.amount' },
     { key: 'ytd_amount', label: 'YTD amount', kind: 'money', expression: 'l.ytd_amount' },
@@ -209,6 +210,30 @@ test('sectioned totals sum additive and latest measures exactly; avg/min/max sta
   assert.equal(grand.title, 'Grand totals')
   assert.deepEqual(grand.rows, [{ d1: july, m0: '100.12', m1: '590.00', m2: null }])
   assert.deepEqual(grand.rowKeys, [[{ field: 'pay_date', from: '2026-07-01', to: '2026-07-31' }]])
+})
+
+test('sectioned enum breakouts order by catalog option position and grand totals keep that ledger order', () => {
+  const compiled = compileCustomReport({
+    entity: 'stub_lines', mode: 'summarize', columns: [], groupBy: 'employee',
+    breakouts: [{ column: 'employee' }, { column: 'line_kind' }],
+    measures: [{ fn: 'sum', column: 'amount' }],
+    totals: { grand: true },
+  }, 'tenant-1', payCatalog)
+  // Earnings before deductions before employer contributions — catalog order, not alphabetical.
+  assert.match(compiled.sql, /ORDER BY 1, array_position\(ARRAY\['earning', 'deduction', 'employer_contribution'\]::text\[\], l\.line_kind\) ASC NULLS LAST/)
+  // Non-sectioned summaries keep ordinal ordering.
+  const plain = compileCustomReport({ entity: 'stub_lines', mode: 'summarize', columns: [], breakouts: [{ column: 'line_kind' }], measures: [{ fn: 'sum', column: 'amount' }] }, 'tenant-1', payCatalog)
+  assert.match(plain.sql, /ORDER BY 1\n/)
+  // Grand totals keep the query's (ledger) insertion order, not an alphabetical resort.
+  const result = customReportResult(compiled, [
+    { d0: 'Ada', d1: 'earning', m0: '10.00' },
+    { d0: 'Ada', d1: 'deduction', m0: '2.00' },
+    { d0: 'Grace', d1: 'earning', m0: '5.00' },
+  ])
+  const grand = result.groups.at(-1)!
+  assert.equal(grand.title, 'Grand totals')
+  assert.deepEqual(grand.rows.map((row) => row.d1), ['earning', 'deduction'])
+  assert.deepEqual(grand.rows.map((row) => row.m0), ['15.00', '2.00'])
 })
 
 test('exact number display keeps true integers intact and normalizes decimal strings to two places', () => {
