@@ -22,7 +22,10 @@ Production report-engine upgrades ported from the source platform.
   computed as exact decimal sums over the raw aggregates. Additive measures and
   `latest` running figures total (disjoint bucket endings add); avg/min/max
   stay blank — omission over a wrong number. Viewers style the new `totalRows`
-  indices as total rows.
+  indices as total rows. `totals.derived` appends validated derived footer rows
+  (e.g. Net pay = earnings − deductions) per section and to the grand group:
+  plus-bucket totals minus minus-bucket totals via exact bigint decimal
+  arithmetic, failing closed when a leg's field is not an un-binned breakout.
 - Exact-bucket drill scoping: summarize rows carry `rowKeys` (eq for plain
   breakouts, inclusive local-date ranges for binned buckets, is-empty markers
   for null buckets; unscopeable rows carry null so viewers offer NO drill).

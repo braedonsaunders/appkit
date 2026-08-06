@@ -25,8 +25,21 @@ export type ReportCustomQuery = {
   limit?: number | null
   /** Sectioned-summarize totals: per-section subtotal rows at the first
    *  non-section breakout level, and/or a final Grand totals group across all
-   *  sections. Sum-style measures total; latest/avg/min/max stay blank. */
-  totals?: { sections?: boolean; grand?: boolean } | null
+   *  sections. Additive and 'latest' measures total; avg/min/max stay blank.
+   *  `derived` rows combine level buckets arithmetically (e.g. Net pay =
+   *  earnings − deductions), appended per section and to the grand group. */
+  totals?: {
+    sections?: boolean
+    grand?: boolean
+    derived?: ReportDerivedTotal[]
+  } | null
+}
+
+/** One derived footer row: plus-bucket totals minus minus-bucket totals. */
+export type ReportDerivedTotal = {
+  label: string
+  plus: { field: string; value: string }
+  minus?: { field: string; value: string }
 }
 
 export type CompiledCustomReport = {
@@ -44,8 +57,8 @@ export type CompiledCustomReport = {
   breakouts?: ReportBreakout[]
   /** Summarize mode: the compiled measures, in `mN` order (drives totals). */
   measures?: ReportMeasure[]
-  /** Sectioned summarize: totals flags echoed for the shaper. */
-  totals?: { sections?: boolean; grand?: boolean } | null
+  /** Sectioned summarize: totals flags echoed (sanitized) for the shaper. */
+  totals?: ReportCustomQuery['totals']
   limit: number
 }
 
@@ -124,8 +137,25 @@ function compileSummary(entity: ReportEntity, query: ReportCustomQuery, tenantId
     // Counts are plain numbers even over money columns; every other aggregate keeps its column's semantics.
     ...measures.map((item, index) => ({ key: `m${index}`, label: item.label ?? measureLabel(entity, item), semanticType: item.fn === 'count' || item.fn === 'count_distinct' || !item.column ? 'number' as const : semanticType(entity, item.column), align: 'right' as const })),
   ]
+  // Whitelist the totals shape: ≤4 derived specs, bounded labels, legs must be
+  // valid catalogue columns — anything malformed is dropped, never guessed at.
+  const derivedLeg = (leg: { field: string; value: string } | undefined): { field: string; value: string } | null =>
+    leg && typeof leg.field === 'string' && reportColumnExpression(entity, leg.field) && typeof leg.value === 'string' && leg.value.length <= 128
+      ? { field: leg.field, value: leg.value }
+      : null
+  const derived = (query.totals?.derived ?? []).slice(0, 4).flatMap((entry): ReportDerivedTotal[] => {
+    const label = typeof entry?.label === 'string' ? entry.label.trim() : ''
+    const plus = derivedLeg(entry?.plus)
+    if (!label || label.length > 64 || !plus) return []
+    const minus = entry?.minus ? derivedLeg(entry.minus) : null
+    return [{ label, plus, ...(minus ? { minus } : {}) }]
+  })
   const totals = sectionIndex >= 0 && query.totals
-    ? { ...(query.totals.sections === true ? { sections: true } : {}), ...(query.totals.grand === true ? { grand: true } : {}) }
+    ? {
+        ...(query.totals.sections === true ? { sections: true } : {}),
+        ...(query.totals.grand === true ? { grand: true } : {}),
+        ...(derived.length ? { derived } : {}),
+      }
     : null
   return { sql, params: parameters.values, mode: 'summarize', columns, groupBy: sectionIndex >= 0 ? `d${sectionIndex}` : null, breakouts, measures, totals: totals && Object.keys(totals).length ? totals : null, limit }
 }
@@ -144,12 +174,13 @@ export function customReportResult(compiled: CompiledCustomReport, rows: Record<
     // row scope keys stay COMPLETE so drills still hit the exact bucket.
     const sectionColumn = compiled.mode === 'summarize' ? compiled.columns.find((column) => column.key === compiled.groupBy) : undefined
     const columns = sectionColumn ? compiled.columns.filter((column) => column.key !== compiled.groupBy) : compiled.columns
-    const grouped = new Map<string, { rows: Record<string, unknown>[]; keys: (ReportRowScopeRule[] | null)[]; totalRows: number[]; dataCount: number }>()
+    const grouped = new Map<string, { rows: Record<string, unknown>[]; keys: (ReportRowScopeRule[] | null)[]; raw: Record<string, unknown>[]; totalRows: number[]; dataCount: number }>()
     visible.forEach((row, index) => {
       const label = String(row[compiled.groupBy!] ?? '(none)')
-      const bucket = grouped.get(label) ?? { rows: [], keys: [], totalRows: [], dataCount: 0 }
+      const bucket = grouped.get(label) ?? { rows: [], keys: [], raw: [], totalRows: [], dataCount: 0 }
       bucket.rows.push(row)
       bucket.keys.push(rowKeys?.[index] ?? null)
+      bucket.raw.push(row)
       bucket.dataCount += 1
       grouped.set(label, bucket)
     })
@@ -175,10 +206,35 @@ export function customReportResult(compiled: CompiledCustomReport, rows: Record<
       return cells
     }
 
+    // A derived footer row (e.g. Net pay = earnings − deductions) over a set
+    // of raw aggregate rows: per summable measure, plus-bucket sum minus
+    // minus-bucket sum, exact bigint decimals. Returns null when a leg's field
+    // is not an un-binned breakout of this query (fail closed: no row beats a
+    // wrong row).
+    const levelIndex = breakouts.findIndex((_, index) => index !== sectionIndex)
+    const derivedLabelKey = levelIndex >= 0 ? `d${levelIndex}` : columns[0]?.key
+    const derivedRow = (spec: ReportDerivedTotal, raws: Record<string, unknown>[]): Record<string, unknown> | null => {
+      const plusIndex = breakouts.findIndex((item) => item.column === spec.plus.field && !item.bin)
+      const minusIndex = spec.minus ? breakouts.findIndex((item) => item.column === spec.minus!.field && !item.bin) : plusIndex
+      if (plusIndex < 0 || minusIndex < 0) return null
+      const row: Record<string, unknown> = {}
+      measures.forEach((measure, index) => {
+        const key = `m${index}`
+        row[key] = null
+        if (!summable[index]) return
+        const plusInputs = raws.filter((raw) => String(raw[`d${plusIndex}`] ?? '') === spec.plus.value).map((raw) => raw[key])
+        const minusInputs = spec.minus ? raws.filter((raw) => String(raw[`d${minusIndex}`] ?? '') === spec.minus!.value).map((raw) => raw[key]) : []
+        if (plusInputs.every((value) => value === null || value === undefined) && minusInputs.every((value) => value === null || value === undefined)) return
+        const total = subtractExactDecimals(sumExactDecimals(plusInputs), sumExactDecimals(minusInputs))
+        row[key] = measure.fn === 'sum' || measure.fn === 'latest' ? (formatExactReportNumber(total) ?? total) : Number(total)
+      })
+      if (derivedLabelKey) row[derivedLabelKey] = spec.label
+      return row
+    }
+
     // Per-section subtotal rows on the first non-section breakout level —
     // exact decimal sums over the raw aggregates, never over display strings.
-    if (sectionColumn && compiled.totals?.sections && breakouts.length >= 2) {
-      const levelIndex = breakouts.findIndex((_, index) => index !== sectionIndex)
+    if (sectionColumn && compiled.totals?.sections && breakouts.length >= 2 && levelIndex >= 0) {
       const levelKey = `d${levelIndex}`
       for (const bucket of grouped.values()) {
         const rows: Record<string, unknown>[] = []
@@ -202,6 +258,19 @@ export function customReportResult(compiled: CompiledCustomReport, rows: Record<
         bucket.rows = rows
         bucket.keys = keys
         bucket.totalRows = totalRows
+      }
+    }
+
+    // Derived footer rows per section (over that bucket's raw aggregate rows).
+    if (sectionColumn && compiled.totals?.derived?.length) {
+      for (const bucket of grouped.values()) {
+        for (const spec of compiled.totals.derived) {
+          const row = derivedRow(spec, bucket.raw)
+          if (!row) continue
+          bucket.totalRows.push(bucket.rows.length)
+          bucket.rows.push(row)
+          bucket.keys.push(null)
+        }
       }
     }
 
@@ -234,7 +303,18 @@ export function customReportResult(compiled: CompiledCustomReport, rows: Record<
         grandRows.push({ ...dims, ...totalCells(entry.rows) })
         grandKeys.push(entry.scope)
       }
-      groups.push({ kind: 'summary', title: 'Grand totals', subtitle: `${grouped.size} group${grouped.size === 1 ? '' : 's'}`, columns, rows: grandRows, rowKeys: grandKeys })
+      // Derived footer rows company-wide (over ALL raw aggregate rows).
+      const grandTotalRows: number[] = []
+      if (compiled.totals.derived?.length) {
+        for (const spec of compiled.totals.derived) {
+          const row = derivedRow(spec, visible)
+          if (!row) continue
+          grandTotalRows.push(grandRows.length)
+          grandRows.push(row)
+          grandKeys.push(null)
+        }
+      }
+      groups.push({ kind: 'summary', title: 'Grand totals', subtitle: `${grouped.size} group${grouped.size === 1 ? '' : 's'}`, columns, rows: grandRows, rowKeys: grandKeys, ...(grandTotalRows.length ? { totalRows: grandTotalRows } : {}) })
     }
 
     if (!groups.length) groups.push({ kind: compiled.mode === 'summarize' ? 'summary' : 'results', title: compiled.mode === 'summarize' ? 'Summary' : 'Results', columns, rows: [], isEmpty: true })
@@ -340,6 +420,12 @@ function decimalParts(value: unknown): { units: bigint; scale: number } | null {
 }
 
 /** Exact decimal sum over raw aggregate values (never floats — a ledger total must not drift). */
+/** a − b at combined scale, exact bigint decimals (reuses the sum machinery). */
+function subtractExactDecimals(a: string, b: string): string {
+  const negated = b.startsWith('-') ? b.slice(1) : `-${b}`
+  return sumExactDecimals([a, negated])
+}
+
 function sumExactDecimals(values: unknown[]): string {
   const parts = values.map(decimalParts).filter((part): part is { units: bigint; scale: number } => part !== null)
   const scale = parts.reduce((maximum, part) => Math.max(maximum, part.scale), 0)

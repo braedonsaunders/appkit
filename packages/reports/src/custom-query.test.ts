@@ -236,6 +236,49 @@ test('sectioned enum breakouts order by catalog option position and grand totals
   assert.deepEqual(grand.rows.map((row) => row.m0), ['15.00', '2.00'])
 })
 
+test('derived footer rows combine level buckets exactly per section and company-wide; unknown legs fail closed', () => {
+  const query = {
+    entity: 'stub_lines', mode: 'summarize' as const, columns: [], groupBy: 'employee',
+    breakouts: [{ column: 'employee' }, { column: 'line_kind' }],
+    measures: [{ fn: 'sum' as const, column: 'amount' }, { fn: 'latest' as const, column: 'ytd_amount' }, { fn: 'max' as const, column: 'amount' }],
+    totals: {
+      sections: true, grand: true,
+      derived: [
+        { label: 'Net pay', plus: { field: 'line_kind', value: 'earning' }, minus: { field: 'line_kind', value: 'deduction' } },
+        // pay_date is not an un-binned breakout of this query — no row, never a wrong row.
+        { label: 'Bogus', plus: { field: 'pay_date', value: '2026-01-01' } },
+      ],
+    },
+  }
+  const compiled = compileCustomReport(query, 'tenant-1', payCatalog)
+  const rows = [
+    { d0: 'Ada', d1: 'earning', m0: '100.10', m1: '500.00', m2: '100.10' },
+    { d0: 'Ada', d1: 'deduction', m0: '25.10', m1: '75.00', m2: '25.10' },
+    { d0: 'Grace', d1: 'deduction', m0: '30.00', m1: '30.00', m2: '30.00' },
+  ]
+  const result = customReportResult(compiled, rows)
+  // Ada: earning subtotal, deduction subtotal, then Net pay = earnings − deductions.
+  const ada = result.groups[0]!
+  assert.deepEqual(ada.totalRows, [1, 3, 4])
+  assert.deepEqual(ada.rows[4], { d1: 'Net pay', m0: '75.00', m1: '425.00', m2: null })
+  // Grace has no earnings: derived rows can go negative (0 − 30.00), exactly.
+  const grace = result.groups[1]!
+  assert.deepEqual(grace.rows.at(-1), { d1: 'Net pay', m0: '-30.00', m1: '-30.00', m2: null })
+  // Grand totals: combos in ledger order plus the company-wide Net pay row, styled as a total.
+  const grand = result.groups.at(-1)!
+  assert.equal(grand.title, 'Grand totals')
+  assert.deepEqual(grand.rows.at(-1), { d1: 'Net pay', m0: '45.00', m1: '395.00', m2: null })
+  assert.deepEqual(grand.totalRows, [grand.rows.length - 1])
+  assert.deepEqual(grand.rowKeys?.at(-1), null)
+  // Validation clamps hostile specs out at compile time.
+  const hostile = compileCustomReport({ ...query, totals: { derived: [
+    { label: '', plus: { field: 'line_kind', value: 'earning' } },
+    { label: 'x'.repeat(65), plus: { field: 'line_kind', value: 'earning' } },
+    { label: 'Nope', plus: { field: 'not_a_column', value: 'x' } },
+  ] } }, 'tenant-1', payCatalog)
+  assert.equal(hostile.totals, null)
+})
+
 test('exact number display keeps true integers intact and normalizes decimal strings to two places', () => {
   assert.equal(formatExactReportNumber('2026'), '2026')
   assert.equal(formatExactReportNumber('2938.0000'), '2938.00')
