@@ -1,4 +1,4 @@
-import { resolveReportLayout, type ReportLayout, type ReportRunResult } from './types'
+import { resolveReportLayout, type ReportGroup, type ReportLayout, type ReportRowScopeRule, type ReportRunResult } from './types'
 
 export type ReportPaperCell = string | number | boolean | null | undefined
 
@@ -14,8 +14,13 @@ export type ReportPaperGroup<TDrillTarget = unknown> = {
   links?: (string | null | undefined)[][]
   /** Per-cell drill target, resolved by the consuming application. */
   drills?: (TDrillTarget | null | undefined)[][]
+  /** Group-level drill fallback for numeric cells (e.g. scoped to this
+   *  section's rows); wins over the paper-wide defaultDrillTarget. */
+  drillTarget?: TDrillTarget
   /** Explicit total row. Ordinary result sets never infer that the last row is a total. */
   totalRowIndex?: number
+  /** Multiple subtotal/total rows (sectioned-summarize level totals). */
+  totalRows?: number[]
   isEmpty?: boolean
 }
 
@@ -74,6 +79,13 @@ export type ReportCellContext = {
   columnIndex: number
   row: Record<string, unknown>
   columnKey: string
+  /** The source group's kind. Rows-mode cells ARE single records — apps
+   *  should usually drill only 'summary' aggregates. */
+  groupKind: ReportGroup['kind']
+  /** Summarize mode: the exact bucket scope of this row, or null when the
+   *  bucket cannot be scoped precisely (offer NO drill rather than the wrong
+   *  rows). */
+  rowScope: ReportRowScopeRule[] | null
 }
 
 export function reportRunResultToPaper<TDrillTarget = unknown>(
@@ -100,8 +112,9 @@ export function reportRunResultToPaper<TDrillTarget = unknown>(
       money: group.columns.map((column) => column.semanticType === 'currency'),
       rows: group.rows.map((row) => group.columns.map((column) => row[column.key] as ReportPaperCell)),
       drills: options.drillTarget
-        ? group.rows.map((row, rowIndex) => group.columns.map((column, columnIndex) => options.drillTarget?.({ groupIndex, rowIndex, columnIndex, row, columnKey: column.key })))
+        ? group.rows.map((row, rowIndex) => group.columns.map((column, columnIndex) => options.drillTarget?.({ groupIndex, rowIndex, columnIndex, row, columnKey: column.key, groupKind: group.kind, rowScope: group.rowKeys?.[rowIndex] ?? null })))
         : undefined,
+      totalRows: group.totalRows,
       isEmpty: group.isEmpty,
     })),
   }

@@ -14,6 +14,9 @@ export type ReportFilterSelect = {
   ariaLabel?: string
 }
 export type ReportDimensionOption = { id: string; name: string }
+/** A concrete named window (e.g. one pay period) offered atop the presets;
+ *  selecting one applies period=custom with its exact bounds. */
+export type ReportExtraPeriodOption = { id: string; label: string; from: string; to: string }
 export type ReportSegmentOption = {
   key: string
   name: string
@@ -78,6 +81,8 @@ export function ReportFilterBar({
   asOf = false,
   dateRange = false,
   defaultPeriod = 'this_fiscal_year',
+  extraPeriods,
+  extraPeriodsLabel,
   search,
   searchPlaceholder,
   selects = [],
@@ -100,6 +105,9 @@ export function ReportFilterBar({
   asOf?: boolean
   dateRange?: boolean
   defaultPeriod?: string
+  /** Domain-specific windows (pay periods…) listed before the fiscal presets. */
+  extraPeriods?: ReportExtraPeriodOption[]
+  extraPeriodsLabel?: string
   search?: { value: string; placeholder?: string }
   searchPlaceholder?: string
   selects?: ReportFilterSelect[]
@@ -124,7 +132,13 @@ export function ReportFilterBar({
   const [optionsOpen, setOptionsOpen] = React.useState(false)
   const patch = React.useCallback((updates: ReportFilterValue) => onChange({ ...value, ...updates }), [onChange, value])
   const selectedPeriod = stringValue(value, 'period', defaultPeriod)
-  const custom = selectedPeriod === 'custom'
+  // An extra window is stored as period=custom + its exact bounds; keep the
+  // select showing the named entry rather than the anonymous Custom row.
+  const activeExtra = selectedPeriod === 'custom'
+    ? extraPeriods?.find((extra) => extra.from === stringValue(value, 'from') && extra.to === stringValue(value, 'to'))
+    : undefined
+  const periodValue = activeExtra ? `x:${activeExtra.id}` : selectedPeriod
+  const custom = selectedPeriod === 'custom' && !activeExtra
   const effective = controls ?? {
     search: Boolean(search),
     period,
@@ -158,7 +172,13 @@ export function ReportFilterBar({
     {leading ? <div className="flex shrink-0 items-center gap-2">{leading}</div> : null}
     {effective.search ? <input type="search" value={searchValue} onChange={(event) => patch({ search: event.target.value })} placeholder={search?.placeholder ?? searchPlaceholder} className="h-8 w-40 shrink-0 rounded-md border border-border bg-surface px-2.5 text-sm text-fg outline-none focus:border-primary sm:w-44" /> : null}
     {primaryFilter ? <Field label={primaryFilter.label ?? primaryFilter.ariaLabel ?? ''}><Select value={primaryFilter.value} onChange={(event) => patch({ [primaryFilter.key]: event.target.value })} className={cn(SELECT, 'font-semibold')} aria-label={primaryFilter.ariaLabel ?? primaryFilter.label}>{primaryFilter.options.map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</Select></Field> : null}
-    {effective.period !== false && !effective.dateRange ? <Field label={effective.asOf ? labels.asOf ?? 'As of' : labels.period ?? 'Period'}><Select value={selectedPeriod} onChange={(event) => patch({ period: event.target.value, ...(event.target.value === 'custom' ? {} : { from: null, to: null }) })} className={cn(SELECT, 'font-semibold')} aria-label={labels.period ?? 'Period'}>
+    {effective.period !== false && !effective.dateRange ? <Field label={effective.asOf ? labels.asOf ?? 'As of' : labels.period ?? 'Period'}><Select value={periodValue} onChange={(event) => {
+      const next = event.target.value
+      const extra = next.startsWith('x:') ? extraPeriods?.find((candidate) => `x:${candidate.id}` === next) : undefined
+      if (extra) patch({ period: 'custom', from: extra.from, to: extra.to })
+      else patch({ period: next, ...(next === 'custom' ? {} : { from: null, to: null }) })
+    }} className={cn(SELECT, 'font-semibold')} aria-label={labels.period ?? 'Period'}>
+      {extraPeriods?.length ? <optgroup label={extraPeriodsLabel ?? 'Periods'}>{extraPeriods.map((extra) => <option key={extra.id} value={`x:${extra.id}`}>{extra.label}</option>)}</optgroup> : null}
       {GROUP_ORDER.map((group) => <optgroup key={group} label={PERIOD_PRESET_GROUP_LABELS[group]}>{PERIOD_PRESETS.filter((preset) => preset.group === group).map((preset) => <option key={preset.id} value={preset.id}>{preset.label}</option>)}</optgroup>)}
     </Select></Field> : null}
     {custom && effective.asOf ? <input type="date" value={stringValue(value, 'to')} onChange={(event) => patch({ from: event.target.value, to: event.target.value })} className={DATE} aria-label={labels.asOf ?? 'As of'} /> : null}

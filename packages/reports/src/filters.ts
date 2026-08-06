@@ -28,7 +28,7 @@ export function operatorsForKind(kind: ReportEntity['columns'][number]['kind']):
     ? ['is_true', 'is_false', 'is_null', 'is_not_null']
     : kind === 'date' || kind === 'timestamp'
       ? ['eq', 'gte', 'lte', 'period_preset', 'between_days_ago', 'due_within_days', 'since_today', 'this_week', 'this_month', 'this_year', 'before_now', 'is_null', 'is_not_null']
-      : kind === 'number'
+      : kind === 'number' || kind === 'money'
         ? ['eq', 'neq', 'gte', 'lte', 'in', 'not_in', 'is_null', 'is_not_null']
         : kind === 'enum'
           ? ['eq', 'neq', 'in', 'not_in', 'is_null', 'is_not_null']

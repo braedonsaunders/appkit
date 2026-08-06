@@ -15,8 +15,23 @@ export type ReportGroup = {
   subtitle?: string
   columns: ReportColumn[]
   rows: Record<string, unknown>[]
+  /**
+   * Summarize mode: per-row scope of the aggregate — one entry per breakout
+   * (eq value, date range for binned buckets, or null-bucket marker). Rows
+   * whose bucket cannot be scoped exactly carry null (viewers omit the drill
+   * rather than show unrelated records).
+   */
+  rowKeys?: (ReportRowScopeRule[] | null)[]
+  /** Row indices styled as total/subtotal rows by viewers. */
+  totalRows?: number[]
   isEmpty?: boolean
 }
+
+/** One exact-scope predicate for drilling into an aggregate bucket. */
+export type ReportRowScopeRule =
+  | { field: string; value: string }
+  | { field: string; from: string; to: string }
+  | { field: string; empty: true }
 
 export type ReportSummaryItem = {
   key: string

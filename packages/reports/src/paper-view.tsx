@@ -35,6 +35,11 @@ function formatCell(value: ReportPaperCell, money: boolean, currency: string, lo
     if (money) return formatMoney(value, currency, locale)
     return value.toLocaleString(locale, { maximumFractionDigits: 2 })
   }
+  if (money) {
+    // Money-flagged cells often arrive as exact pg numeric strings.
+    const numeric = Number(value.replaceAll(',', ''))
+    if (value.trim() !== '' && Number.isFinite(numeric)) return formatMoney(numeric, currency, locale)
+  }
   return value
 }
 
@@ -108,14 +113,14 @@ export function PaperView<TDrillTarget>({
               className={(group.align?.[columnIndex] ?? (columnIndex === 0 ? 'left' : 'right')) === 'right' ? 'text-right' : (group.align?.[columnIndex] === 'center' ? 'text-center' : 'text-left')}
             >{column}</ReportTableHead>)}</ReportTableRow></ReportTableHeader>
             <ReportTableBody>{group.rows.map((row, rowIndex) => {
-              const total = group.totalRowIndex === rowIndex
+              const total = group.totalRowIndex === rowIndex || group.totalRows?.includes(rowIndex) === true
               return <ReportTableRow key={rowIndex} className={cn(total && reportTotalRowClass, total && 'font-semibold')}>
                 {row.map((cell, columnIndex) => {
                   const align = alignOf(columnIndex, cell)
                   const money = Boolean(group.money?.[columnIndex])
                   const negative = typeof cell === 'number' && cell < 0
                   const href = group.links?.[rowIndex]?.[columnIndex]
-                  const target = group.drills?.[rowIndex]?.[columnIndex] ?? (isNumericCell(cell) ? data.defaultDrillTarget : undefined)
+                  const target = group.drills?.[rowIndex]?.[columnIndex] ?? (isNumericCell(cell) ? group.drillTarget ?? data.defaultDrillTarget : undefined)
                   const content = formatCell(cell, money, currency, locale)
                   return <ReportTableCell key={columnIndex} className={cn(align === 'right' && 'text-right tabular-nums', align === 'center' && 'text-center', negative && 'text-danger')}>
                     {target !== undefined ? <DrillValue target={target} onDrill={onDrill}>{content}</DrillValue> : href ? (renderLink?.(href, content) ?? <a href={href} className="hover:text-primary hover:underline">{content}</a>) : content}

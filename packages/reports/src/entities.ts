@@ -1,4 +1,4 @@
-export type ReportColumnKind = 'text' | 'number' | 'date' | 'timestamp' | 'boolean' | 'enum' | 'uuid'
+export type ReportColumnKind = 'text' | 'number' | 'date' | 'timestamp' | 'boolean' | 'enum' | 'uuid' | 'money'
 
 export type ReportEntityColumn = {
   key: string
@@ -52,6 +52,12 @@ export type ReportEntity = {
   softDeleteExpression?: string
   /** Implicit permission/scope filter applied to every custom query. */
   baseFilter?: import('./filters').ReportRuleGroup
+  /**
+   * Chronological ordering (application-authored SQL ORDER BY body) that makes
+   * the 'latest' aggregate exact for this entity. Without it, 'latest'
+   * measures are rejected at compile time.
+   */
+  latestOrderExpr?: string
   relations?: { via: string; target: string; foreignColumn: string; label: string }[]
 }
 

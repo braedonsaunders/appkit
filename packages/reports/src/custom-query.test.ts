@@ -6,6 +6,7 @@ import {
   createReportDefinitionRegistry,
   customReportResult,
   defaultColumnsFor,
+  formatExactReportNumber,
   resolveReportLayout,
   validateScheduleRecipients,
   type ReportEntityCatalog,
@@ -120,6 +121,100 @@ test('compiled rows become grouped document results and preserve truncation', ()
   assert.equal(result.groups[0]?.title, 'open')
   assert.equal(result.rowCount, 2)
   assert.equal(result.truncated, true)
+})
+
+const payCatalog: ReportEntityCatalog = { entities: [{
+  key: 'stub_lines', label: 'Pay stub lines', category: 'Payroll', from: 'stub_lines l', tenantColumn: 'l.tenant_id',
+  latestOrderExpr: 'l.pay_date DESC, l.id DESC',
+  columns: [
+    { key: 'employee', label: 'Employee', kind: 'text', expression: 'l.employee' },
+    { key: 'pay_date', label: 'Pay date', kind: 'date', expression: 'l.pay_date' },
+    { key: 'amount', label: 'Amount', kind: 'money', expression: 'l.amount' },
+    { key: 'ytd_amount', label: 'YTD amount', kind: 'money', expression: 'l.ytd_amount' },
+    { key: 'tax_year', label: 'Tax year', kind: 'number', expression: 'l.tax_year' },
+  ],
+}] }
+
+test('money columns aggregate, filter, and surface as currency semantics', () => {
+  const rows = compileCustomReport({ entity: 'stub_lines', mode: 'rows', columns: ['employee', 'amount'] }, 'tenant-1', payCatalog)
+  assert.deepEqual(rows.columns[1], { key: 'amount', label: 'Amount', semanticType: 'currency', align: 'right' })
+  const summary = compileCustomReport({ entity: 'stub_lines', mode: 'summarize', columns: [], breakouts: [{ column: 'employee' }], measures: [{ fn: 'sum', column: 'amount' }, { fn: 'count_distinct', column: 'amount' }] }, 'tenant-1', payCatalog)
+  assert.match(summary.sql, /sum\(l\.amount\)/)
+  assert.equal(summary.columns[1]?.semanticType, 'currency')
+  assert.equal(summary.columns[2]?.semanticType, 'number')
+})
+
+test("the 'latest' aggregate compiles the entity's chronological order and fails loudly without one", () => {
+  const compiled = compileCustomReport({ entity: 'stub_lines', mode: 'summarize', columns: [], breakouts: [{ column: 'employee' }], measures: [{ fn: 'latest', column: 'ytd_amount' }] }, 'tenant-1', payCatalog)
+  assert.match(compiled.sql, /\(ARRAY_AGG\(l\.ytd_amount ORDER BY l\.pay_date DESC, l\.id DESC\)\)\[1\]/)
+  const bare = { entities: [{ ...payCatalog.entities[0]!, latestOrderExpr: undefined }] }
+  assert.throws(() => compileCustomReport({ entity: 'stub_lines', mode: 'summarize', columns: [], measures: [{ fn: 'latest', column: 'ytd_amount' }] }, 'tenant-1', bare), /latest/)
+})
+
+test('summarize groupBy over an un-binned breakout shapes titled sections with the column lifted out', () => {
+  const compiled = compileCustomReport({ entity: 'stub_lines', mode: 'summarize', columns: [], groupBy: 'employee', breakouts: [{ column: 'employee' }, { column: 'pay_date', bin: 'month' }], measures: [{ fn: 'sum', column: 'amount' }] }, 'tenant-1', payCatalog)
+  assert.equal(compiled.groupBy, 'd0')
+  const result = customReportResult(compiled, [
+    { d0: 'Ada', d1: new Date(2026, 6, 1), m0: '3115.375' },
+    { d0: 'Grace', d1: null, m0: '10.00' },
+  ])
+  assert.equal(result.groups.length, 2)
+  assert.equal(result.groups[0]?.kind, 'summary')
+  assert.equal(result.groups[0]?.title, 'Employee: Ada')
+  assert.deepEqual(result.groups[0]?.columns.map((column) => column.key), ['d1', 'm0'])
+  // Scope keys stay COMPLETE (section + binned month range) so drills hit the exact bucket.
+  assert.deepEqual(result.groups[0]?.rowKeys, [[
+    { field: 'employee', value: 'Ada' },
+    { field: 'pay_date', from: '2026-07-01', to: '2026-07-31' },
+  ]])
+  assert.deepEqual(result.groups[1]?.rowKeys, [[
+    { field: 'employee', value: 'Grace' },
+    { field: 'pay_date', empty: true },
+  ]])
+})
+
+test('aggregate rows that cannot be scoped exactly carry a null scope, never a wrong one', () => {
+  const compiled = compileCustomReport({ entity: 'stub_lines', mode: 'summarize', columns: [], breakouts: [{ column: 'pay_date', bin: 'fiscal_year' }], measures: [{ fn: 'sum', column: 'amount' }] }, 'tenant-1', payCatalog)
+  const result = customReportResult(compiled, [{ d0: 2026, m0: '99.00' }])
+  assert.deepEqual(result.groups[0]?.rowKeys, [null])
+})
+
+test('sectioned totals add exact subtotal rows and a grand totals group; non-additive measures stay blank', () => {
+  const compiled = compileCustomReport({
+    entity: 'stub_lines', mode: 'summarize', columns: [], groupBy: 'employee',
+    breakouts: [{ column: 'employee' }, { column: 'pay_date', bin: 'month' }],
+    measures: [{ fn: 'sum', column: 'amount' }, { fn: 'latest', column: 'ytd_amount' }],
+    totals: { sections: true, grand: true },
+  }, 'tenant-1', payCatalog)
+  assert.deepEqual(compiled.totals, { sections: true, grand: true })
+  const july = new Date(2026, 6, 1)
+  const result = customReportResult(compiled, [
+    { d0: 'Ada', d1: july, m0: '100.10', m1: '500.00' },
+    { d0: 'Grace', d1: july, m0: '0.02', m1: '90.00' },
+  ])
+  // Each section gains one subtotal row at the month level; sums are exact decimals.
+  const ada = result.groups[0]!
+  assert.deepEqual(ada.totalRows, [1])
+  assert.equal(ada.rows.length, 2)
+  assert.equal(ada.subtitle, '1 row')
+  assert.deepEqual(ada.rows[1], { d1: '2026-07-01 — total', m0: '100.10', m1: null })
+  // Grand totals: one row per remaining-breakout combo, company-wide scope,
+  // additive measures summed exactly (0.1 + 0.02 floats would drift).
+  const grand = result.groups.at(-1)!
+  assert.equal(grand.title, 'Grand totals')
+  assert.deepEqual(grand.rows, [{ d1: july, m0: '100.12', m1: null }])
+  assert.deepEqual(grand.rowKeys, [[{ field: 'pay_date', from: '2026-07-01', to: '2026-07-31' }]])
+})
+
+test('exact number display keeps true integers intact and normalizes decimal strings to two places', () => {
+  assert.equal(formatExactReportNumber('2026'), '2026')
+  assert.equal(formatExactReportNumber('2938.0000'), '2938.00')
+  assert.equal(formatExactReportNumber('-15.5'), '-15.50')
+  assert.equal(formatExactReportNumber('0.0625'), '0.0625')
+  assert.equal(formatExactReportNumber('n/a'), null)
+  const compiled = compileCustomReport({ entity: 'stub_lines', mode: 'rows', columns: ['tax_year', 'amount'] }, 'tenant-1', payCatalog)
+  const result = customReportResult(compiled, [{ tax_year: '2026', amount: '3115.3800' }])
+  assert.deepEqual(result.groups[0]?.rows, [{ tax_year: '2026', amount: '3115.38' }])
 })
 
 test('definition registry rejects duplicates and filters published reports', () => {
