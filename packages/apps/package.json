@@ -1,6 +1,6 @@
 {
   "name": "@appkit/apps",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Installable application bundles with immutable versions, governed QuickJS backends, opaque-origin frontends, capabilities, authoring, and distribution.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -45,7 +45,7 @@
   },
   "peerDependencies": {
     "@appkit/db": "^0.2.0",
-    "@appkit/ui": "^0.1.10",
+    "@appkit/ui": "^0.2.0",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",

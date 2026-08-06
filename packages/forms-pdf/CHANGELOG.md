@@ -1,5 +1,15 @@
 # @appkit/forms-pdf
 
+## 2.0.0
+
+### Patch Changes
+
+- Updated dependencies [0eff9e0]
+- Updated dependencies [8342b35]
+  - @appkit/reports@1.0.0
+  - @appkit/sync@1.1.0
+  - @appkit/design-studio@1.0.0
+
 ## 1.0.0
 
 ### Minor Changes

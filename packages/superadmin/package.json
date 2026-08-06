@@ -1,6 +1,6 @@
 {
   "name": "@appkit/superadmin",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "description": "Instance-operator administration over the platform identity: manage the users who can sign in, their credentials, and active sessions, with guard rails and production React components.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -24,7 +24,7 @@
   },
   "peerDependencies": {
     "@appkit/db": "^0.2.0",
-    "@appkit/ui": "^0.1.10",
+    "@appkit/ui": "^0.2.0",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
