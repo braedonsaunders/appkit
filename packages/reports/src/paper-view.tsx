@@ -91,7 +91,7 @@ export function PaperView<TDrillTarget>({
     {summary.length ? <div className="mb-6 grid grid-flow-col auto-cols-fr divide-x divide-border border-y border-border py-3">
       {summary.map((item, index) => {
         const target = item.drill ?? (isNumericCell(item.value) ? data.defaultDrillTarget : undefined)
-        const value = formatCell(item.value, false, currency, locale)
+        const value = formatCell(item.value, Boolean(item.money), currency, locale)
         return <div key={item.key ?? `${item.label}-${index}`} className="min-w-0 px-3 text-center">
           <div className="truncate text-xs text-fg-muted">{item.label}</div>
           <div className="truncate font-semibold tabular-nums">{target !== undefined ? <DrillValue target={target} onDrill={onDrill}>{value}</DrillValue> : value}</div>

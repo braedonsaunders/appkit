@@ -179,30 +179,35 @@ test('aggregate rows that cannot be scoped exactly carry a null scope, never a w
   assert.deepEqual(result.groups[0]?.rowKeys, [null])
 })
 
-test('sectioned totals add exact subtotal rows and a grand totals group; non-additive measures stay blank', () => {
+test('sectioned totals sum additive and latest measures exactly; avg/min/max stay blank', () => {
   const compiled = compileCustomReport({
     entity: 'stub_lines', mode: 'summarize', columns: [], groupBy: 'employee',
     breakouts: [{ column: 'employee' }, { column: 'pay_date', bin: 'month' }],
-    measures: [{ fn: 'sum', column: 'amount' }, { fn: 'latest', column: 'ytd_amount' }],
+    measures: [{ fn: 'sum', column: 'amount' }, { fn: 'latest', column: 'ytd_amount' }, { fn: 'max', column: 'amount' }],
     totals: { sections: true, grand: true },
   }, 'tenant-1', payCatalog)
   assert.deepEqual(compiled.totals, { sections: true, grand: true })
+  // Engine-driven alignment: breakouts left, measures right — a text breakout
+  // in a sectioned summary must never right-align by position.
+  assert.deepEqual(compiled.columns.map((column) => column.align), ['left', 'left', 'right', 'right', 'right'])
   const july = new Date(2026, 6, 1)
   const result = customReportResult(compiled, [
-    { d0: 'Ada', d1: july, m0: '100.10', m1: '500.00' },
-    { d0: 'Grace', d1: july, m0: '0.02', m1: '90.00' },
+    { d0: 'Ada', d1: july, m0: '100.10', m1: '500.00', m2: '100.10' },
+    { d0: 'Grace', d1: july, m0: '0.02', m1: '90.00', m2: '0.02' },
   ])
   // Each section gains one subtotal row at the month level; sums are exact decimals.
   const ada = result.groups[0]!
   assert.deepEqual(ada.totalRows, [1])
   assert.equal(ada.rows.length, 2)
   assert.equal(ada.subtitle, '1 row')
-  assert.deepEqual(ada.rows[1], { d1: '2026-07-01 — total', m0: '100.10', m1: null })
+  // 'latest' totals too: each row is the END of a disjoint per-bucket running
+  // series, so the sum of endings is the combined ending. max stays blank.
+  assert.deepEqual(ada.rows[1], { d1: '2026-07-01 — total', m0: '100.10', m1: '500.00', m2: null })
   // Grand totals: one row per remaining-breakout combo, company-wide scope,
-  // additive measures summed exactly (0.1 + 0.02 floats would drift).
+  // additive + latest measures summed exactly (0.1 + 0.02 floats would drift).
   const grand = result.groups.at(-1)!
   assert.equal(grand.title, 'Grand totals')
-  assert.deepEqual(grand.rows, [{ d1: july, m0: '100.12', m1: null }])
+  assert.deepEqual(grand.rows, [{ d1: july, m0: '100.12', m1: '590.00', m2: null }])
   assert.deepEqual(grand.rowKeys, [[{ field: 'pay_date', from: '2026-07-01', to: '2026-07-31' }]])
 })
 

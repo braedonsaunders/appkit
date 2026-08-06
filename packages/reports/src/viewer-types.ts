@@ -28,7 +28,7 @@ export type ReportPaperData<TDrillTarget = unknown> = {
   title: string
   periodPhrase?: string
   note?: string
-  summary?: { key?: string; label: string; value: ReportPaperCell; drill?: TDrillTarget }[]
+  summary?: { key?: string; label: string; value: ReportPaperCell; drill?: TDrillTarget; money?: boolean }[]
   groups: ReportPaperGroup<TDrillTarget>[]
   /** Source-row drill target used when a numeric cell has no more specific target. */
   defaultDrillTarget?: TDrillTarget
@@ -103,7 +103,7 @@ export function reportRunResultToPaper<TDrillTarget = unknown>(
     periodPhrase: options.periodPhrase,
     note: options.note,
     layout: options.layout,
-    summary: result.summary.map((item) => ({ key: item.key, label: item.label, value: item.value })),
+    summary: result.summary.map((item) => ({ key: item.key, label: item.label, value: item.value, money: item.semanticType === 'currency' })),
     groups: result.groups.map((group, groupIndex) => ({
       title: group.title,
       subtitle: group.subtitle,

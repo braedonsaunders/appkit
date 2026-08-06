@@ -142,10 +142,12 @@ export function customReportResult(compiled: CompiledCustomReport, rows: Record<
     const breakouts = compiled.breakouts ?? []
     const measures = compiled.measures ?? []
     const sectionIndex = sectionColumn ? Number(compiled.groupBy.slice(1)) : -1
-    // Only additive aggregates can honestly total; latest/avg/min/max stay
-    // blank — omission over a wrong number (a company-wide 'latest' is NOT
-    // the last row's value). All-null inputs stay blank too.
-    const summable = measures.map((measure) => measure.fn === 'sum' || measure.fn === 'count' || measure.fn === 'count_distinct')
+    // Which measure columns can honestly total. Additive aggregates sum, and
+    // so do 'latest' running figures: each row carries the END value of a
+    // disjoint per-bucket series (one employee's component YTD), so the sum
+    // of endings IS the combined ending. avg/min/max stay blank — omission
+    // over a wrong number. All-null inputs stay blank too.
+    const summable = measures.map((measure) => measure.fn === 'sum' || measure.fn === 'count' || measure.fn === 'count_distinct' || measure.fn === 'latest')
     const totalCells = (input: Record<string, unknown>[]): Record<string, unknown> => {
       const cells: Record<string, unknown> = {}
       measures.forEach((measure, index) => {
@@ -153,7 +155,7 @@ export function customReportResult(compiled: CompiledCustomReport, rows: Record<
         const values = input.map((row) => row[key])
         if (!summable[index] || values.every((value) => value === null || value === undefined)) { cells[key] = null; return }
         const total = sumExactDecimals(values)
-        cells[key] = measure.fn === 'sum' ? (formatExactReportNumber(total) ?? total) : Number(total)
+        cells[key] = measure.fn === 'sum' || measure.fn === 'latest' ? (formatExactReportNumber(total) ?? total) : Number(total)
       })
       return cells
     }
@@ -195,7 +197,8 @@ export function customReportResult(compiled: CompiledCustomReport, rows: Record<
     }
 
     // Grand totals across every section: one row per remaining-breakout combo,
-    // additive measures summed exactly, with company-wide drill scopes.
+    // additive and 'latest' measures summed exactly (disjoint bucket endings
+    // add), with company-wide drill scopes.
     if (sectionColumn && compiled.totals?.grand && grouped.size > 0) {
       const combos = new Map<string, { rows: Record<string, unknown>[]; scope: ReportRowScopeRule[] | null }>()
       visible.forEach((row, index) => {

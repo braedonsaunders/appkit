@@ -16,9 +16,10 @@ Production report-engine upgrades ported from the source platform.
   out of the table.
 - `totals: { sections, grand }` for sectioned summaries: per-section subtotal
   rows at the first non-section breakout level plus a final Grand totals group,
-  computed as exact decimal sums over the raw aggregates. Non-additive measures
-  (latest/avg/min/max) stay blank — omission over a wrong number. Viewers style
-  the new `totalRows` indices as total rows.
+  computed as exact decimal sums over the raw aggregates. Additive measures and
+  `latest` running figures total (disjoint bucket endings add); avg/min/max
+  stay blank — omission over a wrong number. Viewers style the new `totalRows`
+  indices as total rows.
 - Exact-bucket drill scoping: summarize rows carry `rowKeys` (eq for plain
   breakouts, inclusive local-date ranges for binned buckets, is-empty markers
   for null buckets; unscopeable rows carry null so viewers offer NO drill).
@@ -29,6 +30,8 @@ Production report-engine upgrades ported from the source platform.
 - Exact number display: `formatExactReportNumber` keeps true integers intact
   (tax year 2026, not 2026.00) and normalizes decimal strings to ledger-style
   two places without losing genuine precision.
+- Summary-band money: report summary items with `semanticType: 'currency'`
+  carry a `money` flag onto the paper and render currency-formatted.
 - Report filter bar: `extraPeriods` renders domain-specific named windows (pay
   periods…) as the first period optgroup; selecting one applies
   `period=custom` with exact bounds while the select keeps showing the named

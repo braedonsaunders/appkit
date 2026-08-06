@@ -81,12 +81,14 @@ test('paper mapping hands each drill callback the group kind and the exact row s
 test('report results map to paper rows without losing alignments, money, or cell drills', () => {
   const paper = reportRunResultToPaper('Portfolio', {
     groups: [{ kind: 'results', title: 'Results', columns: [{ key: 'name', label: 'Name', semanticType: 'text' }, { key: 'value', label: 'Value', semanticType: 'currency', align: 'right' }], rows: [{ name: 'North', value: 1250 }] }],
-    summary: [{ key: 'count', label: 'Records', value: 1 }], rowCount: 1, truncated: false, durationMs: 4,
+    summary: [{ key: 'count', label: 'Records', value: 1 }, { key: 'total', label: 'Total value', value: '1250.00', semanticType: 'currency' }], rowCount: 1, truncated: false, durationMs: 4,
   }, { drillTarget: ({ columnKey }) => columnKey === 'value' ? { kind: 'value' as const } : null })
   assert.deepEqual(paper.groups[0]?.rows, [['North', 1250]])
   assert.deepEqual(paper.groups[0]?.align, ['left', 'right'])
   assert.deepEqual(paper.groups[0]?.money, [false, true])
   assert.deepEqual(paper.groups[0]?.drills, [[null, { kind: 'value' }]])
+  // Currency summary cards carry the money flag so the paper formats them as currency.
+  assert.deepEqual(paper.summary?.map((item) => item.money), [false, true])
 })
 
 test('paper summary visibility follows the canonical report layout', () => {
