@@ -26,6 +26,7 @@ import iam from '../../../../packages/iam/package.json'
 import integrations from '../../../../packages/integrations/package.json'
 import jobs from '../../../../packages/jobs/package.json'
 import mailbox from '../../../../packages/mailbox/package.json'
+import mcp from '../../../../packages/mcp/package.json'
 import notifications from '../../../../packages/notifications/package.json'
 import oauth from '../../../../packages/oauth/package.json'
 import office from '../../../../packages/office/package.json'
@@ -131,7 +132,7 @@ export const PACKAGE_CATEGORIES: readonly {
     label: 'Automation and extensions',
     description: 'AI, governed code, installable apps, workflows, integrations, and sync.',
     names: [
-      '@appkit/ai', '@appkit/agent-tools', '@appkit/sandbox', '@appkit/endpoints', '@appkit/scripts', '@appkit/apps',
+      '@appkit/ai', '@appkit/agent-tools', '@appkit/mcp', '@appkit/sandbox', '@appkit/endpoints', '@appkit/scripts', '@appkit/apps',
       '@appkit/workflows', '@appkit/integrations', '@appkit/sync',
     ],
   },
@@ -166,6 +167,7 @@ const MANIFESTS: WorkspacePackageManifest[] = [
   integrations,
   jobs,
   mailbox,
+  mcp,
   notifications,
   oauth,
   office,
@@ -221,6 +223,7 @@ const DEMO_ROUTES: Record<string, string> = {
   '@appkit/crypto': '/packages/crypto/demo',
   '@appkit/oauth': '/dashboard/platform',
   '@appkit/agent-tools': '/packages/agent-tools/demo',
+  '@appkit/mcp': '/api-docs',
   '@appkit/process-sandbox': '/packages/process-sandbox/demo',
   '@appkit/email-render': '/packages/email-render/demo',
   '@appkit/email-designer': '/email-designer',
