@@ -1,5 +1,12 @@
 # @appkit/jobs
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [8342b35]
+  - @appkit/sync@1.1.0
+
 ## 0.2.0
 
 ### Minor Changes

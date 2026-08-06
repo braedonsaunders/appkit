@@ -1,6 +1,6 @@
 {
   "name": "@appkit/sync",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Production data synchronization with transactional batches, per-record ledgers, fail-closed snapshots, connector families, and durable cursors.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
