@@ -75,6 +75,12 @@ export interface DeskHostOptions {
   /** Guest kernel; defaults to `<imageRoot>/vmlinux`. */
   kernelPath?: string
   /**
+   * Initramfs the guest kernel boots with. A modular distro cloud kernel needs
+   * one to mount root; omit only for a kernel with virtio/ext4 built in. When
+   * unset it defaults to `<imageRoot>/initrd` if that file exists, else none.
+   */
+  initramfsPath?: string
+  /**
    * Kernel command line every desk boots with. Defaults to
    * `DEFAULT_KERNEL_CMDLINE`; override it for partitioned cloud images whose
    * root is not `/dev/vda` (e.g. `root=/dev/vda3 rw quiet`).
@@ -286,6 +292,12 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
   const idleSuspendMs = positiveInteger(options.idleSuspendMs ?? DEFAULT_IDLE_SUSPEND_MS, 'idleSuspendMs')
   const defaultLeaseMs = positiveInteger(options.defaultLeaseMs ?? DEFAULT_LEASE_MS, 'defaultLeaseMs')
   const kernelPath = options.kernelPath ?? join(options.imageRoot, 'vmlinux')
+  // Default the initramfs to <imageRoot>/initrd when present so a modular
+  // cloud kernel boots without every caller having to name it; an explicit
+  // option always wins.
+  const defaultInitramfs = join(options.imageRoot, 'initrd')
+  const initramfsPath =
+    options.initramfsPath ?? (pathExists(defaultInitramfs) ? defaultInitramfs : undefined)
   const kernelCmdline = options.kernelCmdline
 
   const records = new Map<string, DeskRecord>()
@@ -464,6 +476,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         vmmPath: options.vmmPath,
         kvmPath: options.kvmPath,
         kernelPath,
+        ...(initramfsPath === undefined ? {} : { initramfsPath }),
         baseImagePath: startOptions.baseImage,
         overlayPath: startOptions.overlayPath,
         memoryMb: startOptions.memoryMb,
@@ -987,6 +1000,8 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
 
 export interface VerifyDeskHostOptions {
   kernelPath: string
+  /** Initramfs for the probe VM; needed for a modular kernel, as at boot. */
+  initramfsPath?: string
   baseImagePath: string
   vmmPath?: string
   kvmPath?: string
@@ -1045,13 +1060,14 @@ export async function verifyDeskHost(options: VerifyDeskHostOptions): Promise<De
 
   const scratchDir = options.scratchDir ?? tmpdir()
   const deskId = `verify-${idFactory()}`
-  const overlayPath = join(scratchDir, `${deskId}.qcow2`)
+  const overlayPath = join(scratchDir, `${deskId}.raw`)
   const plan = buildDeskLaunchPlan(
     {
       deskId,
       vmmPath,
       kvmPath,
       kernelPath: options.kernelPath,
+      ...(options.initramfsPath === undefined ? {} : { initramfsPath: options.initramfsPath }),
       baseImagePath: options.baseImagePath,
       overlayPath,
       vsockCid: 3,

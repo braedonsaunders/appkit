@@ -44,6 +44,36 @@ test('builds the complete Cloud Hypervisor invocation as inspectable data', () =
   assert.equal(plan.vsock.socketPath, '/run/appkit-desk/desk-agent-7.vsock')
   assert.equal(plan.tap.device, 'dsk107')
   assert.ok(plan.tap.device.length <= 15)
+
+  // No initramfs by default: the arg is absent and the field is null.
+  assert.equal(plan.initramfsPath, null)
+  assert.equal(args.includes('--initramfs'), false)
+})
+
+test('passes --initramfs right after --kernel when an initramfs is given', () => {
+  const plan = buildDeskLaunchPlan(
+    { ...baseOptions, initramfsPath: '/data/agent-disks/initrd' },
+    { pathExists: (path) => path !== baseOptions.overlayPath, deviceExists: allPathsExist },
+  )
+  assert.equal(plan.initramfsPath, '/data/agent-disks/initrd')
+  const args = plan.vmm.args
+  assert.equal(args[args.indexOf('--kernel') + 2], '--initramfs')
+  assert.equal(args[args.indexOf('--initramfs') + 1], '/data/agent-disks/initrd')
+})
+
+test('rejects an initramfs path that does not exist', () => {
+  assert.throws(
+    () =>
+      buildDeskLaunchPlan(
+        { ...baseOptions, initramfsPath: '/data/agent-disks/initrd' },
+        {
+          pathExists: (path) =>
+            path !== baseOptions.overlayPath && path !== '/data/agent-disks/initrd',
+          deviceExists: allPathsExist,
+        },
+      ),
+    DeskError,
+  )
 })
 
 test('includes the copy-on-write overlay creation step only when the overlay is missing', () => {

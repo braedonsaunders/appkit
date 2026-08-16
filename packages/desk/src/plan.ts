@@ -34,6 +34,13 @@ export interface DeskLaunchPlanOptions {
   qemuImgPath?: string
   /** Absolute path of the kernel image the microVM boots. */
   kernelPath: string
+  /**
+   * Absolute path of an initramfs. Required whenever the kernel loads its
+   * root-filesystem or virtio drivers as modules — a stock distro cloud kernel
+   * panics with "VFS: Unable to mount root fs" if it boots without one. Omit
+   * only for a kernel with virtio_blk/ext4 built in.
+   */
+  initramfsPath?: string
   /** Absolute path of the golden raw base image every desk clones. */
   baseImagePath: string
   /** Absolute path of this desk's copy-on-write overlay (a raw reflink clone). */
@@ -72,6 +79,8 @@ export interface DeskLaunchPlan {
   memoryMb: number
   vcpus: number
   kernelPath: string
+  /** Resolved initramfs path, or `null` when the kernel needs none. */
+  initramfsPath: string | null
   kernelCmdline: string
   launcherIdentity?: DeskLauncherIdentity
 }
@@ -139,6 +148,13 @@ export function buildDeskLaunchPlan(
   if (!pathExists(kernelPath)) {
     throw new DeskError(`Guest kernel does not exist: ${kernelPath}`)
   }
+  const initramfsPath =
+    options.initramfsPath === undefined
+      ? null
+      : absolutePath(options.initramfsPath, 'initramfsPath')
+  if (initramfsPath !== null && !pathExists(initramfsPath)) {
+    throw new DeskError(`Initramfs does not exist: ${initramfsPath}`)
+  }
   const baseImagePath = absolutePath(options.baseImagePath, 'baseImagePath')
   if (!pathExists(baseImagePath)) {
     throw new DeskError(`Base image does not exist: ${baseImagePath}`)
@@ -175,6 +191,9 @@ export function buildDeskLaunchPlan(
   const args = [
     '--api-socket', apiSocketPath,
     '--kernel', kernelPath,
+    // A modular distro kernel needs its initramfs to bring up virtio_blk and
+    // mount root; omitted only for a kernel with those drivers built in.
+    ...(initramfsPath === null ? [] : ['--initramfs', initramfsPath]),
     '--cmdline', kernelCmdline,
     // Be explicit that the disk is raw: CH deprecated image-format auto-detection
     // and warns without image_type; there is never a qcow2 overlay here.
@@ -197,6 +216,7 @@ export function buildDeskLaunchPlan(
     memoryMb,
     vcpus,
     kernelPath,
+    initramfsPath,
     kernelCmdline,
     launcherIdentity,
   }

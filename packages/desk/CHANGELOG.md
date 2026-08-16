@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Add optional `initramfsPath` to the launch plan and `DeskHostOptions` (defaults to `<imageRoot>/initrd` when present). A modular distro cloud kernel panics with "VFS: Unable to mount root fs" without one; CH now boots with `--initramfs` when provided.
+
 ## 0.2.0
 
 Fixes found while deploying the Cloud Hypervisor backend against live CH v53.
