@@ -3,7 +3,7 @@ import test from 'node:test'
 import { Buffer } from 'node:buffer'
 import { createDeskHost, verifyDeskHost, type DeskStartOptions } from './host'
 import type { DeskBackend, DeskMachine } from './backend'
-import type { DeskLaunchPlan } from './plan'
+import { DEFAULT_KERNEL_CMDLINE, type DeskLaunchPlan } from './plan'
 import type { GuestCommand, GuestEventMessage } from './protocol'
 import type { DeskAuditEntry, DeskEvent, DeskPorts, WindowInfo } from './events'
 
@@ -100,6 +100,7 @@ function makeHost(overrides: {
   defaultLeaseMs?: number
   policy?: DeskPorts['policy']
   backend?: DeskBackend
+  kernelCmdline?: string
 } = {}) {
   const events: DeskEvent[] = []
   const audits: DeskAuditEntry[] = []
@@ -108,6 +109,7 @@ function makeHost(overrides: {
   const host = createDeskHost({
     imageRoot: '/images',
     backend: overrides.backend ?? factory.backend,
+    ...(overrides.kernelCmdline === undefined ? {} : { kernelCmdline: overrides.kernelCmdline }),
     ports: {
       policy: overrides.policy,
       onEvent: (event) => {
@@ -167,6 +169,16 @@ test('starting a desk that is already resident returns the same handle without a
   const second = await context.host.start(startOptions('agent-1'))
   assert.equal(first, second)
   assert.equal(context.plans.length, 1)
+})
+
+test('threads kernelCmdline from DeskHostOptions into the launch plan, defaulting when omitted', async () => {
+  const withDefault = makeHost()
+  await withDefault.host.start(startOptions('agent-1'))
+  assert.equal(withDefault.plans[0]?.kernelCmdline, DEFAULT_KERNEL_CMDLINE)
+
+  const withOverride = makeHost({ kernelCmdline: 'root=/dev/vda3 rw quiet' })
+  await withOverride.host.start(startOptions('agent-1'))
+  assert.equal(withOverride.plans[0]?.kernelCmdline, 'root=/dev/vda3 rw quiet')
 })
 
 test('queues starts beyond the capacity cap and admits them FIFO as desks suspend', async () => {

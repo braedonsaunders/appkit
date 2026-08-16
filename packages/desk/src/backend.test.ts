@@ -155,7 +155,7 @@ test('boots by creating the overlay, spawning the VMM, and handshaking the vsock
 
   const machine = await backend.boot(makePlan({ withOverlayCreate: true }))
   assert.equal(spawned.length, 2)
-  assert.equal(spawned[0]?.command, '/usr/bin/qemu-img')
+  assert.equal(spawned[0]?.command, 'cp')
   assert.equal(spawned[1]?.command, '/usr/bin/cloud-hypervisor')
   assert.deepEqual(vsock.handshakes, ['CONNECT 5252'])
   assert.deepEqual(vsock.connectedPaths, ['/run/appkit-desk/desk-agent-1.vsock'])

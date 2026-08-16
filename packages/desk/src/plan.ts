@@ -34,9 +34,9 @@ export interface DeskLaunchPlanOptions {
   qemuImgPath?: string
   /** Absolute path of the kernel image the microVM boots. */
   kernelPath: string
-  /** Absolute path of the golden base image every desk shares. */
+  /** Absolute path of the golden raw base image every desk clones. */
   baseImagePath: string
-  /** Absolute path of this desk's copy-on-write overlay. */
+  /** Absolute path of this desk's copy-on-write overlay (a raw reflink clone). */
   overlayPath: string
   memoryMb?: number
   vcpus?: number
@@ -148,7 +148,6 @@ export function buildDeskLaunchPlan(
   if (!pathExists(overlayDirectory)) {
     throw new DeskError(`Overlay directory does not exist: ${overlayDirectory}`)
   }
-  const qemuImgPath = absolutePath(options.qemuImgPath ?? DEFAULT_QEMU_IMG_PATH, 'qemuImgPath')
   const memoryMb = positiveInteger(options.memoryMb ?? DEFAULT_MEMORY_MB, 'memoryMb')
   const vcpus = positiveInteger(options.vcpus ?? DEFAULT_VCPUS, 'vcpus')
   const vsockCid = cleanCid(options.vsockCid)
@@ -163,15 +162,23 @@ export function buildDeskLaunchPlan(
   const create = pathExists(overlayPath)
     ? null
     : {
-        command: qemuImgPath,
-        args: ['create', '-f', 'qcow2', '-b', baseImagePath, '-F', 'qcow2', overlayPath],
+        // Cloud Hypervisor cannot follow disk backing chains: a qcow2 overlay
+        // over a qcow2/raw base is rejected with UnsupportedFeature /
+        // MaxNestingDepthExceeded. So the overlay is a plain raw file, cloned
+        // from the raw base with `cp --reflink=auto` — an instant, block-sharing
+        // copy-on-write clone on XFS/Btrfs and a graceful full-copy fallback on
+        // ext4. Either way CH boots the resulting raw file with no backing chain.
+        command: 'cp',
+        args: ['--reflink=auto', baseImagePath, overlayPath],
       }
 
   const args = [
     '--api-socket', apiSocketPath,
     '--kernel', kernelPath,
     '--cmdline', kernelCmdline,
-    '--disk', `path=${overlayPath}`,
+    // Be explicit that the disk is raw: CH deprecated image-format auto-detection
+    // and warns without image_type; there is never a qcow2 overlay here.
+    '--disk', `path=${overlayPath},image_type=raw`,
     '--memory', `size=${memoryMb}M`,
     '--cpus', `boot=${vcpus}`,
     '--vsock', `cid=${vsockCid},socket=${vsockSocketPath}`,

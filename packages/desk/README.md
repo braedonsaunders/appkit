@@ -51,8 +51,8 @@ const host = createDeskHost({
 
 const desk = await host.start({
   deskId: 'agent-7',
-  baseImage: '/data/agent-disks/base.qcow2',
-  overlayPath: '/data/agent-disks/overlays/agent-7.qcow2',
+  baseImage: '/data/agent-disks/base.img',
+  overlayPath: '/data/agent-disks/overlays/agent-7.img',
   memoryMb: 384,
   vcpus: 2,
 })
@@ -66,13 +66,19 @@ await screen.input.click(640, 320)
 await desk.screen.stop() // back to headless; the machine keeps running
 ```
 
-Every desk boots from one golden base image plus a per-desk copy-on-write
-overlay, so patching the base patches every desk on its next boot while agent
-installs and home directories persist. `buildDeskLaunchPlan` produces the
-entire invocation — VMM argv, overlay-creation step, vsock socket path, TAP
-device and MAC — as inspectable data before anything is spawned, and it fails
-closed: a missing `/dev/kvm`, VMM binary, kernel, base image, or overlay
-directory throws rather than producing a plan that cannot boot.
+Every desk boots from one golden **raw** base image plus a per-desk
+copy-on-write overlay, so patching the base patches every desk on its next boot
+while agent installs and home directories persist. The overlay is a plain raw
+file cloned from the base with `cp --reflink=auto` — an instant, block-sharing
+CoW clone on XFS/Btrfs and a graceful full-copy fallback on ext4. It is
+deliberately *not* a qcow2 backing overlay: Cloud Hypervisor cannot follow disk
+backing chains and rejects them (`UnsupportedFeature` /
+`MaxNestingDepthExceeded`), so the disk is passed as `image_type=raw` with no
+chain to follow. `buildDeskLaunchPlan` produces the entire invocation — VMM
+argv, overlay-creation step, vsock socket path, TAP device and MAC — as
+inspectable data before anything is spawned, and it fails closed: a missing
+`/dev/kvm`, VMM binary, kernel, base image, or overlay directory throws rather
+than producing a plan that cannot boot.
 
 ## Leases, idle suspend, and the queue
 

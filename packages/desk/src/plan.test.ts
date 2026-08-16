@@ -34,7 +34,7 @@ test('builds the complete Cloud Hypervisor invocation as inspectable data', () =
   const args = plan.vmm.args
   const value = (flag: string) => args[args.indexOf(flag) + 1]
   assert.equal(value('--kernel'), '/data/agent-disks/vmlinux')
-  assert.equal(value('--disk'), 'path=/data/agent-disks/overlays/agent-7.qcow2')
+  assert.equal(value('--disk'), 'path=/data/agent-disks/overlays/agent-7.qcow2,image_type=raw')
   assert.equal(value('--memory'), 'size=384M')
   assert.equal(value('--cpus'), 'boot=2')
   assert.equal(value('--vsock'), 'cid=107,socket=/run/appkit-desk/desk-agent-7.vsock')
@@ -52,12 +52,10 @@ test('includes the copy-on-write overlay creation step only when the overlay is 
     deviceExists: allPathsExist,
   })
   assert.deepEqual(missing.overlay.create, {
-    command: '/usr/bin/qemu-img',
+    command: 'cp',
     args: [
-      'create',
-      '-f', 'qcow2',
-      '-b', '/data/agent-disks/base.qcow2',
-      '-F', 'qcow2',
+      '--reflink=auto',
+      '/data/agent-disks/base.qcow2',
       '/data/agent-disks/overlays/agent-7.qcow2',
     ],
   })

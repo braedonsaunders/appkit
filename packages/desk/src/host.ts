@@ -74,6 +74,12 @@ export interface DeskHostOptions {
   kvmPath?: string
   /** Guest kernel; defaults to `<imageRoot>/vmlinux`. */
   kernelPath?: string
+  /**
+   * Kernel command line every desk boots with. Defaults to
+   * `DEFAULT_KERNEL_CMDLINE`; override it for partitioned cloud images whose
+   * root is not `/dev/vda` (e.g. `root=/dev/vda3 rw quiet`).
+   */
+  kernelCmdline?: string
   /** Directory holding vsock and API control sockets. */
   runtimeDir?: string
   launcherIdentity?: DeskLauncherIdentity
@@ -280,6 +286,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
   const idleSuspendMs = positiveInteger(options.idleSuspendMs ?? DEFAULT_IDLE_SUSPEND_MS, 'idleSuspendMs')
   const defaultLeaseMs = positiveInteger(options.defaultLeaseMs ?? DEFAULT_LEASE_MS, 'defaultLeaseMs')
   const kernelPath = options.kernelPath ?? join(options.imageRoot, 'vmlinux')
+  const kernelCmdline = options.kernelCmdline
 
   const records = new Map<string, DeskRecord>()
   const queue: QueueEntry[] = []
@@ -465,6 +472,9 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         runtimeDir: options.runtimeDir,
         tapDevice: startOptions.network?.tapDevice,
         macAddress: startOptions.network?.macAddress,
+        // Forward the host's cmdline only when set; otherwise the plan falls
+        // back to DEFAULT_KERNEL_CMDLINE.
+        ...(kernelCmdline === undefined ? {} : { kernelCmdline }),
         launcherIdentity: options.launcherIdentity,
       },
       { pathExists, deviceExists },
