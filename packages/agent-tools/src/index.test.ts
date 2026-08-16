@@ -45,6 +45,19 @@ const UPLOADER = defineAgentTool({
   requiresNetwork: true,
 })
 
+// An apt tool is never installed by the runtime, only verified on disk, so the
+// declared bin must actually exist on the test host. `true` is everywhere.
+const IMAGE_JQ = defineAgentTool({
+  id: 'image-jq',
+  name: 'jq',
+  description: 'JSON processor baked into the golden base image.',
+  sourceKind: 'apt-package',
+  risk: 'low',
+  aptPackage: 'jq',
+  aptVersion: '1.7.1-3',
+  bins: [{ name: 'jq', bin: 'true', healthCheckArgs: ['--version'] }],
+})
+
 interface Harness {
   runtime: ReturnType<typeof createAgentToolRuntime>
   store: AgentToolStore
@@ -155,6 +168,45 @@ test('manifests reject version ranges, duplicate commands, and missing pins', ()
         ],
       }),
     /duplicate command name go/,
+  )
+})
+
+test('apt manifests require an exact Debian pin and refuse foreign fields', () => {
+  // The happy path: a Debian name, an exact version, an epoch allowed.
+  const epoch = defineAgentTool({ ...IMAGE_JQ, aptVersion: '1:1.7.1-3' })
+  assert.equal(epoch.aptVersion, '1:1.7.1-3')
+
+  assert.throws(
+    () => defineAgentTool({ ...IMAGE_JQ, aptVersion: undefined }),
+    /aptVersion is required/,
+  )
+  assert.throws(() => defineAgentTool({ ...IMAGE_JQ, aptPackage: undefined }), /aptPackage is required/)
+  assert.throws(
+    () => defineAgentTool({ ...IMAGE_JQ, aptVersion: '>= 1.7' }),
+    /exact Debian version string, not a range/,
+  )
+  assert.throws(
+    () => defineAgentTool({ ...IMAGE_JQ, aptVersion: 'latest' }),
+    /exact Debian version string/,
+  )
+  assert.throws(
+    () => defineAgentTool({ ...IMAGE_JQ, aptPackage: 'Jq' }),
+    /valid Debian package name/,
+  )
+  assert.throws(() => defineAgentTool({ ...IMAGE_JQ, aptPackage: 'j' }), /valid Debian package name/)
+
+  // Fields from another source kind are rejected, not silently ignored.
+  assert.throws(
+    () => defineAgentTool({ ...IMAGE_JQ, packageName: 'jq', packageVersion: '1.7.1' }),
+    /packageName does not apply to apt-package tools/,
+  )
+  assert.throws(
+    () => defineAgentTool({ ...IMAGE_JQ, binaryPath: '/usr/bin/jq' }),
+    /binaryPath does not apply to apt-package tools/,
+  )
+  assert.throws(
+    () => defineAgentTool({ ...RIPGREP, aptPackage: 'ripgrep', aptVersion: '14.1.0-1' }),
+    /aptPackage does not apply to npm-package tools/,
   )
 })
 
@@ -478,6 +530,101 @@ test('re-pinning a version puts the tool back to uninstalled', async () => {
     assert.equal(installed.outcome, 'ok')
 
     const repinned = await h.runtime.register(TENANT, { ...RIPGREP, packageVersion: '0.1.3' })
+    assert.equal(repinned.status, 'not_installed')
+    assert.deepEqual(repinned.binPaths, {})
+    assert.equal(repinned.installedVersion, undefined)
+  } finally {
+    await h.cleanup()
+  }
+})
+
+test('an apt tool installs by verification alone: nothing spawns, no approval is asked', async () => {
+  // The default harness policy is install: 'approval'. An apt package was
+  // baked in at image build time, so there is no install act to approve.
+  const h = await harness()
+  try {
+    await h.runtime.register(TENANT, IMAGE_JQ)
+    const result = await h.runtime.install({ tenantId: TENANT, toolId: 'image-jq', actor: 'agent' })
+    assert.equal(result.outcome, 'ok')
+    if (result.outcome !== 'ok') throw new Error('unreachable')
+    assert.match(result.summary, /preinstalled in the base image/)
+    assert.equal(h.commands.length, 0, 'marking an image-baked tool installed spawns nothing')
+    assert.equal(result.tool.status, 'installed')
+    assert.equal(result.tool.installedVersion, '1.7.1-3')
+    const binPath = result.tool.binPaths['jq']
+    assert.ok(binPath?.endsWith('/true'), 'the bin resolves from a standard system root')
+    assert.ok((await h.runtime.listApprovals(TENANT)).length === 0, 'no request was filed')
+  } finally {
+    await h.cleanup()
+  }
+})
+
+test('an apt tool whose executables are absent fails install and records why', async () => {
+  const h = await harness()
+  try {
+    await h.runtime.register(
+      TENANT,
+      defineAgentTool({
+        ...IMAGE_JQ,
+        id: 'image-ghost',
+        bins: [{ name: 'ghost', bin: 'appkit-agent-tools-test-no-such-bin' }],
+      }),
+    )
+    const result = await h.runtime.install({ tenantId: TENANT, toolId: 'image-ghost', actor: 'agent' })
+    assert.equal(result.outcome, 'failed')
+    if (result.outcome !== 'failed') throw new Error('unreachable')
+    assert.match(result.error, /missing: ghost/)
+    assert.match(result.error, /Rebuild the image/)
+    const tool = await h.runtime.get(TENANT, 'image-ghost')
+    assert.equal(tool?.status, 'error')
+    assert.equal(tool?.health, 'unavailable')
+  } finally {
+    await h.cleanup()
+  }
+})
+
+test('an apt tool executes and health-checks through its system binary', async () => {
+  const h = await harness()
+  try {
+    await h.runtime.register(TENANT, IMAGE_JQ)
+    const workdir = join(h.root, 'home')
+    const ran = await h.runtime.execute({
+      tenantId: TENANT,
+      toolId: 'image-jq',
+      command: 'jq',
+      argv: ['.name'],
+      workdir,
+      installIfMissing: true,
+      actor: 'agent',
+    })
+    assert.equal(ran.outcome, 'ran')
+    if (ran.outcome !== 'ran') throw new Error('unreachable')
+
+    const execution = h.commands.at(-1)
+    assert.ok(execution)
+    assert.ok(execution.command.endsWith('/true'))
+    assert.equal(execution.network, 'none')
+    assert.ok(execution.readOnlyPaths?.includes('/bin'), 'apt roots are readable, never writable')
+    assert.ok(!execution.writablePaths.includes('/bin'))
+
+    const health = await h.runtime.checkHealth(TENANT, 'image-jq')
+    assert.equal(health.outcome, 'ok')
+    if (health.outcome !== 'ok') throw new Error('unreachable')
+    assert.equal(health.tool.health, 'healthy')
+    assert.deepEqual(h.commands.at(-1)?.args, ['--version'])
+  } finally {
+    await h.cleanup()
+  }
+})
+
+test('re-pinning an apt version puts the tool back to uninstalled', async () => {
+  const h = await harness()
+  try {
+    await h.runtime.register(TENANT, IMAGE_JQ)
+    const installed = await h.runtime.install({ tenantId: TENANT, toolId: 'image-jq', actor: 'agent' })
+    assert.equal(installed.outcome, 'ok')
+
+    const repinned = await h.runtime.register(TENANT, { ...IMAGE_JQ, aptVersion: '1.8.0-1' })
     assert.equal(repinned.status, 'not_installed')
     assert.deepEqual(repinned.binPaths, {})
     assert.equal(repinned.installedVersion, undefined)

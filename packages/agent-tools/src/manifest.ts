@@ -14,8 +14,11 @@ export type AgentToolRisk = 'low' | 'medium' | 'high'
  *   package owns, so a tool can be added without rebuilding the image.
  * - `binary-path` — an executable already present in the image, named so it can
  *   be catalogued, health-checked, and governed like any other tool.
+ * - `apt-package` — a Debian package baked into the golden base image at an
+ *   exact pinned version. The image build installs it; the runtime never does.
+ *   The manifest is the declaration of what the image contains.
  */
-export type AgentToolSourceKind = 'npm-package' | 'binary-path'
+export type AgentToolSourceKind = 'npm-package' | 'binary-path' | 'apt-package'
 
 /**
  * What an approved execution covers.
@@ -37,6 +40,20 @@ const identifier = z
   .regex(/^[a-z0-9][a-z0-9-]*$/, 'must be lowercase kebab-case')
 
 const argumentList = z.array(z.string().min(1).max(400)).max(24)
+
+/**
+ * Debian package-name grammar: lowercase letters, digits, `.`, `+` and `-`;
+ * at least two characters; starting with a letter or digit.
+ */
+const DEBIAN_PACKAGE_NAME = /^[a-z0-9][a-z0-9.+-]+$/
+
+/**
+ * An exact Debian version: an optional `epoch:`, then a version that starts
+ * with a digit and stays within the charset Debian policy allows. Whitespace
+ * and relational operators (`>=`, `<<`, …) cannot match, so a range is
+ * rejected by construction.
+ */
+const DEBIAN_EXACT_VERSION = /^(?:[0-9]+:)?[0-9][0-9A-Za-z.+~-]*$/
 
 export const agentToolBinarySchema = z.object({
   /** The name an agent calls, e.g. `rg`. Unique within the manifest. */
@@ -62,7 +79,7 @@ export const agentToolManifestSchema = z
     id: identifier,
     name: z.string().trim().min(1).max(160),
     description: z.string().trim().min(1).max(2_000),
-    sourceKind: z.enum(['npm-package', 'binary-path']),
+    sourceKind: z.enum(['npm-package', 'binary-path', 'apt-package']),
     risk: z.enum(['low', 'medium', 'high']),
     /** Required for `npm-package`. */
     packageName: z.string().trim().min(1).max(240).optional(),
@@ -70,6 +87,10 @@ export const agentToolManifestSchema = z
     packageVersion: z.string().trim().min(1).max(120).optional(),
     /** Required for `binary-path`. Must resolve inside an allowed root. */
     binaryPath: z.string().trim().min(1).max(2_000).optional(),
+    /** Required for `apt-package`. A Debian package name. */
+    aptPackage: z.string().trim().min(2).max(120).optional(),
+    /** Required for `apt-package`. An exact Debian version, never a range. */
+    aptVersion: z.string().trim().min(1).max(120).optional(),
     docsUrl: z.string().url().optional(),
     /** Free-form labels an application can group and search on. */
     capabilities: z.array(z.string().trim().min(1).max(120)).max(64).default([]),
@@ -117,6 +138,59 @@ export const agentToolManifestSchema = z
         message: 'binaryPath is required for binary-path tools',
         path: ['binaryPath'],
       })
+    }
+    if (value.sourceKind === 'apt-package') {
+      if (!value.aptPackage) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'aptPackage is required for apt-package tools',
+          path: ['aptPackage'],
+        })
+      } else if (!DEBIAN_PACKAGE_NAME.test(value.aptPackage)) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            'aptPackage must be a valid Debian package name: lowercase letters, digits, ".", "+" and "-", at least two characters, starting with a letter or digit',
+          path: ['aptPackage'],
+        })
+      }
+      if (!value.aptVersion) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'aptVersion is required for apt-package tools',
+          path: ['aptVersion'],
+        })
+      } else if (!DEBIAN_EXACT_VERSION.test(value.aptVersion)) {
+        // A range (or an unpinned name) would let the bytes baked into the
+        // next image build drift from what the shelf and any approvals
+        // describe — same rationale as the exact npm pin above.
+        ctx.addIssue({
+          code: 'custom',
+          message: 'aptVersion must be an exact Debian version string, not a range',
+          path: ['aptVersion'],
+        })
+      }
+      // A manifest describes exactly one source; fields from another source
+      // kind would be silently ignored, which reads like they took effect.
+      for (const field of ['packageName', 'packageVersion', 'binaryPath'] as const) {
+        if (value[field] !== undefined) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `${field} does not apply to apt-package tools`,
+            path: [field],
+          })
+        }
+      }
+    } else {
+      for (const field of ['aptPackage', 'aptVersion'] as const) {
+        if (value[field] !== undefined) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `${field} does not apply to ${value.sourceKind} tools`,
+            path: [field],
+          })
+        }
+      }
     }
     const names = new Set<string>()
     for (const [index, bin] of value.bins.entries()) {

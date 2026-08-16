@@ -11,7 +11,9 @@ import customization from '../../../../packages/customization/package.json'
 import dashboard from '../../../../packages/dashboard/package.json'
 import db from '../../../../packages/db/package.json'
 import designStudio from '../../../../packages/design-studio/package.json'
+import desk from '../../../../packages/desk/package.json'
 import editor from '../../../../packages/editor/package.json'
+import egressProxy from '../../../../packages/egress-proxy/package.json'
 import emailDesigner from '../../../../packages/email-designer/package.json'
 import emailRender from '../../../../packages/email-render/package.json'
 import emails from '../../../../packages/emails/package.json'
@@ -123,7 +125,8 @@ export const PACKAGE_CATEGORIES: readonly {
     names: [
       '@appkit/db', '@appkit/tenant', '@appkit/auth', '@appkit/iam', '@appkit/superadmin', '@appkit/api',
       '@appkit/events', '@appkit/jobs', '@appkit/notifications', '@appkit/storage',
-      '@appkit/crypto', '@appkit/oauth', '@appkit/process-sandbox', '@appkit/email-render', '@appkit/email-designer',
+      '@appkit/crypto', '@appkit/oauth', '@appkit/process-sandbox', '@appkit/desk', '@appkit/egress-proxy',
+      '@appkit/email-render', '@appkit/email-designer',
       '@appkit/emails', '@appkit/mailbox', '@appkit/sms', '@appkit/telephony', '@appkit/voice',
     ],
   },
@@ -152,7 +155,9 @@ const MANIFESTS: WorkspacePackageManifest[] = [
   dashboard,
   db,
   designStudio,
+  desk,
   editor,
+  egressProxy,
   emailDesigner,
   emailRender,
   emails,
@@ -225,6 +230,8 @@ const DEMO_ROUTES: Record<string, string> = {
   '@appkit/agent-tools': '/packages/agent-tools/demo',
   '@appkit/mcp': '/api-docs',
   '@appkit/process-sandbox': '/packages/process-sandbox/demo',
+  '@appkit/desk': '/packages/desk/demo',
+  '@appkit/egress-proxy': '/packages/egress-proxy/demo',
   '@appkit/email-render': '/packages/email-render/demo',
   '@appkit/email-designer': '/email-designer',
   '@appkit/emails': '/packages/emails/demo',

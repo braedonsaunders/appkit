@@ -17,6 +17,13 @@ export {
 } from './manifest'
 
 export {
+  imageManifest,
+  renderAptInstallFragment,
+  type ImageManifest,
+  type ImageManifestPackage,
+} from './image-manifest'
+
+export {
   DEFAULT_AGENT_TOOL_POLICY,
   agentToolScope,
   evaluateAgentToolPolicy,
@@ -54,6 +61,7 @@ export {
 
 export {
   DEFAULT_ALLOWED_BINARY_ROOTS,
+  DEFAULT_APT_BINARY_ROOTS,
   DEFAULT_EXECUTION_TIMEOUT_MS,
   DEFAULT_HEALTH_TIMEOUT_MS,
   DEFAULT_INSTALL_TIMEOUT_MS,

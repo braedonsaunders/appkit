@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -43,6 +44,19 @@ import {
   type AgentToolPolicyMode,
 } from '@appkit/agent-tools'
 import { buildBubblewrapPlan } from '@appkit/process-sandbox'
+import {
+  DEFAULT_KVM_PATH,
+  DEFAULT_VMM_PATH,
+  buildDeskLaunchPlan,
+  isDeskSupported,
+} from '@appkit/desk'
+import {
+  isPublicHostname,
+  normalizeOutboundHostname,
+  readClientHelloSni,
+  type EgressDecision,
+  type EgressPolicyRequest,
+} from '@appkit/egress-proxy'
 import { SMS_PROVIDER_SPECS, buildSmsTransport } from '@appkit/sms'
 import {
   CARRIER_PROVIDER_SPECS,
@@ -82,6 +96,8 @@ import { SuperadminDemo } from './superadmin-demo'
 const PACKAGE_DEMOS = {
   'agent-tools': 'Managed agent tools',
   crypto: 'Secret sealing',
+  desk: 'Agent desks',
+  'egress-proxy': 'Egress control',
   'email-render': 'Email rendering',
   emails: 'Email delivery',
   jobs: 'Background jobs',
@@ -148,6 +164,10 @@ function renderPackageDemo(
       return <AgentToolsDemo mode={queryValue(query.mode, DEFAULT_AGENT_TOOL_POLICY.execute) as AgentToolPolicyMode} />
     case 'crypto':
       return <CryptoDemo />
+    case 'desk':
+      return <DeskDemo />
+    case 'egress-proxy':
+      return <EgressProxyDemo />
     case 'email-render':
       return <EmailRenderDemo project={queryValue(query.project, 'North Tower')} />
     case 'emails':
@@ -977,6 +997,299 @@ function ProcessSandboxDemo() {
         <CardHeader><CardTitle>Generated bubblewrap plan</CardTitle><CardDescription>The exact command contract that a Linux worker would execute.</CardDescription></CardHeader>
         <CardContent>
           <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-bg-subtle p-4 font-mono text-xs leading-5 text-fg"><code>{`${plan.command} ${plan.args.join(' ')}`}</code></pre>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+const DESK_IMAGE_ROOT = '/data/agent-disks'
+const DESK_OVERLAY_PATH = `${DESK_IMAGE_ROOT}/overlays/agent-7.qcow2`
+
+const DESK_HOST_CONDITIONS: readonly {
+  label: string
+  platform: NodeJS.Platform
+  present: readonly string[]
+}[] = [
+  { label: 'Linux with /dev/kvm and Cloud Hypervisor', platform: 'linux', present: [DEFAULT_KVM_PATH, DEFAULT_VMM_PATH] },
+  { label: 'Linux without /dev/kvm exposed', platform: 'linux', present: [DEFAULT_VMM_PATH] },
+  { label: 'Linux without cloud-hypervisor installed', platform: 'linux', present: [DEFAULT_KVM_PATH] },
+  { label: 'macOS or Windows Docker Desktop', platform: 'darwin', present: [DEFAULT_KVM_PATH, DEFAULT_VMM_PATH] },
+]
+
+function DeskDemo() {
+  // Host checks are injected so the plan is deterministic on any machine. The
+  // overlay is the one path reported as missing, so the plan includes the
+  // qemu-img copy-on-write creation step a first boot would run.
+  const plan = buildDeskLaunchPlan({
+    deskId: 'agent-7',
+    kernelPath: `${DESK_IMAGE_ROOT}/vmlinux`,
+    baseImagePath: `${DESK_IMAGE_ROOT}/base.qcow2`,
+    overlayPath: DESK_OVERLAY_PATH,
+    memoryMb: 384,
+    vcpus: 2,
+    vsockCid: 107,
+    launcherIdentity: { uid: 1000, gid: 1000 },
+  }, {
+    pathExists: (path) => path !== DESK_OVERLAY_PATH,
+    deviceExists: () => true,
+  })
+
+  const readiness = DESK_HOST_CONDITIONS.map((condition) => ({
+    ...condition,
+    supported: isDeskSupported({
+      platform: condition.platform,
+      pathExists: (path) => condition.present.includes(path),
+    }),
+  }))
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Isolation contract</CardTitle>
+            <CardDescription>
+              buildDeskLaunchPlan produces the entire microVM invocation as inspectable data.
+              Nothing is spawned; this is the exact contract a desk boots with.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <DemoRow label="Machine" value={`Cloud Hypervisor microVM · ${plan.memoryMb} MB · ${plan.vcpus} vCPUs · headless`} />
+            <DemoRow label="Base image" value={plan.overlay.basePath} mono />
+            <DemoRow label="Copy-on-write overlay" value={plan.overlay.path} mono />
+            <DemoRow
+              label="Overlay creation"
+              value={plan.overlay.create
+                ? `${plan.overlay.create.command} ${plan.overlay.create.args.join(' ')}`
+                : 'Overlay already exists — reused so agent installs persist'}
+              mono
+            />
+            <DemoRow label="Guest agent channel" value={`vsock cid ${plan.vsock.cid} · ${plan.vsock.socketPath}`} mono />
+            <DemoRow label="VMM control" value={plan.api.socketPath} mono />
+            <DemoRow label="Network tap" value={`${plan.tap.device} · ${plan.tap.mac} — derived from the CID, stable per desk`} mono />
+            <DemoRow label="Kernel" value={`${plan.kernelPath} · ${plan.kernelCmdline}`} mono />
+            <DemoRow
+              label="Launcher identity"
+              value={`${plan.launcherIdentity?.uid}:${plan.launcherIdentity?.gid} — never root`}
+              mono
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Generated Cloud Hypervisor argv</CardTitle>
+            <CardDescription>
+              Serial and console stay off; the framed vsock protocol is the only channel into the guest.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-bg-subtle p-4 font-mono text-xs leading-5 text-fg"><code>{`${plan.vmm.command} ${plan.vmm.args.join(' ')}`}</code></pre>
+          </CardContent>
+        </Card>
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Fail-closed host readiness</CardTitle>
+          <CardDescription>
+            isDeskSupported answers with the same injected checks. A host missing any requirement
+            gets no desk ability at all — there is no software-emulation fallback.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="overflow-x-auto p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Host</TableHead>
+                <TableHead>Platform</TableHead>
+                <TableHead>{DEFAULT_KVM_PATH}</TableHead>
+                <TableHead>{DEFAULT_VMM_PATH}</TableHead>
+                <TableHead>Outcome</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {readiness.map((host) => (
+                <TableRow key={host.label}>
+                  <TableCell className="font-medium text-fg">{host.label}</TableCell>
+                  <TableCell className="font-mono text-xs text-fg-muted">{host.platform}</TableCell>
+                  <TableCell>{host.present.includes(DEFAULT_KVM_PATH) ? 'Present' : 'Missing'}</TableCell>
+                  <TableCell>{host.present.includes(DEFAULT_VMM_PATH) ? 'Present' : 'Missing'}</TableCell>
+                  <TableCell>
+                    <Badge variant={host.supported ? 'success' : 'destructive'}>
+                      {host.supported ? 'Desks available' : 'Ability withheld'}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+/** Hand-build a minimal, structurally valid TLS ClientHello record on the wire. */
+function clientHelloRecord(serverName?: string): Buffer {
+  const parts: Buffer[] = [
+    Buffer.from([0x03, 0x03]),
+    Buffer.alloc(32),
+    Buffer.from([0x00]),
+    Buffer.from([0x00, 0x02, 0x13, 0x01]),
+    Buffer.from([0x01, 0x00]),
+  ]
+  if (serverName !== undefined) {
+    const name = Buffer.from(serverName, 'latin1')
+    const entry = Buffer.concat([Buffer.from([0x00, name.length >> 8, name.length & 0xff]), name])
+    const list = Buffer.concat([Buffer.from([entry.length >> 8, entry.length & 0xff]), entry])
+    const extension = Buffer.concat([Buffer.from([0x00, 0x00, list.length >> 8, list.length & 0xff]), list])
+    parts.push(Buffer.from([extension.length >> 8, extension.length & 0xff]), extension)
+  }
+  const body = Buffer.concat(parts)
+  const message = Buffer.concat([
+    Buffer.from([0x01, (body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff]),
+    body,
+  ])
+  return Buffer.concat([
+    Buffer.from([0x16, 0x03, 0x01, message.length >> 8, message.length & 0xff]),
+    message,
+  ])
+}
+
+const EGRESS_ALLOWLIST: ReadonlySet<string> = new Set(['api.github.com', 'registry.npmjs.org'])
+
+/** The sample policy a consuming application would supply behind the port. */
+function demoEgressPolicy(request: EgressPolicyRequest): EgressDecision {
+  return request.protocol !== 'tcp'
+    && isPublicHostname(request.host)
+    && EGRESS_ALLOWLIST.has(request.host)
+    ? 'allow'
+    : 'deny'
+}
+
+const EGRESS_REQUESTS: readonly { request: EgressPolicyRequest; note: string }[] = [
+  {
+    request: { host: normalizeOutboundHostname('API.GITHUB.COM.'), port: 443, protocol: 'https', principal: 'desk agent-7' },
+    note: 'Sent as API.GITHUB.COM. — case and the trailing dot are normalized before the policy sees the name.',
+  },
+  {
+    request: { host: 'registry.npmjs.org', port: 443, protocol: 'https', principal: 'desk agent-7' },
+    note: 'Allowlisted. The proxy still resolves the name itself and requires every DNS answer to be public.',
+  },
+  {
+    request: { host: 'billing.corp.internal', port: 443, protocol: 'https', principal: 'desk agent-7' },
+    note: 'A reserved internal suffix fails the public-host check and was never on the allowlist.',
+  },
+  {
+    request: { host: '169.254.169.254', port: 80, protocol: 'http', principal: 'desk agent-7' },
+    note: 'The cloud metadata address is not an allowlisted name; link-local addresses also fail the upstream address check.',
+  },
+  {
+    request: { host: 'api.github.com', port: 22, protocol: 'tcp', principal: 'desk agent-7' },
+    note: 'CONNECT to a non-443 port is an opaque tunnel, so this policy declines it even for an allowlisted host.',
+  },
+]
+
+const SNIFF_FIXTURES: readonly { label: string; bytes: Buffer }[] = [
+  { label: 'ClientHello with SNI api.github.com', bytes: clientHelloRecord('api.github.com') },
+  { label: 'Same ClientHello, first 24 bytes only', bytes: clientHelloRecord('api.github.com').subarray(0, 24) },
+  { label: 'ClientHello carrying no server name', bytes: clientHelloRecord() },
+  { label: 'An SSH banner arriving on a TLS port', bytes: Buffer.from('SSH-2.0-OpenSSH_9.6\r\n', 'latin1') },
+]
+
+function EgressProxyDemo() {
+  const sniffed = SNIFF_FIXTURES.map((fixture) => ({
+    ...fixture,
+    outcome: readClientHelloSni(fixture.bytes),
+  }))
+  const decisions = EGRESS_REQUESTS.map(({ request, note }) => ({
+    request,
+    note,
+    decision: demoEgressPolicy(request),
+  }))
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Destination recovery from raw bytes</CardTitle>
+          <CardDescription>
+            Behind a transparent DNAT redirect the client never speaks proxy protocol, so the
+            destination is read out of the first bytes with the exported pure parser. Every fixture
+            below is built in-source; no socket is opened.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="overflow-x-auto p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>First bytes on the flow</TableHead>
+                <TableHead>Bytes</TableHead>
+                <TableHead>readClientHelloSni</TableHead>
+                <TableHead>What the proxy does</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sniffed.map(({ label, bytes, outcome }) => (
+                <TableRow key={label}>
+                  <TableCell className="font-medium text-fg">{label}</TableCell>
+                  <TableCell className="font-mono text-xs text-fg-muted">{bytes.length}</TableCell>
+                  <TableCell className="font-mono text-xs text-fg">
+                    {outcome.kind === 'ok'
+                      ? outcome.value ?? 'ok, no server name'
+                      : outcome.kind === 'need-more-bytes'
+                        ? 'need-more-bytes'
+                        : `malformed: ${outcome.reason}`}
+                  </TableCell>
+                  <TableCell className="text-sm text-fg-muted">
+                    {outcome.kind === 'ok' && outcome.value !== null
+                      ? 'Consults the policy with this hostname'
+                      : outcome.kind === 'need-more-bytes'
+                        ? 'Keeps reading the preface before deciding'
+                        : 'Denies and audits — nothing is guessed'}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Policy decisions at the chokepoint</CardTitle>
+          <CardDescription>
+            A sample allow/deny policy over a fixed request list, evaluated with the package&apos;s
+            real host helpers. The consuming application supplies the rules; the proxy enforces
+            them once per flow, before any byte reaches the destination.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="overflow-x-auto p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Destination</TableHead>
+                <TableHead>Port</TableHead>
+                <TableHead>Protocol</TableHead>
+                <TableHead>Principal</TableHead>
+                <TableHead>Decision</TableHead>
+                <TableHead>Why</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {decisions.map(({ request, note, decision }) => (
+                <TableRow key={`${request.host}:${request.port}:${request.protocol}`}>
+                  <TableCell className="font-mono text-xs text-fg">{request.host}</TableCell>
+                  <TableCell className="font-mono text-xs text-fg-muted">{request.port}</TableCell>
+                  <TableCell className="font-mono text-xs text-fg-muted">{request.protocol}</TableCell>
+                  <TableCell className="font-mono text-xs text-fg-muted">{request.principal}</TableCell>
+                  <TableCell>
+                    <Badge variant={decision === 'allow' ? 'success' : 'destructive'}>{decision}</Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-fg-muted">{note}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

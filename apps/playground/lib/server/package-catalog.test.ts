@@ -31,6 +31,8 @@ test('the demo catalog has one unique route for every workspace package manifest
 test('server-oriented packages use dedicated, package-specific demos', () => {
   for (const slug of [
     'crypto',
+    'desk',
+    'egress-proxy',
     'email-render',
     'emails',
     'jobs',

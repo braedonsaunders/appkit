@@ -1,14 +1,11 @@
 {
-  "name": "@appkit/agent-tools",
-  "version": "0.2.0",
-  "description": "Governed catalogue, install lifecycle, and sandboxed execution of managed command-line tools for agents, with separate install and execution approval gates.",
+  "name": "@appkit/egress-proxy",
+  "version": "0.1.0",
+  "description": "Fail-closed egress chokepoint for agent sandboxes — explicit HTTP and CONNECT proxying plus transparent DNAT interception with SNI and Host sniffing, policy and audit ports, and no TLS interception.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./drizzle": "./src/drizzle.ts",
-    "./image-manifest": "./src/image-manifest.ts",
-    "./schema": "./src/schema.ts",
     "./package.json": "./package.json"
   },
   "main": "./src/index.ts",
@@ -22,26 +19,8 @@
     "test": "node --import tsx --test src/*.test.ts",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
-  "dependencies": {
-    "@appkit/process-sandbox": "workspace:*",
-    "zod": "^4.4.3"
-  },
-  "peerDependencies": {
-    "@appkit/db": "^0.2.0",
-    "drizzle-orm": "^0.45.2"
-  },
-  "peerDependenciesMeta": {
-    "@appkit/db": {
-      "optional": true
-    },
-    "drizzle-orm": {
-      "optional": true
-    }
-  },
   "devDependencies": {
-    "@appkit/db": "workspace:*",
     "@types/node": "^22",
-    "drizzle-orm": "^0.45.2",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3"
   },
@@ -49,9 +28,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/braedonsaunders/appkit.git",
-    "directory": "packages/agent-tools"
+    "directory": "packages/egress-proxy"
   },
-  "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/agent-tools#readme",
+  "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/egress-proxy#readme",
   "bugs": {
     "url": "https://github.com/braedonsaunders/appkit/issues"
   },
@@ -62,9 +41,10 @@
     "agents",
     "appkit",
     "application-framework",
-    "approvals",
-    "cli",
-    "sandbox",
+    "egress",
+    "proxy",
+    "sni",
+    "ssrf",
     "typescript"
   ],
   "publishConfig": {

@@ -37,6 +37,20 @@ export const DEFAULT_ALLOWED_BINARY_ROOTS = [
   '/opt',
 ] as const
 
+/**
+ * Where an `apt-package` tool's executables are expected to land once the
+ * base image bakes the package in. Searched in order when a manifest declares
+ * a bare command name rather than an absolute path.
+ */
+export const DEFAULT_APT_BINARY_ROOTS = [
+  '/usr/bin',
+  '/usr/sbin',
+  '/bin',
+  '/sbin',
+  '/usr/local/bin',
+  '/usr/local/sbin',
+] as const
+
 export const DEFAULT_EXECUTION_TIMEOUT_MS = 60_000
 export const DEFAULT_INSTALL_TIMEOUT_MS = 300_000
 export const DEFAULT_HEALTH_TIMEOUT_MS = 20_000
@@ -161,6 +175,9 @@ export function createAgentToolRuntime(options: AgentToolRuntimeOptions): AgentT
     if (!declared) return undefined
     if (tool.manifest.sourceKind === 'binary-path' && tool.manifest.binaryPath) {
       return resolve(tool.manifest.binaryPath)
+    }
+    if (tool.manifest.sourceKind === 'apt-package') {
+      return resolveAptBin(declared.bin)
     }
     return undefined
   }
@@ -371,6 +388,37 @@ export function createAgentToolRuntime(options: AgentToolRuntimeOptions): AgentT
     })
   }
 
+  /**
+   * An apt tool's bytes were baked into the golden base image at build time,
+   * so there is nothing for the runtime to fetch or spawn — "installing" one
+   * is verifying the image actually contains the executables the manifest
+   * promises, then marking the record installed.
+   */
+  async function markAptToolInstalled(tool: AgentToolRecord): Promise<AgentToolRecord> {
+    const binPaths: Record<string, string> = {}
+    for (const bin of tool.manifest.bins) {
+      const found = resolveAptBin(bin.bin)
+      if (found) binPaths[bin.name] = found
+    }
+    const missing = agentToolCommands(tool.manifest).filter((name) => !binPaths[name])
+    if (missing.length > 0) {
+      throw new AgentToolError(
+        `${tool.manifest.aptPackage ?? tool.manifest.id} should be preinstalled in the base image but is missing: ${missing.join(
+          ', ',
+        )}. Rebuild the image from the current manifest.`,
+      )
+    }
+    return saveTool({
+      ...tool,
+      status: 'installed',
+      health: 'unknown',
+      binPaths,
+      installedVersion: tool.manifest.aptVersion,
+      lastInstalledAt: nowIso(),
+      lastError: undefined,
+    })
+  }
+
   const runtime: AgentToolRuntime = {
     async register(tenantId, manifest, actor = 'system') {
       const existing = await options.store.getTool(tenantId, manifest.id)
@@ -407,6 +455,8 @@ export function createAgentToolRuntime(options: AgentToolRuntimeOptions): AgentT
       const pinChanged =
         existing.manifest.packageVersion !== manifest.packageVersion ||
         existing.manifest.binaryPath !== manifest.binaryPath ||
+        existing.manifest.aptPackage !== manifest.aptPackage ||
+        existing.manifest.aptVersion !== manifest.aptVersion ||
         existing.manifest.sourceKind !== manifest.sourceKind
       return saveTool({
         ...existing,
@@ -439,6 +489,40 @@ export function createAgentToolRuntime(options: AgentToolRuntimeOptions): AgentT
           outcome: 'denied',
           reason: 'disabled',
           summary: `${tool.manifest.name} is turned off for this workspace.`,
+        }
+      }
+
+      if (tool.manifest.sourceKind === 'apt-package') {
+        // The package was baked in when the base image was built, so there is
+        // no fetch to gate and nothing to spawn: the only question is whether
+        // the image actually contains the declared executables. Running the
+        // tool still goes through the execute gate like any other.
+        try {
+          const marked = await markAptToolInstalled(tool)
+          await audit({
+            tenantId: input.tenantId,
+            toolId: tool.toolId,
+            action: 'install',
+            actor: input.actor,
+            message: `${tool.manifest.name} is preinstalled in the base image`,
+            context: {
+              aptPackage: tool.manifest.aptPackage ?? null,
+              aptVersion: tool.manifest.aptVersion ?? null,
+            },
+          })
+          return {
+            outcome: 'ok',
+            tool: marked,
+            summary: `${tool.manifest.name} is preinstalled in the base image.`,
+          }
+        } catch (error) {
+          const message = errorMessage(error)
+          await saveTool({ ...tool, status: 'error', health: 'unavailable', lastError: message })
+          return {
+            outcome: 'failed',
+            error: message,
+            summary: `${tool.manifest.name} is not usable. ${message}`,
+          }
         }
       }
 
@@ -834,6 +918,11 @@ export function createAgentToolRuntime(options: AgentToolRuntimeOptions): AgentT
     if (tool.manifest.sourceKind === 'binary-path' && tool.manifest.binaryPath) {
       roots.push(resolve(tool.manifest.binaryPath))
     }
+    if (tool.manifest.sourceKind === 'apt-package') {
+      // /usr already covers most of the apt roots; /bin and /sbin matter on
+      // images that are not merged-usr.
+      roots.push('/bin', '/sbin')
+    }
     return [...new Set(roots)]
   }
 
@@ -855,6 +944,23 @@ async function installedPackageVersion(
     // version from the tool manifest is the honest fallback.
     return undefined
   }
+}
+
+/**
+ * Where an apt-installed executable actually is. An absolute `bin` is taken
+ * as declared; a bare name is searched across the standard system roots.
+ * Returns `undefined` when nothing exists on disk — for an apt tool that is
+ * the signal the image was not built from the current manifest.
+ */
+function resolveAptBin(bin: string): string | undefined {
+  if (isAbsolute(bin)) {
+    return existsSync(bin) ? resolve(bin) : undefined
+  }
+  for (const root of DEFAULT_APT_BINARY_ROOTS) {
+    const candidate = join(root, bin)
+    if (existsSync(candidate)) return candidate
+  }
+  return undefined
 }
 
 function requireAbsolute(value: string, field: string): string {

@@ -23,6 +23,8 @@
     "@appkit/dashboard": "workspace:*",
     "@appkit/db": "workspace:*",
     "@appkit/design-studio": "workspace:*",
+    "@appkit/desk": "workspace:*",
+    "@appkit/egress-proxy": "workspace:*",
     "@appkit/email-designer": "workspace:*",
     "@appkit/email-render": "workspace:*",
     "@appkit/emails": "workspace:*",

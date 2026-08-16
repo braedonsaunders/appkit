@@ -12,6 +12,34 @@ passes a policy gate first.
 Execution goes through `@appkit/process-sandbox`. There is no unsandboxed path:
 the runner throws on a host without bubblewrap rather than falling back.
 
+## The base-image manifest
+
+Against an agent that has a terminal, the install and execute gates enforce
+nothing — one line in a shell walks around them. But the manifest's other
+properties never depended on the gate: exact pinned versions, health checks,
+an operator-visible shelf, and revocability all survive. So the manifest is
+also the declaration of what a golden VM base image contains. A tool with
+`sourceKind: 'apt-package'` pins a Debian package (`aptPackage` +
+`aptVersion`, exact — never a range) that the image build installs; the
+runtime never installs it, and `install()` only verifies the declared
+executables exist on disk before marking the record installed. Consumers not
+on a desk keep using the gated paths exactly as before.
+
+`@appkit/agent-tools/image-manifest` turns a shelf into build input:
+
+```ts
+import { imageManifest, renderAptInstallFragment } from '@appkit/agent-tools/image-manifest'
+
+const build = imageManifest(tools)
+// { aptPackages: [{ name, version, toolId }], npmPackages: [...], binaryPaths: [...] }
+// Deterministically sorted; throws when two tools pin one package differently.
+
+const fragment = renderAptInstallFragment(tools)
+// apt-get install -y --no-install-recommends \
+//   jq=1.7.1-3 \
+//   ripgrep=14.1.0-1
+```
+
 ## The two gates
 
 Installing a tool and running one are separate questions with separate policies.
