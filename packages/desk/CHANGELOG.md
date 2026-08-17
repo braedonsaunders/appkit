@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Add exact SHA-256 frame identity/deduplication, a bounded and verified
+  provider-neutral home export/import contract with atomic staging semantics,
+  and an executable backend lifecycle conformance check.
+
 ## 0.3.2
 
 - A desk survives losing its guest connection mid-lease. 0.3.1 stopped the host trusting a hollow

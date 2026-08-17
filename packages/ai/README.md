@@ -23,3 +23,8 @@ return runAgentTurn({
   onComplete: persistAssistantTurn,
 })
 ```
+
+For visual tool loops, call `pruneVisualToolContext` from the AI SDK
+`prepareStep` hook. It removes historical and exact-duplicate tool-result
+images while leaving the newest distinct frames, tool structure, text, and
+user-supplied images intact. Persist the complete screenshot record separately.

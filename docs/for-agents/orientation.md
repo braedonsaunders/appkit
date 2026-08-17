@@ -249,6 +249,23 @@ writing, extraction, dataset analysis, activity digest, document-agent, bounded
 vision, and structured builder helpers. Applications still supply credentials,
 domain prompts, persistence, and authorized tools.
 
+Long visual runs call `pruneVisualToolContext` during step preparation. It
+keeps only the newest distinct tool-result frames while preserving every tool
+call, result, and text field; user-supplied images are never touched. This is a
+context and cost control, not an audit policy — applications persist their
+full screenshot ledger separately.
+
+`@braedonsaunders/events` supplies the durable worker mechanics beneath those
+runs. `runWithFencedLease` claims a per-attempt owner/fence, renews it, aborts
+in-flight work when ownership is lost, and requires the terminal application
+commit to compare the same fence. `executeExternalEffect` records an immutable
+intent before acting, replays known completions, blocks uncertain retries by
+default, and appends completion/failure/ambiguity/reconciliation evidence.
+Applications provide the RLS-bound stores and sanitize persisted requests and
+results. `followDurableCursor` always backfills ordered database rows after its
+cursor; an injected LISTEN/NOTIFY or equivalent wake port only reduces latency,
+so missed notifications and reconnects cannot lose events.
+
 ## 5. Forms and localized authoring
 
 `@braedonsaunders/forms-core` is the framework-neutral form contract shared by the

@@ -1,5 +1,10 @@
 # @braedonsaunders/ai
 
+## Unreleased
+
+- Add `pruneVisualToolContext`, which keeps only the newest distinct tool-result
+  images without changing tool-call structure or removing user-supplied images.
+
 ## 1.0.0
 
 ### Minor Changes

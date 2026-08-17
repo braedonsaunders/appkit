@@ -48,6 +48,8 @@ import {
   DEFAULT_KVM_PATH,
   DEFAULT_VMM_PATH,
   buildDeskLaunchPlan,
+  createDeskFrameDeduplicator,
+  exportPortableDeskHome,
   isDeskSupported,
 } from '@braedonsaunders/desk'
 import {
@@ -1017,7 +1019,7 @@ const DESK_HOST_CONDITIONS: readonly {
   { label: 'macOS or Windows Docker Desktop', platform: 'darwin', present: [DEFAULT_KVM_PATH, DEFAULT_VMM_PATH] },
 ]
 
-function DeskDemo() {
+async function DeskDemo() {
   // Host checks are injected so the plan is deterministic on any machine. The
   // overlay is the one path reported as missing, so the plan includes the
   // qemu-img copy-on-write creation step a first boot would run.
@@ -1042,6 +1044,18 @@ function DeskDemo() {
       pathExists: (path) => condition.present.includes(path),
     }),
   }))
+  const frames = createDeskFrameDeduplicator()
+  const firstFrame = frames.observe(Buffer.from('desktop pixels'))
+  const unchangedFrame = frames.observe(Buffer.from('desktop pixels'))
+  const portableHome = await exportPortableDeskHome({
+    async *entries() {
+      yield { path: 'Documents', kind: 'directory' as const, mode: 0o755, modifiedAt: null }
+      yield { path: 'Documents/brief.txt', kind: 'file' as const, mode: 0o640, modifiedAt: null }
+    },
+    async readFile() {
+      return Buffer.from('Portable agent work')
+    },
+  }, { now: () => new Date('2026-01-01T00:00:00.000Z') })
 
   return (
     <div className="space-y-4">
@@ -1125,6 +1139,38 @@ function DeskDemo() {
           </Table>
         </CardContent>
       </Card>
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Portable home contract</CardTitle>
+            <CardDescription>
+              A provider exports a bounded, content-addressed manifest; a replacement stages and
+              verifies every entry before one atomic commit.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <DemoRow label="Manifest version" value={String(portableHome.manifest.version)} />
+            <DemoRow label="Entries" value={String(portableHome.manifest.entries.length)} />
+            <DemoRow label="Logical bytes" value={String(portableHome.manifest.totalBytes)} />
+            <DemoRow label="Content blobs" value={`${portableHome.blobs.size} · SHA-256 verified`} />
+            <DemoRow label="Replacement" value="Stage → verify → atomic commit; rollback on any failure" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Provider conformance</CardTitle>
+            <CardDescription>
+              Every backend runs the same executable lifecycle contract before it can claim Desk compatibility.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <DemoRow label="Request channel" value="Ping and declared capabilities must round-trip" />
+            <DemoRow label="Shutdown" value="Idempotent and terminal; requests afterward must fail" />
+            <DemoRow label="First frame" value={`${firstFrame.frameId.slice(0, 24)}…`} mono />
+            <DemoRow label="Repeated frame" value={unchangedFrame.changed ? 'Changed' : 'Deduplicated — no second image required'} />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

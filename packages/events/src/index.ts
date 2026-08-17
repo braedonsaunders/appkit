@@ -6,6 +6,8 @@ import { assertDomainEventPayload, type DomainEventPayload } from './relay'
 
 export * from './relay'
 export * from './recipients'
+export * from './execution'
+export * from './cursor'
 
 type Db = NodePgDatabase<Record<string, never>>
 

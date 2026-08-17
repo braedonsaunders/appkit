@@ -208,6 +208,26 @@ through the backend and distinguishes a host that is unusable (wrong platform,
 missing VMM or images — throws) from capabilities that are merely absent,
 reported as booleans: `kvm`, `vsock`, and `virtioGpu`.
 
+Every additional provider runs `verifyDeskBackendConformance()` against a
+disposable launch plan. The shared check verifies request/capability round trips,
+idempotent terminal shutdown, and refusal of work after shutdown. Provider test
+suites extend this contract; they do not restate it.
+
+`exportPortableDeskHome()` and `importPortableDeskHome()` are the migration seam
+between providers. Sources expose entries and file bytes; exports produce a
+bounded, sorted, content-addressed manifest preserving directories, files,
+safe relative symlinks, modes, and timestamps. Imports verify every SHA-256,
+path, symlink target, size, and aggregate limit before opening a sink, then
+stage the complete home and make it authoritative with one `commit()`. Any
+failure calls `rollback()`. This moves an agent's working home, not an operating
+system image: installed packages and provider-specific machine state remain
+the provider's concern.
+
+`createDeskFrameDeduplicator()` assigns exact SHA-256 identities to observations
+without retaining their bytes. A repeated identity can reuse the prior audit
+frame and omit another model image; reset it whenever the capture session or
+masking boundary changes.
+
 Do not fall back to unconfined execution when this package reports an
 unsupported host. A deployment without KVM loses the desk ability entirely —
 the same fail-closed posture as the rest of AppKit.

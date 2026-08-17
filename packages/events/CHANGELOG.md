@@ -1,5 +1,11 @@
 # @braedonsaunders/events
 
+## Unreleased
+
+- Add reusable fenced execution with lease-loss cancellation, an append-only
+  external-effect intention/reconciliation contract, and durable cursor
+  following whose push transport is only a wake hint over database backfill.
+
 ## 0.2.0
 
 ### Minor Changes
