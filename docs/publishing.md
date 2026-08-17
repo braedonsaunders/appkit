@@ -51,6 +51,11 @@ causes the same workflow to:
 4. publish changed packages to npm with provenance; and
 5. create the corresponding Git tags and GitHub releases.
 
+Package writes are deliberately sequential and spaced. npm rate-limits large
+bursts of new package writes, while AppKit releases can contain all 51
+packages; the release command skips versions already present on npm and backs
+off on `E429` so a retry safely completes a partial publication.
+
 Repository setup requires an npm automation/granular access token saved as the
 `NPM_TOKEN` GitHub Actions secret with publish access to the
 `@braedonsaunders` scope. The workflow grants GitHub's OIDC

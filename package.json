@@ -25,7 +25,7 @@
     "clean": "turbo run clean && rm -rf node_modules",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm build:packages && pnpm test:packages && pnpm test:consumers && changeset publish"
+    "release": "pnpm build:packages && pnpm test:packages && pnpm test:consumers && node scripts/publish-packages-sequentially.mjs && changeset tag"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.7",
