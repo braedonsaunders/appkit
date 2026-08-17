@@ -16,8 +16,14 @@ const MAC_ADDRESS_PATTERN = /^[0-9a-f]{2}(?::[0-9a-f]{2}){5}$/i
 const MIN_GUEST_CID = 3
 const MAX_GUEST_CID = 0xffff_fffe
 
+/**
+ * Every failure this package raises. The `name` is annotated as `string`
+ * rather than left to infer its literal so a subclass can narrow the meaning
+ * of a failure — see `DeskRequestFateUnknownError` — without callers losing
+ * the one `instanceof DeskError` they already check.
+ */
 export class DeskError extends Error {
-  override readonly name = 'DeskError'
+  override readonly name: string = 'DeskError'
 }
 
 export interface DeskLauncherIdentity {

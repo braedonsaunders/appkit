@@ -4,7 +4,11 @@ import { Buffer } from 'node:buffer'
 import { EventEmitter } from 'node:events'
 import { Duplex } from 'node:stream'
 import type { ChildProcess } from 'node:child_process'
-import { createCloudHypervisorBackend } from './backend'
+import {
+  createCloudHypervisorBackend,
+  DeskRequestFateUnknownError,
+  type DeskConnectionChange,
+} from './backend'
 import { createGuestAgentCore, type GuestAgentHandlers } from './guest-agent'
 import { buildDeskLaunchPlan, type DeskLaunchPlan } from './plan'
 import type { GuestEventMessage } from './protocol'
@@ -55,12 +59,14 @@ interface FakeVsock {
   handshakes: string[]
   connectedPaths: string[]
   pushEvent: (event: GuestEventMessage) => void
+  /** Kill the live connection the way a restarting guest agent would. */
+  drop: () => Promise<void>
 }
 
 function fakeVsock(handlers: GuestAgentHandlers): FakeVsock {
   const handshakes: string[] = []
   const connectedPaths: string[] = []
-  let active: { push: (chunk: Buffer) => void; core: ReturnType<typeof createGuestAgentCore> } | null = null
+  let active: { duplex: Duplex; core: ReturnType<typeof createGuestAgentCore> } | null = null
 
   const connect = (socketPath: string): Duplex => {
     connectedPaths.push(socketPath)
@@ -99,7 +105,7 @@ function fakeVsock(handlers: GuestAgentHandlers): FakeVsock {
         },
       )
     }
-    active = { push: (chunk) => duplex.push(chunk), core }
+    active = { duplex, core }
     return duplex
   }
 
@@ -110,7 +116,17 @@ function fakeVsock(handlers: GuestAgentHandlers): FakeVsock {
     pushEvent: (event) => {
       const connection = active
       if (!connection) throw new Error('no active fake vsock connection')
-      connection.push(connection.core.encodeEvent(event))
+      connection.duplex.push(connection.core.encodeEvent(event))
+    },
+    drop: async () => {
+      const connection = active
+      if (!connection) throw new Error('no active fake vsock connection')
+      // Resolve only once the host has seen the close, so a test that acts
+      // next is acting on a machine that already knows it is disconnected.
+      await new Promise<void>((resolvePromise) => {
+        connection.duplex.once('close', () => setImmediate(resolvePromise))
+        connection.duplex.destroy()
+      })
     },
   }
 }
@@ -212,6 +228,201 @@ test('a handshake nobody is behind is retried, not trusted', async () => {
   assert.ok(attempt >= 2, 'the hollow connection should have been retried')
   assert.deepEqual(await machine.request({ op: 'ping' }), { pong: true })
   await machine.shutdown()
+})
+
+function watchConnection(machine: { onConnectionChange?: (listener: (change: DeskConnectionChange) => void) => () => void }): {
+  changes: DeskConnectionChange[]
+  reconnected: Promise<DeskConnectionChange>
+  lost: Promise<DeskConnectionChange>
+} {
+  const changes: DeskConnectionChange[] = []
+  let announceReconnect: (change: DeskConnectionChange) => void = () => undefined
+  let announceLoss: (change: DeskConnectionChange) => void = () => undefined
+  const reconnected = new Promise<DeskConnectionChange>((resolvePromise) => {
+    announceReconnect = resolvePromise
+  })
+  const lost = new Promise<DeskConnectionChange>((resolvePromise) => {
+    announceLoss = resolvePromise
+  })
+  assert.ok(machine.onConnectionChange, 'the default backend reports connection changes')
+  machine.onConnectionChange((change) => {
+    changes.push(change)
+    if (change.state === 'reconnected') announceReconnect(change)
+    else announceLoss(change)
+  })
+  return { changes, reconnected, lost }
+}
+
+test('a connection lost mid-lease is re-established and the desk keeps working', async () => {
+  // The whole point: a guest agent restart, a dropped bridge or a transient
+  // vsock error must not cost the rest of the lease. The guest behind this
+  // connection is fine; only the channel to it went away.
+  const vsock = fakeVsock(guestHandlers)
+  const backend = createCloudHypervisorBackend({
+    platform: 'linux',
+    launcher: () => fakeChild({ exitOnKill: true }),
+    connect: vsock.connect,
+    connectRetryDelayMs: 1,
+    reconnectRetryDelayMs: 1,
+    reconnectWindowMs: 2_000,
+  })
+  const machine = await backend.boot(makePlan())
+  assert.deepEqual(await machine.request({ op: 'ping' }), { pong: true })
+
+  const watcher = watchConnection(machine)
+  await vsock.drop()
+
+  // A request that arrives DURING the reconnect waits for it rather than
+  // being told the desk is gone.
+  assert.deepEqual(await machine.request({ op: 'ping' }), { pong: true })
+  const change = await watcher.reconnected
+  assert.equal(change.state, 'reconnected')
+  assert.equal(vsock.connectedPaths.length, 2)
+  // And the replacement was proved with a ping, exactly as the first was.
+  assert.deepEqual(vsock.handshakes, ['CONNECT 5252', 'CONNECT 5252'])
+  await machine.shutdown()
+})
+
+test('a request in flight when the connection drops is told its fate is unknown', async () => {
+  // The guest may already have run it — sent the mail, landed the click — so
+  // it is neither retried nor reported as a plain failure.
+  const vsock = fakeVsock({
+    ...guestHandlers,
+    exec: () => new Promise(() => undefined),
+  })
+  const backend = createCloudHypervisorBackend({
+    platform: 'linux',
+    launcher: () => fakeChild({ exitOnKill: true }),
+    connect: vsock.connect,
+    connectRetryDelayMs: 1,
+    reconnectRetryDelayMs: 1,
+    reconnectWindowMs: 2_000,
+  })
+  const machine = await backend.boot(makePlan())
+
+  // Settled eagerly: the rejection arrives from a socket event, and a handler
+  // attached later would make this an unhandled rejection first.
+  const inFlight = machine
+    .request({ op: 'exec', command: '/usr/bin/send-mail' })
+    .then<unknown, unknown>(
+      (result) => result,
+      (error: unknown) => error,
+    )
+  await new Promise((resolvePromise) => setImmediate(resolvePromise))
+  await vsock.drop()
+
+  const outcome = await inFlight
+  assert.ok(outcome instanceof DeskRequestFateUnknownError)
+  assert.match(outcome.message, /may or may not have run it/)
+  // The desk itself is fine; only that one request is in doubt.
+  assert.deepEqual(await machine.request({ op: 'ping' }), { pong: true })
+  await machine.shutdown()
+})
+
+test('event subscribers keep receiving after a reconnect', async () => {
+  const vsock = fakeVsock(guestHandlers)
+  const backend = createCloudHypervisorBackend({
+    platform: 'linux',
+    launcher: () => fakeChild({ exitOnKill: true }),
+    connect: vsock.connect,
+    connectRetryDelayMs: 1,
+    reconnectRetryDelayMs: 1,
+    reconnectWindowMs: 2_000,
+  })
+  const machine = await backend.boot(makePlan())
+  const seen: GuestEventMessage[] = []
+  machine.subscribe((event) => {
+    seen.push(event)
+  })
+
+  const watcher = watchConnection(machine)
+  await vsock.drop()
+  await watcher.reconnected
+
+  vsock.pushEvent({ event: 'job-exit', jobId: 'job-7', exitCode: 0, signal: null })
+  await new Promise((resolvePromise) => setImmediate(resolvePromise))
+  assert.deepEqual(seen, [{ event: 'job-exit', jobId: 'job-7', exitCode: 0, signal: null }])
+  await machine.shutdown()
+})
+
+test('shutdown is never followed by a reconnect', async () => {
+  const vsock = fakeVsock(guestHandlers)
+  const backend = createCloudHypervisorBackend({
+    platform: 'linux',
+    launcher: () => fakeChild({ exitOnKill: true }),
+    connect: vsock.connect,
+    connectRetryDelayMs: 1,
+    reconnectRetryDelayMs: 1,
+    reconnectWindowMs: 2_000,
+  })
+  const machine = await backend.boot(makePlan())
+  const watcher = watchConnection(machine)
+
+  await machine.shutdown()
+  await new Promise((resolvePromise) => setTimeout(resolvePromise, 20))
+  assert.equal(vsock.connectedPaths.length, 1)
+  assert.deepEqual(watcher.changes, [])
+  await assert.rejects(machine.request({ op: 'ping' }), /no longer connected/)
+})
+
+test('a desk whose VMM has exited is lost, not retried', async () => {
+  // Reconnecting is only cheap because the VMM is still there. Once it is
+  // gone the desk needs a fresh boot, and retrying against a corpse would
+  // hide that for the whole reconnect window.
+  const child = fakeChild()
+  const vsock = fakeVsock(guestHandlers)
+  const backend = createCloudHypervisorBackend({
+    platform: 'linux',
+    launcher: () => child,
+    connect: vsock.connect,
+    connectRetryDelayMs: 1,
+    reconnectRetryDelayMs: 1,
+    reconnectWindowMs: 2_000,
+  })
+  const machine = await backend.boot(makePlan())
+  const watcher = watchConnection(machine)
+
+  child.emit('exit', 1, null)
+  await vsock.drop()
+
+  const change = await watcher.lost
+  assert.equal(change.state, 'lost')
+  assert.match(change.reason, /the VMM exited/)
+  assert.equal(vsock.connectedPaths.length, 1)
+  await assert.rejects(machine.request({ op: 'ping' }), /no longer connected/)
+})
+
+test('a reconnect gives up at its bound rather than spinning forever', async () => {
+  const vsock = fakeVsock(guestHandlers)
+  let reachable = true
+  let attempts = 0
+  const connect = (socketPath: string): Duplex => {
+    if (!reachable) {
+      attempts += 1
+      throw new Error('ENOENT: no such vsock socket')
+    }
+    return vsock.connect(socketPath)
+  }
+  const backend = createCloudHypervisorBackend({
+    platform: 'linux',
+    launcher: () => fakeChild({ exitOnKill: true }),
+    connect,
+    connectRetryDelayMs: 1,
+    reconnectRetryDelayMs: 5,
+    reconnectWindowMs: 150,
+  })
+  const machine = await backend.boot(makePlan())
+  const watcher = watchConnection(machine)
+
+  reachable = false
+  const startedAt = Date.now()
+  await vsock.drop()
+  const change = await watcher.lost
+
+  assert.match(change.reason, /could not get it back/)
+  assert.ok(attempts >= 2, 'it should have retried before giving up')
+  assert.ok(Date.now() - startedAt < 2_000, 'it should give up at its window, not keep trying')
+  await assert.rejects(machine.request({ op: 'ping' }), /no longer connected/)
 })
 
 test('guest-reported errors reject the request without dropping the connection', async () => {

@@ -115,8 +115,29 @@ process ever runs where an operator cannot see it.
 Residency is bounded by a hard capacity cap. Starts beyond the cap queue FIFO
 rather than overcommitting host memory. `host.stats()` reports
 `{ resident, queued, capacity, suspended, lastStartedAt, lastSuspendedAt,
-lastError }`; queue depth is worth alerting on. With an injected `now`, tests
-drive all of this deterministically through `host.sweep()`.
+reconnects, lastReconnectAt, lastReconnectDeskId, lastError }`; queue depth is
+worth alerting on, and so is a `reconnects` count that climbs. With an injected
+`now`, tests drive all of this deterministically through `host.sweep()`.
+
+## A connection is re-established, not assumed
+
+The vsock channel to a guest is not a fact learned once at boot. It can drop
+mid-lease for reasons that say nothing about whether the desk is usable — the
+guest agent restarts, the bridge drops, the guest wedges for a moment — and
+treating that as terminal stranded the desk for the rest of its lease with a
+healthy guest behind it. So the backend reconnects: same retry path, same
+`confirmGuest` ping, bounded window and backoff. It never reconnects after
+`shutdown()` or once the VMM has exited, because then the desk genuinely needs
+a fresh boot; when the window runs out the host suspends the desk so `resume()`
+boots a new one instead of handing back a dead handle.
+
+Two things a caller must handle, because pretending otherwise would be a lie:
+a request that was **in flight** when the channel dropped rejects with
+`DeskRequestFateUnknownError` — the guest may already have run it, and silently
+replaying an `exec` that sent mail is the wrong kind of resilience. And the
+guest's own capture state does not survive its agent restarting, so live
+`frames()`/`video()` iterators **end** on a reconnect and the coordinate anchor
+is cleared; observe (or take a frame) again before aiming.
 
 ## The coordinate contract
 

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { Buffer } from 'node:buffer'
 import { createDeskHost, verifyDeskHost, type DeskStartOptions } from './host'
-import type { DeskBackend, DeskMachine } from './backend'
+import type { DeskBackend, DeskConnectionChange, DeskMachine } from './backend'
 import { DEFAULT_KERNEL_CMDLINE, type DeskLaunchPlan } from './plan'
 import type { GuestCommand, GuestEventMessage } from './protocol'
 import type { DeskAuditEntry, DeskEvent, DeskPorts, WindowInfo } from './events'
@@ -13,12 +13,15 @@ interface FakeMachine {
   machine: DeskMachine
   requests: GuestCommand[]
   emit: (event: GuestEventMessage) => void
+  /** Drive the transport underneath the host, as the real backend does. */
+  announce: (change: DeskConnectionChange) => void
   readonly shutdowns: number
 }
 
 function fakeMachine(deskId: string): FakeMachine {
   const requests: GuestCommand[] = []
   const listeners = new Set<(event: GuestEventMessage) => void>()
+  const watchers = new Set<(change: DeskConnectionChange) => void>()
   let jobCounter = 0
   let shutdowns = 0
   const machine: DeskMachine = {
@@ -64,6 +67,12 @@ function fakeMachine(deskId: string): FakeMachine {
         listeners.delete(listener)
       }
     },
+    onConnectionChange(listener) {
+      watchers.add(listener)
+      return () => {
+        watchers.delete(listener)
+      }
+    },
     async shutdown() {
       shutdowns += 1
     },
@@ -73,6 +82,9 @@ function fakeMachine(deskId: string): FakeMachine {
     requests,
     emit: (event) => {
       for (const listener of [...listeners]) listener(event)
+    },
+    announce: (change) => {
+      for (const watcher of [...watchers]) watcher(change)
     },
     get shutdowns() {
       return shutdowns
@@ -264,6 +276,74 @@ test('a suspended desk resumes from its stored options and old handles stay dead
   assert.equal(context.plans[1]?.overlay.path, '/images/overlays/agent-1.qcow2')
 
   await assert.rejects(context.host.resume('agent-unknown'), /Unknown desk/)
+})
+
+test('a reconnect is visible to an operator and ends the streams the guest lost', async () => {
+  const context = makeHost()
+  const handle = await context.host.start(startOptions('agent-1'))
+  const screen = await handle.screen.start({ width: 1280, height: 900 })
+  const machine = context.machines[0]
+  assert.ok(machine)
+
+  const iterator = screen.frames({ fps: 10 })[Symbol.asyncIterator]()
+  machine.emit({
+    event: 'frame',
+    seq: 1,
+    width: 800,
+    height: 600,
+    data: Buffer.from('one').toString('base64'),
+    format: 'png',
+  })
+  await iterator.next()
+  await screen.input.click(10, 10)
+
+  machine.announce({
+    state: 'reconnected',
+    deskId: 'agent-1',
+    reason: 'the guest agent connection closed on desk agent-1',
+    downtimeMs: 1_200,
+    reconnects: 1,
+  })
+
+  // Visible: a desk that flaps must be findable from stats alone.
+  const stats = context.host.stats()
+  assert.equal(stats.reconnects, 1)
+  assert.equal(stats.lastReconnectDeskId, 'agent-1')
+  assert.ok(stats.lastReconnectAt)
+  assert.match(stats.lastError ?? '', /reconnected to its guest agent after 1200ms/)
+
+  // The guest's capture did not come back with the channel, so the consumer
+  // is told the stream is over instead of waiting on frames forever.
+  assert.equal((await iterator.next()).done, true)
+  // And the pixel space it was aiming in is no longer trustworthy.
+  await assert.rejects(screen.input.click(10, 10), /frame of reference/)
+  // The desk itself is still usable, which is the entire point.
+  assert.equal((await handle.exec({ command: '/bin/true' })).exitCode, 0)
+})
+
+test('a desk whose guest is lost for good is retired so the next resume boots a fresh one', async () => {
+  const context = makeHost({ capacity: 1 })
+  const handle = await context.host.start(startOptions('agent-1'))
+  const machine = context.machines[0]
+  assert.ok(machine)
+
+  machine.announce({
+    state: 'lost',
+    deskId: 'agent-1',
+    reason: 'Desk agent-1 lost its guest agent connection and could not get it back: timed out',
+  })
+  await new Promise((resolvePromise) => setImmediate(resolvePromise))
+
+  // Left resident it would answer every call for the rest of the lease with
+  // "no longer connected", and resume() would hand back the same dead handle.
+  assert.equal(machine.shutdowns, 1)
+  assert.equal(context.host.stats().resident, 0)
+  assert.match(context.host.stats().lastError ?? '', /could not get it back/)
+  await assert.rejects(handle.exec({ command: '/bin/true' }), /not resident/)
+
+  const resumed = await context.host.resume('agent-1')
+  assert.equal(context.machines.length, 2)
+  assert.equal((await resumed.exec({ command: '/bin/true' })).exitCode, 0)
 })
 
 test('a boot failure surfaces in stats and releases the capacity slot', async () => {

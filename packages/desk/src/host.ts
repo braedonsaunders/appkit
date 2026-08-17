@@ -22,7 +22,12 @@ import {
   DeskError,
   type DeskLauncherIdentity,
 } from './plan'
-import { cloudHypervisorBackend, type DeskBackend, type DeskMachine } from './backend'
+import {
+  cloudHypervisorBackend,
+  type DeskBackend,
+  type DeskConnectionChange,
+  type DeskMachine,
+} from './backend'
 import {
   parseCapabilities,
   parseClipboardText,
@@ -232,6 +237,10 @@ export interface DeskScreenHandle {
    * smaller per frame, which is what a human driving the screen needs, while
    * `png` stays exact. Omitted leaves the choice to the guest. `observe()` is
    * unaffected and always lossless.
+   *
+   * The stream also ends when the desk reconnects to its guest agent: the
+   * capture behind it did not survive, so the iterator completes rather than
+   * waiting on frames that are never coming. Start another one to resume.
    */
   frames(options?: {
     fps?: number
@@ -252,7 +261,10 @@ export interface DeskScreenHandle {
    * `frames()` do, from the first chunk onwards, because a viewer driving by
    * video is aiming at what the video showed it.
    *
-   * Masked like frames: nothing is emitted while a handover is active.
+   * Masked like frames: nothing is emitted while a handover is active. And
+   * ended like frames when the desk reconnects to its guest agent — a video
+   * consumer resumed on a fresh encoder, without its init segment and away
+   * from a keyframe, decodes nothing at all and says so nowhere.
    */
   video(options?: {
     fps?: number
@@ -276,6 +288,25 @@ export interface DeskScreenService {
   readonly running: boolean
 }
 
+/**
+ * One leased desk.
+ *
+ * The handle stays valid across a lost guest connection: the host reconnects
+ * underneath it and later calls work, so a guest agent restart or a dropped
+ * vsock bridge no longer costs the rest of the lease. Two consequences a
+ * caller must actually handle:
+ *
+ * - A call that was IN FLIGHT when the connection dropped rejects with
+ *   `DeskRequestFateUnknownError` — it may already have run in the guest.
+ *   Nothing retries it for you.
+ * - A reconnect does not restore guest-side capture state. Live `frames()` and
+ *   `video()` iterators END, and the coordinate anchor is dropped, so the
+ *   caller must `observe()` (or take a new frame) before aiming again.
+ *
+ * When the connection cannot be recovered at all the desk is suspended, so the
+ * handle goes dead and `resume()` boots a fresh one — rather than the handle
+ * answering "no longer connected" for the rest of the lease.
+ */
 export interface DeskHandle {
   readonly deskId: string
   renewLease(ms: number): void
@@ -295,6 +326,16 @@ export interface DeskHostStats {
   suspended: number
   lastStartedAt: string | null
   lastSuspendedAt: string | null
+  /**
+   * Times a resident desk lost its guest connection mid-lease and got it back.
+   * One is a blip; a number that climbs is a desk FLAPPING — a guest agent
+   * restarting in a loop, a failing vsock bridge — and that is the difference
+   * between "the desk is slow" and a diagnosis.
+   */
+  reconnects: number
+  lastReconnectAt: string | null
+  /** Which desk reconnected last: enough to go and look at the right one. */
+  lastReconnectDeskId: string | null
   lastError: string | null
 }
 
@@ -341,6 +382,7 @@ interface DeskRecord {
   jobs: Map<string, DeskJob>
   screen: ScreenState | null
   unsubscribe: (() => void) | null
+  unwatchConnection: (() => void) | null
   handle: DeskHandle | null
   timer: NodeJS.Timeout | null
   streamStops: Set<() => void>
@@ -380,6 +422,9 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
   let lastStartedAt: string | null = null
   let lastSuspendedAt: string | null = null
   let lastError: string | null = null
+  let reconnects = 0
+  let lastReconnectAt: string | null = null
+  let lastReconnectDeskId: string | null = null
 
   function iso(timestamp: number): string {
     return new Date(timestamp).toISOString()
@@ -498,6 +543,8 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     }
     record.unsubscribe?.()
     record.unsubscribe = null
+    record.unwatchConnection?.()
+    record.unwatchConnection = null
     if (record.timer) clearTimeout(record.timer)
     record.timer = null
     const machine = record.machine
@@ -589,6 +636,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         jobs: new Map(),
         screen: null,
         unsubscribe: null,
+        unwatchConnection: null,
         handle: null,
         timer: null,
         streamStops: new Set(),
@@ -610,6 +658,10 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     current.unsubscribe = machine.subscribe((event) => {
       handleGuestEvent(current, epoch, event)
     })
+    current.unwatchConnection =
+      machine.onConnectionChange?.((change) => {
+        handleConnectionChange(current, epoch, change)
+      }) ?? null
     current.handle = makeHandle(current, epoch)
     lastStartedAt = iso(now())
     armTimer(current)
@@ -636,6 +688,60 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       if (record.screen) record.screen.lastFocusedId = event.window.id
       emit(record, { kind: 'window_focus', window: event.window })
     }
+  }
+
+  /**
+   * What a desk losing (and regaining) its guest channel means up here.
+   *
+   * The backend can get the CHANNEL back; it cannot get the GUEST's state
+   * back, and pretending otherwise is how a consumer ends up waiting forever
+   * on a stream that will never produce another byte. So a reconnect is
+   * treated as a discontinuity that the caller is able to see, and a
+   * permanent loss retires the desk instead of leaving a dead one leased.
+   */
+  function handleConnectionChange(
+    record: DeskRecord,
+    epoch: number,
+    change: DeskConnectionChange,
+  ): void {
+    if (record.status !== 'resident' || record.epoch !== epoch) return
+    if (change.state === 'reconnected') {
+      reconnects += 1
+      lastReconnectAt = iso(now())
+      lastReconnectDeskId = record.deskId
+      // Never silent. A reconnect that hides a guest agent restarting is a
+      // debugging trap: the desk misbehaves and nothing anywhere says why.
+      lastError = `Desk ${record.deskId} reconnected to its guest agent after ${change.downtimeMs}ms (${change.reason}).`
+      // The guest's capture state did not necessarily come back with the
+      // channel. An agent that restarted has no screen, no frame encoder and
+      // no video encoder; even one that survived starts a fresh encoder whose
+      // sequence numbers and init segment do not continue the old stream. A
+      // consumer resumed mid-stream decodes nothing, silently — so every live
+      // stream is ENDED. `frames()`/`video()` complete normally, which is how
+      // the consumer notices, and it can start a new one on a guest that is
+      // now definitely capturing.
+      for (const stop of [...record.streamStops]) stop()
+      record.streamStops.clear()
+      // The coordinate anchor goes with them: the screen behind it may be
+      // gone, or recreated at another size, and a click aimed at the pixel
+      // space of a screen that no longer exists lands somewhere nobody chose.
+      // Input then refuses until the caller observes again — the existing
+      // contract, not a new one.
+      if (record.screen) record.screen.lastObservation = null
+      // A handover is deliberately NOT ended here. If a human is still on that
+      // screen, dropping the mask would start recording them; letting the TTL
+      // expire it fails in the safe direction.
+      return
+    }
+    // Lost for good. Left resident, this desk would answer every call with
+    // "no longer connected" for the rest of the lease and `resume()` would
+    // hand back the same dead handle — the exact product failure this release
+    // is about. Suspending it frees the capacity slot and makes the next
+    // `resume()` boot a healthy desk.
+    lastError = change.reason
+    void teardown(record).catch((error: unknown) => {
+      lastError = errorMessage(error)
+    })
   }
 
   function makeHandle(record: DeskRecord, epoch: number): DeskHandle {
@@ -1170,6 +1276,9 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       suspended,
       lastStartedAt,
       lastSuspendedAt,
+      reconnects,
+      lastReconnectAt,
+      lastReconnectDeskId,
       lastError,
     }
   }
