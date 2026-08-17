@@ -60,6 +60,8 @@ export interface CloudHypervisorBackendOptions {
   requestTimeoutMs?: number
   connectTimeoutMs?: number
   connectRetryDelayMs?: number
+  /** Bound on a single handshake attempt; see attemptHandshake. */
+  handshakeTimeoutMs?: number
   killGraceMs?: number
   guestAgentPort?: number
 }
@@ -67,6 +69,7 @@ export interface CloudHypervisorBackendOptions {
 const DEFAULT_REQUEST_TIMEOUT_MS = 30_000
 const DEFAULT_CONNECT_TIMEOUT_MS = 20_000
 const DEFAULT_CONNECT_RETRY_DELAY_MS = 100
+const DEFAULT_HANDSHAKE_TIMEOUT_MS = 5_000
 const DEFAULT_KILL_GRACE_MS = 2_000
 const HANDSHAKE_LINE_LIMIT = 128
 
@@ -80,6 +83,7 @@ export function createCloudHypervisorBackend(
   const requestTimeoutMs = options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS
   const connectTimeoutMs = options.connectTimeoutMs ?? DEFAULT_CONNECT_TIMEOUT_MS
   const connectRetryDelayMs = options.connectRetryDelayMs ?? DEFAULT_CONNECT_RETRY_DELAY_MS
+  const handshakeTimeoutMs = options.handshakeTimeoutMs ?? DEFAULT_HANDSHAKE_TIMEOUT_MS
   const killGraceMs = options.killGraceMs ?? DEFAULT_KILL_GRACE_MS
   const guestAgentPort = options.guestAgentPort ?? GUEST_AGENT_VSOCK_PORT
 
@@ -97,6 +101,7 @@ export function createCloudHypervisorBackend(
     }
 
     const child = launcher(plan.vmm.command, plan.vmm.args, { identity: plan.launcherIdentity })
+    const log = drainOutput(child)
     const exit = watchExit(child)
     let stream: Duplex
     try {
@@ -106,13 +111,18 @@ export function createCloudHypervisorBackend(
         port: guestAgentPort,
         timeoutMs: connectTimeoutMs,
         retryDelayMs: connectRetryDelayMs,
+        attemptTimeoutMs: handshakeTimeoutMs,
         exited: exit,
       })
     } catch (error) {
       await terminate(child, exit, killGraceMs)
+      const said = log.tail()
+      const detail = said === '' ? '' : ` The VMM said: ${said}`
       throw error instanceof DeskError
-        ? error
-        : new DeskError(`Could not reach the guest agent for desk ${plan.deskId}: ${errorMessage(error)}`)
+        ? new DeskError(`${error.message}${detail}`)
+        : new DeskError(
+            `Could not reach the guest agent for desk ${plan.deskId}: ${errorMessage(error)}${detail}`,
+          )
     }
     return createMachine({
       deskId: plan.deskId,
@@ -235,6 +245,33 @@ interface ExitWatcher {
   promise: Promise<void>
 }
 
+/**
+ * Read the VMM's stdout and stderr, and keep only the last few kilobytes.
+ *
+ * This is not for logging — it is load-bearing. The child is spawned with
+ * both streams as PIPES, and a pipe nobody reads fills after about 64KB, at
+ * which point the VMM BLOCKS on its next write. Cloud Hypervisor logs while
+ * it runs, so an unread pipe freezes the guest partway through boot: the
+ * process is alive, the disk is untouched, and the guest agent never reaches
+ * vsock. Every symptom points at the image and none of them are its fault.
+ *
+ * Draining costs nothing and buys the tail of what the VMM said, which is the
+ * difference between "the VMM exited" and knowing why.
+ */
+function drainOutput(child: ChildProcess, limit = 8 * 1024): { tail: () => string } {
+  let buffered = ''
+  const absorb = (chunk: unknown) => {
+    buffered += String(chunk)
+    if (buffered.length > limit) buffered = buffered.slice(buffered.length - limit)
+  }
+  child.stdout?.on('data', absorb)
+  child.stderr?.on('data', absorb)
+  // A pipe that errors must not take the process down with it.
+  child.stdout?.on('error', () => undefined)
+  child.stderr?.on('error', () => undefined)
+  return { tail: () => buffered.trim() }
+}
+
 function watchExit(child: ChildProcess): ExitWatcher {
   const watcher: ExitWatcher = { done: false, promise: Promise.resolve() }
   watcher.promise = new Promise<void>((resolvePromise) => {
@@ -297,6 +334,7 @@ async function connectWithRetry(options: {
   port: number
   timeoutMs: number
   retryDelayMs: number
+  attemptTimeoutMs: number
   exited: ExitWatcher
 }): Promise<Duplex> {
   const deadline = Date.now() + options.timeoutMs
@@ -306,7 +344,12 @@ async function connectWithRetry(options: {
       throw new DeskError('The VMM exited before the guest agent came up.')
     }
     try {
-      return await attemptHandshake(options.connect, options.socketPath, options.port)
+      return await attemptHandshake(
+        options.connect,
+        options.socketPath,
+        options.port,
+        options.attemptTimeoutMs,
+      )
     } catch (error) {
       lastFailure = errorMessage(error)
     }
@@ -317,10 +360,23 @@ async function connectWithRetry(options: {
   )
 }
 
+/**
+ * One handshake attempt, which MUST settle.
+ *
+ * Cloud Hypervisor accepts a connection on the vsock socket whether or not
+ * anything in the guest is listening on the port, and when nothing is it may
+ * answer nothing at all: no reply, no error, no close. Without a deadline of
+ * its own this promise then never settles — and because the caller awaits it
+ * inside the retry loop, the loop stops iterating, the overall deadline is
+ * never re-checked, and the boot hangs forever rather than failing. That is
+ * indistinguishable from a wedged host and it is why every attempt is bounded
+ * here as well as in aggregate.
+ */
 function attemptHandshake(
   connect: (socketPath: string) => Duplex,
   socketPath: string,
   port: number,
+  attemptTimeoutMs: number,
 ): Promise<Duplex> {
   return new Promise<Duplex>((resolvePromise, rejectPromise) => {
     let stream: Duplex
@@ -332,9 +388,15 @@ function attemptHandshake(
     }
     let banner = ''
     let settled = false
+    const timer = setTimeout(() => {
+      fail(new DeskError('vsock handshake went unanswered.'))
+    }, attemptTimeoutMs)
+    // An unref'd timer must not hold the process open on its own.
+    timer.unref?.()
     const fail = (error: Error) => {
       if (settled) return
       settled = true
+      clearTimeout(timer)
       stream.destroy()
       rejectPromise(error)
     }
@@ -356,11 +418,14 @@ function attemptHandshake(
         return
       }
       settled = true
+      clearTimeout(timer)
       if (rest.length > 0) stream.unshift(Buffer.from(rest, 'latin1'))
       resolvePromise(stream)
     }
     stream.on('data', onData)
     stream.once('error', fail)
+    // A close before the banner is a refusal, not a hang.
+    stream.once('close', () => fail(new DeskError('vsock handshake closed before a reply.')))
     stream.write(`CONNECT ${port}\n`)
   })
 }

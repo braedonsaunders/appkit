@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.4
+
+- Bound each vsock handshake attempt. Cloud Hypervisor accepts a connection on the vsock socket
+  even when nothing in the guest is listening yet, and can then answer nothing at all — no reply,
+  no error, no close. The attempt promise never settled, so the retry loop stopped iterating and
+  the overall deadline was never re-checked: a boot hung indefinitely instead of failing. Each
+  attempt now has its own timeout, and a close before the banner is treated as a refusal.
+
+## 0.2.3
+
+- Drain the VMM child's stdout and stderr. Both were spawned as pipes and never read, so once
+  roughly 64KB of Cloud Hypervisor logging accumulated the VMM blocked on its next write and the
+  guest froze partway through boot: the process alive, the guest agent never reaching vsock, and
+  every symptom pointing at the image. The tail of that output now travels with a boot failure.
+
 ## 0.2.2
 
 - `verifyDeskHost` accepts `kernelCmdline`. The boot probe was always using the default, so on a partitioned cloud image it panicked and reported an unusable host — a false negative that looks exactly like missing KVM.
