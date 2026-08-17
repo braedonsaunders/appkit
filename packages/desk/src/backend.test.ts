@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import test from 'node:test'
+import test, { after } from 'node:test'
 import { Buffer } from 'node:buffer'
 import { EventEmitter } from 'node:events'
 import { Duplex } from 'node:stream'
@@ -249,6 +249,16 @@ function watchConnection(machine: { onConnectionChange?: (listener: (change: Des
     changes.push(change)
     if (change.state === 'reconnected') announceReconnect(change)
     else announceLoss(change)
+  })
+  // A test watches for one outcome or the other, so the promise it does not
+  // await stays pending for the life of the test. node:test reads a pending
+  // promise with an empty event loop as a deadlock and fails the whole file —
+  // which it did on CI and not here, because the two promises settle in
+  // different orders depending on how fast the machine is. Neither is a real
+  // await once the test is over, so both are settled on teardown.
+  after(() => {
+    announceReconnect({ state: 'reconnected', deskId: 'teardown', reason: 'test over' } as DeskConnectionChange)
+    announceLoss({ state: 'lost', deskId: 'teardown', reason: 'test over' } as DeskConnectionChange)
   })
   return { changes, reconnected, lost }
 }
