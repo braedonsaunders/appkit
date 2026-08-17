@@ -1,6 +1,6 @@
 {
   "name": "@appkitjs/scripts",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Governed event, scheduled, endpoint, bulk, and client scripting with QuickJS isolation, audit history, and optional React and Drizzle adapters.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -38,7 +38,7 @@
   },
   "peerDependencies": {
     "@appkitjs/db": "^0.2.0",
-    "@appkitjs/ui": "^0.1.10",
+    "@appkitjs/ui": "^0.2.0",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",

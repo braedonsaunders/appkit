@@ -1,6 +1,6 @@
 {
   "name": "@appkitjs/ai",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "App-agnostic bounded agent loop and streaming assistant interface, with provider policy supplied by the host app.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -30,7 +30,7 @@
     "zod": "^4.4.3"
   },
   "peerDependencies": {
-    "@appkitjs/ui": "^0.1.10",
+    "@appkitjs/ui": "^0.2.0",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

@@ -1,5 +1,13 @@
 # @appkitjs/editor
 
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies [22e968a]
+- Updated dependencies [9f04661]
+  - @appkitjs/ui@0.2.0
+
 ## 0.2.1
 
 ### Patch Changes

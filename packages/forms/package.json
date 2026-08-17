@@ -1,6 +1,6 @@
 {
   "name": "@appkitjs/forms",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Production form designer, workflow authoring bridge, and complete fill runtime for AppKit applications.",
   "license": "AGPL-3.0-or-later",
   "type": "module",

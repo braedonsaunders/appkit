@@ -1,6 +1,6 @@
 {
   "name": "@appkitjs/design-studio",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "Bounded print-design document schema, renderer, and interactive Fabric editor.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -29,7 +29,7 @@
     "@appkitjs/tokens": "workspace:*"
   },
   "peerDependencies": {
-    "@appkitjs/ui": "^0.1.10",
+    "@appkitjs/ui": "^0.2.0",
     "fabric": "^7.0.0",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
