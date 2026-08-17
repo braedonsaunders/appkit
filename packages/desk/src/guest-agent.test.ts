@@ -39,6 +39,8 @@ function stubHandlers(overrides: Partial<GuestAgentHandlers> = {}): GuestAgentHa
     clipboardWrite: overrides.clipboardWrite ?? (async () => record('clipboardWrite')),
     framesStart: overrides.framesStart ?? (async () => record('framesStart')),
     framesStop: overrides.framesStop ?? (async () => record('framesStop')),
+    videoStart: overrides.videoStart ?? (async () => record('videoStart')),
+    videoStop: overrides.videoStop ?? (async () => record('videoStop')),
     handoverBegin: overrides.handoverBegin ?? (async () => {
       record('handoverBegin')
       return { url: 'https://relay.example/handover' }

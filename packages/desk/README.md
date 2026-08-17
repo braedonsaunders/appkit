@@ -61,10 +61,34 @@ const result = await desk.exec({ command: '/usr/bin/git', args: ['clone', repo] 
 const job = await desk.exec({ command: '/usr/bin/serve', keepAlive: true }) // dies with the lease
 
 const screen = await desk.screen.start({ width: 1280, height: 900 })
-const { png, a11y, focused } = await screen.observe()
+const { png, a11y, focused } = await screen.observe() // lossless PNG, on demand
 await screen.input.click(640, 320)
+
+// The live view is a different job: H.264, for a human driving the screen.
+for await (const chunk of screen.video({ fps: 30 })) {
+  send(chunk) // init segment first, then one unit per media fragment
+}
+
 await desk.screen.stop() // back to headless; the machine keeps running
 ```
+
+There are three ways to see the screen and they take different trades.
+
+- **`observe()`** is what a model looks at: a lossless PNG plus windows and the
+  accessibility tree, on demand and infrequent.
+- **`video()`** is what a person drives by. A video codec ships the difference
+  between pictures and a desktop is mostly still, so it costs one to two orders
+  of magnitude fewer bytes than the same screen as stills — and bytes between
+  the guest and the host are what actually bounds a live view. Chunks are
+  ordered: the `init` segment first, then `media` fragments, resumable only at
+  one whose `keyframe` is true.
+- **`frames()`** is for a consumer that needs whole pictures — one feeding an
+  encoder of its own, or one that cannot decode H.264. `format` picks `jpeg`
+  (roughly a tenth the bytes) or `png` (exact).
+
+All three are the screen's real size and never rescaled, so all three anchor the
+coordinate space a click is aimed in. `video()` and `frames()` are both masked:
+neither emits anything while a handover is active.
 
 Every desk boots from one golden **raw** base image plus a per-desk
 copy-on-write overlay, so patching the base patches every desk on its next boot

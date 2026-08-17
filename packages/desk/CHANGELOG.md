@@ -1,5 +1,44 @@
 # Changelog
 
+## 0.3.0
+
+The live view is bounded by BYTES BETWEEN THE GUEST AND THE HOST, not by encode time. Measured on a
+nested guest at 1280x900: `x11grab` sustains 30fps of PNG, but at roughly 500KB a frame — 15MB/s on
+an ordinary desktop and 54MB/s on dense content. That floods vsock, and about 2fps survived end to
+end whether 5 or 30 were asked for. This release fixes it at the source rather than compressing the
+symptom.
+
+- **`screen.video()`** — a new async iterable beside `frames()`, delivering `DeskVideoChunk`s: the
+  init segment first, then one unit per media fragment. A video codec ships the DIFFERENCE between
+  pictures, and a desktop is mostly still, so the same screen costs about 1.5MB/s at 30fps on
+  content dense enough to defeat prediction entirely, and far less in ordinary use. The guest
+  encoder's `video-start`/`video-stop` and a `video-chunk` guest event carry it.
+
+  A chunk carries `kind` ('init' | 'media'), the RFC 6381 `codec` string read out of the bytes
+  rather than assumed, its `width`/`height`, and `keyframe`. Ordering is load-bearing: a consumer
+  that never receives the init segment, or that is resumed anywhere but at a keyframe, decodes
+  nothing — silently, with no error to explain it. `keyframe` is what lets a relay resync a late
+  subscriber correctly.
+
+  Video is deliberately not modelled as a kind of frame. A frame stands alone; a video chunk does
+  not, and a type that blurs the two produces exactly the black-picture bug above.
+
+- **Video anchors the coordinate space**, as `observe()` and `frames()` do (0.2.5), on every chunk
+  rather than only the first — so an encoder that restarts at a new resolution re-asserts the space
+  instead of leaving a stale one. Without this, a viewer driving by video has every click refused.
+
+- **Video is masked**, exactly as frames are: nothing reaches a `video()` consumer while a handover
+  is active.
+
+- **Frames carry their encoding.** `DeskFrame` gains `format` ('png' | 'jpeg'), `frames()` accepts a
+  `format`, and the guest's frame event carries it. A frame with no `format` on the wire is a PNG,
+  so an older guest keeps working unchanged. `frames()` remains the right tool for a still-image
+  consumer — one that hands pictures to an encoder of its own, or that cannot decode H.264 — and
+  JPEG makes it an order of magnitude cheaper than it was.
+
+- `observe()` is untouched and stays lossless PNG on demand. It feeds a model's vision and anchors
+  coordinates, it is asked for rarely, and it takes the opposite trade from everything above.
+
 ## 0.2.5
 
 - A delivered frame anchors the coordinate space, as an `observe()` does. The contract is that a

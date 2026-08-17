@@ -12,9 +12,11 @@
 import { Buffer } from 'node:buffer'
 import type {
   A11yNode,
+  DeskFrameFormat,
   DeskHandoverScope,
   DeskPoint,
   DeskPointerButton,
+  DeskVideoChunkKind,
   WindowInfo,
 } from './events'
 
@@ -71,8 +73,17 @@ export type GuestCommand =
   | { op: 'launch'; appId: string; args?: readonly string[] }
   | { op: 'clipboard-read' }
   | { op: 'clipboard-write'; text: string }
-  | { op: 'frames-start'; fps: number; width: number; height: number }
+  | {
+      op: 'frames-start'
+      fps: number
+      width: number
+      height: number
+      /** Omitted lets the guest choose; a guest that predates this ignores it. */
+      format?: DeskFrameFormat
+    }
   | { op: 'frames-stop' }
+  | { op: 'video-start'; fps: number; width: number; height: number }
+  | { op: 'video-stop' }
   | { op: 'handover-begin'; ttlMs: number; scope: DeskHandoverScope }
   | { op: 'handover-end' }
 
@@ -87,7 +98,35 @@ export type GuestResponse =
 /** Unsolicited guest-to-host messages: job exits, frames, focus changes. */
 export type GuestEventMessage =
   | { event: 'job-exit'; jobId: string; exitCode: number | null; signal: string | null }
-  | { event: 'frame'; seq: number; width: number; height: number; data: string }
+  | {
+      event: 'frame'
+      seq: number
+      width: number
+      height: number
+      data: string
+      /**
+       * How `data` is encoded. Absent on the wire means `png`: frames were
+       * PNG-only before this field existed, so an older guest paired with a
+       * newer host keeps working rather than having its every frame rejected.
+       */
+      format: DeskFrameFormat
+    }
+  | {
+      event: 'video-chunk'
+      seq: number
+      kind: DeskVideoChunkKind
+      /** RFC 6381, e.g. `avc1.42C020`, read out of the bytes by the guest. */
+      codec: string
+      width: number
+      height: number
+      /**
+       * Whether a `media` chunk begins at a sync sample. Only a chunk that does
+       * can start or resume a decoder; `init` chunks report false because the
+       * question does not apply to them.
+       */
+      keyframe: boolean
+      data: string
+    }
   | { event: 'window-focus'; window: WindowInfo }
 
 export type HostBoundMessage = GuestResponse | GuestEventMessage
@@ -186,6 +225,7 @@ export function parseGuestRequest(value: unknown): GuestRequest {
     case 'observe':
     case 'clipboard-read':
     case 'frames-stop':
+    case 'video-stop':
     case 'handover-end':
       return { id, op }
     case 'exec':
@@ -240,6 +280,15 @@ export function parseGuestRequest(value: unknown): GuestRequest {
     case 'clipboard-write':
       return { id, op, text: requireString(record, 'text') }
     case 'frames-start':
+      return {
+        id,
+        op,
+        fps: requirePositiveInteger(record, 'fps'),
+        width: requireDimension(record, 'width'),
+        height: requireDimension(record, 'height'),
+        format: optionalFrameFormat(record),
+      }
+    case 'video-start':
       return {
         id,
         op,
@@ -315,6 +364,19 @@ export function parseHostBoundMessage(value: unknown): HostBoundMessage {
         seq: requireNonNegativeInteger(record, 'seq'),
         width: requireDimension(record, 'width'),
         height: requireDimension(record, 'height'),
+        data: requireUnboundedString(record, 'data'),
+        // Absent means png — see the field's contract on GuestEventMessage.
+        format: optionalFrameFormat(record) ?? 'png',
+      }
+    case 'video-chunk':
+      return {
+        event,
+        seq: requireNonNegativeInteger(record, 'seq'),
+        kind: parseVideoChunkKind(record.kind),
+        codec: requireString(record, 'codec'),
+        width: requireDimension(record, 'width'),
+        height: requireDimension(record, 'height'),
+        keyframe: record.keyframe === true,
         data: requireUnboundedString(record, 'data'),
       }
     case 'window-focus':
@@ -444,6 +506,23 @@ function parsePointerButton(value: unknown): DeskPointerButton {
   if (value === undefined) return 'left'
   if (value === 'left' || value === 'middle' || value === 'right') return value
   throw new DeskProtocolError('button must be left, middle, or right.')
+}
+
+/**
+ * A frame format, when the field is present. Absent is `undefined` here and
+ * every caller decides what that means; on a frame event it means `png`,
+ * because that is what the field's absence used to imply.
+ */
+function optionalFrameFormat(record: Record<string, unknown>): DeskFrameFormat | undefined {
+  const value = record.format
+  if (value === undefined) return undefined
+  if (value === 'png' || value === 'jpeg') return value
+  throw new DeskProtocolError('format must be png or jpeg.')
+}
+
+function parseVideoChunkKind(value: unknown): DeskVideoChunkKind {
+  if (value === 'init' || value === 'media') return value
+  throw new DeskProtocolError('video chunk kind must be init or media.')
 }
 
 function parseHandoverScope(value: unknown): DeskHandoverScope {

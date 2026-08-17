@@ -37,11 +37,13 @@ import type {
   A11yNode,
   DeskEventDetail,
   DeskEventKind,
+  DeskFrameFormat,
   DeskHandoverEndReason,
   DeskHandoverScope,
   DeskPoint,
   DeskPointerButton,
   DeskPorts,
+  DeskVideoChunkKind,
   WindowInfo,
 } from './events'
 
@@ -50,6 +52,13 @@ export const DEFAULT_IDLE_SUSPEND_MS = 5 * 60_000
 export const DEFAULT_LEASE_MS = 15 * 60_000
 export const DEFAULT_CID_BASE = 100
 const MAX_BUFFERED_FRAMES = 60
+/**
+ * Video chunks a slow consumer may fall behind by before its stream is ended.
+ * Larger than the frame bound because a fragment is a fraction of a frame's
+ * bytes, and enforced by ENDING rather than by dropping — see the comment at
+ * the overrun.
+ */
+const MAX_BUFFERED_VIDEO_CHUNKS = 600
 const MIN_TIMER_DELAY_MS = 25
 
 /**
@@ -162,6 +171,33 @@ export interface DeskFrame {
   width: number
   height: number
   data: Buffer
+  /**
+   * How `data` is encoded. A consumer must not assume PNG — it builds the
+   * media type it hands on (a `data:` URL, a decoder) from this.
+   */
+  format: DeskFrameFormat
+  at: string
+}
+
+/**
+ * One unit of the live video stream: the init segment, or one media fragment.
+ *
+ * Video is deliberately NOT modelled as a kind of frame. A frame is a picture
+ * that stands alone; a video chunk is meaningless without the init segment
+ * before it and, for a media chunk, without the keyframe its group of pictures
+ * began at. Pretending otherwise produces a consumer that appends bytes in any
+ * order and renders black with no error to explain it.
+ */
+export interface DeskVideoChunk {
+  seq: number
+  kind: DeskVideoChunkKind
+  /** RFC 6381, e.g. `avc1.42C020`. What a MediaSource must be told. */
+  codec: string
+  width: number
+  height: number
+  /** True when a `media` chunk begins at a sync sample. Always false on `init`. */
+  keyframe: boolean
+  data: Buffer
   at: string
 }
 
@@ -178,16 +214,51 @@ export interface DeskScreenHandle {
   observe(): Promise<DeskObservation>
   /**
    * Coordinate contract: all coordinates are in the pixel space of the most
-   * recent view of the screen — an `observe()`, or a frame delivered by
-   * `frames()` — one to one. Both anchor it, because the caller aims at
-   * whatever it was last shown, and a live viewer is shown frames. Input
-   * before any view, or outside its bounds, throws.
+   * recent view of the screen — an `observe()`, a frame from `frames()`, or a
+   * chunk from `video()` — one to one. All three anchor it, because the caller
+   * aims at whatever it was last shown, and a live viewer is shown a stream
+   * rather than an observation. That holds whatever the encoding is: a lossy
+   * frame and an H.264 fragment are both true-size views of the screen, so they
+   * anchor exactly as a lossless PNG does. Input before any view, or outside
+   * its bounds, throws.
    */
   input: DeskScreenInput
   a11y: { invoke(nodeId: string, action: string): Promise<void> }
   launch(appId: string, args?: readonly string[]): Promise<void>
   clipboard: { read(): Promise<string>; write(text: string): Promise<void> }
-  frames(options?: { fps?: number; width?: number; height?: number }): AsyncIterable<DeskFrame>
+  /**
+   * The live frame stream. `format` picks how the guest encodes each frame and
+   * is a bytes-for-fidelity trade: `jpeg` is roughly an order of magnitude
+   * smaller per frame, which is what a human driving the screen needs, while
+   * `png` stays exact. Omitted leaves the choice to the guest. `observe()` is
+   * unaffected and always lossless.
+   */
+  frames(options?: {
+    fps?: number
+    width?: number
+    height?: number
+    format?: DeskFrameFormat
+  }): AsyncIterable<DeskFrame>
+  /**
+   * The live screen as encoded VIDEO rather than as a sequence of pictures.
+   *
+   * This is what a person driving the desk should watch. `frames()` ships a
+   * whole independent image per tick; a video codec ships the DIFFERENCE, and a
+   * desktop is mostly still — which is roughly two orders of magnitude fewer
+   * bytes on the transport between the guest and here, the one place the live
+   * view was actually bounded.
+   *
+   * The stream anchors the coordinate space exactly as `observe()` and
+   * `frames()` do, from the first chunk onwards, because a viewer driving by
+   * video is aiming at what the video showed it.
+   *
+   * Masked like frames: nothing is emitted while a handover is active.
+   */
+  video(options?: {
+    fps?: number
+    width?: number
+    height?: number
+  }): AsyncIterable<DeskVideoChunk>
   handover: {
     begin(options: {
       ttlMs: number
@@ -272,7 +343,7 @@ interface DeskRecord {
   unsubscribe: (() => void) | null
   handle: DeskHandle | null
   timer: NodeJS.Timeout | null
-  frameStops: Set<() => void>
+  streamStops: Set<() => void>
 }
 
 interface QueueEntry {
@@ -412,8 +483,8 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
   async function teardown(record: DeskRecord): Promise<void> {
     if (record.status !== 'resident') return
     await endHandover(record, 'revoked')
-    for (const stop of [...record.frameStops]) stop()
-    record.frameStops.clear()
+    for (const stop of [...record.streamStops]) stop()
+    record.streamStops.clear()
     if (record.screen?.running) {
       record.screen.running = false
       emit(record, { kind: 'screen_close' })
@@ -520,7 +591,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         unsubscribe: null,
         handle: null,
         timer: null,
-        frameStops: new Set(),
+        streamStops: new Set(),
       }
       records.set(deskId, record)
     } else {
@@ -530,7 +601,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       record.epoch += 1
       record.jobs = new Map()
       record.screen = null
-      record.frameStops = new Set()
+      record.streamStops = new Set()
     }
     const current = record
     const epoch = current.epoch
@@ -673,8 +744,8 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         const screen = record.screen
         if (!screen?.running) return
         await endHandover(record, 'revoked')
-        for (const stop of [...record.frameStops]) stop()
-        record.frameStops.clear()
+        for (const stop of [...record.streamStops]) stop()
+        record.streamStops.clear()
         screen.running = false
         record.screen = null
         touch(record)
@@ -815,6 +886,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
             const fps = positiveInteger(frameOptions.fps ?? 10, 'fps')
             const width = positiveInteger(frameOptions.width ?? screen.width, 'width')
             const height = positiveInteger(frameOptions.height ?? screen.height, 'height')
+            const format = frameOptions.format
             const buffered: DeskFrame[] = []
             let waiting: ((result: IteratorResult<DeskFrame, undefined>) => void) | null = null
             let finished = false
@@ -828,6 +900,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
                 width: event.width,
                 height: event.height,
                 data: Buffer.from(event.data, 'base64'),
+                format: event.format,
                 at: iso(now()),
               }
               // A frame anchors coordinates exactly as an observation does.
@@ -852,7 +925,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
               if (finished) return
               finished = true
               unsubscribe()
-              record.frameStops.delete(finish)
+              record.streamStops.delete(finish)
               if (record.status === 'resident' && record.machine) {
                 record.machine.request({ op: 'frames-stop' }).catch((error: unknown) => {
                   lastError = errorMessage(error)
@@ -864,9 +937,9 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
                 resume({ value: undefined, done: true })
               }
             }
-            record.frameStops.add(finish)
+            record.streamStops.add(finish)
             const started = machine
-              .request({ op: 'frames-start', fps, width, height })
+              .request({ op: 'frames-start', fps, width, height, format })
               .catch((error: unknown) => {
                 finish()
                 throw error instanceof Error ? error : new Error(String(error))
@@ -886,6 +959,100 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
                 return { value: undefined, done: true }
               },
               async throw(error?: unknown): Promise<IteratorResult<DeskFrame, undefined>> {
+                finish()
+                throw error instanceof Error ? error : new Error(String(error))
+              },
+            }
+          },
+        }
+      },
+      video(videoOptions = {}) {
+        return {
+          [Symbol.asyncIterator]: () => {
+            const machine = requireMachine(record, epoch)
+            const screen = requireScreen(record, epoch)
+            const fps = positiveInteger(videoOptions.fps ?? 30, 'fps')
+            const width = positiveInteger(videoOptions.width ?? screen.width, 'width')
+            const height = positiveInteger(videoOptions.height ?? screen.height, 'height')
+            const buffered: DeskVideoChunk[] = []
+            let waiting: ((result: IteratorResult<DeskVideoChunk, undefined>) => void) | null = null
+            let finished = false
+            const unsubscribe = machine.subscribe((event) => {
+              if (finished || event.event !== 'video-chunk') return
+              // The same masking contract frames are held to: while a handover
+              // is active a person is on that screen, and nothing derived from
+              // watching them may reach a recording consumer.
+              if (record.screen?.handover) return
+              const chunk: DeskVideoChunk = {
+                seq: event.seq,
+                kind: event.kind,
+                codec: event.codec,
+                width: event.width,
+                height: event.height,
+                keyframe: event.keyframe,
+                data: Buffer.from(event.data, 'base64'),
+                at: iso(now()),
+              }
+              // A video chunk anchors coordinates exactly as a frame does, and
+              // for the same reason: a viewer driving by video is aiming at the
+              // pixel space the video showed it. Anchoring on every chunk, not
+              // only the first, is what re-asserts the space when the encoder
+              // restarts at a new resolution.
+              if (record.screen) {
+                record.screen.lastObservation = { width: chunk.width, height: chunk.height }
+              }
+              if (waiting) {
+                const resume = waiting
+                waiting = null
+                resume({ value: chunk, done: false })
+              } else {
+                buffered.push(chunk)
+                // Dropping the OLDEST would drop the init segment, and a
+                // consumer without it decodes nothing at all — so an overrun
+                // ends the stream instead. A caller that cannot keep up with a
+                // video stream is one that should re-subscribe and be resynced
+                // from a keyframe, not one that should be handed a hole.
+                if (buffered.length > MAX_BUFFERED_VIDEO_CHUNKS) finish()
+              }
+            })
+            const finish = (): void => {
+              if (finished) return
+              finished = true
+              unsubscribe()
+              record.streamStops.delete(finish)
+              if (record.status === 'resident' && record.machine) {
+                record.machine.request({ op: 'video-stop' }).catch((error: unknown) => {
+                  lastError = errorMessage(error)
+                })
+              }
+              if (waiting) {
+                const resume = waiting
+                waiting = null
+                resume({ value: undefined, done: true })
+              }
+            }
+            record.streamStops.add(finish)
+            const started = machine
+              .request({ op: 'video-start', fps, width, height })
+              .catch((error: unknown) => {
+                finish()
+                throw error instanceof Error ? error : new Error(String(error))
+              })
+            return {
+              async next(): Promise<IteratorResult<DeskVideoChunk, undefined>> {
+                await started
+                const bufferedChunk = buffered.shift()
+                if (bufferedChunk) return { value: bufferedChunk, done: false }
+                if (finished) return { value: undefined, done: true }
+                return new Promise((resolvePromise) => {
+                  waiting = resolvePromise
+                })
+              },
+              async return(): Promise<IteratorResult<DeskVideoChunk, undefined>> {
+                finish()
+                return { value: undefined, done: true }
+              },
+              async throw(error?: unknown): Promise<IteratorResult<DeskVideoChunk, undefined>> {
                 finish()
                 throw error instanceof Error ? error : new Error(String(error))
               },

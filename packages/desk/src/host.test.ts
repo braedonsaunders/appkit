@@ -375,12 +375,132 @@ test('a delivered frame anchors coordinates, so a viewer can click what it is sh
   const iterator = screen.frames({ fps: 10 })[Symbol.asyncIterator]()
   const machine = context.machines[0]
   assert.ok(machine)
-  machine.emit({ event: 'frame', seq: 1, width: 800, height: 600, data: Buffer.from('one').toString('base64') })
+  machine.emit({ event: 'frame', seq: 1, width: 800, height: 600, data: Buffer.from('one').toString('base64'), format: 'png' })
   await iterator.next()
 
   await screen.input.click(10, 10)
   // And it is the frame's bounds that are enforced, not the screen's.
   await assert.rejects(screen.input.click(900, 10), /outside the most recent view/)
+})
+
+test('a lossy frame carries its format and anchors coordinates exactly as a lossless one does', async () => {
+  const context = makeHost()
+  const handle = await context.host.start(startOptions('agent-1'))
+  const screen = await handle.screen.start({ width: 1280, height: 900 })
+
+  const iterator = screen.frames({ fps: 30, format: 'jpeg' })[Symbol.asyncIterator]()
+  const machine = context.machines[0]
+  assert.ok(machine)
+
+  // The request the guest sees carries the asked-for format.
+  const started = machine.requests.find((request) => request.op === 'frames-start')
+  assert.ok(started?.op === 'frames-start')
+  assert.equal(started.format, 'jpeg')
+
+  machine.emit({
+    event: 'frame',
+    seq: 1,
+    width: 800,
+    height: 600,
+    data: Buffer.from('one').toString('base64'),
+    format: 'jpeg',
+  })
+  const first = await iterator.next()
+  assert.equal(first.value?.format, 'jpeg')
+
+  // Lossy pixels are still a true-size view of the screen, so they anchor.
+  await screen.input.click(10, 10)
+  await assert.rejects(screen.input.click(900, 10), /outside the most recent view/)
+})
+
+test('a video chunk anchors coordinates, so a viewer driving by video can click what it sees', async () => {
+  const context = makeHost()
+  const handle = await context.host.start(startOptions('agent-1'))
+  const screen = await handle.screen.start({ width: 1280, height: 900 })
+
+  // Nothing has been shown yet, so there is no pixel space to aim in.
+  await assert.rejects(screen.input.click(10, 10), /frame of reference/)
+
+  const iterator = screen.video({ fps: 30 })[Symbol.asyncIterator]()
+  const machine = context.machines[0]
+  assert.ok(machine)
+  const started = machine.requests.find((request) => request.op === 'video-start')
+  assert.ok(started?.op === 'video-start')
+  assert.equal(started.fps, 30)
+
+  machine.emit({
+    event: 'video-chunk',
+    seq: 1,
+    kind: 'init',
+    codec: 'avc1.42C020',
+    width: 800,
+    height: 600,
+    keyframe: false,
+    data: Buffer.from('ftypmoov').toString('base64'),
+  })
+  const first = await iterator.next()
+  assert.equal(first.value?.kind, 'init')
+  assert.equal(first.value?.codec, 'avc1.42C020')
+
+  // The stream's own dimensions are the space a click is aimed in — the same
+  // contract observe() and frames() carry, and the reason a video viewer is
+  // not refused for never having observed.
+  await screen.input.click(10, 10)
+  await assert.rejects(screen.input.click(900, 10), /outside the most recent view/)
+
+  // A resolution change re-asserts the anchor rather than leaving the old one.
+  machine.emit({
+    event: 'video-chunk',
+    seq: 2,
+    kind: 'media',
+    codec: 'avc1.42C020',
+    width: 1280,
+    height: 900,
+    keyframe: true,
+    data: Buffer.from('moofmdat').toString('base64'),
+  })
+  const second = await iterator.next()
+  assert.equal(second.value?.keyframe, true)
+  await screen.input.click(900, 10)
+})
+
+test('video is not emitted to a recording consumer while a handover is active', async () => {
+  const context = makeHost()
+  const handle = await context.host.start(startOptions('agent-1'))
+  const screen = await handle.screen.start({ width: 1280, height: 900 })
+  await screen.observe()
+
+  const iterator = screen.video({ fps: 30 })[Symbol.asyncIterator]()
+  const machine = context.machines[0]
+  assert.ok(machine)
+  const chunk = (seq: number): GuestEventMessage => ({
+    event: 'video-chunk',
+    seq,
+    kind: 'media',
+    codec: 'avc1.42C020',
+    width: 1280,
+    height: 900,
+    keyframe: true,
+    data: Buffer.from(`chunk-${seq}`).toString('base64'),
+  })
+
+  machine.emit(chunk(1))
+  const first = await iterator.next()
+  assert.equal(first.value?.seq, 1)
+
+  await screen.handover.begin({ ttlMs: 60_000 })
+  machine.emit(chunk(2))
+  await screen.handover.end()
+  machine.emit(chunk(3))
+
+  const second = await iterator.next()
+  // Chunk 2 fell inside the handover and was never delivered.
+  assert.equal(second.value?.seq, 3)
+
+  // Ending the stream tells the guest to stop encoding, rather than leaving an
+  // encoder running for nobody.
+  await iterator.return?.()
+  assert.ok(machine.requests.some((request) => request.op === 'video-stop'))
 })
 
 test('frames are not emitted to a recording consumer while a handover is active', async () => {
@@ -393,15 +513,15 @@ test('frames are not emitted to a recording consumer while a handover is active'
   const machine = context.machines[0]
   assert.ok(machine)
 
-  machine.emit({ event: 'frame', seq: 1, width: 1280, height: 900, data: Buffer.from('one').toString('base64') })
+  machine.emit({ event: 'frame', seq: 1, width: 1280, height: 900, data: Buffer.from('one').toString('base64'), format: 'png' })
   const first = await iterator.next()
   assert.equal(first.done, false)
   assert.equal(first.value?.seq, 1)
 
   await screen.handover.begin({ ttlMs: 60_000 })
-  machine.emit({ event: 'frame', seq: 2, width: 1280, height: 900, data: Buffer.from('two').toString('base64') })
+  machine.emit({ event: 'frame', seq: 2, width: 1280, height: 900, data: Buffer.from('two').toString('base64'), format: 'png' })
   await screen.handover.end()
-  machine.emit({ event: 'frame', seq: 3, width: 1280, height: 900, data: Buffer.from('three').toString('base64') })
+  machine.emit({ event: 'frame', seq: 3, width: 1280, height: 900, data: Buffer.from('three').toString('base64'), format: 'png' })
 
   const second = await iterator.next()
   assert.equal(second.done, false)

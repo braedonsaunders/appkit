@@ -36,6 +36,29 @@ export interface A11yNode {
   children: readonly A11yNode[]
 }
 
+/**
+ * How the pixels of a live frame are encoded on the wire.
+ *
+ * Two jobs, two formats. `observe()` is always lossless PNG because it feeds a
+ * model's vision and anchors coordinates, and it is asked for rarely. The
+ * `frames()` stream feeds a human driving the screen: there the scarce
+ * resource is bytes on the transport, not fidelity, so a lossy `jpeg` is
+ * roughly an order of magnitude smaller per frame and is what makes a live
+ * view feel like a remote desktop rather than a slideshow.
+ */
+export type DeskFrameFormat = 'png' | 'jpeg'
+
+/**
+ * The two kinds of unit a video stream is made of.
+ *
+ * `init` is the header a decoder needs before it can make sense of anything —
+ * for fragmented MP4, `ftyp` plus `moov`. It arrives once per encoder start and
+ * a consumer that never receives it decodes nothing at all, silently. `media`
+ * is one fragment of pictures. Ordering is load-bearing: init first, then media
+ * from a keyframe onwards.
+ */
+export type DeskVideoChunkKind = 'init' | 'media'
+
 export type DeskHandoverScope = 'view' | 'control'
 
 export type DeskHandoverEndReason = 'ended' | 'expired' | 'revoked'

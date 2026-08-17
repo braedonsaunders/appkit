@@ -124,6 +124,87 @@ test('host-bound messages parse responses and events, rejecting everything else'
   assert.throws(() => parseHostBoundMessage('nonsense'), DeskProtocolError)
 })
 
+test('a frame without a format is a png, because that is what frames used to be', () => {
+  // Compatibility, not a default for its own sake: a guest that predates the
+  // field emits no format, and every one of its frames must still parse.
+  const legacy = parseHostBoundMessage({ event: 'frame', seq: 1, width: 10, height: 10, data: 'aGk=' })
+  assert.ok('event' in legacy && legacy.event === 'frame')
+  assert.equal(legacy.format, 'png')
+
+  const jpeg = parseHostBoundMessage({
+    event: 'frame',
+    seq: 2,
+    width: 10,
+    height: 10,
+    data: 'aGk=',
+    format: 'jpeg',
+  })
+  assert.ok('event' in jpeg && jpeg.event === 'frame')
+  assert.equal(jpeg.format, 'jpeg')
+
+  assert.throws(
+    () => parseHostBoundMessage({ event: 'frame', seq: 3, width: 10, height: 10, data: 'aGk=', format: 'webp' }),
+    /format must be png or jpeg/,
+  )
+})
+
+test('frames-start carries an optional format, and refuses one it does not know', () => {
+  const asked = parseGuestRequest({ id: 'r1', op: 'frames-start', fps: 30, width: 1280, height: 900, format: 'jpeg' })
+  assert.ok(asked.op === 'frames-start')
+  assert.equal(asked.format, 'jpeg')
+
+  const unasked = parseGuestRequest({ id: 'r2', op: 'frames-start', fps: 10, width: 1280, height: 900 })
+  assert.ok(unasked.op === 'frames-start')
+  assert.equal(unasked.format, undefined)
+
+  assert.throws(
+    () => parseGuestRequest({ id: 'r3', op: 'frames-start', fps: 10, width: 1280, height: 900, format: 'gif' }),
+    /format must be png or jpeg/,
+  )
+})
+
+test('video chunks and video-start parse strictly', () => {
+  const init = parseHostBoundMessage({
+    event: 'video-chunk',
+    seq: 0,
+    kind: 'init',
+    codec: 'avc1.42C020',
+    width: 1280,
+    height: 900,
+    data: 'AAAA',
+  })
+  assert.ok('event' in init && init.event === 'video-chunk')
+  assert.equal(init.kind, 'init')
+  // Absent means not a keyframe, which is what an init segment is.
+  assert.equal(init.keyframe, false)
+
+  const media = parseHostBoundMessage({
+    event: 'video-chunk',
+    seq: 1,
+    kind: 'media',
+    codec: 'avc1.42C020',
+    width: 1280,
+    height: 900,
+    keyframe: true,
+    data: 'AAAA',
+  })
+  assert.ok('event' in media && media.event === 'video-chunk')
+  assert.equal(media.keyframe, true)
+
+  assert.throws(
+    () => parseHostBoundMessage({
+      event: 'video-chunk', seq: 1, kind: 'trailer', codec: 'avc1.42C020', width: 8, height: 8, data: 'AA',
+    }),
+    /kind must be init or media/,
+  )
+
+  const start = parseGuestRequest({ id: 'v1', op: 'video-start', fps: 30, width: 1280, height: 900 })
+  assert.ok(start.op === 'video-start')
+  assert.equal(start.fps, 30)
+  assert.deepEqual(parseGuestRequest({ id: 'v2', op: 'video-stop' }), { id: 'v2', op: 'video-stop' })
+  assert.throws(() => parseGuestRequest({ id: 'v3', op: 'video-start', fps: 0, width: 8, height: 8 }), DeskProtocolError)
+})
+
 test('exec results and observations are validated before the host trusts them', () => {
   const result = parseExecResult({ exitCode: 0, signal: null, stdout: 'hi', stderr: '', truncated: false })
   assert.equal(result.exitCode, 0)

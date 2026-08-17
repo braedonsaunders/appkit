@@ -26,7 +26,7 @@ import {
   type GuestRequest,
   type GuestResponse,
 } from './protocol'
-import type { DeskHandoverScope } from './events'
+import type { DeskFrameFormat, DeskHandoverScope } from './events'
 
 export interface GuestExecCall {
   command: string
@@ -59,8 +59,24 @@ export interface GuestAgentHandlers {
   launch(call: { appId: string; args: readonly string[] }): Promise<void>
   clipboardRead(): Promise<{ text: string }>
   clipboardWrite(call: { text: string }): Promise<void>
-  framesStart(call: { fps: number; width: number; height: number }): Promise<void>
+  /**
+   * `format` absent means the host did not ask, so the guest picks — an older
+   * host never sends it and must still get a stream it can decode.
+   */
+  framesStart(call: {
+    fps: number
+    width: number
+    height: number
+    format?: DeskFrameFormat
+  }): Promise<void>
   framesStop(): Promise<void>
+  /**
+   * Start encoding the screen as video. Separate from `framesStart` because it
+   * is a different job with a different transport shape: one long-lived encoder
+   * whose output only means anything in order, rather than independent pictures.
+   */
+  videoStart(call: { fps: number; width: number; height: number }): Promise<void>
+  videoStop(): Promise<void>
   handoverBegin(call: { ttlMs: number; scope: DeskHandoverScope }): Promise<{ url: string }>
   handoverEnd(): Promise<void>
   capabilities(): Promise<{ virtioGpu: boolean }>
@@ -154,10 +170,21 @@ export function createGuestAgentCore(
           fps: request.fps,
           width: request.width,
           height: request.height,
+          format: request.format,
         })
         return {}
       case 'frames-stop':
         await handlers.framesStop()
+        return {}
+      case 'video-start':
+        await handlers.videoStart({
+          fps: request.fps,
+          width: request.width,
+          height: request.height,
+        })
+        return {}
+      case 'video-stop':
+        await handlers.videoStop()
         return {}
       case 'handover-begin':
         return handlers.handoverBegin({ ttlMs: request.ttlMs, scope: request.scope })
