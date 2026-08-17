@@ -294,12 +294,12 @@ test('the screen opens and closes as a service on the running machine', async ()
   assert.deepEqual(requestOps, ['screen-start', 'screen-stop'])
 })
 
-test('coordinate input is enforced against the pixel space of the most recent observe', async () => {
+test('coordinate input is enforced against the pixel space of the most recent view', async () => {
   const context = makeHost()
   const handle = await context.host.start(startOptions('agent-1'))
   const screen = await handle.screen.start({ width: 1280, height: 900 })
 
-  await assert.rejects(screen.input.click(10, 20), /observe/)
+  await assert.rejects(screen.input.click(10, 20), /frame of reference/)
 
   const observation = await screen.observe()
   assert.equal(observation.width, 1280)
@@ -307,8 +307,8 @@ test('coordinate input is enforced against the pixel space of the most recent ob
   assert.deepEqual(observation.png, Buffer.from('pixels'))
 
   await screen.input.click(1279, 899)
-  await assert.rejects(screen.input.click(1280, 899), /outside the most recent observation/)
-  await assert.rejects(screen.input.move(10, 900), /outside the most recent observation/)
+  await assert.rejects(screen.input.click(1280, 899), /outside the most recent view/)
+  await assert.rejects(screen.input.move(10, 900), /outside the most recent view/)
   await assert.rejects(screen.input.drag({ x: 5, y: 5 }, { x: 6, y: 1200 }), /outside/)
 
   const clickEvent = context.events.find((event) => event.kind === 'click')
