@@ -11,6 +11,37 @@ import {
 import { connectDb } from './db-drivers'
 import { planSnapshotArchives } from './snapshot-policy'
 
+/** How long a wait may take before it is called a hang, not a schedule. */
+const WAIT_CEILING_MS = 30_000
+
+/**
+ * Await something only an unref'd timer can settle.
+ *
+ * The DNS and request deadlines here are deliberately unref'd — an outbound
+ * lookup must never hold the host process open. The consequence for a TEST is
+ * that while one of them is the only thing outstanding, nothing in the event
+ * loop is ref'd, so node is free to drain it; node:test then reports whatever
+ * the test is awaiting as "Promise resolution is still pending but the event
+ * loop has already resolved" and cancels the rest of the FILE. Whether that
+ * happens is decided by what else the runner holds open at that instant, so
+ * it passes on one machine and aborts on another. A test that waits on one of
+ * those deadlines therefore holds a ref'd handle of its own, which also turns
+ * a wait that can never end into a named failure rather than a silent hang.
+ */
+async function holdLoopOpen<T>(label: string, work: Promise<T>): Promise<T> {
+  let guard: NodeJS.Timeout | undefined
+  const stalled = new Promise<never>((_resolvePromise, rejectPromise) => {
+    guard = setTimeout(() => {
+      rejectPromise(new Error(`timed out waiting for ${label}`))
+    }, WAIT_CEILING_MS)
+  })
+  try {
+    return await Promise.race([work, stalled])
+  } finally {
+    clearTimeout(guard)
+  }
+}
+
 test('public IP policy rejects local, private, special, mapped, and documentation ranges', () => {
   for (const address of [
     '0.0.0.0',
@@ -86,11 +117,16 @@ test('DNS policy rejects a hostname if any answer is non-public', async () => {
     ipLiteral: false,
   })
 
+  // Nothing but the lookup's own unref'd deadline can settle this one; see
+  // holdLoopOpen.
   await assert.rejects(
-    resolvePublicHost('slow.example.net', {
-      timeoutMs: 5,
-      resolver: () => new Promise(() => {}),
-    }),
+    holdLoopOpen(
+      'the DNS lookup to hit its deadline',
+      resolvePublicHost('slow.example.net', {
+        timeoutMs: 5,
+        resolver: () => new Promise(() => {}),
+      }),
+    ),
     /DNS lookup timed out/,
   )
 })

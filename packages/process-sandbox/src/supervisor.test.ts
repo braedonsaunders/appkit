@@ -30,6 +30,38 @@ const processOptions = {
   writablePaths: ['/workspace'],
 } as const
 
+/** How long a wait may take before it is called a hang, not a schedule. */
+const WAIT_CEILING_MS = 30_000
+
+/**
+ * Await something only the supervisor's own timers can advance.
+ *
+ * The timeout and force-kill timers are deliberately unref'd — a sandboxed
+ * execution must never hold the host process open. The consequence for a TEST
+ * is that while one of them is the only thing outstanding, nothing in the
+ * event loop is ref'd, so node is free to drain it; node:test then reports
+ * whatever the test is awaiting as "Promise resolution is still pending but
+ * the event loop has already resolved" and cancels the rest of the FILE.
+ * Whether it happens is decided by what else the runner holds open at that
+ * instant, so it passes on one machine and aborts on another. A test that
+ * waits on those timers therefore holds one ref'd handle of its own, which
+ * also turns a wait that can never end into a named failure rather than a
+ * silent hang.
+ */
+async function holdLoopOpen<T>(label: string, work: Promise<T>): Promise<T> {
+  let guard: NodeJS.Timeout | undefined
+  const stalled = new Promise<never>((_resolvePromise, rejectPromise) => {
+    guard = setTimeout(() => {
+      rejectPromise(new Error(`timed out waiting for ${label}`))
+    }, WAIT_CEILING_MS)
+  })
+  try {
+    return await Promise.race([work, stalled])
+  } finally {
+    clearTimeout(guard)
+  }
+}
+
 test('starts idempotently, preserves stream order, and retains a reattachable result', async () => {
   const child = fakeChild()
   let launches = 0
@@ -115,7 +147,13 @@ test('distinguishes cancellation and timeout from an ordinary failure', async ()
   assert.deepEqual(cancelledChild.killedWith, ['SIGTERM'])
 
   supervisor.start({ executionId: 'timed-out', process: processOptions })
-  assert.equal((await supervisor.result('timed-out')).status, 'timed_out')
+  // The only thing that can end this execution is the supervisor's own
+  // unref'd timeout timer; see holdLoopOpen.
+  const timedOut = await holdLoopOpen(
+    'the execution to hit its timeout',
+    supervisor.result('timed-out'),
+  )
+  assert.equal(timedOut.status, 'timed_out')
   assert.deepEqual(timedOutChild.killedWith, ['SIGTERM'])
 })
 
