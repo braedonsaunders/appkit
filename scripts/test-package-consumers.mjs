@@ -14,7 +14,11 @@ if (!existsSync(artifactManifestPath)) {
   throw new Error('Package tarballs are missing; run pnpm test:packages first')
 }
 
-const artifacts = JSON.parse(await readFile(artifactManifestPath, 'utf8'))
+const artifactManifest = JSON.parse(await readFile(artifactManifestPath, 'utf8'))
+const artifacts = Array.isArray(artifactManifest) ? artifactManifest : artifactManifest.packages
+if (!Array.isArray(artifacts)) {
+  throw new Error('Package artifact manifest has no packages array')
+}
 const tarballs = Object.fromEntries(artifacts.map((entry) => [entry.name, `file:${entry.tarball}`]))
 await rm(consumersRoot, { recursive: true, force: true })
 await mkdir(consumersRoot, { recursive: true })

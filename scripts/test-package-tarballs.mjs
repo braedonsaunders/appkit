@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { readFile, readdir, rm, mkdir, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -8,6 +9,11 @@ const run = promisify(execFile)
 const root = resolve(import.meta.dirname, '..')
 const packagesRoot = join(root, 'packages')
 const outputRoot = join(root, '.artifacts', 'packages')
+const sourceCommit = (await run('git', ['rev-parse', 'HEAD'], { cwd: root })).stdout.trim()
+const sourceDirty = (await run('git', ['status', '--porcelain', '--untracked-files=no'], { cwd: root }))
+  .stdout.trim()
+  .length > 0
+const sourceCommitShort = sourceCommit.slice(0, 12)
 
 await rm(outputRoot, { recursive: true, force: true })
 await mkdir(outputRoot, { recursive: true })
@@ -25,7 +31,13 @@ for (const directory of directories) {
     throw new Error(`${sourceManifest.name} is not built; run pnpm build:packages first`)
   }
 
-  const filename = `${sourceManifest.name.replace('@', '').replace('/', '-')}-${sourceManifest.version}.tgz`
+  for (const entry of await readdir(join(packageRoot, 'dist'), { withFileTypes: true })) {
+    if (entry.isFile() && entry.name.endsWith('.tgz')) {
+      await rm(join(packageRoot, 'dist', entry.name), { force: true })
+    }
+  }
+
+  const filename = `${sourceManifest.name.replace('@', '').replace('/', '-')}-${sourceManifest.version}-${sourceCommitShort}.tgz`
   const tarball = join(outputRoot, filename)
   await run('pnpm', ['pack', '--out', tarball], { cwd: packageRoot, maxBuffer: 10 * 1024 * 1024 })
   const { stdout } = await run('tar', ['-tzf', tarball], { maxBuffer: 20 * 1024 * 1024 })
@@ -36,11 +48,25 @@ for (const directory of directories) {
   const manifest = JSON.parse(manifestText)
 
   assertTarball(sourceManifest.name, manifest, files)
-  packed.push({ name: manifest.name, version: manifest.version, tarball, files: files.length })
+  const integrity = `sha512-${createHash('sha512').update(await readFile(tarball)).digest('base64')}`
+  packed.push({ name: manifest.name, version: manifest.version, tarball, integrity, files: files.length })
   console.log(`${manifest.name}: ${files.length} publish file(s), clean tarball`)
 }
 
-await writeFile(join(outputRoot, 'manifest.json'), `${JSON.stringify(packed, null, 2)}\n`)
+await writeFile(
+  join(outputRoot, 'manifest.json'),
+  `${JSON.stringify(
+    {
+      schemaVersion: 1,
+      sourceCommit,
+      sourceDirty,
+      createdAt: new Date().toISOString(),
+      packages: packed,
+    },
+    null,
+    2,
+  )}\n`,
+)
 console.log(`Verified ${packed.length} publish tarballs in ${outputRoot}`)
 
 function assertTarball(name, manifest, files) {
@@ -48,6 +74,7 @@ function assertTarball(name, manifest, files) {
   const forbidden = normalized.filter(
     (file) =>
       file.startsWith('src/') ||
+      file.endsWith('.tgz') ||
       /(?:^|\/).*\.(?:test|spec)\.[cm]?[jt]sx?$/.test(file) ||
       /(?:^|\/)__tests__\//.test(file) ||
       (/\.[cm]?tsx?$/.test(file) && !file.endsWith('.d.ts')),

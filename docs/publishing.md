@@ -33,8 +33,29 @@ pnpm test:consumers
 `test:packages` creates real tarballs and verifies every declared export and
 required asset. `test:consumers` installs those tarballs into fresh Node/React
 and generated Next.js projects, executes runtime/type checks, and completes a
-production Next build. Artifacts live under ignored `.artifacts/` only for the
-duration of local inspection.
+production Next build. Artifact filenames include the source commit, and the
+generated manifest records that commit plus a SHA-512 integrity for every
+archive. The package gate rejects nested tarballs so a stale local pack can
+never be republished inside a later one. Artifacts live under ignored
+`.artifacts/` only for the duration of local inspection.
+
+Until the npm release credentials are available, export a clean immutable
+snapshot for an application instead of copying version-only tarballs by hand:
+
+```bash
+pnpm build:packages
+pnpm test:packages
+pnpm test:consumers
+pnpm vendor:snapshot --destination ../my-app/vendor/appkit \
+  --packages @appkit/ui,@appkit/tokens --replace
+```
+
+`vendor:snapshot` refuses artifacts from a dirty AppKit worktree, replaces only
+tarballs in the explicit destination, and writes `manifest.json`,
+`overrides.json`, and a provenance README beside them. Consumers commit that
+directory and point their `file:` dependencies and root overrides at the
+commit-qualified filenames. A snapshot is one source commit; never mix
+artifacts from separate AppKit commits under one manifest.
 
 ## Version and release flow
 
