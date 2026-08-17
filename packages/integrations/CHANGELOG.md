@@ -1,5 +1,15 @@
 # @appkitjs/integrations
 
+## 2.0.0
+
+### Patch Changes
+
+- Updated dependencies [22e968a]
+- Updated dependencies [8342b35]
+- Updated dependencies [9f04661]
+  - @appkitjs/ui@0.2.0
+  - @appkitjs/sync@1.1.0
+
 ## 1.0.0
 
 ### Minor Changes

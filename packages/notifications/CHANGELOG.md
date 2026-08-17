@@ -1,5 +1,14 @@
 # @appkitjs/notifications
 
+## 2.0.0
+
+### Patch Changes
+
+- Updated dependencies [22e968a]
+- Updated dependencies [9f04661]
+  - @appkitjs/ui@0.2.0
+  - @appkitjs/jobs@0.2.1
+
 ## 1.0.0
 
 ### Minor Changes
