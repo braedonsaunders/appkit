@@ -173,6 +173,47 @@ test('boots by creating the overlay, spawning the VMM, and handshaking the vsock
   await machine.shutdown()
 })
 
+test('a handshake nobody is behind is retried, not trusted', async () => {
+  // Cloud Hypervisor answers CONNECT with OK even when the guest is still
+  // booting and nothing is listening, then closes the socket a moment later.
+  // Trusting that banner leaves a desk permanently dead with a healthy guest
+  // behind it, so the first attempt here does exactly that and the backend
+  // must move on rather than adopt the corpse.
+  const real = fakeVsock(guestHandlers)
+  let attempt = 0
+  const connect = (socketPath: string): Duplex => {
+    attempt += 1
+    if (attempt === 1) {
+      const hollow = new Duplex({
+        read() {},
+        write(chunk: Buffer, _encoding, callback) {
+          // Answer the handshake, then close without a guest ever replying.
+          if (chunk.toString('latin1').startsWith('CONNECT')) {
+            hollow.push(Buffer.from('OK 1073741824\n', 'latin1'))
+            setTimeout(() => hollow.destroy(), 5)
+          }
+          callback()
+        },
+      })
+      return hollow
+    }
+    return real.connect(socketPath)
+  }
+
+  const backend = createCloudHypervisorBackend({
+    launcher: () => fakeChild({ exitOnKill: true }),
+    connect,
+    platform: 'linux',
+    connectTimeoutMs: 2_000,
+    connectRetryDelayMs: 1,
+    handshakeTimeoutMs: 200,
+  })
+  const machine = await backend.boot(makePlan())
+  assert.ok(attempt >= 2, 'the hollow connection should have been retried')
+  assert.deepEqual(await machine.request({ op: 'ping' }), { pong: true })
+  await machine.shutdown()
+})
+
 test('guest-reported errors reject the request without dropping the connection', async () => {
   const vsock = fakeVsock({
     ...guestHandlers,

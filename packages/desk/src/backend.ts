@@ -344,12 +344,19 @@ async function connectWithRetry(options: {
       throw new DeskError('The VMM exited before the guest agent came up.')
     }
     try {
-      return await attemptHandshake(
+      const stream = await attemptHandshake(
         options.connect,
         options.socketPath,
         options.port,
         options.attemptTimeoutMs,
       )
+      try {
+        await confirmGuest(stream, options.attemptTimeoutMs)
+      } catch (error) {
+        stream.destroy()
+        throw error
+      }
+      return stream
     } catch (error) {
       lastFailure = errorMessage(error)
     }
@@ -372,6 +379,62 @@ async function connectWithRetry(options: {
  * indistinguishable from a wedged host and it is why every attempt is bounded
  * here as well as in aggregate.
  */
+/**
+ * Prove a guest is behind the handshake by asking it something.
+ *
+ * Cloud Hypervisor answers `CONNECT <port>` with `OK` whether or not anything
+ * in the guest is listening on that port, and only closes the socket a moment
+ * later when it finds nobody there. A caller that trusts the banner therefore
+ * "connects" to a guest that is still booting, gets a closed stream seconds
+ * later, and — because a closed machine is not retried — leaves the desk dead
+ * for as long as it is leased, with a healthy guest sitting behind it. So the
+ * handshake is not the test; a reply is.
+ */
+async function confirmGuest(stream: Duplex, timeoutMs: number): Promise<void> {
+  const decoder = new FrameDecoder()
+  await new Promise<void>((resolvePromise, rejectPromise) => {
+    let settled = false
+    const finish = (error?: Error) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      stream.off('data', onData)
+      stream.off('close', onClose)
+      stream.off('error', finish)
+      if (error) rejectPromise(error)
+      else resolvePromise()
+    }
+    const timer = setTimeout(
+      () => finish(new DeskError('the guest agent did not answer the first request.')),
+      timeoutMs,
+    )
+    timer.unref?.()
+    const onClose = () =>
+      finish(new DeskError('the connection closed before the guest agent answered.'))
+    const onData = (chunk: Buffer) => {
+      let values: unknown[]
+      try {
+        values = decoder.push(chunk)
+      } catch (error) {
+        finish(error instanceof Error ? error : new Error(String(error)))
+        return
+      }
+      for (const value of values) {
+        // Anything at all proves a guest is there; the reply is parsed for
+        // real by the machine once it owns the stream.
+        if (value && typeof value === 'object') {
+          finish()
+          return
+        }
+      }
+    }
+    stream.on('data', onData)
+    stream.once('close', onClose)
+    stream.once('error', finish)
+    stream.write(encodeFrame({ id: 'hello', op: 'ping' }))
+  })
+}
+
 function attemptHandshake(
   connect: (socketPath: string) => Duplex,
   socketPath: string,

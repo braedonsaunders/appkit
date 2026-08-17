@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1
+
+- A vsock handshake is no longer taken as proof of a guest. Cloud Hypervisor answers `CONNECT` with
+  `OK` even while the guest is still booting and nothing is listening, then closes the socket a
+  moment later — and because a closed machine was never retried, the desk stayed dead for the whole
+  lease with a healthy guest sitting behind it. The backend now sends a ping and waits for a reply
+  before adopting the connection; a hollow one is just another failed attempt.
+
 ## 0.3.0
 
 The live view is bounded by BYTES BETWEEN THE GUEST AND THE HOST, not by encode time. Measured on a
