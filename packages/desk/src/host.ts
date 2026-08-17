@@ -1002,6 +1002,13 @@ export interface VerifyDeskHostOptions {
   kernelPath: string
   /** Initramfs for the probe VM; needed for a modular kernel, as at boot. */
   initramfsPath?: string
+  /**
+   * Kernel command line for the probe VM. It must match what real desks boot
+   * with: a probe that panics because its root is on another partition
+   * reports a host that cannot run desks, which is indistinguishable from a
+   * host that genuinely cannot.
+   */
+  kernelCmdline?: string
   baseImagePath: string
   vmmPath?: string
   kvmPath?: string
@@ -1068,6 +1075,7 @@ export async function verifyDeskHost(options: VerifyDeskHostOptions): Promise<De
       kvmPath,
       kernelPath: options.kernelPath,
       ...(options.initramfsPath === undefined ? {} : { initramfsPath: options.initramfsPath }),
+      ...(options.kernelCmdline === undefined ? {} : { kernelCmdline: options.kernelCmdline }),
       baseImagePath: options.baseImagePath,
       overlayPath,
       vsockCid: 3,
