@@ -3,8 +3,8 @@ import {
   renderDesignDocumentsHtml,
   type DesignData,
   type DesignDocument,
-} from '@appkit/design-studio'
-import { renderHtmlDocumentPdf } from '@appkit/pdf/html'
+} from '@appkitjs/design-studio'
+import { renderHtmlDocumentPdf } from '@appkitjs/pdf/html'
 
 export async function renderDesignDocumentPdf(input: { document: DesignDocument; data: DesignData; title?: string }): Promise<Buffer> {
   const first = input.document.artboards[0]

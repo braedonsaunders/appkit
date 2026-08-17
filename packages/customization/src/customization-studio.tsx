@@ -2,7 +2,7 @@
 
 import { useState, type ReactElement, type ReactNode } from 'react'
 import { Columns3, FileInput, ListFilter, Plus } from 'lucide-react'
-import { Badge, Button, Select, cn } from '@appkit/ui'
+import { Badge, Button, Select, cn } from '@appkitjs/ui'
 import type { RecordTypeMeta } from './types'
 import type {
   CustomFieldDefinition,

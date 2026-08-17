@@ -1,5 +1,5 @@
 {
-  "name": "@appkit/workflows",
+  "name": "@appkitjs/workflows",
   "version": "1.0.0",
   "description": "Durable workflow graphs, replay-safe actions, approval gates, and optional React and Drizzle adapters.",
   "license": "AGPL-3.0-or-later",
@@ -30,10 +30,10 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
-    "@appkit/forms": "^0.2.1",
-    "@appkit/forms-core": "^0.1.1",
-    "@appkit/ui": "^0.1.10",
-    "@appkit/db": "^0.2.0",
+    "@appkitjs/forms": "^0.2.1",
+    "@appkitjs/forms-core": "^0.1.1",
+    "@appkitjs/ui": "^0.1.10",
+    "@appkitjs/db": "^0.2.0",
     "drizzle-orm": "^0.45.2",
     "@xyflow/react": "^12.10.0",
     "lucide-react": "^1.24.0",
@@ -41,16 +41,16 @@
     "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
-    "@appkit/forms": {
+    "@appkitjs/forms": {
       "optional": true
     },
-    "@appkit/forms-core": {
+    "@appkitjs/forms-core": {
       "optional": true
     },
-    "@appkit/ui": {
+    "@appkitjs/ui": {
       "optional": true
     },
-    "@appkit/db": {
+    "@appkitjs/db": {
       "optional": true
     },
     "drizzle-orm": {
@@ -70,10 +70,10 @@
     }
   },
   "devDependencies": {
-    "@appkit/forms": "workspace:*",
-    "@appkit/forms-core": "workspace:*",
-    "@appkit/ui": "workspace:*",
-    "@appkit/db": "workspace:*",
+    "@appkitjs/forms": "workspace:*",
+    "@appkitjs/forms-core": "workspace:*",
+    "@appkitjs/ui": "workspace:*",
+    "@appkitjs/db": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "@types/node": "^22",
     "@types/react": "^19",

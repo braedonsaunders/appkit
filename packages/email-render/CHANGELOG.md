@@ -1,4 +1,4 @@
-# @appkit/email-render
+# @appkitjs/email-render
 
 ## 0.1.1
 

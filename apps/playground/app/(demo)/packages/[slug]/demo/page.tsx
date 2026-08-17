@@ -19,11 +19,11 @@ import {
   SCRIPTS_QUEUE_PROFILE,
   buildNotifyQueueJobs,
   type QueueProfile,
-} from '@appkit/jobs'
-import { createSealer } from '@appkit/crypto'
-import { renderEmail } from '@appkit/email-render'
-import { EMAIL_PROVIDER_SPECS, buildTransport } from '@appkit/emails'
-import { sendMail, syncMailbox, verifyImap, verifySmtp } from '@appkit/mailbox'
+} from '@appkitjs/jobs'
+import { createSealer } from '@appkitjs/crypto'
+import { renderEmail } from '@appkitjs/email-render'
+import { EMAIL_PROVIDER_SPECS, buildTransport } from '@appkitjs/emails'
+import { sendMail, syncMailbox, verifyImap, verifySmtp } from '@appkitjs/mailbox'
 import {
   XLSX_MIME_TYPE,
   excelJsAvailable,
@@ -33,7 +33,7 @@ import {
   resolveSoffice,
   sanitizeOfficeHtml,
   type WorkbookSpec,
-} from '@appkit/office'
+} from '@appkitjs/office'
 import {
   DEFAULT_AGENT_TOOL_POLICY,
   agentToolScope,
@@ -42,34 +42,34 @@ import {
   isSafeAgentTool,
   type AgentToolManifest,
   type AgentToolPolicyMode,
-} from '@appkit/agent-tools'
-import { buildBubblewrapPlan } from '@appkit/process-sandbox'
+} from '@appkitjs/agent-tools'
+import { buildBubblewrapPlan } from '@appkitjs/process-sandbox'
 import {
   DEFAULT_KVM_PATH,
   DEFAULT_VMM_PATH,
   buildDeskLaunchPlan,
   isDeskSupported,
-} from '@appkit/desk'
+} from '@appkitjs/desk'
 import {
   isPublicHostname,
   normalizeOutboundHostname,
   readClientHelloSni,
   type EgressDecision,
   type EgressPolicyRequest,
-} from '@appkit/egress-proxy'
-import { SMS_PROVIDER_SPECS, buildSmsTransport } from '@appkit/sms'
+} from '@appkitjs/egress-proxy'
+import { SMS_PROVIDER_SPECS, buildSmsTransport } from '@appkitjs/sms'
 import {
   CARRIER_PROVIDER_SPECS,
   isValidPhoneNumber,
   resolveCarrierClient,
   validateStoredCarrierConfig,
-} from '@appkit/telephony'
+} from '@appkitjs/telephony'
 import {
   DEEPGRAM_STT_MODELS,
   ELEVENLABS_TTS_MODELS,
   GEMINI_LIVE_MODELS,
   OPENAI_REALTIME_MODELS,
-} from '@appkit/voice'
+} from '@appkitjs/voice'
 import {
   Badge,
   Button,
@@ -88,7 +88,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@appkit/ui'
+} from '@appkitjs/ui'
 import { getPackage } from '../../../../../lib/server/package-catalog'
 import { SceneDemoStage } from './scene-demo-stage'
 import { SuperadminDemo } from './superadmin-demo'
@@ -906,7 +906,7 @@ function AgentToolsDemo({ mode }: { mode: AgentToolPolicyMode }) {
         <Card>
           <CardHeader>
             <CardTitle>Isolation per tool</CardTitle>
-            <CardDescription>Resolved by the package, then handed to @appkit/process-sandbox.</CardDescription>
+            <CardDescription>Resolved by the package, then handed to @appkitjs/process-sandbox.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {decisions.map(({ manifest, plan }) => (

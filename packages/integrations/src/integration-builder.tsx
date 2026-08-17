@@ -20,7 +20,7 @@ import {
   Trash2,
   Zap,
 } from 'lucide-react'
-import { Button, Input, Label, Select, Textarea, cn } from '@appkit/ui'
+import { Button, Input, Label, Select, Textarea, cn } from '@appkitjs/ui'
 import {
   readIntegrationEditorSubmission,
   type DestinationAuthoringDefinition,

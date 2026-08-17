@@ -1,4 +1,4 @@
-# @appkit/tenant
+# @appkitjs/tenant
 
 ## 0.1.1
 
@@ -13,5 +13,5 @@
 - Updated dependencies [3ae036d]
 - Updated dependencies [3ab6056]
 - Updated dependencies [1319bfb]
-  - @appkit/db@0.2.0
-  - @appkit/i18n@0.1.1
+  - @appkitjs/db@0.2.0
+  - @appkitjs/i18n@0.1.1

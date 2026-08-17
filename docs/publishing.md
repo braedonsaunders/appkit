@@ -47,7 +47,7 @@ pnpm build:packages
 pnpm test:packages
 pnpm test:consumers
 pnpm vendor:snapshot --destination ../my-app/vendor/appkit \
-  --packages @appkit/ui,@appkit/tokens --replace
+  --packages @appkitjs/ui,@appkitjs/tokens --replace
 ```
 
 `vendor:snapshot` refuses artifacts from a dirty AppKit worktree, replaces only
@@ -70,7 +70,7 @@ causes the same workflow to:
 5. create the corresponding Git tags and GitHub releases.
 
 Repository setup requires an npm automation/granular access token saved as the
-`NPM_TOKEN` GitHub Actions secret with publish access to the `@appkit` scope and
+`NPM_TOKEN` GitHub Actions secret with publish access to the `@appkitjs` scope and
 the unscoped `create-appkit` package. The workflow grants GitHub's OIDC
 `id-token: write` permission for npm provenance and uses the built-in
 `GITHUB_TOKEN` for release pull requests and tags.

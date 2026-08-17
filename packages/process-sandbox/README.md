@@ -1,4 +1,4 @@
-# @appkit/process-sandbox
+# @appkitjs/process-sandbox
 
 Fail-closed Linux process isolation for workspace-bound coding agents and other
 trusted application workers.
@@ -96,7 +96,7 @@ The working directory may be a writable bind for build/edit agents or a
 read-only bind for question-and-answer and inspection workers.
 
 ```ts
-import { spawnBubblewrappedProcess } from '@appkit/process-sandbox'
+import { spawnBubblewrappedProcess } from '@appkitjs/process-sandbox'
 
 const child = spawnBubblewrappedProcess({
   command: '/usr/local/bin/codex',

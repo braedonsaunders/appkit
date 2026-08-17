@@ -1,4 +1,4 @@
-# @appkit/ui
+# @appkitjs/ui
 
 ## 0.1.10
 
@@ -28,11 +28,11 @@
   and the `PageTransition` contract is unchanged — consuming apps pick this up
   with no code edits.
 
-- a1d5d50: Add `@appkit/scheduling`: critical-path scheduling with working calendars,
+- a1d5d50: Add `@appkitjs/scheduling`: critical-path scheduling with working calendars,
   work-breakdown rollups, baselines, resource leveling, and the Gantt / list /
-  board authoring surface under `@appkit/scheduling/react`.
+  board authoring surface under `@appkitjs/scheduling/react`.
 
-  `@appkit/ui` gains a `calendar` navigation icon key.
+  `@appkitjs/ui` gains a `calendar` navigation icon key.
 
 - 8a17e9e: Keep URL-backed search input authoritative while overlapping route transitions
   settle. Previously, an older streamed response could restore its query value
@@ -54,4 +54,4 @@
   replace raw settings-card palette classes with semantic AppKit tokens, and make
   hover pause and resume toast dismissal instead of toggling an unused flag.
 - Updated dependencies [3ab6056]
-  - @appkit/tokens@0.1.1
+  - @appkitjs/tokens@0.1.1

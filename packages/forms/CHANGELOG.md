@@ -1,4 +1,4 @@
-# @appkit/forms
+# @appkitjs/forms
 
 ## 0.2.1
 
@@ -8,8 +8,8 @@
 - Updated dependencies [0c2dde7]
 - Updated dependencies [a1d5d50]
 - Updated dependencies [8a17e9e]
-  - @appkit/ui@0.1.10
-  - @appkit/editor@0.2.1
+  - @appkitjs/ui@0.1.10
+  - @appkitjs/editor@0.2.1
 
 ## 0.2.0
 
@@ -25,8 +25,8 @@
   Changesets.
 - Updated dependencies [3ab6056]
 - Updated dependencies [1319bfb]
-  - @appkit/editor@0.1.1
-  - @appkit/forms-core@0.1.1
-  - @appkit/i18n@0.1.1
-  - @appkit/tokens@0.1.1
-  - @appkit/ui@0.1.1
+  - @appkitjs/editor@0.1.1
+  - @appkitjs/forms-core@0.1.1
+  - @appkitjs/i18n@0.1.1
+  - @appkitjs/tokens@0.1.1
+  - @appkitjs/ui@0.1.1

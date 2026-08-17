@@ -1,5 +1,5 @@
 {
-  "name": "@appkit/agent-tools",
+  "name": "@appkitjs/agent-tools",
   "version": "0.2.0",
   "description": "Governed catalogue, install lifecycle, and sandboxed execution of managed command-line tools for agents, with separate install and execution approval gates.",
   "license": "AGPL-3.0-or-later",
@@ -23,15 +23,15 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@appkit/process-sandbox": "workspace:*",
+    "@appkitjs/process-sandbox": "workspace:*",
     "zod": "^4.4.3"
   },
   "peerDependencies": {
-    "@appkit/db": "^0.2.0",
+    "@appkitjs/db": "^0.2.0",
     "drizzle-orm": "^0.45.2"
   },
   "peerDependenciesMeta": {
-    "@appkit/db": {
+    "@appkitjs/db": {
       "optional": true
     },
     "drizzle-orm": {
@@ -39,7 +39,7 @@
     }
   },
   "devDependencies": {
-    "@appkit/db": "workspace:*",
+    "@appkitjs/db": "workspace:*",
     "@types/node": "^22",
     "drizzle-orm": "^0.45.2",
     "tsx": "^4.19.2",

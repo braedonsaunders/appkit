@@ -1,12 +1,12 @@
 ---
-'@appkit/sync': minor
-'@appkit/ai': minor
+'@appkitjs/sync': minor
+'@appkitjs/ai': minor
 ---
 
 Stop killing model requests that are merely slow.
 
 Outbound requests through `secureFetch` were capped at two minutes, and
-`@appkit/ai` asked for exactly that. Two minutes is a sensible ceiling for the
+`@appkitjs/ai` asked for exactly that. Two minutes is a sensible ceiling for the
 webhooks and REST calls the egress guard was written for, and it is inside the
 normal range for the one thing that legitimately takes longer: a reasoning model
 working through a tool-using turn.

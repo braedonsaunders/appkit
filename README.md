@@ -40,8 +40,8 @@ auditing, dashboard and report builders, forms, workflows, notifications,
 external data sync, outbound integrations, documents, background work, and
 provider-neutral delivery.
 
-Use `@appkit/ui` for a polished shell and component system. Add
-`@appkit/db` and `@appkit/tenant` when you need multi-tenant Postgres with RLS.
+Use `@appkitjs/ui` for a polished shell and component system. Add
+`@appkitjs/db` and `@appkitjs/tenant` when you need multi-tenant Postgres with RLS.
 Install forms, analytics, workflows, sync, or PDF only when your product needs
 them. The package boundaries are deliberate: adopting one capability does not
 pull the whole platform into your process or browser bundle.
@@ -94,17 +94,17 @@ application without generating product-specific routes, records, or fake data.
 Install only the interface foundation:
 
 ```bash
-pnpm add @appkit/ui @appkit/tokens
+pnpm add @appkitjs/ui @appkitjs/tokens
 ```
 
 ```css
 /* app/globals.css */
-@import "@appkit/ui/styles.css";
+@import "@appkitjs/ui/styles.css";
 @source '../app';
 ```
 
 ```tsx
-import { AppShell, Toaster } from "@appkit/ui";
+import { AppShell, Toaster } from "@appkitjs/ui";
 
 export default function Application({
   children,
@@ -125,11 +125,11 @@ export default function Application({
 Add a tenant-safe backend when you need it:
 
 ```bash
-pnpm add @appkit/db @appkit/tenant drizzle-orm postgres
+pnpm add @appkitjs/db @appkitjs/tenant drizzle-orm postgres
 ```
 
 ```ts
-import { assertCan } from "@appkit/tenant";
+import { assertCan } from "@appkitjs/tenant";
 
 assertCan(requestContext, "projects.write");
 await requestContext.db(async (db) => {
@@ -148,25 +148,25 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 
 | Package                 | What it gives your app                                                                                                                                                        |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@appkit/tokens`        | Semantic light/dark brand, shape, elevation, and motion tokens surfaced through Tailwind v4.                                                                                  |
-| `@appkit/ui`            | Accessible primitives, topbar/sidebar app shell, account launcher, search, notifications, settings, record and paged tables, subtabs, drawers, uploads, signatures, page layouts, and route transitions. |
-| `@appkit/dashboard`     | Responsive drag/resize dashboards, reusable insight cards, a card library, query studio, visualizations, lifecycle controls, and optional Drizzle persistence.                 |
-| `@appkit/forms-core`    | Versioned schemas, field and companion-value registry, formulas, conditional logic, validation, scoring, and source-compatible business and safety automation contracts.                          |
-| `@appkit/forms`         | The complete production designer and fill runtime: 1/3–2/3 authoring, fields/canvas/tabs/sign-off, record/list/action/access configuration, workflow bridge, immutable publishing, revision-safe drafts, guided steps, data-bound controls, repeating tables, media, signatures, and typed host adapters. |
-| `@appkit/editor`        | Optional controlled TipTap rich-text authoring.                                                                                                                               |
-| `@appkit/customization` | Versioned form layouts, custom fields, and the production record-list system: saved views, subtabs, search, filters, sorting, paging, drill-through, designers, plus optional memory and tenant-scoped Drizzle persistence. Your app supplies its record catalogue once; AppKit keeps every editor, validator, and store on that contract. |
-| `@appkit/design-studio` | Bounded multi-artboard print design, safe HTML/print output, and an interactive Fabric workspace with transforms, layers, zoom, and full property editing.                     |
-| `@appkit/i18n`          | Tenant locale policy, request negotiation, user overrides, and localized authored content.                                                                                    |
-| `@appkit/scheduling`    | Project scheduling: CPM critical path, calendars, resource leveling, baselines, and a Gantt/list/board authoring surface.                                                     |
-| `@appkit/avatars`       | Avatar parts library, composition model, and composer — one full-body figure per subject with portraits derived by head viewport — plus AI image generation.                  |
-| `@appkit/scene`         | Animated character scene: characters walk, idle, and scale with depth over a configurable ground.                                                                            |
+| `@appkitjs/tokens`        | Semantic light/dark brand, shape, elevation, and motion tokens surfaced through Tailwind v4.                                                                                  |
+| `@appkitjs/ui`            | Accessible primitives, topbar/sidebar app shell, account launcher, search, notifications, settings, record and paged tables, subtabs, drawers, uploads, signatures, page layouts, and route transitions. |
+| `@appkitjs/dashboard`     | Responsive drag/resize dashboards, reusable insight cards, a card library, query studio, visualizations, lifecycle controls, and optional Drizzle persistence.                 |
+| `@appkitjs/forms-core`    | Versioned schemas, field and companion-value registry, formulas, conditional logic, validation, scoring, and source-compatible business and safety automation contracts.                          |
+| `@appkitjs/forms`         | The complete production designer and fill runtime: 1/3–2/3 authoring, fields/canvas/tabs/sign-off, record/list/action/access configuration, workflow bridge, immutable publishing, revision-safe drafts, guided steps, data-bound controls, repeating tables, media, signatures, and typed host adapters. |
+| `@appkitjs/editor`        | Optional controlled TipTap rich-text authoring.                                                                                                                               |
+| `@appkitjs/customization` | Versioned form layouts, custom fields, and the production record-list system: saved views, subtabs, search, filters, sorting, paging, drill-through, designers, plus optional memory and tenant-scoped Drizzle persistence. Your app supplies its record catalogue once; AppKit keeps every editor, validator, and store on that contract. |
+| `@appkitjs/design-studio` | Bounded multi-artboard print design, safe HTML/print output, and an interactive Fabric workspace with transforms, layers, zoom, and full property editing.                     |
+| `@appkitjs/i18n`          | Tenant locale policy, request negotiation, user overrides, and localized authored content.                                                                                    |
+| `@appkitjs/scheduling`    | Project scheduling: CPM critical path, calendars, resource leveling, baselines, and a Gantt/list/board authoring surface.                                                     |
+| `@appkitjs/avatars`       | Avatar parts library, composition model, and composer — one full-body figure per subject with portraits derived by head viewport — plus AI image generation.                  |
+| `@appkitjs/scene`         | Animated character scene: characters walk, idle, and scale with depth over a configurable ground.                                                                            |
 
 Bind customization to your records once and retain key-based calls throughout
 the application:
 
 ```ts
-import { createCustomizationEngine } from '@appkit/customization'
-import { createMemoryListViewStore } from '@appkit/customization/memory'
+import { createCustomizationEngine } from '@appkitjs/customization'
+import { createMemoryListViewStore } from '@appkitjs/customization/memory'
 
 const customization = createCustomizationEngine(recordTypes)
 const listStore = createMemoryListViewStore({ registry: customization.registry })
@@ -181,74 +181,74 @@ product’s record names, routes, queries, or permissions inside AppKit.
 
 | Package             | What it gives your app                                                                                                      |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `@appkit/db`        | Tenant-scoped Postgres execution, BYPASSRLS system access, identity schema, API keys, schema helpers, and RLS installation. |
-| `@appkit/tenant`    | Tenant-bound request context with locale/timezone policy, typed app extensions, active-role resolution, wildcard/read-tier RBAC, fail-closed grant/deny overrides, portable database-runtime binding, and super-admin behavior. |
-| `@appkit/iam`       | Optional roles, memberships, scoped assignments, permission exceptions, audit, full administration UI, and memory/HTTP/Drizzle adapters. |
-| `@appkit/auth`      | Durable sessions, passwords and resets, magic links, invitation grants, OAuth accounts, React forms, and memory/Drizzle/Next adapters. |
-| `@appkit/events`    | Structured audit records, transactional outbox, recipient resolution, leased relay, durable retries, and effects ledger.      |
-| `@appkit/api`       | API-key authorization, idempotent writes, typed public errors, and OpenAPI descriptions.                                    |
-| `@appkit/sandbox`   | Shared QuickJS isolation with memory, stack, deadline, governance, frozen-input, host-function, log, and structured-fault contracts. |
-| `@appkit/endpoints` | Resource-bounded `handler(request)` programs with storage, records, and application-governed host capabilities.             |
-| `@appkit/scripts`   | Event, scheduled, endpoint, bulk, and opaque-origin client scripts with a production CodeMirror editor, run/log inspection, vetoes, allowed mutations, cron, jobs, auditing, Drizzle storage, and a bound cutover runtime. |
-| `@appkit/apps`      | Installable app manifests and ZIPs, a nested file browser and syntax editors, immutable versions, storage, capabilities, QuickJS backends, opaque-origin preview, bridge SDK, run inspection, marketplace, memory, Drizzle, and bound lifecycle adapters. |
-| `@appkit/ai`        | Provider-neutral bounded agents, streaming React UI, and production analysis, extraction, document, vision, writing, digest, and model helpers. |
-| `@appkit/superadmin` | Instance-operator administration over platform identity: the users who can sign in, their credentials, and active sessions, with guard rails and production React components. |
-| `@appkit/process-sandbox` | Fail-closed Linux process isolation with bubblewrap, for workspace-bound coding agents and other trusted application workers. |
+| `@appkitjs/db`        | Tenant-scoped Postgres execution, BYPASSRLS system access, identity schema, API keys, schema helpers, and RLS installation. |
+| `@appkitjs/tenant`    | Tenant-bound request context with locale/timezone policy, typed app extensions, active-role resolution, wildcard/read-tier RBAC, fail-closed grant/deny overrides, portable database-runtime binding, and super-admin behavior. |
+| `@appkitjs/iam`       | Optional roles, memberships, scoped assignments, permission exceptions, audit, full administration UI, and memory/HTTP/Drizzle adapters. |
+| `@appkitjs/auth`      | Durable sessions, passwords and resets, magic links, invitation grants, OAuth accounts, React forms, and memory/Drizzle/Next adapters. |
+| `@appkitjs/events`    | Structured audit records, transactional outbox, recipient resolution, leased relay, durable retries, and effects ledger.      |
+| `@appkitjs/api`       | API-key authorization, idempotent writes, typed public errors, and OpenAPI descriptions.                                    |
+| `@appkitjs/sandbox`   | Shared QuickJS isolation with memory, stack, deadline, governance, frozen-input, host-function, log, and structured-fault contracts. |
+| `@appkitjs/endpoints` | Resource-bounded `handler(request)` programs with storage, records, and application-governed host capabilities.             |
+| `@appkitjs/scripts`   | Event, scheduled, endpoint, bulk, and opaque-origin client scripts with a production CodeMirror editor, run/log inspection, vetoes, allowed mutations, cron, jobs, auditing, Drizzle storage, and a bound cutover runtime. |
+| `@appkitjs/apps`      | Installable app manifests and ZIPs, a nested file browser and syntax editors, immutable versions, storage, capabilities, QuickJS backends, opaque-origin preview, bridge SDK, run inspection, marketplace, memory, Drizzle, and bound lifecycle adapters. |
+| `@appkitjs/ai`        | Provider-neutral bounded agents, streaming React UI, and production analysis, extraction, document, vision, writing, digest, and model helpers. |
+| `@appkitjs/superadmin` | Instance-operator administration over platform identity: the users who can sign in, their credentials, and active sessions, with guard rails and production React components. |
+| `@appkitjs/process-sandbox` | Fail-closed Linux process isolation with bubblewrap, for workspace-bound coding agents and other trusted application workers. |
 
 ### Analytics, workflows, and connectivity
 
 | Package                 | What it gives your app                                                                                                                                                |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@appkit/analytics`     | App-owned semantic catalogues, parsed formulas, tenant-bound parameterized SQL, result contracts, and a visualization registry.                                       |
-| `@appkit/reports`       | Production-shaped query plans and catalogues, governed SQL, recursive filters, fiscal/grouped results, a 1/3–2/3 report studio with host-owned save/delete lifecycles, full paper/statement viewers, drilldown drawers, print/export, schedules, and durable run claims. |
-| `@appkit/workflows`     | Multi-flow visual studio, compatible templates, typed inspectors, bounded graphs, durable replay-safe actions, pause/resume approval gates, record approve/reject controls and history, any/all quorum, HMAC email decisions, and optional Drizzle storage. |
-| `@appkit/sync`          | Production connector registry and orchestration: transactional batches/savepoints, run and record-change ledgers, clean-run cursors, previews, ownership conflicts, fail-closed snapshots, CSV/transforms, hardened egress, and optional SQL drivers. |
-| `@appkit/integrations`  | Outbound publisher, authoring hub/builder, token mapping, deterministic jobs, send-once/partial retry ledgers, and optional HTTP, Slack/Teams, Sheets, email, SQL, and Drizzle adapters.       |
-| `@appkit/notifications` | Responsive three-pane inbox, production preference matrix and device-push enrollment, tenant routing cockpit, audiences, escalation, digest/quiet-hour/scan policy, dispatch, and React/Drizzle entries. |
+| `@appkitjs/analytics`     | App-owned semantic catalogues, parsed formulas, tenant-bound parameterized SQL, result contracts, and a visualization registry.                                       |
+| `@appkitjs/reports`       | Production-shaped query plans and catalogues, governed SQL, recursive filters, fiscal/grouped results, a 1/3–2/3 report studio with host-owned save/delete lifecycles, full paper/statement viewers, drilldown drawers, print/export, schedules, and durable run claims. |
+| `@appkitjs/workflows`     | Multi-flow visual studio, compatible templates, typed inspectors, bounded graphs, durable replay-safe actions, pause/resume approval gates, record approve/reject controls and history, any/all quorum, HMAC email decisions, and optional Drizzle storage. |
+| `@appkitjs/sync`          | Production connector registry and orchestration: transactional batches/savepoints, run and record-change ledgers, clean-run cursors, previews, ownership conflicts, fail-closed snapshots, CSV/transforms, hardened egress, and optional SQL drivers. |
+| `@appkitjs/integrations`  | Outbound publisher, authoring hub/builder, token mapping, deterministic jobs, send-once/partial retry ledgers, and optional HTTP, Slack/Teams, Sheets, email, SQL, and Drizzle adapters.       |
+| `@appkitjs/notifications` | Responsive three-pane inbox, production preference matrix and device-push enrollment, tenant routing cockpit, audiences, escalation, digest/quiet-hour/scan policy, dispatch, and React/Drizzle entries. |
 
 ### Documents, communications, and infrastructure
 
 | Package                   | What it gives your app                                                                                                             |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `@appkit/email-render`    | Bounded templates, loops, conditions, sanitization, escaped merge values, subjects, recipients, attachments, HTML, and plain text. |
-| `@appkit/email-designer`  | Drag-and-drop message and signature authoring: email-safe blocks, merge fields, repeating tables, table tools, and a sanitize/inline/expand compile pipeline. |
-| `@appkit/emails`          | Resend, SendGrid, Mailgun, Postmark, secure SMTP, and development-only loopback SMTP behind one tenant-aware contract.            |
-| `@appkit/sms`             | Twilio, Vonage, MessageBird, Plivo, and Telnyx with strict addressing and credential-safe failures.                                |
-| `@appkit/pdf`             | Pure-JS PDFKit reports/statements plus optional authored-template and hardened Chromium rendering entries.                         |
-| `@appkit/forms-documents` | Form print styles and bounded authored PDF templates over the canonical forms-core companion-value contract.                       |
-| `@appkit/forms-pdf`       | Form summaries, repeating tables, photos, hardened browser/resource rendering, record/report templates, and full-bleed design documents. |
-| `@appkit/crypto`          | AES-256-GCM sealed secrets with configurable HKDF-derived application keys.                                                        |
-| `@appkit/jobs`            | Lazy BullMQ/Redis runtime plus production email, notification/push, PDF/document, report, scheduled, outbound, script, sandbox, migration, and capture queues with exact retries, retention, validation, deterministic IDs, schedule reconciliation, worker profiles, rate limits, and hardened Web Push. |
-| `@appkit/storage`         | Tenant-owned S3 objects plus the optional production attachment workspace: upload, search, type filters, paging, preview, download, expansion, removal, HTTP adapters, and database-free memory adapters. |
-| `@appkit/mailbox`         | Incremental IMAP sync and SMTP send with RFC-5322 threading, persistence injected so the app owns the ledger, plus the three-pane operator inbox. |
-| `@appkit/office`          | HTML to .docx/.pdf through headless LibreOffice, plain-text precision edits inside .docx, PDF concatenation, and declarative .xlsx workbooks. |
-| `@appkit/voice`           | Per-agent voice configuration, speech-provider catalogues and key verification (Deepgram, ElevenLabs, OpenAI Realtime, Gemini Live), and LiveKit token minting. |
-| `@appkit/telephony`       | Carrier phone-number provisioning and the SIP trunk the numbers arrive on, with sealed-secret config and an injectable carrier adapter. |
+| `@appkitjs/email-render`    | Bounded templates, loops, conditions, sanitization, escaped merge values, subjects, recipients, attachments, HTML, and plain text. |
+| `@appkitjs/email-designer`  | Drag-and-drop message and signature authoring: email-safe blocks, merge fields, repeating tables, table tools, and a sanitize/inline/expand compile pipeline. |
+| `@appkitjs/emails`          | Resend, SendGrid, Mailgun, Postmark, secure SMTP, and development-only loopback SMTP behind one tenant-aware contract.            |
+| `@appkitjs/sms`             | Twilio, Vonage, MessageBird, Plivo, and Telnyx with strict addressing and credential-safe failures.                                |
+| `@appkitjs/pdf`             | Pure-JS PDFKit reports/statements plus optional authored-template and hardened Chromium rendering entries.                         |
+| `@appkitjs/forms-documents` | Form print styles and bounded authored PDF templates over the canonical forms-core companion-value contract.                       |
+| `@appkitjs/forms-pdf`       | Form summaries, repeating tables, photos, hardened browser/resource rendering, record/report templates, and full-bleed design documents. |
+| `@appkitjs/crypto`          | AES-256-GCM sealed secrets with configurable HKDF-derived application keys.                                                        |
+| `@appkitjs/jobs`            | Lazy BullMQ/Redis runtime plus production email, notification/push, PDF/document, report, scheduled, outbound, script, sandbox, migration, and capture queues with exact retries, retention, validation, deterministic IDs, schedule reconciliation, worker profiles, rate limits, and hardened Web Push. |
+| `@appkitjs/storage`         | Tenant-owned S3 objects plus the optional production attachment workspace: upload, search, type filters, paging, preview, download, expansion, removal, HTTP adapters, and database-free memory adapters. |
+| `@appkitjs/mailbox`         | Incremental IMAP sync and SMTP send with RFC-5322 threading, persistence injected so the app owns the ledger, plus the three-pane operator inbox. |
+| `@appkitjs/office`          | HTML to .docx/.pdf through headless LibreOffice, plain-text precision edits inside .docx, PDF concatenation, and declarative .xlsx workbooks. |
+| `@appkitjs/voice`           | Per-agent voice configuration, speech-provider catalogues and key verification (Deepgram, ElevenLabs, OpenAI Realtime, Gemini Live), and LiveKit token minting. |
+| `@appkitjs/telephony`       | Carrier phone-number provisioning and the SIP trunk the numbers arrive on, with sealed-secret config and an injectable carrier adapter. |
 
 ## Modular by construction
 
 The core of each feature remains usable without its heaviest dependencies:
 
 ```text
-@appkit/workflows          graph + durable runtime
+@appkitjs/workflows          graph + durable runtime
   ├─ /react                React Flow authoring
   ├─ /approval-tokens      Node HMAC email actions
   ├─ /schema               feature-owned Drizzle tables
   └─ /drizzle              durable Postgres store
 
-@appkit/sync               connector + orchestration contracts
+@appkitjs/sync               connector + orchestration contracts
   ├─ /egress               DNS-pinned, SSRF-safe HTTPS
   ├─ /db-drivers           optional PostgreSQL/MySQL/MSSQL clients
   ├─ /schema               connections, runs, crosswalk
   └─ /drizzle              run and cursor persistence
 
-@appkit/integrations       dispatch + delivery ledger
+@appkitjs/integrations       dispatch + delivery ledger
   ├─ /http /chat /sheets   hardened outbound adapters
   ├─ /email /sql           optional render and database adapters
   ├─ /schema               definitions and delivery ledger
   └─ /drizzle              tenant-scoped persistence
 
-@appkit/apps               installable application platform
+@appkitjs/apps               installable application platform
   ├─ /manifest /bundle     validated manifests and ZIP packages
   ├─ /runtime /bridge      governed QuickJS backend + opaque iframe SDK
   ├─ /service              source-shaped lifecycle bound to host adapters
@@ -256,7 +256,7 @@ The core of each feature remains usable without its heaviest dependencies:
   ├─ /memory               database-free complete adapter
   └─ /schema /drizzle      tenant-scoped durable lifecycle
 
-@appkit/scripts            governed automation code
+@appkitjs/scripts            governed automation code
   ├─ /bound                positional cutover runtime + context mapping
   ├─ /client               opaque-origin browser validation gate
   ├─ /jobs                 queue-neutral scheduled/bulk worker handler
@@ -288,7 +288,7 @@ page for every publishable package manifest.
 
 ```bash
 pnpm install
-pnpm --filter @appkit/playground dev
+pnpm --filter @appkitjs/playground dev
 ```
 
 Open `http://localhost:4310/dashboard`. Use the account launcher to switch
@@ -298,7 +298,7 @@ credentials are required.
 To exercise the real tenant-scoped Postgres/RLS path, copy
 `apps/playground/.env.example` to `apps/playground/.env.local`, set both database
 URLs to your Postgres or Supabase connections, and run
-`pnpm --filter @appkit/playground seed` before starting the app. With those
+`pnpm --filter @appkitjs/playground seed` before starting the app. With those
 variables present, the same routes use durable package-owned persistence.
 
 ## Quality guarantees

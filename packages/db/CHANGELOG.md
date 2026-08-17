@@ -1,4 +1,4 @@
-# @appkit/db
+# @appkitjs/db
 
 ## 0.2.0
 

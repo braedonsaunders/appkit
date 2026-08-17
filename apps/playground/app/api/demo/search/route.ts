@@ -1,6 +1,6 @@
 import { eq, ilike, or } from 'drizzle-orm'
-import { memberships, users } from '@appkit/db'
-import { assertCan } from '@appkit/tenant'
+import { memberships, users } from '@appkitjs/db'
+import { assertCan } from '@appkitjs/tenant'
 import { getDemoEnvironment } from '../../../../lib/server/demo-context'
 import { DEMO_MEMBERS } from '../../../../lib/server/demo-data'
 import { isDatabaseConfigured } from '../../../../lib/server/platform'

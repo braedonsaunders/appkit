@@ -2,16 +2,16 @@
 
 import { revalidatePath } from 'next/cache'
 import { and, eq } from 'drizzle-orm'
-import { audit } from '@appkit/events'
+import { audit } from '@appkitjs/events'
 import type {
   CardPreviewResult,
   CardStudioResult,
   DashboardActionResult,
   DashboardLayout,
   InsightCardDraft,
-} from '@appkit/dashboard'
-import { insightCards, userDashboardLayouts } from '@appkit/dashboard/schema'
-import { compileQuery, VISUALIZATIONS } from '@appkit/analytics/server'
+} from '@appkitjs/dashboard'
+import { insightCards, userDashboardLayouts } from '@appkitjs/dashboard/schema'
+import { compileQuery, VISUALIZATIONS } from '@appkitjs/analytics/server'
 import { DEMO_ANALYTICS_CATALOG, executeDemoQuery } from './analytics'
 import { BUILTIN_DASHBOARD_LAYOUT } from './dashboard'
 import { getDemoEnvironment } from './demo-context'

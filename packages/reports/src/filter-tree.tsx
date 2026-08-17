@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Plus, Trash2, X } from 'lucide-react'
-import { Button, Input, SearchSelect, Select, type SelectOption } from '@appkit/ui'
+import { Button, Input, SearchSelect, Select, type SelectOption } from '@appkitjs/ui'
 import { operatorsForKind, type ReportFilterOperator, type ReportRule, type ReportRuleGroup } from './filters'
 import { PERIOD_PRESETS, PERIOD_PRESET_GROUP_LABELS, type PeriodPresetGroup } from './period-presets'
 import { reportColumnOptions, visibleReportColumns, type ReportEntity } from './entities'

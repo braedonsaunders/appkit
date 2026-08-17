@@ -1,4 +1,4 @@
-# @appkit/egress-proxy
+# @appkitjs/egress-proxy
 
 The fail-closed egress chokepoint for agent sandboxes: explicit HTTP and
 CONNECT proxying plus transparent DNAT interception, with the destination
@@ -37,7 +37,7 @@ One listener accepts three connection shapes:
 ## Usage
 
 ```ts
-import { createEgressProxy } from '@appkit/egress-proxy'
+import { createEgressProxy } from '@appkitjs/egress-proxy'
 
 const proxy = createEgressProxy({
   policy: ({ host, port, protocol, principal }) =>
@@ -95,7 +95,7 @@ would reject every IPv4 address). Supply `resolveUpstream` to integrate a
 different resolver; whatever it returns is dialled verbatim, so it inherits
 responsibility for the address check.
 
-The canonical treatment of these host rules lives in `@appkit/sync`'s egress
+The canonical treatment of these host rules lives in `@appkitjs/sync`'s egress
 module; this package mirrors the logic locally to stay dependency-free.
 
 ## Transparent deployment sketch

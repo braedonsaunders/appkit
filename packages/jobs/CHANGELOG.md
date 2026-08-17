@@ -1,4 +1,4 @@
-# @appkit/jobs
+# @appkitjs/jobs
 
 ## 0.2.0
 
@@ -18,5 +18,5 @@
   Changesets.
 - Updated dependencies [3ae036d]
 - Updated dependencies [3ab6056]
-  - @appkit/sync@1.0.0
-  - @appkit/email-render@0.1.1
+  - @appkitjs/sync@1.0.0
+  - @appkitjs/email-render@0.1.1

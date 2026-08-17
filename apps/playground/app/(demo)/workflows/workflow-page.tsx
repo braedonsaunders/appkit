@@ -7,12 +7,12 @@ import {
   RecordApprovalProvider,
   refreshApprovalState,
   useRecordApprovalState,
-} from '@appkit/workflows/approval-react'
+} from '@appkitjs/workflows/approval-react'
 import {
   createMemoryRecordApprovalAdapter,
   type MemoryRecordApprovalSeed,
-} from '@appkit/workflows'
-import { Badge, Button, Drawer, PageHeader } from '@appkit/ui'
+} from '@appkitjs/workflows'
+import { Badge, Button, Drawer, PageHeader } from '@appkitjs/ui'
 import { WorkflowWorkbench } from './workbench'
 
 const subject = { subjectKind: 'project', subjectId: 'project-1042' }

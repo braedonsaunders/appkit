@@ -17,8 +17,8 @@ import { GeneratedText, GeneratedValue, useGeneratedValueTranslations } from './
 // without recomputing anything.
 
 import { Fragment, createContext, useContext, useMemo, useState } from 'react'
-import { cn } from '@appkit/ui'
-import { hexColor } from '@appkit/tokens'
+import { cn } from '@appkitjs/ui'
+import { hexColor } from '@appkitjs/tokens'
 export type RiskMatrixConfig = { axes: { severity: { values: string[] }; likelihood: { values: string[] } }; cells: Record<string, { score: number; label: string; color: string }> }
 
 type RiskCell = { score: number; label: string; color: string }

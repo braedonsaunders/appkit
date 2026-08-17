@@ -1,6 +1,6 @@
 'use client'
 
-import { UsersAdmin } from '@appkit/iam/react'
+import { UsersAdmin } from '@appkitjs/iam/react'
 import { DEMO_PERMISSION_GROUPS } from '../../../../lib/demo-iam'
 import { demoIamClient } from '../../../../lib/demo-iam-client'
 

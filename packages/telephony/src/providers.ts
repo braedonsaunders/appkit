@@ -4,7 +4,7 @@
 // so it is safe to map into the client bundle.
 //
 // Every carrier authenticates over HTTPS with one non-secret account
-// identifier plus a single sealed secret, which is the same shape @appkit/sms
+// identifier plus a single sealed secret, which is the same shape @appkitjs/sms
 // settled on for messaging providers.
 
 export type CarrierProvider = 'twilio'

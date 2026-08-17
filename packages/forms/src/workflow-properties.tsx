@@ -2,9 +2,9 @@
 
 import * as React from 'react'
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react'
-import type { FormSchemaV1, FormWorkflowStep } from '@appkit/forms-core'
-import type { AppLocale } from '@appkit/i18n'
-import { Button, Checkbox, Input, Label, Select } from '@appkit/ui'
+import type { FormSchemaV1, FormWorkflowStep } from '@appkitjs/forms-core'
+import type { AppLocale } from '@appkitjs/i18n'
+import { Button, Checkbox, Input, Label, Select } from '@appkitjs/ui'
 import { readText, writeText } from './text'
 
 function uniqueId(prefix: string, values: ReadonlySet<string>): string {

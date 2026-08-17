@@ -11,7 +11,7 @@
  * outside the pane that is typing it.
  *
  * The three-pane layout, folder rail, row anatomy, reading pane, empty states,
- * and skeleton follow `@appkit/notifications`' `NotificationInbox` so a mail
+ * and skeleton follow `@appkitjs/notifications`' `NotificationInbox` so a mail
  * screen and a notification screen read as the same product.
  */
 
@@ -32,7 +32,7 @@ import {
   TriangleAlert,
   X,
 } from 'lucide-react'
-import { Badge, Button, Drawer, Input, Select, Skeleton, Textarea, cn } from '@appkit/ui'
+import { Badge, Button, Drawer, Input, Select, Skeleton, Textarea, cn } from '@appkitjs/ui'
 
 export type MailboxOption = {
   id: string

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { and, eq, lt } from 'drizzle-orm'
-import { apiIdempotencyKeys } from '@appkit/db'
+import { apiIdempotencyKeys } from '@appkitjs/db'
 import type { ApiAuth } from './auth'
 import { ApiError } from './errors'
 

@@ -38,11 +38,11 @@
     "linkDirectory": false,
     "provenance": true
   },
-  "name": "@appkit/scene",
+  "name": "@appkitjs/scene",
   "version": "0.3.4",
   "description": "Animated character scene: characters walk, idle, and scale with depth over a configurable ground — extracted from the OpenStudio homepage world.",
   "dependencies": {
-    "@appkit/ui": "workspace:*",
+    "@appkitjs/ui": "workspace:*",
     "framer-motion": "^12.34.0"
   },
   "peerDependencies": {

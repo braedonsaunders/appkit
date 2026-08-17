@@ -5,16 +5,16 @@ const root = resolve(import.meta.dirname, '..')
 const packagesRoot = join(root, 'packages')
 const errors = []
 const adapterOnlyPeerPackages = new Set([
-  '@appkit/dashboard',
-  '@appkit/design-studio',
-  '@appkit/forms-pdf',
-  '@appkit/integrations',
-  '@appkit/notifications',
-  '@appkit/pdf',
-  '@appkit/workflows',
-  '@appkit/sync',
+  '@appkitjs/dashboard',
+  '@appkitjs/design-studio',
+  '@appkitjs/forms-pdf',
+  '@appkitjs/integrations',
+  '@appkitjs/notifications',
+  '@appkitjs/pdf',
+  '@appkitjs/workflows',
+  '@appkitjs/sync',
 ])
-const featureMigrationPackages = new Set(['@appkit/dashboard', '@appkit/integrations', '@appkit/notifications', '@appkit/sync', '@appkit/workflows'])
+const featureMigrationPackages = new Set(['@appkitjs/dashboard', '@appkitjs/integrations', '@appkitjs/notifications', '@appkitjs/sync', '@appkitjs/workflows'])
 
 const packages = new Map(
   readdirSync(packagesRoot, { withFileTypes: true })
@@ -29,38 +29,38 @@ const packages = new Map(
 )
 
 const appkitRuntimeAllowlists = {
-  '@appkit/db': [],
-  '@appkit/ui': ['@appkit/tokens'],
-  '@appkit/forms-core': ['@appkit/i18n'],
-  '@appkit/dashboard': ['@appkit/analytics'],
-  '@appkit/notifications': [],
-  '@appkit/workflows': [],
-  '@appkit/sync': [],
-  '@appkit/integrations': [],
-  '@appkit/design-studio': ['@appkit/tokens'],
-  '@appkit/pdf': ['@appkit/tokens'],
-  '@appkit/forms-pdf': ['@appkit/tokens'],
+  '@appkitjs/db': [],
+  '@appkitjs/ui': ['@appkitjs/tokens'],
+  '@appkitjs/forms-core': ['@appkitjs/i18n'],
+  '@appkitjs/dashboard': ['@appkitjs/analytics'],
+  '@appkitjs/notifications': [],
+  '@appkitjs/workflows': [],
+  '@appkitjs/sync': [],
+  '@appkitjs/integrations': [],
+  '@appkitjs/design-studio': ['@appkitjs/tokens'],
+  '@appkitjs/pdf': ['@appkitjs/tokens'],
+  '@appkitjs/forms-pdf': ['@appkitjs/tokens'],
 }
 
 const forbiddenRuntimeDependencies = {
-  '@appkit/db': ['@appkit/analytics', '@appkit/dashboard', '@appkit/notifications', '@appkit/ui'],
-  '@appkit/ui': [
-    '@appkit/analytics',
+  '@appkitjs/db': ['@appkitjs/analytics', '@appkitjs/dashboard', '@appkitjs/notifications', '@appkitjs/ui'],
+  '@appkitjs/ui': [
+    '@appkitjs/analytics',
     '@tiptap/extension-link',
     '@tiptap/extension-placeholder',
     '@tiptap/react',
     '@tiptap/starter-kit',
     'react-grid-layout',
   ],
-  '@appkit/forms-core': ['@appkit/email-render', '@appkit/tokens'],
-  '@appkit/design-studio': ['fabric'],
-  '@appkit/pdf': ['isomorphic-dompurify', 'puppeteer-core'],
-  '@appkit/forms-pdf': ['@appkit/design-studio', '@appkit/pdf'],
+  '@appkitjs/forms-core': ['@appkitjs/email-render', '@appkitjs/tokens'],
+  '@appkitjs/design-studio': ['fabric'],
+  '@appkitjs/pdf': ['isomorphic-dompurify', 'puppeteer-core'],
+  '@appkitjs/forms-pdf': ['@appkitjs/design-studio', '@appkitjs/pdf'],
 }
 
 for (const [name, { directory, manifest }] of packages) {
   const dependencies = manifest.dependencies ?? {}
-  const appkitDependencies = Object.keys(dependencies).filter((dependency) => dependency.startsWith('@appkit/'))
+  const appkitDependencies = Object.keys(dependencies).filter((dependency) => dependency.startsWith('@appkitjs/'))
   const allowlist = appkitRuntimeAllowlists[name]
 
   if (manifest.scripts?.build !== 'node ../../scripts/build-package.mjs') {

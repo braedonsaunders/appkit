@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { Loader2, Pin, PinOff, Trash2 } from 'lucide-react'
-import { Badge, Button, Input, Label, cn } from '@appkit/ui'
+import { Badge, Button, Input, Label, cn } from '@appkitjs/ui'
 import { DashboardGrid } from './dashboard-grid'
 import type { DashboardActionResult, DashboardDraft, DashboardLibraryItem, DashboardStudioAdapter } from './types'
 

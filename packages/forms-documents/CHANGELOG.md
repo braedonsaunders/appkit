@@ -1,4 +1,4 @@
-# @appkit/forms-documents
+# @appkitjs/forms-documents
 
 ## 0.1.1
 
@@ -9,6 +9,6 @@
   `create-appkit` CLI, and automate version PRs and npm publication with
   Changesets.
 - Updated dependencies [3ab6056]
-  - @appkit/forms-core@0.1.1
-  - @appkit/i18n@0.1.1
-  - @appkit/tokens@0.1.1
+  - @appkitjs/forms-core@0.1.1
+  - @appkitjs/i18n@0.1.1
+  - @appkitjs/tokens@0.1.1

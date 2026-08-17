@@ -8,7 +8,7 @@ import type {
   ScheduleResource,
   ScheduleTask,
   ScheduleTaskAssignment,
-} from '@appkit/scheduling'
+} from '@appkitjs/scheduling'
 
 /**
  * A small but complete plan: three phases, an outline with summary rollups, a

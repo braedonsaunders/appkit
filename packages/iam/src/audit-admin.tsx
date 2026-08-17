@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
   cn,
-} from '@appkit/ui'
+} from '@appkitjs/ui'
 import { Braces, ChevronRight, Clock3, Database, Fingerprint, History, Search, ScrollText, UserRound } from 'lucide-react'
 import type { AuditEventRecord, IamAdminService } from './types'
 import { ServicePagination, SortButton } from './admin-list'

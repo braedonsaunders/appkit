@@ -1,9 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { memberships, roleAssignments, roles, users } from '@appkit/db'
-import { audit } from '@appkit/events'
-import { assertCan } from '@appkit/tenant'
+import { memberships, roleAssignments, roles, users } from '@appkitjs/db'
+import { audit } from '@appkitjs/events'
+import { assertCan } from '@appkitjs/tenant'
 import { and, eq, sql } from 'drizzle-orm'
 import { getDemoEnvironment } from './demo-context'
 

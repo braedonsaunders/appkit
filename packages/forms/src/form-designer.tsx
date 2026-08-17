@@ -8,8 +8,8 @@ import {
   type FieldType,
   type FormField,
   type FormSchemaV1,
-} from '@appkit/forms-core'
-import { DEFAULT_LOCALE, type AppLocale } from '@appkit/i18n'
+} from '@appkitjs/forms-core'
+import { DEFAULT_LOCALE, type AppLocale } from '@appkitjs/i18n'
 import {
   Badge,
   Button,
@@ -20,7 +20,7 @@ import {
   Drawer,
   Input,
   cn,
-} from '@appkit/ui'
+} from '@appkitjs/ui'
 import { readText, writeText } from './text'
 import { CanvasEditor, defaultBox } from './canvas-editor'
 import { RecordBehaviorPanel } from './record-behavior-panel'

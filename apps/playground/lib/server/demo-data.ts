@@ -1,4 +1,4 @@
-import type { DashboardLayout, InsightCardDraft } from '@appkit/dashboard'
+import type { DashboardLayout, InsightCardDraft } from '@appkitjs/dashboard'
 
 export const DEMO_TENANT = {
   id: '00000000-0000-4000-8000-000000000001',
@@ -10,7 +10,7 @@ export const DEMO_USER = {
   id: '00000000-0000-4000-8000-000000000002',
   membershipId: '00000000-0000-4000-8000-000000000003',
   name: 'Ada Lovelace',
-  email: 'admin@appkit.dev',
+  email: 'admin@appkitjs.dev',
   isSuperAdmin: true,
 } as const
 
@@ -42,18 +42,18 @@ const member = (
 })
 
 export const DEMO_MEMBERS: readonly DemoMember[] = [
-  member(1, 'Ada Lovelace', 'admin@appkit.dev', 'Admin', 'admin', '2025-01-08T14:00:00.000Z'),
-  member(2, 'Casey Grant', 'casey@appkit.dev', 'Member', 'member', '2025-01-14T16:30:00.000Z'),
-  member(3, 'Jordan Lee', 'jordan@appkit.dev', 'Analyst', 'analyst', '2025-03-03T12:15:00.000Z'),
-  member(4, 'Morgan Chen', 'morgan@appkit.dev', 'Member', 'member', '2025-06-21T18:05:00.000Z'),
-  member(5, 'Riley Patel', 'riley@appkit.dev', 'Member', 'member', '2025-06-11T13:20:00.000Z'),
-  member(6, 'Sam Rivera', 'sam@appkit.dev', 'Analyst', 'analyst', '2025-06-07T15:40:00.000Z'),
-  member(7, 'Taylor Brooks', 'taylor@appkit.dev', 'Member', 'member', '2026-01-16T11:10:00.000Z'),
-  member(8, 'Alex Kim', 'alex@appkit.dev', 'Member', 'member', '2026-03-02T17:55:00.000Z'),
-  member(9, 'Jamie Wright', 'jamie@appkit.dev', 'Analyst', 'analyst', '2026-03-19T14:25:00.000Z'),
-  member(10, 'Drew Clarke', 'drew@appkit.dev', 'Member', 'member', '2026-05-09T19:45:00.000Z'),
-  member(11, 'Quinn Foster', 'quinn@appkit.dev', 'Member', 'member', '2026-07-18T12:35:00.000Z'),
-  member(12, 'Avery Singh', 'avery@appkit.dev', 'Analyst', 'analyst', '2026-07-06T16:05:00.000Z'),
+  member(1, 'Ada Lovelace', 'admin@appkitjs.dev', 'Admin', 'admin', '2025-01-08T14:00:00.000Z'),
+  member(2, 'Casey Grant', 'casey@appkitjs.dev', 'Member', 'member', '2025-01-14T16:30:00.000Z'),
+  member(3, 'Jordan Lee', 'jordan@appkitjs.dev', 'Analyst', 'analyst', '2025-03-03T12:15:00.000Z'),
+  member(4, 'Morgan Chen', 'morgan@appkitjs.dev', 'Member', 'member', '2025-06-21T18:05:00.000Z'),
+  member(5, 'Riley Patel', 'riley@appkitjs.dev', 'Member', 'member', '2025-06-11T13:20:00.000Z'),
+  member(6, 'Sam Rivera', 'sam@appkitjs.dev', 'Analyst', 'analyst', '2025-06-07T15:40:00.000Z'),
+  member(7, 'Taylor Brooks', 'taylor@appkitjs.dev', 'Member', 'member', '2026-01-16T11:10:00.000Z'),
+  member(8, 'Alex Kim', 'alex@appkitjs.dev', 'Member', 'member', '2026-03-02T17:55:00.000Z'),
+  member(9, 'Jamie Wright', 'jamie@appkitjs.dev', 'Analyst', 'analyst', '2026-03-19T14:25:00.000Z'),
+  member(10, 'Drew Clarke', 'drew@appkitjs.dev', 'Member', 'member', '2026-05-09T19:45:00.000Z'),
+  member(11, 'Quinn Foster', 'quinn@appkitjs.dev', 'Member', 'member', '2026-07-18T12:35:00.000Z'),
+  member(12, 'Avery Singh', 'avery@appkitjs.dev', 'Analyst', 'analyst', '2026-07-06T16:05:00.000Z'),
 ]
 
 export const DEMO_ROLES = [

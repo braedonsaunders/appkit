@@ -1,4 +1,4 @@
-import { color } from '@appkit/tokens'
+import { color } from '@appkitjs/tokens'
 import { escapeHtml } from './shared'
 import type { FormPdfInput } from './types'
 

@@ -1,9 +1,9 @@
 /**
- * @appkit/scheduling — dependency-free scheduling core.
+ * @appkitjs/scheduling — dependency-free scheduling core.
  *
  * Everything exported here runs in Node, a worker, or the browser: no React,
  * no database, no host coupling. The React authoring surface (Gantt, list,
- * board, editors) lives behind `@appkit/scheduling/react`.
+ * board, editors) lives behind `@appkitjs/scheduling/react`.
  */
 
 export * from './types'

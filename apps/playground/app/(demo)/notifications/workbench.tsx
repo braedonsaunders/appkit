@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { AlertTriangle, ClipboardCheck, FileText, Settings, Users } from 'lucide-react'
-import { NotificationInbox } from '@appkit/notifications/react'
+import { NotificationInbox } from '@appkitjs/notifications/react'
 import {
   buildNotificationInboxFolders,
   filterNotificationInboxItems,
@@ -11,7 +11,7 @@ import {
   type NotificationInboxFilter,
   type NotificationInboxItem,
   type NotificationTodoItem,
-} from '@appkit/notifications'
+} from '@appkitjs/notifications'
 
 export const notificationCatalog: NotificationCatalog = {
   categories: [

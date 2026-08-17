@@ -1,4 +1,4 @@
-import { PageContainer } from '@appkit/ui'
+import { PageContainer } from '@appkitjs/ui'
 import { RolesWorkbench } from './workbench'
 
 export const metadata = { title: 'Roles — appkit' }

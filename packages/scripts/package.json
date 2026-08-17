@@ -1,5 +1,5 @@
 {
-  "name": "@appkit/scripts",
+  "name": "@appkitjs/scripts",
   "version": "1.0.0",
   "description": "Governed event, scheduled, endpoint, bulk, and client scripting with QuickJS isolation, audit history, and optional React and Drizzle adapters.",
   "license": "AGPL-3.0-or-later",
@@ -32,23 +32,23 @@
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.5",
-    "@appkit/sandbox": "workspace:*",
+    "@appkitjs/sandbox": "workspace:*",
     "@uiw/react-codemirror": "^4.25.11",
     "cron-parser": "^4.9.0"
   },
   "peerDependencies": {
-    "@appkit/db": "^0.2.0",
-    "@appkit/ui": "^0.1.10",
+    "@appkitjs/db": "^0.2.0",
+    "@appkitjs/ui": "^0.1.10",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
-    "@appkit/db": {
+    "@appkitjs/db": {
       "optional": true
     },
-    "@appkit/ui": {
+    "@appkitjs/ui": {
       "optional": true
     },
     "drizzle-orm": {
@@ -65,8 +65,8 @@
     }
   },
   "devDependencies": {
-    "@appkit/db": "workspace:*",
-    "@appkit/ui": "workspace:*",
+    "@appkitjs/db": "workspace:*",
+    "@appkitjs/ui": "workspace:*",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

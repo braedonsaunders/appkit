@@ -1,5 +1,5 @@
 {
-  "name": "@appkit/oauth",
+  "name": "@appkitjs/oauth",
   "version": "0.1.0",
   "description": "OAuth 2.1 client for connecting to MCP and other API servers — protected-resource discovery (RFC 9728), authorization-server metadata (RFC 8414), dynamic client registration (RFC 7591), PKCE, code exchange, and refresh, over hardened public-HTTPS egress.",
   "license": "AGPL-3.0-or-later",

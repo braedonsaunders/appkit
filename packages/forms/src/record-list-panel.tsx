@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { ArrowDown, ArrowUp, Check, Plus, X } from 'lucide-react'
-import { Button, Input, Label, Select, cn } from '@appkit/ui'
+import { Button, Input, Label, Select, cn } from '@appkitjs/ui'
 import type { ListColumnConfig, ListConfig } from './record-config'
 
 const BUILTIN_LABEL: Record<string, string> = {

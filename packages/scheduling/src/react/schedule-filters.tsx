@@ -3,7 +3,7 @@
 /** Structured filter bar: phase, status, assignee and a date window. */
 
 import { X } from 'lucide-react'
-import { Button, Input, Select, cn } from '@appkit/ui'
+import { Button, Input, Select, cn } from '@appkitjs/ui'
 import { emptyFilters } from '../types'
 import type { SchedulePhase, ScheduleFilters, ScheduleTaskStatus } from '../types'
 import { useSchedulingLabels } from './context'

@@ -1,6 +1,6 @@
 import 'server-only'
-import type { IamAdminService } from '@appkit/iam'
-import { createDrizzleIamService } from '@appkit/iam/drizzle'
+import type { IamAdminService } from '@appkitjs/iam'
+import { createDrizzleIamService } from '@appkitjs/iam/drizzle'
 import { DEMO_PERMISSION_GROUPS, demoIamService } from '../demo-iam'
 import { getDemoEnvironment } from './demo-context'
 import { isDatabaseConfigured, platform } from './platform'

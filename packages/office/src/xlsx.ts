@@ -1,7 +1,7 @@
 // Declarative .xlsx generation over the optional `exceljs` peer dependency.
 // The module never loads exceljs at import time — `renderWorkbook` resolves it
 // on first use and reports a clear installation error when the application has
-// not opted in, mirroring how @appkit/pdf treats puppeteer-core.
+// not opted in, mirroring how @appkitjs/pdf treats puppeteer-core.
 
 export type WorkbookColumnSpec = {
   header: string

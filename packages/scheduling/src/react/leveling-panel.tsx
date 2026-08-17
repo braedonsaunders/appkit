@@ -12,7 +12,7 @@
 
 import { useMemo, useState } from 'react'
 import { ArrowRight } from 'lucide-react'
-import { Badge, Button, Checkbox, Dialog, cn } from '@appkit/ui'
+import { Badge, Button, Checkbox, Dialog, cn } from '@appkitjs/ui'
 import {
   buildResourceLoadSeries,
   levelResources,

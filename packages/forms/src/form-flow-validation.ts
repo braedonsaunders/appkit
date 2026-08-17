@@ -13,8 +13,8 @@ import {
   type FlowSubjectProfile,
   type FormField,
   type FormSchemaV1,
-} from '@appkit/forms-core'
-import { DEFAULT_LOCALE, type AppLocale } from '@appkit/i18n'
+} from '@appkitjs/forms-core'
+import { DEFAULT_LOCALE, type AppLocale } from '@appkitjs/i18n'
 
 function fieldKind(field: FormField): FlowFieldKind {
   if (

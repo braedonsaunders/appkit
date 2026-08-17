@@ -1,5 +1,5 @@
 {
-  "name": "@appkit/iam",
+  "name": "@appkitjs/iam",
   "version": "1.0.0",
   "description": "Modular tenant IAM with roles, scoped assignments, permission overrides, audit, adapters, and production React administration.",
   "license": "AGPL-3.0-or-later",
@@ -25,22 +25,22 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
-    "@appkit/db": "^0.2.0",
-    "@appkit/tenant": "^0.1.1",
-    "@appkit/ui": "^0.1.10",
+    "@appkitjs/db": "^0.2.0",
+    "@appkitjs/tenant": "^0.1.1",
+    "@appkitjs/ui": "^0.1.10",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
-    "@appkit/db": {
+    "@appkitjs/db": {
       "optional": true
     },
-    "@appkit/ui": {
+    "@appkitjs/ui": {
       "optional": true
     },
-    "@appkit/tenant": {
+    "@appkitjs/tenant": {
       "optional": true
     },
     "drizzle-orm": {
@@ -57,9 +57,9 @@
     }
   },
   "devDependencies": {
-    "@appkit/db": "workspace:*",
-    "@appkit/tenant": "workspace:*",
-    "@appkit/ui": "workspace:*",
+    "@appkitjs/db": "workspace:*",
+    "@appkitjs/tenant": "workspace:*",
+    "@appkitjs/ui": "workspace:*",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

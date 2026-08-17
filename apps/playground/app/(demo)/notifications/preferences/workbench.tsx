@@ -1,8 +1,8 @@
 'use client'
 
 import * as React from 'react'
-import { ProductionNotificationPreferences, PushDeviceNotifications } from '@appkit/notifications/react'
-import type { NotificationPreference } from '@appkit/notifications'
+import { ProductionNotificationPreferences, PushDeviceNotifications } from '@appkitjs/notifications/react'
+import type { NotificationPreference } from '@appkitjs/notifications'
 import { notificationCatalog } from '../workbench'
 
 export function NotificationPreferencesWorkbench() {

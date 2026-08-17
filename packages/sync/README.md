@@ -1,4 +1,4 @@
-# @appkit/sync
+# @appkitjs/sync
 
 Production inbound synchronization for applications that need to ingest CSV,
 database, HTTP, managed-connector, or ERP data without giving up transaction
@@ -30,8 +30,8 @@ safety or an audit trail.
 import {
   createSyncOrchestrator,
   type SyncTarget,
-} from '@appkit/sync'
-import { createDrizzleSyncPersistence } from '@appkit/sync/drizzle'
+} from '@appkitjs/sync'
+import { createDrizzleSyncPersistence } from '@appkitjs/sync/drizzle'
 
 const runSync = createSyncOrchestrator({
   connectors,
@@ -57,17 +57,17 @@ secret store.
 
 ## Public entries
 
-- `@appkit/sync` — source-shaped runtime and the dependency-light API; optional
+- `@appkitjs/sync` — source-shaped runtime and the dependency-light API; optional
   SQL drivers remain isolated at `/db-drivers`
-- `@appkit/sync/catalog` and `/registry` — connector contracts and the optional
+- `@appkitjs/sync/catalog` and `/registry` — connector contracts and the optional
   built-in registry, isolated so unused database vendors never enter the root
-- `@appkit/sync/csv` and `/transform` — browser-safe parsing and mapping helpers
-- `@appkit/sync/connectors/*` — optional connector families
-- `@appkit/sync/runtime` — orchestration and memory adapters
-- `@appkit/sync/person-sync-policy` — extracted ownership conflict decisions
-- `@appkit/sync/snapshot-policy` — fail-closed archival planning
-- `@appkit/sync/egress` and `/db-drivers` — hardened network/database access
-- `@appkit/sync/schema` and `/drizzle` — feature-owned persistence
+- `@appkitjs/sync/csv` and `/transform` — browser-safe parsing and mapping helpers
+- `@appkitjs/sync/connectors/*` — optional connector families
+- `@appkitjs/sync/runtime` — orchestration and memory adapters
+- `@appkitjs/sync/person-sync-policy` — extracted ownership conflict decisions
+- `@appkitjs/sync/snapshot-policy` — fail-closed archival planning
+- `@appkitjs/sync/egress` and `/db-drivers` — hardened network/database access
+- `@appkitjs/sync/schema` and `/drizzle` — feature-owned persistence
 
 No credentials, application record schema, entity mapping, or product-specific
 route is bundled in this package.

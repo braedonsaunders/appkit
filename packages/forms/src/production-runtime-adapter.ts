@@ -1,8 +1,8 @@
-import type { EntityAttrsByField } from '@appkit/forms-core'
+import type { EntityAttrsByField } from '@appkitjs/forms-core'
 import type {
   FinalizeUploadAction,
   RequestUploadAction,
-} from '@appkit/ui'
+} from '@appkitjs/ui'
 
 export type ProductionDataColumn = {
   key: string
@@ -124,8 +124,8 @@ export type ProductionFormRuntimeInput = {
   templateId: string
   templateName: string
   version: number
-  schema: import('@appkit/forms-core').FormSchemaV1 & {
-    workflow: NonNullable<import('@appkit/forms-core').FormSchemaV1['workflow']>
+  schema: import('@appkitjs/forms-core').FormSchemaV1 & {
+    workflow: NonNullable<import('@appkitjs/forms-core').FormSchemaV1['workflow']>
   }
   sites: { id: string; name: string }[]
   people: {

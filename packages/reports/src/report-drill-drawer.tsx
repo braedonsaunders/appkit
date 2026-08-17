@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { Button, Drawer, Skeleton, cn } from '@appkit/ui'
+import { Button, Drawer, Skeleton, cn } from '@appkitjs/ui'
 import {
   ReportTable,
   ReportTableBody,

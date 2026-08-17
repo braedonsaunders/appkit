@@ -1,4 +1,4 @@
-# @appkit/agent-tools
+# @appkitjs/agent-tools
 
 A governed catalogue of command-line tools an agent may install and run.
 
@@ -9,7 +9,7 @@ ceilings. Adding `ripgrep` or `pandoc` to an agent's reach becomes a catalogue
 entry rather than a Dockerfile change, and every install and every execution
 passes a policy gate first.
 
-Execution goes through `@appkit/process-sandbox`. There is no unsandboxed path:
+Execution goes through `@appkitjs/process-sandbox`. There is no unsandboxed path:
 the runner throws on a host without bubblewrap rather than falling back.
 
 ## The base-image manifest
@@ -25,10 +25,10 @@ runtime never installs it, and `install()` only verifies the declared
 executables exist on disk before marking the record installed. Consumers not
 on a desk keep using the gated paths exactly as before.
 
-`@appkit/agent-tools/image-manifest` turns a shelf into build input:
+`@appkitjs/agent-tools/image-manifest` turns a shelf into build input:
 
 ```ts
-import { imageManifest, renderAptInstallFragment } from '@appkit/agent-tools/image-manifest'
+import { imageManifest, renderAptInstallFragment } from '@appkitjs/agent-tools/image-manifest'
 
 const build = imageManifest(tools)
 // { aptPackages: [{ name, version, toolId }], npmPackages: [...], binaryPaths: [...] }
@@ -90,8 +90,8 @@ import {
   createAgentToolRuntime,
   createProcessSandboxRunner,
   defineAgentTool,
-} from '@appkit/agent-tools'
-import { createDrizzleAgentToolStore } from '@appkit/agent-tools/drizzle'
+} from '@appkitjs/agent-tools'
+import { createDrizzleAgentToolStore } from '@appkitjs/agent-tools/drizzle'
 
 const runtime = createAgentToolRuntime({
   store: createDrizzleAgentToolStore(db),
@@ -134,8 +134,8 @@ be reviewed and updated.
 
 The `AgentToolStore` port has two adapters: `createMemoryAgentToolStore()` for
 tests and single-process tooling, and `createDrizzleAgentToolStore(db)` over the
-tables in `@appkit/agent-tools/schema`. Every method is tenant-scoped; pass a
-tenant-bound `db` from `@appkit/db` so row-level security is the outer boundary.
+tables in `@appkitjs/agent-tools/schema`. Every method is tenant-scoped; pass a
+tenant-bound `db` from `@appkitjs/db` so row-level security is the outer boundary.
 
 Arguments reach the executable directly — there is no shell to quote for — so
 the runtime rejects only what cannot survive an `execve` and leaves the sandbox

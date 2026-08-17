@@ -1,5 +1,5 @@
 ---
-'@appkit/reports': minor
+'@appkitjs/reports': minor
 ---
 
 Production report-engine upgrades ported from the source platform.

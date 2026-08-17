@@ -14,7 +14,7 @@ import {
   Upload,
   type LucideIcon,
 } from 'lucide-react'
-import { Button, Input, cn } from '@appkit/ui'
+import { Button, Input, cn } from '@appkitjs/ui'
 
 export type IntegrationDirection = 'in' | 'out'
 export type IntegrationCatalogItem = {

@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { LayoutGrid, Loader2, Plus, RotateCcw, Save, Search, Settings2, X } from 'lucide-react'
 import { Responsive, type Layout, type LayoutItem } from 'react-grid-layout'
-import { Button, Drawer, cn } from '@appkit/ui'
+import { Button, Drawer, cn } from '@appkitjs/ui'
 import type {
   DashboardActionResult,
   DashboardLayout,

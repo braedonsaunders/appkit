@@ -1,4 +1,4 @@
-# @appkit/i18n
+# @appkitjs/i18n
 
 ## 0.1.1
 

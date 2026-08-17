@@ -7,7 +7,7 @@ import {
   uploadReservedFile,
   type FinalizeUploadAction,
   type RequestUploadAction,
-} from '@appkit/ui'
+} from '@appkitjs/ui'
 
 export type ProductionAttachedFile = {
   attachmentId: string

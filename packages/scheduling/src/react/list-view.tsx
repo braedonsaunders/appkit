@@ -12,7 +12,7 @@
 
 import { Fragment, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronRight, GripVertical, Trash2 } from 'lucide-react'
-import { Badge, Button, Checkbox, Progress, cn } from '@appkit/ui'
+import { Badge, Button, Checkbox, Progress, cn } from '@appkitjs/ui'
 import { diffDays, parseDate } from '../dates'
 import { buildTaskHierarchyInfo, getSummaryTaskIds, getVisibleTasks } from '../hierarchy'
 import { getTaskVariance, normalizeScheduleProgress } from '../insights'

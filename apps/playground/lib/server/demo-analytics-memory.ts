@@ -1,4 +1,4 @@
-import { compileQuery, type AnalyticsCatalog } from '@appkit/analytics/server'
+import { compileQuery, type AnalyticsCatalog } from '@appkitjs/analytics/server'
 import type {
   AggregateFunction,
   DateBin,
@@ -7,7 +7,7 @@ import type {
   QueryFilter,
   QueryMeasure,
   QueryResult,
-} from '@appkit/analytics'
+} from '@appkitjs/analytics'
 import { DEMO_AUDIT_EVENTS, DEMO_MEMBERS, DEMO_ROLES, DEMO_TENANT } from './demo-data'
 
 type DataRow = Record<string, unknown>

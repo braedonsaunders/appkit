@@ -1,4 +1,4 @@
-# @appkit/reports
+# @appkitjs/reports
 
 ## 0.2.1
 
@@ -9,7 +9,7 @@
 - Updated dependencies [0c2dde7]
 - Updated dependencies [a1d5d50]
 - Updated dependencies [8a17e9e]
-  - @appkit/ui@0.1.10
+  - @appkitjs/ui@0.1.10
 
 ## 0.2.0
 
@@ -29,5 +29,5 @@
 - Updated dependencies [3ae036d]
 - Updated dependencies [3ab6056]
 - Updated dependencies [1319bfb]
-  - @appkit/analytics@0.2.0
-  - @appkit/ui@0.1.1
+  - @appkitjs/analytics@0.2.0
+  - @appkitjs/ui@0.1.1

@@ -1,4 +1,4 @@
-# @appkit/analytics
+# @appkitjs/analytics
 
 ## 0.2.0
 

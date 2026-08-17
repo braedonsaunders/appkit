@@ -8,7 +8,7 @@
 // classic GAAP) and `modern` (sans + brand accent + logo).
 
 import PDFDocument from 'pdfkit'
-import { hexColor } from '@appkit/tokens'
+import { hexColor } from '@appkitjs/tokens'
 import { DEFAULT_PRIMARY_COLOR, type PdfBranding, type PdfPageSetup } from './types'
 import { resolvePage } from './page'
 

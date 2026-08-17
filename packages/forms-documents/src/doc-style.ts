@@ -1,4 +1,4 @@
-import { color } from '@appkit/tokens'
+import { color } from '@appkitjs/tokens'
 
 // Single source of truth for document body typography, shared by the editor and
 // the PDF so pagination in the editor matches the PDF output. Both render under

@@ -1,4 +1,4 @@
-import { runEndpoint, type HostFunction, type RecordsAdapter, type StorageAdapter } from '@appkit/endpoints'
+import { runEndpoint, type HostFunction, type RecordsAdapter, type StorageAdapter } from '@appkitjs/endpoints'
 import type { AppBundle, AppBundleFile } from './bundle'
 import { contentTypeFor, parseManifest, validateBundle, type AppEndpoint, type AppManifest } from './manifest'
 import { parseAppObjects, type AppObjectSpec } from './objects'

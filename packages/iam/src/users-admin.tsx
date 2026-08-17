@@ -19,7 +19,7 @@ import {
   cn,
   confirmDialog,
   type ConfirmDialogOptions,
-} from '@appkit/ui'
+} from '@appkitjs/ui'
 import { Plus, Search, Shield, Trash2, UserPlus, Users, X } from 'lucide-react'
 import { ScopePicker } from './scope-picker'
 import { ActivityList } from './activity-list'

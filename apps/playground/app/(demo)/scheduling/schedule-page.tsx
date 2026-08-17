@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { PageContainer, PageHeader } from '@appkit/ui'
+import { PageContainer, PageHeader } from '@appkitjs/ui'
 import {
   analyzeScheduleNetwork,
   buildResourceLoadSeries,
@@ -9,8 +9,8 @@ import {
   type ScheduleData,
   type ScheduleTask,
   type ScheduleTaskPatchInput,
-} from '@appkit/scheduling'
-import { ScheduleWorkspace, SchedulingProvider, type ScheduleAdapter } from '@appkit/scheduling/react'
+} from '@appkitjs/scheduling'
+import { ScheduleWorkspace, SchedulingProvider, type ScheduleAdapter } from '@appkitjs/scheduling/react'
 import { buildScheduleSeed } from './seed'
 
 /**

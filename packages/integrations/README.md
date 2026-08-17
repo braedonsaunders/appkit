@@ -1,11 +1,11 @@
-# @appkit/integrations
+# @appkitjs/integrations
 
 Build outbound automations as a complete pipeline: an application event selects
 matching automations, a durable queue isolates each delivery, the dispatcher
 maps data into a destination, and a per-record ledger makes retries safe.
 
 ```bash
-pnpm add @appkit/integrations
+pnpm add @appkitjs/integrations
 ```
 
 The package is modular. The root contains the dependency-free event, registry,
@@ -20,8 +20,8 @@ import {
   createIntegrationPublisher,
   createIntegrationRegistry,
   createMemoryIntegrationStore,
-} from '@appkit/integrations'
-import { httpDestination } from '@appkit/integrations/http'
+} from '@appkitjs/integrations'
+import { httpDestination } from '@appkitjs/integrations/http'
 
 const registry = createIntegrationRegistry({
   triggers: appTriggers,
@@ -58,13 +58,13 @@ state.
   value maps
 
 Each destination is an independent import. HTTP, chat, Sheets, and SQL reuse
-the hardened egress and database-driver entries from `@appkit/sync`; email
+the hardened egress and database-driver entries from `@appkitjs/sync`; email
 accepts your queue or transport instead of choosing one for you.
 
 ## Authoring UI
 
 ```tsx
-import { IntegrationBuilder, IntegrationHub } from '@appkit/integrations/react'
+import { IntegrationBuilder, IntegrationHub } from '@appkitjs/integrations/react'
 ```
 
 `IntegrationHub` provides the production connected-grid and searchable inbound
@@ -76,13 +76,13 @@ server can seal them before persistence.
 
 ## Postgres and RLS
 
-`@appkit/integrations/schema` owns `tenant_integrations` and
+`@appkitjs/integrations/schema` owns `tenant_integrations` and
 `integration_export_log`, including the composite tenant foreign key, soft
 deletion, lifecycle status, delivery details, and retry/reversal status.
-`@appkit/integrations/drizzle` requires an RLS tenant runner:
+`@appkitjs/integrations/drizzle` requires an RLS tenant runner:
 
 ```ts
-import { createDrizzleIntegrationStore } from '@appkit/integrations/drizzle'
+import { createDrizzleIntegrationStore } from '@appkitjs/integrations/drizzle'
 
 const store = createDrizzleIntegrationStore(db, withTenant)
 ```

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { FIELD_TYPES, formSchemaV1Schema, type FieldType } from '@appkit/forms-core'
+import { FIELD_TYPES, formSchemaV1Schema, type FieldType } from '@appkitjs/forms-core'
 import { createFormField } from './form-designer'
 
 test('every palette field starts as a valid canonical schema node', () => {

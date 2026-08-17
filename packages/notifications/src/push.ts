@@ -4,7 +4,7 @@ import {
   validateWebPushSubscriptionForPersistence,
   type WebPushPayload,
   type WebPushVapidDetails,
-} from '@appkit/jobs/web-push'
+} from '@appkitjs/jobs/web-push'
 
 export type PushSubscription = {
   id: string

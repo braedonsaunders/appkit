@@ -1,7 +1,7 @@
-/* @appkit/tokens — the design foundation for the ecosystem.
+/* @appkitjs/tokens — the design foundation for the ecosystem.
  *
  * Tailwind v4, CSS-first. An app's entry stylesheet does:
- *     @import '@appkit/tokens/tokens.css';
+ *     @import '@appkitjs/tokens/tokens.css';
  *
  * Rebrand the whole suite by editing the raw channels below. Dark mode is a
  * single class (`.dark` on <html>). Nothing downstream hardcodes a color. */

@@ -1,4 +1,4 @@
-import type { QueryResult } from '@appkit/analytics'
+import type { QueryResult } from '@appkitjs/analytics'
 import type { ReportGroup, ReportRunResult, ReportSummaryItem } from './types'
 
 export type ReportDocument = {

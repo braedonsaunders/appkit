@@ -1,5 +1,5 @@
 {
-  "name": "@appkit/reports",
+  "name": "@appkitjs/reports",
   "version": "0.2.1",
   "description": "Production report studio, governed query engine, paper and statement viewers, drill-through, exports, schedules, and durable runs.",
   "license": "AGPL-3.0-or-later",
@@ -26,15 +26,15 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@appkit/analytics": "workspace:*"
+    "@appkitjs/analytics": "workspace:*"
   },
   "peerDependencies": {
-    "@appkit/ui": "^0.1.10",
+    "@appkitjs/ui": "^0.1.10",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0"
   },
   "peerDependenciesMeta": {
-    "@appkit/ui": {
+    "@appkitjs/ui": {
       "optional": true
     },
     "lucide-react": {
@@ -45,7 +45,7 @@
     }
   },
   "devDependencies": {
-    "@appkit/ui": "workspace:*",
+    "@appkitjs/ui": "workspace:*",
     "@types/node": "^22",
     "@types/react": "^19",
     "lucide-react": "^1.24.0",

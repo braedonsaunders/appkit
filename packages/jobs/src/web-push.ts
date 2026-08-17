@@ -1,5 +1,5 @@
 import webpush from 'web-push'
-import { resolvePublicHost, secureFetch, validateOutboundRequestConfiguration } from '@appkit/sync/egress'
+import { resolvePublicHost, secureFetch, validateOutboundRequestConfiguration } from '@appkitjs/sync/egress'
 
 const MAX_ENDPOINT_LENGTH = 2_048
 const MAX_PUSH_PAYLOAD_BYTES = 3_072

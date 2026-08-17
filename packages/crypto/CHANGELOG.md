@@ -1,4 +1,4 @@
-# @appkit/crypto
+# @appkitjs/crypto
 
 ## 0.3.0
 

@@ -4,8 +4,8 @@ export { CharacterBadges, CharacterSpeech, CharacterStatus, type SceneActivity }
 export { useSceneAnimationFrame } from './use-animation-frame'
 // Re-exported because a scene is the thing that needs to measure its own box,
 // and every consumer of this package already reaches for it here. Dropping it
-// would be a silent breaking change for anyone on an older @appkit/ui.
-export { useElementSize } from '@appkit/ui'
+// would be a silent breaking change for anyone on an older @appkitjs/ui.
+export { useElementSize } from '@appkitjs/ui'
 export {
   DEFAULT_WALKING_CONFIG,
   IDLE_MOTION,

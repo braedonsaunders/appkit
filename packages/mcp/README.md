@@ -1,4 +1,4 @@
-# @appkit/mcp
+# @appkitjs/mcp
 
 Expose an app's governed tool catalogue over the Model Context Protocol.
 
@@ -33,7 +33,7 @@ import {
   registerStaticResources,
   registerToolCatalog,
   resolveMcpRequestId,
-} from '@appkit/mcp'
+} from '@appkitjs/mcp'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 
 export async function POST(request: Request): Promise<Response> {

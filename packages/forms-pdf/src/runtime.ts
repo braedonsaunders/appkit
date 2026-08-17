@@ -4,7 +4,7 @@
 
 import { existsSync } from 'node:fs'
 import puppeteer, { type Browser, type HTTPRequest, type Page } from 'puppeteer-core'
-import { secureFetch } from '@appkit/sync/egress'
+import { secureFetch } from '@appkitjs/sync/egress'
 
 let browserPromise: Promise<Browser> | null = null
 export type PdfRuntimeConfig = {

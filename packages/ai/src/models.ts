@@ -3,7 +3,7 @@
 // Runs server-side only (the API key never leaves the server).
 
 import { providerSpec, validateAiBaseUrl, type AiConfig } from './client'
-import { secureFetch } from '@appkit/sync/egress'
+import { secureFetch } from '@appkitjs/sync/egress'
 
 export type ModelListItem = { id: string; label?: string }
 

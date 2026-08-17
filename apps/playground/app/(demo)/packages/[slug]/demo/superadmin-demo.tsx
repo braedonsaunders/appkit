@@ -1,11 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import type { PlatformUserRecord } from '@appkit/superadmin'
+import type { PlatformUserRecord } from '@appkitjs/superadmin'
 import {
   PlatformUsersAdmin,
   type PlatformUsersActions,
-} from '@appkit/superadmin/react'
+} from '@appkitjs/superadmin/react'
 
 const now = new Date('2026-07-28T12:00:00.000Z')
 const demoTenants = [

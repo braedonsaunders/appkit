@@ -7,31 +7,31 @@ import { promisify } from 'node:util'
 const exec = promisify(execFile)
 
 export const FEATURE_PACKAGES = {
-  ai: ['@appkit/ai'],
-  analytics: ['@appkit/analytics', '@appkit/dashboard', '@appkit/reports'],
-  communications: ['@appkit/email-render', '@appkit/emails', '@appkit/notifications', '@appkit/sms'],
-  customization: ['@appkit/customization'],
-  documents: ['@appkit/design-studio', '@appkit/forms-documents', '@appkit/forms-pdf', '@appkit/pdf'],
-  extensions: ['@appkit/apps', '@appkit/endpoints', '@appkit/sandbox', '@appkit/scripts'],
-  forms: ['@appkit/editor', '@appkit/forms', '@appkit/forms-core', '@appkit/i18n'],
-  integrations: ['@appkit/integrations', '@appkit/sync'],
-  identity: ['@appkit/auth', '@appkit/db', '@appkit/iam', '@appkit/tenant'],
-  platform: ['@appkit/api', '@appkit/auth', '@appkit/crypto', '@appkit/events'],
-  storage: ['@appkit/storage'],
-  tenancy: ['@appkit/db', '@appkit/tenant'],
-  workflows: ['@appkit/jobs', '@appkit/workflows'],
+  ai: ['@appkitjs/ai'],
+  analytics: ['@appkitjs/analytics', '@appkitjs/dashboard', '@appkitjs/reports'],
+  communications: ['@appkitjs/email-render', '@appkitjs/emails', '@appkitjs/notifications', '@appkitjs/sms'],
+  customization: ['@appkitjs/customization'],
+  documents: ['@appkitjs/design-studio', '@appkitjs/forms-documents', '@appkitjs/forms-pdf', '@appkitjs/pdf'],
+  extensions: ['@appkitjs/apps', '@appkitjs/endpoints', '@appkitjs/sandbox', '@appkitjs/scripts'],
+  forms: ['@appkitjs/editor', '@appkitjs/forms', '@appkitjs/forms-core', '@appkitjs/i18n'],
+  integrations: ['@appkitjs/integrations', '@appkitjs/sync'],
+  identity: ['@appkitjs/auth', '@appkitjs/db', '@appkitjs/iam', '@appkitjs/tenant'],
+  platform: ['@appkitjs/api', '@appkitjs/auth', '@appkitjs/crypto', '@appkitjs/events'],
+  storage: ['@appkitjs/storage'],
+  tenancy: ['@appkitjs/db', '@appkitjs/tenant'],
+  workflows: ['@appkitjs/jobs', '@appkitjs/workflows'],
 } as const
 
 export type FeatureName = keyof typeof FEATURE_PACKAGES
 
 const FEATURE_STYLES: Partial<Record<FeatureName, readonly string[]>> = {
-  analytics: ['@appkit/dashboard/styles.css', '@appkit/reports/styles.css'],
-  customization: ['@appkit/customization/styles.css'],
-  documents: ['@appkit/design-studio/styles.css'],
-  extensions: ['@appkit/apps/styles.css', '@appkit/scripts/styles.css'],
-  forms: ['@appkit/forms/styles.css'],
-  storage: ['@appkit/storage/styles.css'],
-  workflows: ['@appkit/workflows/styles.css'],
+  analytics: ['@appkitjs/dashboard/styles.css', '@appkitjs/reports/styles.css'],
+  customization: ['@appkitjs/customization/styles.css'],
+  documents: ['@appkitjs/design-studio/styles.css'],
+  extensions: ['@appkitjs/apps/styles.css', '@appkitjs/scripts/styles.css'],
+  forms: ['@appkitjs/forms/styles.css'],
+  storage: ['@appkitjs/storage/styles.css'],
+  workflows: ['@appkitjs/workflows/styles.css'],
 }
 
 export type PackageManager = 'pnpm' | 'npm' | 'yarn' | 'bun'
@@ -58,12 +58,12 @@ export async function scaffoldProject(options: ScaffoldOptions): Promise<{ direc
   await mkdir(directory, { recursive: true })
 
   const selectedPackages = [
-    '@appkit/tokens',
-    '@appkit/ui',
+    '@appkitjs/tokens',
+    '@appkitjs/ui',
     ...features.flatMap((feature) => FEATURE_PACKAGES[feature]),
   ].filter((value, index, values) => values.indexOf(value) === index)
   const selectedStyles = [
-    '@appkit/ui/styles.css',
+    '@appkitjs/ui/styles.css',
     ...features.flatMap((feature) => FEATURE_STYLES[feature] ?? []),
   ].filter((value, index, values) => values.indexOf(value) === index)
 
@@ -114,9 +114,9 @@ export async function scaffoldProject(options: ScaffoldOptions): Promise<{ direc
     )}\n`,
     'postcss.config.mjs': `export default { plugins: { '@tailwindcss/postcss': {} } }\n`,
     'src/app/globals.css': `${selectedStyles.map((stylesheet) => `@import '${stylesheet}';`).join('\n')}\n@source '../**/*.{ts,tsx}';\n\nhtml, body { min-height: 100%; }\n`,
-    'src/app/layout.tsx': `import type { Metadata } from 'next'\nimport Script from 'next/script'\nimport type { ReactNode } from 'react'\nimport { ConfirmRoot, getThemeScript, PromptRoot, Toaster } from '@appkit/ui'\nimport { AppFrame } from '@/components/app-frame'\nimport './globals.css'\n\nexport const metadata: Metadata = {\n  title: '${displayName(projectName)}',\n  description: 'Built with AppKit',\n}\n\nexport default function RootLayout({ children }: { children: ReactNode }) {\n  return (\n    <html lang="en" suppressHydrationWarning>\n      <head>\n        <Script\n          id="appkit-theme"\n          strategy="beforeInteractive"\n          dangerouslySetInnerHTML={{ __html: getThemeScript() }}\n        />\n      </head>\n      <body className="min-h-screen bg-bg text-fg antialiased">\n        <AppFrame>{children}</AppFrame>\n        <PromptRoot />\n        <ConfirmRoot />\n        <Toaster richColors closeButton />\n      </body>\n    </html>\n  )\n}\n`,
-    'src/app/page.tsx': `import { Card, CardContent, CardDescription, CardHeader, CardTitle, PageHeader } from '@appkit/ui'\n\nexport default function HomePage() {\n  return (\n    <div className="min-h-0 flex-1 overflow-y-auto">\n      <div className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">\n        <PageHeader title="${displayName(projectName)}" description="Your application foundation is ready." />\n        <Card>\n          <CardHeader>\n            <CardTitle>Build the product</CardTitle>\n            <CardDescription>AppKit supplies the shell, tokens, primitives, and optional platform packages.</CardDescription>\n          </CardHeader>\n          <CardContent className="text-sm text-fg-muted">Replace this card with your first application workflow.</CardContent>\n        </Card>\n      </div>\n    </div>\n  )\n}\n`,
-    'src/components/app-frame.tsx': `'use client'\n\nimport Link from 'next/link'\nimport { usePathname } from 'next/navigation'\nimport type { ReactNode } from 'react'\nimport { AccountMenu, AppShell, ThemeProvider, UiLinkProvider, type SidebarNavGroup } from '@appkit/ui'\nimport { PageTransition } from '@appkit/ui/page-transition'\n\nconst navigation: SidebarNavGroup[] = [\n  { id: 'app', label: 'Application', items: [{ href: '/', label: 'Home', iconKey: 'home', exact: true, mobile: true }] },\n]\n\nexport function AppFrame({ children }: { children: ReactNode }) {\n  const pathname = usePathname()\n  return (\n    <UiLinkProvider link={Link}>\n      <ThemeProvider>\n        <AppShell\n          groups={navigation}\n          pathname={pathname}\n          brand={<strong>${displayName(projectName)}</strong>}\n          header={\n            <AccountMenu\n              name="Workspace Owner"\n              email="owner@example.com"\n              contextLabel="${displayName(projectName)} · workspace"\n              status={{ label: 'Authentication not configured', variant: 'secondary' }}\n              showTheme\n            />\n          }\n        >\n          <PageTransition navigationKey={pathname}>{children}</PageTransition>\n        </AppShell>\n      </ThemeProvider>\n    </UiLinkProvider>\n  )\n}\n`,
+    'src/app/layout.tsx': `import type { Metadata } from 'next'\nimport Script from 'next/script'\nimport type { ReactNode } from 'react'\nimport { ConfirmRoot, getThemeScript, PromptRoot, Toaster } from '@appkitjs/ui'\nimport { AppFrame } from '@/components/app-frame'\nimport './globals.css'\n\nexport const metadata: Metadata = {\n  title: '${displayName(projectName)}',\n  description: 'Built with AppKit',\n}\n\nexport default function RootLayout({ children }: { children: ReactNode }) {\n  return (\n    <html lang="en" suppressHydrationWarning>\n      <head>\n        <Script\n          id="appkit-theme"\n          strategy="beforeInteractive"\n          dangerouslySetInnerHTML={{ __html: getThemeScript() }}\n        />\n      </head>\n      <body className="min-h-screen bg-bg text-fg antialiased">\n        <AppFrame>{children}</AppFrame>\n        <PromptRoot />\n        <ConfirmRoot />\n        <Toaster richColors closeButton />\n      </body>\n    </html>\n  )\n}\n`,
+    'src/app/page.tsx': `import { Card, CardContent, CardDescription, CardHeader, CardTitle, PageHeader } from '@appkitjs/ui'\n\nexport default function HomePage() {\n  return (\n    <div className="min-h-0 flex-1 overflow-y-auto">\n      <div className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">\n        <PageHeader title="${displayName(projectName)}" description="Your application foundation is ready." />\n        <Card>\n          <CardHeader>\n            <CardTitle>Build the product</CardTitle>\n            <CardDescription>AppKit supplies the shell, tokens, primitives, and optional platform packages.</CardDescription>\n          </CardHeader>\n          <CardContent className="text-sm text-fg-muted">Replace this card with your first application workflow.</CardContent>\n        </Card>\n      </div>\n    </div>\n  )\n}\n`,
+    'src/components/app-frame.tsx': `'use client'\n\nimport Link from 'next/link'\nimport { usePathname } from 'next/navigation'\nimport type { ReactNode } from 'react'\nimport { AccountMenu, AppShell, ThemeProvider, UiLinkProvider, type SidebarNavGroup } from '@appkitjs/ui'\nimport { PageTransition } from '@appkitjs/ui/page-transition'\n\nconst navigation: SidebarNavGroup[] = [\n  { id: 'app', label: 'Application', items: [{ href: '/', label: 'Home', iconKey: 'home', exact: true, mobile: true }] },\n]\n\nexport function AppFrame({ children }: { children: ReactNode }) {\n  const pathname = usePathname()\n  return (\n    <UiLinkProvider link={Link}>\n      <ThemeProvider>\n        <AppShell\n          groups={navigation}\n          pathname={pathname}\n          brand={<strong>${displayName(projectName)}</strong>}\n          header={\n            <AccountMenu\n              name="Workspace Owner"\n              email="owner@example.com"\n              contextLabel="${displayName(projectName)} · workspace"\n              status={{ label: 'Authentication not configured', variant: 'secondary' }}\n              showTheme\n            />\n          }\n        >\n          <PageTransition navigationKey={pathname}>{children}</PageTransition>\n        </AppShell>\n      </ThemeProvider>\n    </UiLinkProvider>\n  )\n}\n`,
     'tsconfig.json': `${JSON.stringify(
       {
         compilerOptions: {

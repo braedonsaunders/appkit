@@ -1,5 +1,5 @@
 {
-  "name": "@appkit/forms",
+  "name": "@appkitjs/forms",
   "version": "0.2.1",
   "description": "Production form designer, workflow authoring bridge, and complete fill runtime for AppKit applications.",
   "license": "AGPL-3.0-or-later",
@@ -24,11 +24,11 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@appkit/editor": "workspace:*",
-    "@appkit/forms-core": "workspace:*",
-    "@appkit/i18n": "workspace:*",
-    "@appkit/tokens": "workspace:*",
-    "@appkit/ui": "workspace:*",
+    "@appkitjs/editor": "workspace:*",
+    "@appkitjs/forms-core": "workspace:*",
+    "@appkitjs/i18n": "workspace:*",
+    "@appkitjs/tokens": "workspace:*",
+    "@appkitjs/ui": "workspace:*",
     "@excalidraw/excalidraw": "^0.18.0",
     "framer-motion": "^12.42.2",
     "lucide-react": "^1.24.0",

@@ -1,5 +1,5 @@
 ---
-'@appkit/mailbox': minor
+'@appkitjs/mailbox': minor
 ---
 
 `MailboxInbox` only draws the mailbox switcher when there is somewhere to switch

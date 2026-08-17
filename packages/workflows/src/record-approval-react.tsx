@@ -12,7 +12,7 @@ import {
   Users,
   XCircle,
 } from 'lucide-react'
-import { Badge, Button, promptDialog, toast, type PromptDialogOptions } from '@appkit/ui'
+import { Badge, Button, promptDialog, toast, type PromptDialogOptions } from '@appkitjs/ui'
 import {
   createHttpRecordApprovalAdapter,
   type ApprovalEventType,

@@ -86,7 +86,7 @@ import {
   Select,
   Textarea,
   uploadReservedFile,
-} from '@appkit/ui'
+} from '@appkitjs/ui'
 import {
   evaluateFormulaTree,
   evaluateLogicRule,
@@ -102,13 +102,13 @@ import {
   type DefaultValueExpression,
   type TableColumn,
   type TableConfig,
-} from '@appkit/forms-core'
+} from '@appkitjs/forms-core'
 import {
   normalizeFormResponseDraftData,
   normalizeRichTextLinkUrl,
-} from '@appkit/forms-core/response-normalize'
-import { sanitizeDocumentHtml } from '@appkit/forms-core/sanitize'
-import { localizeText, type AppLocale } from '@appkit/i18n'
+} from '@appkitjs/forms-core/response-normalize'
+import { sanitizeDocumentHtml } from '@appkitjs/forms-core/sanitize'
+import { localizeText, type AppLocale } from '@appkitjs/i18n'
 import type {
   ProductionPhotoAnalysis as SafetyVisionAnalysis,
   ProductionDataAggregateResult as DataAggregateResult,

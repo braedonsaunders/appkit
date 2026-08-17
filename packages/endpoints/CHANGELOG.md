@@ -1,4 +1,4 @@
-# @appkit/endpoints
+# @appkitjs/endpoints
 
 ## 0.1.1
 

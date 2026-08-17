@@ -1,4 +1,4 @@
-import { PageContainer, PageHeader } from '@appkit/ui'
+import { PageContainer, PageHeader } from '@appkitjs/ui'
 import { NotificationRulesWorkbench } from './workbench'
 
 export const metadata = { title: 'Notification rules — appkit' }

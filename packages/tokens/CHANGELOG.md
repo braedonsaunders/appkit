@@ -1,4 +1,4 @@
-# @appkit/tokens
+# @appkitjs/tokens
 
 ## 0.1.1
 

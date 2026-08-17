@@ -1,5 +1,5 @@
 ---
-'@appkit/office': minor
+'@appkitjs/office': minor
 ---
 
 `officeDocumentHtml` takes a table density.

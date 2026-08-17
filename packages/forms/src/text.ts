@@ -1,5 +1,5 @@
-import { DEFAULT_LOCALE, localizeText, type AppLocale } from '@appkit/i18n'
-import type { I18nString } from '@appkit/forms-core'
+import { DEFAULT_LOCALE, localizeText, type AppLocale } from '@appkitjs/i18n'
+import type { I18nString } from '@appkitjs/forms-core'
 
 export function readText(
   value: I18nString | undefined,

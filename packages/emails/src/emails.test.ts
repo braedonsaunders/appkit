@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { createSealer } from '@appkit/crypto'
+import { createSealer } from '@appkitjs/crypto'
 import {
   EMAIL_PROVIDER_SPECS,
   buildTransport,

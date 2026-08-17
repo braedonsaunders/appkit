@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { cn } from '@appkit/ui'
+import { cn } from '@appkitjs/ui'
 import { ReportPaper } from './report-paper'
 import {
   ReportTable,

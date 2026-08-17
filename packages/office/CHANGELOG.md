@@ -1,10 +1,10 @@
-# @appkit/office
+# @appkitjs/office
 
 ## 0.2.0
 
 ### Minor Changes
 
-- 6806920: Add `@appkit/office`: office-document authoring for AI agents and
+- 6806920: Add `@appkitjs/office`: office-document authoring for AI agents and
   applications. HTML becomes .docx or PDF through headless LibreOffice
   (`officeDocumentHtml` print shell, `sanitizeOfficeHtml` allowlist sanitizer,
   `htmlToDocx`, `htmlToPdf`, `docxToPdf`, `docxToText`), exact-match plain-text

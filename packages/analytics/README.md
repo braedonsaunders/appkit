@@ -1,4 +1,4 @@
-# @appkit/analytics
+# @appkitjs/analytics
 
 App-agnostic dashboard analytics built from production query and visualization patterns:
 
@@ -11,6 +11,6 @@ App-agnostic dashboard analytics built from production query and visualization p
 - schema-discovered semantic entities that stay independent of a domain catalogue.
 
 Import browser-safe types, parsing, catalogue helpers, and visualization metadata
-from `@appkit/analytics`. Import `compileQuery` from `@appkit/analytics/server`.
+from `@appkitjs/analytics`. Import `compileQuery` from `@appkitjs/analytics/server`.
 The package never accepts raw user SQL and never owns an application's domain
 catalogue.

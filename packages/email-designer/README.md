@@ -1,4 +1,4 @@
-# @appkit/email-designer
+# @appkitjs/email-designer
 
 A drag-and-drop designer for email — whole messages and signatures — plus the
 compile pipeline that turns what an author built into markup Outlook will not
@@ -13,10 +13,10 @@ and no second renderer to drift out of sync.
 
 | Import | Environment | Contents |
 | --- | --- | --- |
-| `@appkit/email-designer` | anywhere | Types, themes, block catalogs, `compileEmailDesign`, `renderEmailDesign`, `sampleMergeValues`, copy. No React, no Node built-ins. |
-| `@appkit/email-designer/react` | client | `EmailDesigner` (the authoring surface), `EmailBlockPalette`, `EmailTableToolbar`. |
-| `@appkit/email-designer/inline` | server | `inlineEmailCss` — the juice CSS inliner. Node only. |
-| `@appkit/email-designer/styles.css` | client | Designer chrome. Also `@import`s GrapesJS's stylesheet. |
+| `@appkitjs/email-designer` | anywhere | Types, themes, block catalogs, `compileEmailDesign`, `renderEmailDesign`, `sampleMergeValues`, copy. No React, no Node built-ins. |
+| `@appkitjs/email-designer/react` | client | `EmailDesigner` (the authoring surface), `EmailBlockPalette`, `EmailTableToolbar`. |
+| `@appkitjs/email-designer/inline` | server | `inlineEmailCss` — the juice CSS inliner. Node only. |
+| `@appkitjs/email-designer/styles.css` | client | Designer chrome. Also `@import`s GrapesJS's stylesheet. |
 
 GrapesJS, `@grapesjs/react`, `juice`, and React are **optional peers**. An app
 that only compiles or renders saved designs installs none of them.
@@ -27,7 +27,7 @@ that only compiles or renders saved designs installs none of them.
 
 ```ts
 const { sourceHtml, compiledHtml, errors } = compileEmailDesign(raw, {
-  inlineCss,              // from @appkit/email-designer/inline
+  inlineCss,              // from @appkitjs/email-designer/inline
   fragment: true,         // signatures splice into an existing body
 })
 ```
@@ -50,7 +50,7 @@ The order is fixed: **inline, sanitize, expand**. The inliner cannot run last,
 because juice parses with cheerio and would mangle handlebars block syntax.
 
 Authored markup is sanitized **once, here** — never per send. Merge values are
-escaped at render time by `@appkit/email-render`, so a compiled design is safe
+escaped at render time by `@appkitjs/email-render`, so a compiled design is safe
 to store and re-render without re-sanitizing.
 
 ## Rendering
@@ -110,7 +110,7 @@ GrapesJS touches `window`, so mount behind a dynamic import with SSR disabled:
 
 ```tsx
 const EmailDesigner = dynamic(
-  () => import('@appkit/email-designer/react').then((m) => m.EmailDesigner),
+  () => import('@appkitjs/email-designer/react').then((m) => m.EmailDesigner),
   { ssr: false },
 )
 

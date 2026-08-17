@@ -18,7 +18,7 @@ import {
   SubtabNav,
   type SubtabItem,
   cn,
-} from '@appkit/ui'
+} from '@appkitjs/ui'
 import type { ListColumnKind, ListViewConfig, RecordTypeMeta } from './types'
 import {
   resolveListColumns,

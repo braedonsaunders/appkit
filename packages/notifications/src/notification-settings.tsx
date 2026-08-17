@@ -7,7 +7,7 @@
 
 import * as React from 'react'
 import { Plus, X } from 'lucide-react'
-import { Button, Label, SearchSelect, Select, UiLink, cn, toast } from '@appkit/ui'
+import { Button, Label, SearchSelect, Select, UiLink, cn, toast } from '@appkitjs/ui'
 import type {
   NotificationCategorySetting,
   NotificationConfigurationAdapter,

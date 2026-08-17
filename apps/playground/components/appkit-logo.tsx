@@ -1,4 +1,4 @@
-import { cn } from '@appkit/ui'
+import { cn } from '@appkitjs/ui'
 
 /**
  * The appkit mark: a stroke-drawn rounded container with a spark rising out of

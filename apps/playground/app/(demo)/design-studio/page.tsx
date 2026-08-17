@@ -1,4 +1,4 @@
-import { PageHeader } from '@appkit/ui'
+import { PageHeader } from '@appkitjs/ui'
 import { DesignWorkbench } from './workbench'
 
 export const metadata = { title: 'Design studio — appkit' }

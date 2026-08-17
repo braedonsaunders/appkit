@@ -1,8 +1,8 @@
-/* @appkit/ui styles — pull in the token foundation so an app can get the full
+/* @appkitjs/ui styles — pull in the token foundation so an app can get the full
  * system with a single import:
- *     @import '@appkit/ui/styles.css';
- * (which transitively imports Tailwind v4 + @appkit/tokens). */
-@import '@appkit/tokens/tokens.css';
+ *     @import '@appkitjs/ui/styles.css';
+ * (which transitively imports Tailwind v4 + @appkitjs/tokens). */
+@import '@appkitjs/tokens/tokens.css';
 
 /* Browser-native route handoff. Apps opt in by placing their changing page
    boundary in React's ViewTransition with class `appkit-page-transition`.

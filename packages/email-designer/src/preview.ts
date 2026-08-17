@@ -2,7 +2,7 @@
 // preview in the designer and by whatever sends the final message, so what an
 // author previews is produced by the same code path that ships.
 
-import { htmlToPlainText, renderTemplate } from '@appkit/email-render'
+import { htmlToPlainText, renderTemplate } from '@appkitjs/email-render'
 import type { EmailCollection, EmailMergeField } from './types'
 import { safeTemplateKey } from './blocks'
 

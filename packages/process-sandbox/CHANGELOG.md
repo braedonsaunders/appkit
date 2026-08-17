@@ -1,4 +1,4 @@
-# @appkit/process-sandbox
+# @appkitjs/process-sandbox
 
 ## 0.3.0
 

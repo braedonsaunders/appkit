@@ -1,5 +1,5 @@
 ---
-'@appkit/ui': patch
+'@appkitjs/ui': patch
 ---
 
 Keep dialog and drawer focus stable while controlled form fields rerender.

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Grid3X3, Layers3, Printer, Shapes, SlidersHorizontal } from 'lucide-react'
-import { Select, cn } from '@appkit/ui'
+import { Select, cn } from '@appkitjs/ui'
 import type { DesignArtboard, DesignData, DesignDocument, DesignElement, DesignFieldCatalog } from './schema'
 import { DEFAULT_DESIGN_STUDIO_THEME, type DesignStudioTheme } from './defaults'
 import {

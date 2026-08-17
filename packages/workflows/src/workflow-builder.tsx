@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Background, Controls, Handle, MiniMap, Position, ReactFlow, addEdge, useEdgesState, useNodesState, type Connection, type Edge, type Node, type NodeProps } from '@xyflow/react'
 import { AlertTriangle, Plus, Trash2, Workflow } from 'lucide-react'
-import { Badge, Button, Card, CardContent, cn } from '@appkit/ui'
+import { Badge, Button, Card, CardContent, cn } from '@appkitjs/ui'
 import { lintWorkflowGraph, removeWorkflowNode, updateWorkflowNode, workflowNodeId, type WorkflowGraph, type WorkflowNodeData, type WorkflowNodeDefinition } from './workflow'
 
 type CanvasData<TData extends WorkflowNodeData> = { workflow: TData; definition: WorkflowNodeDefinition<TData>; selected: boolean }

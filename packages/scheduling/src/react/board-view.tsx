@@ -9,7 +9,7 @@
  */
 
 import { useMemo, useState } from 'react'
-import { Badge, Button, Progress, cn } from '@appkit/ui'
+import { Badge, Button, Progress, cn } from '@appkitjs/ui'
 import { parseDate } from '../dates'
 import { getTaskVariance, normalizeScheduleProgress } from '../insights'
 import { resolvePhaseColor } from '../palette'

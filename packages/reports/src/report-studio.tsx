@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { CalendarClock, CheckCircle2, ChevronDown, ChevronUp, Columns3, FileText, Filter, GripVertical, LayoutTemplate, Loader2, Play, Plus, Save, Search, Settings2, Sigma, Table2, Trash2, X } from 'lucide-react'
-import { Button, Checkbox, Input, Label, SearchSelect, Textarea, cn } from '@appkit/ui'
+import { Button, Checkbox, Input, Label, SearchSelect, Textarea, cn } from '@appkitjs/ui'
 import type { ReportCustomQuery, ReportAggFn } from './custom-query'
 import { REPORT_AGG_FNS, REPORT_TEMPORAL_BINS } from './custom-query'
 import type { CustomReportDefinition } from './definitions'

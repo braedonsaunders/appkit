@@ -1,5 +1,5 @@
 {
-  "name": "@appkit/pdf",
+  "name": "@appkitjs/pdf",
   "version": "0.1.1",
   "description": "Pure-JS documents, statements, templates, and hardened HTML-to-PDF rendering.",
   "license": "AGPL-3.0-or-later",
@@ -22,7 +22,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@appkit/tokens": "workspace:*",
+    "@appkitjs/tokens": "workspace:*",
     "pdfkit": "^0.17.1"
   },
   "peerDependencies": {

@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { cn } from '@appkit/ui'
+import { cn } from '@appkitjs/ui'
 
 export type ReportScale = 'actual' | 'thousands' | 'millions'
 

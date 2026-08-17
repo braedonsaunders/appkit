@@ -1,4 +1,4 @@
-# @appkit/workflows
+# @appkitjs/workflows
 
 ## 1.0.0
 
@@ -13,7 +13,7 @@
 - Updated dependencies [3ab6056]
 - Updated dependencies [1319bfb]
 - Updated dependencies [1319bfb]
-  - @appkit/db@0.2.0
-  - @appkit/forms@0.2.0
-  - @appkit/forms-core@0.1.1
-  - @appkit/ui@0.1.1
+  - @appkitjs/db@0.2.0
+  - @appkitjs/forms@0.2.0
+  - @appkitjs/forms-core@0.1.1
+  - @appkitjs/ui@0.1.1

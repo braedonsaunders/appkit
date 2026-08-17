@@ -7,7 +7,7 @@
 
 import * as React from 'react'
 import { BellOff, BellRing, Check, Loader2, RotateCw, Send, Share, Smartphone } from 'lucide-react'
-import { Button, cn, toast } from '@appkit/ui'
+import { Button, cn, toast } from '@appkitjs/ui'
 
 export type PushDeviceAdapter = {
   save(input: { endpoint: string; p256dh: string; auth: string; userAgent?: string }): Promise<void>

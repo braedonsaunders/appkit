@@ -1,5 +1,5 @@
 {
-  "name": "@appkit/api",
+  "name": "@appkitjs/api",
   "version": "0.1.1",
   "description": "Public REST API toolkit — API-key auth, idempotent writes, typed errors, and a request wrapper. Framework-neutral.",
   "license": "AGPL-3.0-or-later",
@@ -20,9 +20,9 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@appkit/db": "workspace:*",
-    "@appkit/i18n": "workspace:*",
-    "@appkit/tenant": "workspace:*",
+    "@appkitjs/db": "workspace:*",
+    "@appkitjs/i18n": "workspace:*",
+    "@appkitjs/tenant": "workspace:*",
     "drizzle-orm": "^0.45.2"
   },
   "devDependencies": {

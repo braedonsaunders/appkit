@@ -1,4 +1,4 @@
-import { PageContainer } from '@appkit/ui'
+import { PageContainer } from '@appkitjs/ui'
 import { AuditWorkbench } from './workbench'
 
 export const metadata = { title: 'Audit log — appkit' }

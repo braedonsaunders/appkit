@@ -1,4 +1,4 @@
-import type { AutomationGraph } from '@appkit/forms-core/safety-automation'
+import type { AutomationGraph } from '@appkitjs/forms-core/safety-automation'
 
 export type RecordConfig = {
   editingMode?: 'guided_fill' | 'inline_record' | 'both'

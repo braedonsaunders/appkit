@@ -2,9 +2,9 @@
 
 import * as React from 'react'
 import { Boxes, Store } from 'lucide-react'
-import { AppLibrary, AppsStudio } from '@appkit/apps/react'
-import type { AppFile, AppListing, AppMetaUpdate, AppRun, AppStatus, InstalledApp } from '@appkit/apps'
-import { Button } from '@appkit/ui'
+import { AppLibrary, AppsStudio } from '@appkitjs/apps/react'
+import type { AppFile, AppListing, AppMetaUpdate, AppRun, AppStatus, InstalledApp } from '@appkitjs/apps'
+import { Button } from '@appkitjs/ui'
 
 interface Snapshot {
   apps: InstalledApp[]

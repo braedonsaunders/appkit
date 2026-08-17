@@ -6,7 +6,7 @@
 
 import * as React from 'react'
 import { Loader2, Save } from 'lucide-react'
-import { Button, Checkbox, cn, toast } from '@appkit/ui'
+import { Button, Checkbox, cn, toast } from '@appkitjs/ui'
 import { NOTIFICATION_CHANNELS, type NotificationCatalog, type NotificationChannel, type NotificationPreference } from './index'
 
 export type NotificationPreferencesAdapter = {

@@ -7,9 +7,9 @@ import { GeneratedText, useGeneratedTranslations, GeneratedValue } from './gener
 // drawer. Uses the element's real label / options / config, not placeholders.
 
 import { AlertTriangle, BarChart3, MapPin, ScanLine, Sparkles, Star } from 'lucide-react'
-import { Input, Select, Textarea } from '@appkit/ui'
-import type { FormField } from '@appkit/forms-core'
-import { localizeText, type AppLocale } from '@appkit/i18n'
+import { Input, Select, Textarea } from '@appkitjs/ui'
+import type { FormField } from '@appkitjs/forms-core'
+import { localizeText, type AppLocale } from '@appkitjs/i18n'
 
 function cfg(field: FormField): Record<string, unknown> {
   return (field.config as Record<string, unknown> | undefined) ?? {}

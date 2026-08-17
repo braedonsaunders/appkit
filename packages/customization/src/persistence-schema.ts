@@ -1,5 +1,5 @@
 import { boolean, index, jsonb, pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { auditColumns, id, tenantRef } from '@appkit/db'
+import { auditColumns, id, tenantRef } from '@appkitjs/db'
 import type { FormLayoutConfig, ListViewConfig } from './types'
 
 /** Tenant-owned form layouts copied from the production customization model. */

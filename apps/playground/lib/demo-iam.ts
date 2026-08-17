@@ -1,5 +1,5 @@
-import type { AuditEventRecord, MemberRecord, PermissionGroup, RoleRecord } from '@appkit/iam'
-import { createMemoryIamService } from '@appkit/iam/memory'
+import type { AuditEventRecord, MemberRecord, PermissionGroup, RoleRecord } from '@appkitjs/iam'
+import { createMemoryIamService } from '@appkitjs/iam/memory'
 
 export const DEMO_PERMISSION_GROUPS: PermissionGroup[] = [
   {
@@ -65,18 +65,18 @@ const roles: RoleRecord[] = [
 ]
 
 const PEOPLE = [
-  ['Ada Lovelace', 'admin@appkit.dev', 'role-admin'],
-  ['Casey Grant', 'casey@appkit.dev', 'role-operator'],
-  ['Jordan Lee', 'jordan@appkit.dev', 'role-analyst'],
-  ['Morgan Chen', 'morgan@appkit.dev', 'role-operator'],
-  ['Riley Patel', 'riley@appkit.dev', 'role-operator'],
-  ['Sam Rivera', 'sam@appkit.dev', 'role-analyst'],
-  ['Taylor Brooks', 'taylor@appkit.dev', 'role-operator'],
-  ['Alex Kim', 'alex@appkit.dev', 'role-operator'],
-  ['Jamie Wright', 'jamie@appkit.dev', 'role-analyst'],
-  ['Drew Clarke', 'drew@appkit.dev', 'role-operator'],
-  ['Quinn Foster', 'quinn@appkit.dev', 'role-admin'],
-  ['Avery Singh', 'avery@appkit.dev', 'role-analyst'],
+  ['Ada Lovelace', 'admin@appkitjs.dev', 'role-admin'],
+  ['Casey Grant', 'casey@appkitjs.dev', 'role-operator'],
+  ['Jordan Lee', 'jordan@appkitjs.dev', 'role-analyst'],
+  ['Morgan Chen', 'morgan@appkitjs.dev', 'role-operator'],
+  ['Riley Patel', 'riley@appkitjs.dev', 'role-operator'],
+  ['Sam Rivera', 'sam@appkitjs.dev', 'role-analyst'],
+  ['Taylor Brooks', 'taylor@appkitjs.dev', 'role-operator'],
+  ['Alex Kim', 'alex@appkitjs.dev', 'role-operator'],
+  ['Jamie Wright', 'jamie@appkitjs.dev', 'role-analyst'],
+  ['Drew Clarke', 'drew@appkitjs.dev', 'role-operator'],
+  ['Quinn Foster', 'quinn@appkitjs.dev', 'role-admin'],
+  ['Avery Singh', 'avery@appkitjs.dev', 'role-analyst'],
 ] as const
 
 const members: MemberRecord[] = PEOPLE.map(([name, email, roleId], index) => {
@@ -102,7 +102,7 @@ const members: MemberRecord[] = PEOPLE.map(([name, email, roleId], index) => {
 
 const auditEvents: AuditEventRecord[] = [
   audit('audit-1', 'update', 'role', 'role-analyst', 'Updated Analyst permissions', { permissions: ['records.read.all', 'reports.read'] }, { permissions: roles[2]!.permissions }, '2026-07-20T16:52:00.000Z'),
-  audit('audit-2', 'insert', 'membership', 'member-12', 'Invited Avery Singh', null, { email: 'avery@appkit.dev', status: 'invited', role: 'Analyst' }, '2026-07-20T16:05:00.000Z'),
+  audit('audit-2', 'insert', 'membership', 'member-12', 'Invited Avery Singh', null, { email: 'avery@appkitjs.dev', status: 'invited', role: 'Analyst' }, '2026-07-20T16:05:00.000Z'),
   audit('audit-3', 'update', 'role_assignment', 'assignment-3', 'Narrowed Jordan Lee to own records', { scope: { type: 'tenant' } }, { scope: { type: 'self' } }, '2026-07-19T19:22:00.000Z'),
   audit('audit-4', 'update', 'dashboard_layout', 'layout-default', 'Customized workspace dashboard', { widgets: ['members', 'roles'] }, { widgets: ['members', 'roles', 'activity'] }, '2026-07-19T13:42:00.000Z'),
   audit('audit-5', 'insert', 'workflow', 'workflow-approval', 'Created purchase approval', null, { trigger: 'record.submitted', steps: 4 }, '2026-07-18T15:26:00.000Z'),

@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { EmptyState } from '@appkit/ui'
+import { EmptyState } from '@appkitjs/ui'
 import { formatISODate, parseDate, todayDate } from '../dates'
 import {
   buildIndentTaskUpdates,

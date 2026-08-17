@@ -7,7 +7,7 @@
 //
 // Every token references the form flow adapter's loadValues() map ONLY:
 // raw {{fieldId}} values plus the companion keys declared in
-// @appkit/forms-core companion helpers (`_text`, `_image`, `_photos`, repeating-section and
+// @appkitjs/forms-core companion helpers (`_text`, `_image`, `_photos`, repeating-section and
 // table-field collections). Layout-only fields are skipped.
 //
 // Consumed by the web publish hook / admin "Generate" affordance AND the db
@@ -21,9 +21,9 @@ import {
   hasTextCompanion,
   isAttachmentArrayField,
   labelText,
-} from '@appkit/forms-core'
-import { DEFAULT_LOCALE, type AppLocale } from '@appkit/i18n'
-import { color } from '@appkit/tokens'
+} from '@appkitjs/forms-core'
+import { DEFAULT_LOCALE, type AppLocale } from '@appkitjs/i18n'
+import { color } from '@appkitjs/tokens'
 
 // --- shared design language (mirrors the seeded native-module documents) ----
 

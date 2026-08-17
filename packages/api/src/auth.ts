@@ -8,10 +8,10 @@
 // Rate limiting and the permission catalogue are injected by the application.
 
 import { and, eq, isNull, lt, or } from 'drizzle-orm'
-import type { AppkitDb } from '@appkit/db'
-import { apiKeys, tenants } from '@appkit/db'
-import { resolveLocalePreferences } from '@appkit/i18n'
-import { makeTenantContext, type RequestContext } from '@appkit/tenant'
+import type { AppkitDb } from '@appkitjs/db'
+import { apiKeys, tenants } from '@appkitjs/db'
+import { resolveLocalePreferences } from '@appkitjs/i18n'
+import { makeTenantContext, type RequestContext } from '@appkitjs/tenant'
 import { ApiError } from './errors'
 import { sanitizeApiPermissions } from './permissions'
 import { hashToken, parseBearerToken } from './token'
@@ -29,7 +29,7 @@ export type ApiAuth = {
   key: ApiKeyInfo
 }
 
-/** Pluggable rate limiter (e.g. Redis-backed via @appkit/jobs). */
+/** Pluggable rate limiter (e.g. Redis-backed via @appkitjs/jobs). */
 export type RateLimiter = (
   key: string,
   opts: { limit: number; windowSeconds: number },

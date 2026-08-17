@@ -8,4 +8,4 @@ export {
   users,
   auditLog,
   type RoleScope,
-} from '@appkit/db'
+} from '@appkitjs/db'

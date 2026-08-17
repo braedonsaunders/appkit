@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { deleteDemoScript, runDemoScript, saveDemoScript, scriptsSnapshot } from '../../../../lib/server/scripts-demo'
-import type { ScriptEditorValue } from '@appkit/scripts/react'
+import type { ScriptEditorValue } from '@appkitjs/scripts/react'
 
 export const runtime = 'nodejs'
 

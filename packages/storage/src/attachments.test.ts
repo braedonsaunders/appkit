@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { ListNavProvider } from '@appkit/ui'
+import { ListNavProvider } from '@appkitjs/ui'
 import { AttachmentPanel } from './attachment-panel'
 import { createMemoryAttachmentAdapter } from './attachments-memory'
 import {

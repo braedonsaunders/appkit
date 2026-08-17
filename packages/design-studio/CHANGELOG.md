@@ -1,4 +1,4 @@
-# @appkit/design-studio
+# @appkitjs/design-studio
 
 ## 0.2.0
 
@@ -21,5 +21,5 @@
   editor.
 - Updated dependencies [3ab6056]
 - Updated dependencies [1319bfb]
-  - @appkit/tokens@0.1.1
-  - @appkit/ui@0.1.1
+  - @appkitjs/tokens@0.1.1
+  - @appkitjs/ui@0.1.1

@@ -27,9 +27,9 @@ import {
   RefreshCw,
   Workflow,
 } from 'lucide-react'
-import { EMAIL_PROVIDER_SPECS } from '@appkit/emails/providers'
-import { SMS_PROVIDER_SPECS } from '@appkit/sms/providers'
-import { AdminHub, Badge, Button, type AdminHubGroup } from '@appkit/ui'
+import { EMAIL_PROVIDER_SPECS } from '@appkitjs/emails/providers'
+import { SMS_PROVIDER_SPECS } from '@appkitjs/sms/providers'
+import { AdminHub, Badge, Button, type AdminHubGroup } from '@appkitjs/ui'
 
 export const metadata = { title: 'Platform — appkit' }
 
@@ -102,7 +102,7 @@ const GROUPS: AdminHubGroup[] = [
     layout: 'detailed',
     cards: [
       {
-        title: '@appkit/tokens',
+        title: '@appkitjs/tokens',
         description: 'Rebrand an entire application without hunting through component code.',
         icon: <Palette />,
         features: [
@@ -114,7 +114,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'See the token system',
       },
       {
-        title: '@appkit/ui',
+        title: '@appkitjs/ui',
         description: 'Build consistent product screens with shared navigation, data-entry, feedback, and workspace components.',
         icon: <Layers3 />,
         features: [
@@ -128,7 +128,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'View components',
       },
       {
-        title: '@appkit/analytics',
+        title: '@appkitjs/analytics',
         description: 'Create governed reporting cards from approved data sources, measures, and dimensions.',
         icon: <BarChart3 />,
         features: [
@@ -141,7 +141,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Build an insight card',
       },
       {
-        title: '@appkit/dashboard',
+        title: '@appkitjs/dashboard',
         description: 'Give people configurable dashboards and a governed way to build reusable insight cards.',
         icon: <LayoutDashboard />,
         features: [
@@ -155,7 +155,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Use the dashboard',
       },
       {
-        title: '@appkit/reports',
+        title: '@appkitjs/reports',
         description: 'Define governed report queries, grouped results, page layouts, and schedules.',
         icon: <FileOutput />,
         features: [
@@ -168,7 +168,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Open reports',
       },
       {
-        title: '@appkit/forms-core',
+        title: '@appkitjs/forms-core',
         description: 'Define forms, validation, scoring, and workflow automation through versioned schemas.',
         icon: <Braces />,
         features: [
@@ -181,7 +181,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Open form engine',
       },
       {
-        title: '@appkit/forms',
+        title: '@appkitjs/forms',
         description: 'Design, validate, preview, import, and export forms from one workspace.',
         icon: <ClipboardList />,
         features: [
@@ -194,7 +194,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Open the form builder',
       },
       {
-        title: '@appkit/editor',
+        title: '@appkitjs/editor',
         description: 'Add the same bounded rich-text authoring control to forms, notes, and document fields.',
         icon: <FileText />,
         features: [
@@ -206,7 +206,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Use rich text in a form',
       },
       {
-        title: '@appkit/workflows',
+        title: '@appkitjs/workflows',
         description: 'Run durable event, decision, approval, and action workflows.',
         icon: <Workflow />,
         features: [
@@ -220,7 +220,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Open workflow builder',
       },
       {
-        title: '@appkit/sync',
+        title: '@appkitjs/sync',
         description: 'Bring external records into application-owned models through a safe connector spine.',
         icon: <RefreshCw />,
         features: [
@@ -235,7 +235,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Configure data connections',
       },
       {
-        title: '@appkit/integrations',
+        title: '@appkitjs/integrations',
         description: 'Send application events to external services without coupling product code to vendors.',
         icon: <Cable />,
         features: [
@@ -248,7 +248,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Open integrations',
       },
       {
-        title: '@appkit/customization',
+        title: '@appkitjs/customization',
         description: 'Ship record customization as a native application capability instead of rebuilding an admin editor.',
         icon: <Paintbrush />,
         features: [
@@ -261,7 +261,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Open customization studio',
       },
       {
-        title: '@appkit/i18n',
+        title: '@appkitjs/i18n',
         description: 'Apply one tenant-aware locale policy to application copy and user-authored multilingual content.',
         icon: <Languages />,
         features: [
@@ -273,7 +273,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'See localized schemas',
       },
       {
-        title: '@appkit/db',
+        title: '@appkitjs/db',
         description: 'Start with tenant isolation and identity persistence already shaped for production.',
         icon: <Database />,
         features: [
@@ -285,7 +285,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'See an RLS-scoped list',
       },
       {
-        title: '@appkit/tenant',
+        title: '@appkitjs/tenant',
         description: 'Carry one resolved request context through database access, authorization, and auditing.',
         icon: <ShieldCheck />,
         features: [
@@ -297,7 +297,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Inspect the RBAC flow',
       },
       {
-        title: '@appkit/auth',
+        title: '@appkitjs/auth',
         description: 'Add a complete identity-provider runtime when an app needs one while keeping public and externally managed apps auth-free.',
         icon: <LockKeyhole />,
         badge: <Badge variant="secondary">Optional</Badge>,
@@ -316,7 +316,7 @@ const GROUPS: AdminHubGroup[] = [
     layout: 'detailed',
     cards: [
       {
-        title: '@appkit/events',
+        title: '@appkitjs/events',
         description: 'Make material application changes traceable and reliably hand work to asynchronous consumers.',
         icon: <ScrollText />,
         features: [
@@ -329,7 +329,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'View live audit history',
       },
       {
-        title: '@appkit/notifications',
+        title: '@appkitjs/notifications',
         description: 'Publish one event to an in-app inbox, email, web push, and critical SMS.',
         icon: <BellRing />,
         features: [
@@ -341,7 +341,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Open notifications',
       },
       {
-        title: '@appkit/api',
+        title: '@appkitjs/api',
         description: 'Ship consistent external APIs with authorization and documentation built into the route contract.',
         icon: <Braces />,
         features: [
@@ -353,7 +353,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Use the API reference',
       },
       {
-        title: '@appkit/sandbox',
+        title: '@appkitjs/sandbox',
         description: 'Run authored JavaScript without granting it ambient access to the host process.',
         icon: <ShieldCheck />,
         features: [
@@ -366,7 +366,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Run a governed script',
       },
       {
-        title: '@appkit/endpoints',
+        title: '@appkitjs/endpoints',
         description: 'Offer user-defined handlers while keeping host access and resource consumption under application control.',
         icon: <Workflow />,
         features: [
@@ -378,7 +378,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Call a live app backend',
       },
       {
-        title: '@appkit/scripts',
+        title: '@appkitjs/scripts',
         description: 'Give builders governed automation code without exposing the application process.',
         icon: <Braces />,
         features: [
@@ -391,7 +391,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Open script authoring',
       },
       {
-        title: '@appkit/apps',
+        title: '@appkitjs/apps',
         description: 'Add an installable app platform with a real builder, runtime, permissions, and distribution lifecycle.',
         icon: <Puzzle />,
         features: [
@@ -404,7 +404,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Build and run an app',
       },
       {
-        title: '@appkit/ai',
+        title: '@appkitjs/ai',
         description: 'Connect an agent to approved tools, models, prompts, and tenant policy.',
         icon: <Bot />,
         features: [
@@ -424,7 +424,7 @@ const GROUPS: AdminHubGroup[] = [
     layout: 'detailed',
     cards: [
       {
-        title: '@appkit/crypto',
+        title: '@appkitjs/crypto',
         description: 'Store provider and integration credentials through one authenticated-encryption contract.',
         icon: <KeyRound />,
         features: [
@@ -434,7 +434,7 @@ const GROUPS: AdminHubGroup[] = [
         ],
       },
       {
-        title: '@appkit/email-render',
+        title: '@appkitjs/email-render',
         description: 'Turn authored workflow email content into safe provider-ready HTML, text, subjects, recipients, and attachments.',
         icon: <Mail />,
         features: [
@@ -445,7 +445,7 @@ const GROUPS: AdminHubGroup[] = [
         ],
       },
       {
-        title: '@appkit/design-studio',
+        title: '@appkitjs/design-studio',
         description: 'Compose print designs from positioned text, fields, shapes, images, and QR codes.',
         icon: <Palette />,
         features: [
@@ -458,7 +458,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Open design studio',
       },
       {
-        title: '@appkit/pdf',
+        title: '@appkitjs/pdf',
         description: 'Render report documents, tables, statements, and authored templates to PDF.',
         icon: <FileText />,
         features: [
@@ -470,7 +470,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Download a report PDF',
       },
       {
-        title: '@appkit/forms-documents',
+        title: '@appkitjs/forms-documents',
         description: 'Turn a form schema into localized document fields, stable print styles, and an authored PDF template.',
         icon: <FileOutput />,
         features: [
@@ -482,7 +482,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Inspect the form contract',
       },
       {
-        title: '@appkit/forms-pdf',
+        title: '@appkitjs/forms-pdf',
         description: 'Print form summaries, repeating sections, photos, authored templates, and design documents.',
         icon: <ClipboardList />,
         features: [
@@ -494,7 +494,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Preview document output',
       },
       {
-        title: '@appkit/emails',
+        title: '@appkitjs/emails',
         description: 'Change outbound email providers without rewriting product workflows or credential handling.',
         icon: <Mail />,
         features: [
@@ -504,7 +504,7 @@ const GROUPS: AdminHubGroup[] = [
         ],
       },
       {
-        title: '@appkit/sms',
+        title: '@appkitjs/sms',
         description: 'Send transactional messages through a stable application contract across common SMS vendors.',
         icon: <MessageSquare />,
         features: [
@@ -522,7 +522,7 @@ const GROUPS: AdminHubGroup[] = [
     layout: 'detailed',
     cards: [
       {
-        title: '@appkit/jobs',
+        title: '@appkitjs/jobs',
         description: 'Move expensive or retryable work into queues through a reusable producer and worker contract.',
         icon: <ServerCog />,
         features: [
@@ -534,7 +534,7 @@ const GROUPS: AdminHubGroup[] = [
         linkLabel: 'Explore background jobs',
       },
       {
-        title: '@appkit/storage',
+        title: '@appkitjs/storage',
         description: 'Keep file workflows provider-portable while shipping a complete attachment workspace.',
         icon: <Cloud />,
         features: [

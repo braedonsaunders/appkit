@@ -1,4 +1,4 @@
-# @appkit/avatars
+# @appkitjs/avatars
 
 A parts library, a composition model, and the composer that arranges them —
 plus AI image generation through the shared provider layer.
@@ -12,9 +12,9 @@ changes.
 
 | Import | Environment | Contents |
 | --- | --- | --- |
-| `@appkit/avatars` | server | Image generation (`generateImages`, `listImageModels`), prompt builders, and a re-export of the composition model. |
-| `@appkit/avatars/composition` | anywhere | The pure model: types, `sortLayers`, `resolvePartUrl`, `viewportTransform`, `DEFAULT_HEAD_VIEWPORT`. No provider dependencies — safe in a browser bundle. |
-| `@appkit/avatars/react` | client | `ComposedAvatar` (the renderer) and `AvatarComposer` (the editor). |
+| `@appkitjs/avatars` | server | Image generation (`generateImages`, `listImageModels`), prompt builders, and a re-export of the composition model. |
+| `@appkitjs/avatars/composition` | anywhere | The pure model: types, `sortLayers`, `resolvePartUrl`, `viewportTransform`, `DEFAULT_HEAD_VIEWPORT`. No provider dependencies — safe in a browser bundle. |
+| `@appkitjs/avatars/react` | client | `ComposedAvatar` (the renderer) and `AvatarComposer` (the editor). |
 
 Import composition helpers from `/composition` in client code. The root entry
 pulls the AI SDK provider factories; types erase at compile time, but values do

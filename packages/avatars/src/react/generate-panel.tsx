@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Button, Input, Label, Select } from '@appkit/ui'
+import { Button, Input, Label, Select } from '@appkitjs/ui'
 import type { AvatarPart, AvatarPartCategory } from '../composition'
 
 /**

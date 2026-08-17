@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createWalletDesignDocument } from '@appkit/design-studio'
+import { createWalletDesignDocument } from '@appkitjs/design-studio'
 import { renderDesignDocumentPngs } from './production'
 
 // A cold Chromium launch plus two 300-DPI screenshots can exceed Vitest's

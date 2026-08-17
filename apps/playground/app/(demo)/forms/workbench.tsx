@@ -12,11 +12,11 @@ import {
   type RecordActionFlow,
   type RecordActionFlowAdapter,
   type RecordConfig,
-} from '@appkit/forms'
-import { parseFormSchema, type FormSchemaV1 } from '@appkit/forms-core'
-import type { AutomationGraph } from '@appkit/forms-core/safety-automation'
-import { Badge, Button, TabContent, Textarea, toast } from '@appkit/ui'
-import { FlowsCanvas, type WorkflowStudioAdapter } from '@appkit/workflows/react'
+} from '@appkitjs/forms'
+import { parseFormSchema, type FormSchemaV1 } from '@appkitjs/forms-core'
+import type { AutomationGraph } from '@appkitjs/forms-core/safety-automation'
+import { Badge, Button, TabContent, Textarea, toast } from '@appkitjs/ui'
+import { FlowsCanvas, type WorkflowStudioAdapter } from '@appkitjs/workflows/react'
 import { SUPPLIER_QUALIFICATION_SCHEMA } from '../../../lib/forms/example-schema'
 
 const STORAGE_KEY = 'appkit.forms.workbench.schema.v1'

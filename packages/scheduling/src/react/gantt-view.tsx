@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronRight, GripVertical } from 'lucide-react'
-import { Badge, cn } from '@appkit/ui'
+import { Badge, cn } from '@appkitjs/ui'
 import {
   addDays,
   diffDays,

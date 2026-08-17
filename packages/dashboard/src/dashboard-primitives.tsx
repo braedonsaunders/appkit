@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { cn } from '@appkit/ui'
+import { cn } from '@appkitjs/ui'
 
 export type DashboardMetricTone = 'primary' | 'info' | 'success' | 'warning' | 'danger'
 

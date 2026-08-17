@@ -1,5 +1,5 @@
 {
-  "name": "@appkit/dashboard",
+  "name": "@appkitjs/dashboard",
   "version": "1.0.2",
   "description": "Optional dashboard layouts, insight cards, visual studio, and feature-owned persistence.",
   "license": "AGPL-3.0-or-later",
@@ -30,11 +30,11 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@appkit/analytics": "workspace:*"
+    "@appkitjs/analytics": "workspace:*"
   },
   "peerDependencies": {
-    "@appkit/db": "^0.2.0",
-    "@appkit/ui": "^0.1.10",
+    "@appkitjs/db": "^0.2.0",
+    "@appkitjs/ui": "^0.1.10",
     "drizzle-orm": "^0.45.2",
     "lucide-react": ">=0.474.0 <2",
     "react": "^19.0.0",
@@ -42,10 +42,10 @@
     "react-grid-layout": "^2.2.3"
   },
   "peerDependenciesMeta": {
-    "@appkit/db": {
+    "@appkitjs/db": {
       "optional": true
     },
-    "@appkit/ui": {
+    "@appkitjs/ui": {
       "optional": true
     },
     "drizzle-orm": {
@@ -65,8 +65,8 @@
     }
   },
   "devDependencies": {
-    "@appkit/db": "workspace:*",
-    "@appkit/ui": "workspace:*",
+    "@appkitjs/db": "workspace:*",
+    "@appkitjs/ui": "workspace:*",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

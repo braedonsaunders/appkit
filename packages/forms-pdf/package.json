@@ -1,5 +1,5 @@
 {
-  "name": "@appkit/forms-pdf",
+  "name": "@appkitjs/forms-pdf",
   "version": "1.0.0",
   "description": "Composable form-summary HTML with optional PDF, template, and design-document adapters.",
   "license": "AGPL-3.0-or-later",
@@ -25,26 +25,26 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@appkit/tokens": "workspace:*"
+    "@appkitjs/tokens": "workspace:*"
   },
   "peerDependencies": {
-    "@appkit/design-studio": "^0.2.0",
-    "@appkit/pdf": "^0.1.1",
-    "@appkit/reports": "^0.2.1",
-    "@appkit/sync": "^1.0.0",
+    "@appkitjs/design-studio": "^0.2.0",
+    "@appkitjs/pdf": "^0.1.1",
+    "@appkitjs/reports": "^0.2.1",
+    "@appkitjs/sync": "^1.0.0",
     "puppeteer-core": "^25.3.0"
   },
   "peerDependenciesMeta": {
-    "@appkit/design-studio": {
+    "@appkitjs/design-studio": {
       "optional": true
     },
-    "@appkit/pdf": {
+    "@appkitjs/pdf": {
       "optional": true
     },
-    "@appkit/reports": {
+    "@appkitjs/reports": {
       "optional": true
     },
-    "@appkit/sync": {
+    "@appkitjs/sync": {
       "optional": true
     },
     "puppeteer-core": {
@@ -52,10 +52,10 @@
     }
   },
   "devDependencies": {
-    "@appkit/design-studio": "workspace:*",
-    "@appkit/pdf": "workspace:*",
-    "@appkit/reports": "workspace:*",
-    "@appkit/sync": "workspace:*",
+    "@appkitjs/design-studio": "workspace:*",
+    "@appkitjs/pdf": "workspace:*",
+    "@appkitjs/reports": "workspace:*",
+    "@appkitjs/sync": "workspace:*",
     "@types/node": "^22",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3",

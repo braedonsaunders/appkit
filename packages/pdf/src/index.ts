@@ -1,4 +1,4 @@
-// @appkit/pdf — the dependency-light pure-JS document renderer.
+// @appkitjs/pdf — the dependency-light pure-JS document renderer.
 // Authored templates and Chromium printing are opt-in through /template and /html.
 // Server-only: import from route handlers / server components only.
 

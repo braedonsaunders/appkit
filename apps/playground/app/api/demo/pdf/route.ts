@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { renderFormSummaryPdf } from '@appkit/forms-pdf/summary'
-import { renderPdfDocument, resolvePdfPageSetup } from '@appkit/pdf'
+import { renderFormSummaryPdf } from '@appkitjs/forms-pdf/summary'
+import { renderPdfDocument, resolvePdfPageSetup } from '@appkitjs/pdf'
 
 export const runtime = 'nodejs'
 

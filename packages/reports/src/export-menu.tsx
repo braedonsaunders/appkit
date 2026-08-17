@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { ChevronDown, Download, FileText, Printer, Sheet } from 'lucide-react'
-import { Button, Popover } from '@appkit/ui'
+import { Button, Popover } from '@appkitjs/ui'
 
 export type ReportExportOption = {
   format: 'pdf' | 'xlsx' | 'csv'

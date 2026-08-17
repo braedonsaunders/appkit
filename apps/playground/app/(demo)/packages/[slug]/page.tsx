@@ -18,7 +18,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@appkit/ui'
+} from '@appkitjs/ui'
 import {
   getPackage,
   PACKAGE_CATALOG,

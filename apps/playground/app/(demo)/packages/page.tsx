@@ -9,7 +9,7 @@ import {
   CardTitle,
   PageContainer,
   PageHeader,
-} from '@appkit/ui'
+} from '@appkitjs/ui'
 import { PACKAGE_CATALOG, PACKAGE_CATEGORIES } from '../../../lib/server/package-catalog'
 
 export const metadata = {

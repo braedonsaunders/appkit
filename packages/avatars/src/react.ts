@@ -3,7 +3,7 @@
 // Kept separate from the package root so that importing a renderer never pulls
 // the AI SDK provider factories (and their server credentials path) into a
 // browser bundle. Pure composition types and helpers live at
-// `@appkit/avatars/composition`, which both entries share.
+// `@appkitjs/avatars/composition`, which both entries share.
 
 export {
   ComposedAvatar,

@@ -1,7 +1,7 @@
 {
-  "name": "@appkit/tenant",
+  "name": "@appkitjs/tenant",
   "version": "0.1.1",
-  "description": "Request context, tenant-bound DB helper, and RBAC (permissions, roles, super-admin) on top of @appkit/db.",
+  "description": "Request context, tenant-bound DB helper, and RBAC (permissions, roles, super-admin) on top of @appkitjs/db.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {
@@ -20,8 +20,8 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@appkit/db": "workspace:*",
-    "@appkit/i18n": "workspace:*",
+    "@appkitjs/db": "workspace:*",
+    "@appkitjs/i18n": "workspace:*",
     "drizzle-orm": "^0.45.2"
   },
   "devDependencies": {

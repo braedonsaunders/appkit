@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { Check } from 'lucide-react'
-import { Button, Checkbox, Label, cn } from '@appkit/ui'
+import { Button, Checkbox, Label, cn } from '@appkitjs/ui'
 import type { RecordConfig } from './record-config'
 
 type EditingMode = NonNullable<RecordConfig['editingMode']>

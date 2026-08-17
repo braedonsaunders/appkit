@@ -1,7 +1,7 @@
-# @appkit/forms
+# @appkitjs/forms
 
 Production form design and filling for AppKit applications.
-The package is optional and uses `@appkit/forms-core` as its portable schema and
+The package is optional and uses `@appkitjs/forms-core` as its portable schema and
 validation contract.
 
 ## Production runtime
@@ -26,8 +26,8 @@ deployment; a production application can bind the same contract to RLS-scoped
 services without changing the form component.
 
 ```tsx
-import { ProductionFormRenderer } from '@appkit/forms'
-import '@appkit/forms/styles.css'
+import { ProductionFormRenderer } from '@appkitjs/forms'
+import '@appkitjs/forms/styles.css'
 
 <ProductionFormRenderer adapter={adapter} {...input} />
 ```
@@ -45,7 +45,7 @@ stacked and free-canvas layouts, tabs, sign-off steps, record behaviour,
 configurable record lists, manual record actions, assignments, access control,
 preview, immutable publishing, localized content, and the full properties
 inspector. `formFlowProfile` and `lintFormFlowGraph` bind the same form schema
-to `@appkit/workflows/react` without duplicating automation rules.
+to `@appkitjs/workflows/react` without duplicating automation rules.
 
 Application-owned persistence, routing, authorization, workflow storage, data
 sources, and optional AI assistance enter through typed adapters and render
@@ -53,7 +53,7 @@ seams. The database-free playground uses browser-local adapters; a production
 application can bind the same component to tenant-scoped services.
 
 ```tsx
-import { ProductionFormDesigner } from '@appkit/forms'
+import { ProductionFormDesigner } from '@appkitjs/forms'
 
 <ProductionFormDesigner
   adapter={designerAdapter}

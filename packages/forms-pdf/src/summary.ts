@@ -1,4 +1,4 @@
-import { renderHtmlDocumentPdf } from '@appkit/pdf/html'
+import { renderHtmlDocumentPdf } from '@appkitjs/pdf/html'
 import { escapeHtml } from './shared'
 import { renderFormSummaryHtml } from './summary-html'
 import type { FormPdfInput } from './types'

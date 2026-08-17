@@ -1,9 +1,9 @@
 'use client'
 
 import { MapPin, Plus, Trash2 } from 'lucide-react'
-import type { FormField, TableColumn, TableConfig } from '@appkit/forms-core'
-import { Button, Checkbox, Input } from '@appkit/ui'
-import { SignaturePad } from '@appkit/ui'
+import type { FormField, TableColumn, TableConfig } from '@appkitjs/forms-core'
+import { Button, Checkbox, Input } from '@appkitjs/ui'
+import { SignaturePad } from '@appkitjs/ui'
 import { RiskMatrixField, RiskMatrixProvider, type RiskMatrixConfig } from './risk-matrix'
 import { SketchPad, type SketchScene } from './sketch-pad'
 

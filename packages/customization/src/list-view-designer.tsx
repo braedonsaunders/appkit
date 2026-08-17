@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactElement } from 'react'
 import { ChevronDown, ChevronUp, Eye, EyeOff, GripVertical, Plus, Save, Trash2 } from 'lucide-react'
-import { Button, Checkbox, Input, Label, Select, cn } from '@appkit/ui'
+import { Button, Checkbox, Input, Label, Select, cn } from '@appkitjs/ui'
 import {
   OPERATORS_BY_KIND,
   customFieldDefKey,

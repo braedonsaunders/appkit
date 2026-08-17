@@ -1,14 +1,14 @@
 import 'server-only'
 import { cache } from 'react'
 import { and, eq } from 'drizzle-orm'
-import { memberships, schema, tenants, users } from '@appkit/db'
-import { resolveLocalePreferences } from '@appkit/i18n'
+import { memberships, schema, tenants, users } from '@appkitjs/db'
+import { resolveLocalePreferences } from '@appkitjs/i18n'
 import {
   makeTenantContext,
   resolveMembershipAccess,
   type RequestContext,
   type TenantDatabase,
-} from '@appkit/tenant'
+} from '@appkitjs/tenant'
 import { PERMISSION_CATALOGUE } from '../permissions'
 import { DEMO_TENANT, DEMO_USER } from './demo-data'
 import { isDatabaseConfigured, platform } from './platform'
@@ -71,11 +71,11 @@ export const getDemoEnvironment = cache(async (): Promise<DemoEnvironment> => {
       .from(memberships)
       .innerJoin(tenants, eq(tenants.id, memberships.tenantId))
       .innerJoin(users, eq(users.id, memberships.userId))
-      .where(and(eq(tenants.slug, 'acme'), eq(users.email, 'admin@appkit.dev')))
+      .where(and(eq(tenants.slug, 'acme'), eq(users.email, 'admin@appkitjs.dev')))
       .limit(1)
 
     if (!row || !row.userActive) {
-      throw new Error('The appkit demo identity is missing. Run `pnpm --filter @appkit/playground seed`.')
+      throw new Error('The appkit demo identity is missing. Run `pnpm --filter @appkitjs/playground seed`.')
     }
 
     const access = await resolveMembershipAccess(sdb, row.membershipId, null, {

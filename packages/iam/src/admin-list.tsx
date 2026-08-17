@@ -1,6 +1,6 @@
 'use client'
 
-import { Button, cn } from '@appkit/ui'
+import { Button, cn } from '@appkitjs/ui'
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react'
 import type { ListResult } from './types'
 

@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { Redo2, RotateCcw, Undo2 } from 'lucide-react'
-import { Alert, AlertDescription, Badge, Button, SubtabNav } from '@appkit/ui'
+import { Alert, AlertDescription, Badge, Button, SubtabNav } from '@appkitjs/ui'
 import {
   CANVAS_HEIGHT,
   CANVAS_WIDTH,

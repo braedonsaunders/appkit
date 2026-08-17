@@ -1,4 +1,4 @@
-# @appkit/iam
+# @appkitjs/iam
 
 Tenant identity and access management that can be adopted independently of an
 authentication provider.
@@ -11,12 +11,12 @@ rotation, audit events, actor-aware mutation capabilities, and the complete
 
 ## Entry points
 
-- `@appkit/iam` — contracts and permission evaluation
-- `@appkit/iam/react` — paged role, member, scope, override, activity, and audit administration
-- `@appkit/iam/drizzle` — driver-neutral tenant Postgres/RLS service with atomic audit and application lifecycle hooks
-- `@appkit/iam/memory` — deterministic browser, local-first, and test adapter
-- `@appkit/iam/http` — authenticated framework-neutral handler and full-contract client
-- `@appkit/iam/schema` — canonical identity and audit schema re-exports
+- `@appkitjs/iam` — contracts and permission evaluation
+- `@appkitjs/iam/react` — paged role, member, scope, override, activity, and audit administration
+- `@appkitjs/iam/drizzle` — driver-neutral tenant Postgres/RLS service with atomic audit and application lifecycle hooks
+- `@appkitjs/iam/memory` — deterministic browser, local-first, and test adapter
+- `@appkitjs/iam/http` — authenticated framework-neutral handler and full-contract client
+- `@appkitjs/iam/schema` — canonical identity and audit schema re-exports
 
 Applications supply their permission catalogue and any domain scope choices.
 The package never embeds product permissions, organization hierarchy, or an
@@ -41,8 +41,8 @@ exposed to the UI and re-checked at mutation time; hiding a button is never the
 security boundary.
 
 ```tsx
-import { RolesAdmin } from '@appkit/iam/react'
-import { createDrizzleIamService } from '@appkit/iam/drizzle'
+import { RolesAdmin } from '@appkitjs/iam/react'
+import { createDrizzleIamService } from '@appkitjs/iam/drizzle'
 
 const iam = createDrizzleIamService({
   db: requestContext.db,
@@ -62,5 +62,5 @@ const iam = createDrizzleIamService({
 Role and member mutations enforce built-in, current-user, and super-admin
 protections in the adapter as well as the UI. Re-selecting an existing
 member/role pair updates its scope instead of widening access with a duplicate
-assignment. `@appkit/iam/drizzle` accepts both Drizzle `node-postgres` and
+assignment. `@appkitjs/iam/drizzle` accepts both Drizzle `node-postgres` and
 `postgres-js` databases without an application cast.

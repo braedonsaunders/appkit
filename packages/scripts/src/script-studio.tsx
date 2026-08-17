@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
   cn,
-} from '@appkit/ui'
+} from '@appkitjs/ui'
 import type { ScriptDefinition, ScriptKind, ScriptRun } from './index'
 
 export interface ScriptEditorValue {

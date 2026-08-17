@@ -14,7 +14,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
-import { Badge, Button, Dialog, Input, Label, Select, Slider, Tabs, Textarea } from '@appkit/ui'
+import { Badge, Button, Dialog, Input, Label, Select, Slider, Tabs, Textarea } from '@appkitjs/ui'
 import { diffDays, parseDate } from '../dates'
 import { buildTaskHierarchyInfo, getTaskDescendantIds, sortTasksByOrder } from '../hierarchy'
 import { getTaskVariance, normalizeScheduleProgress } from '../insights'

@@ -1,4 +1,4 @@
-# @appkit/forms-pdf
+# @appkitjs/forms-pdf
 
 ## 1.0.0
 
@@ -17,8 +17,8 @@
 - Updated dependencies [9260ff0]
 - Updated dependencies [3ab6056]
 - Updated dependencies [374beb4]
-  - @appkit/reports@0.2.0
-  - @appkit/design-studio@0.2.0
-  - @appkit/sync@1.0.0
-  - @appkit/pdf@0.1.1
-  - @appkit/tokens@0.1.1
+  - @appkitjs/reports@0.2.0
+  - @appkitjs/design-studio@0.2.0
+  - @appkitjs/sync@1.0.0
+  - @appkitjs/pdf@0.1.1
+  - @appkitjs/tokens@0.1.1

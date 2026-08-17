@@ -1,5 +1,5 @@
 {
-  "name": "@appkit/mailbox",
+  "name": "@appkitjs/mailbox",
   "version": "0.5.1",
   "description": "Mail engine: incremental IMAP sync + SMTP send with RFC-5322 threading, persistence-injected so the application owns the ledger, plus the three-pane operator inbox.",
   "license": "AGPL-3.0-or-later",
@@ -25,13 +25,13 @@
     "nodemailer": "^9.0.1"
   },
   "peerDependencies": {
-    "@appkit/ui": "^0.1.10",
+    "@appkitjs/ui": "^0.1.10",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
-    "@appkit/ui": {
+    "@appkitjs/ui": {
       "optional": true
     },
     "lucide-react": {
@@ -45,7 +45,7 @@
     }
   },
   "devDependencies": {
-    "@appkit/ui": "workspace:*",
+    "@appkitjs/ui": "workspace:*",
     "@types/mailparser": "^3.4.6",
     "@types/node": "^22",
     "@types/nodemailer": "^7.0.4",

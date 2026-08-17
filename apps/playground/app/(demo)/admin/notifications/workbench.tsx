@@ -1,8 +1,8 @@
 'use client'
 
 import * as React from 'react'
-import { NotificationSettings } from '@appkit/notifications/react'
-import type { NotificationConfigurationInput, NotificationPolicyInput, NotificationRoutingCategory } from '@appkit/notifications'
+import { NotificationSettings } from '@appkitjs/notifications/react'
+import type { NotificationConfigurationInput, NotificationPolicyInput, NotificationRoutingCategory } from '@appkitjs/notifications'
 
 const categories: NotificationRoutingCategory[] = [
   { key: 'approvals', label: 'Approvals', description: 'Requests waiting for a decision and completed decisions.', defaultRoles: ['workspace_admin', 'operations_manager'], defaultChannels: ['in_app', 'email'] },
