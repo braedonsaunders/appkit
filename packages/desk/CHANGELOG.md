@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.5
+
+- A delivered frame anchors the coordinate space, as an `observe()` does. The contract is that a
+  click lands in the pixel space of the most recent view of the screen, and a live viewer is shown
+  the frame stream, never `observe()` — so watching frames and clicking what you see was refused
+  for never having observed. Technically true, and useless.
+
 ## 0.2.4
 
 - Bound each vsock handshake attempt. Cloud Hypervisor accepts a connection on the vsock socket

@@ -362,6 +362,27 @@ test('input injected during a handover reaches the guest but never the recorded 
   assert.ok(kinds(context.events).includes('type'))
 })
 
+test('a delivered frame anchors coordinates, so a viewer can click what it is shown', async () => {
+  const context = makeHost()
+  const handle = await context.host.start(startOptions('agent-1'))
+  const screen = await handle.screen.start({ width: 1280, height: 900 })
+
+  // Nothing has been shown yet, so there is no pixel space to aim in.
+  await assert.rejects(screen.input.click(10, 10), /frame of reference/)
+
+  // Watching frames is the other way to be shown the screen — and a live
+  // viewer is shown frames, never observe(). One frame anchors the space.
+  const iterator = screen.frames({ fps: 10 })[Symbol.asyncIterator]()
+  const machine = context.machines[0]
+  assert.ok(machine)
+  machine.emit({ event: 'frame', seq: 1, width: 800, height: 600, data: Buffer.from('one').toString('base64') })
+  await iterator.next()
+
+  await screen.input.click(10, 10)
+  // And it is the frame's bounds that are enforced, not the screen's.
+  await assert.rejects(screen.input.click(900, 10), /outside the most recent view/)
+})
+
 test('frames are not emitted to a recording consumer while a handover is active', async () => {
   const context = makeHost()
   const handle = await context.host.start(startOptions('agent-1'))

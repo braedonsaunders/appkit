@@ -178,8 +178,10 @@ export interface DeskScreenHandle {
   observe(): Promise<DeskObservation>
   /**
    * Coordinate contract: all coordinates are in the pixel space of the most
-   * recent `observe()`, one to one. Coordinate input before the first
-   * `observe()` or outside its bounds throws.
+   * recent view of the screen — an `observe()`, or a frame delivered by
+   * `frames()` — one to one. Both anchor it, because the caller aims at
+   * whatever it was last shown, and a live viewer is shown frames. Input
+   * before any view, or outside its bounds, throws.
    */
   input: DeskScreenInput
   a11y: { invoke(nodeId: string, action: string): Promise<void> }
@@ -341,8 +343,9 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     const observation = record.screen?.lastObservation
     if (!observation) {
       throw new DeskError(
-        'Coordinate input requires a prior observe(); input coordinates are in the '
-          + 'pixel space of the most recent observe(), one to one.',
+        'Coordinate input needs a frame of reference: call observe(), or start '
+          + 'frames() and wait for one. Coordinates are the pixel space of the '
+          + 'most recent of those, one to one.',
       )
     }
     for (const point of points) {
@@ -355,7 +358,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         || point.y >= observation.height
       ) {
         throw new DeskError(
-          `Coordinates (${point.x}, ${point.y}) are outside the most recent observation `
+          `Coordinates (${point.x}, ${point.y}) are outside the most recent view `
             + `(${observation.width}x${observation.height}); observe() again before targeting.`,
         )
       }
@@ -826,6 +829,15 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
                 height: event.height,
                 data: Buffer.from(event.data, 'base64'),
                 at: iso(now()),
+              }
+              // A frame anchors coordinates exactly as an observation does.
+              // The contract is that a click lands in the pixel space of the
+              // most recent thing the caller was SHOWN, and a live view is
+              // shown the frame stream, not observe(). Without this a viewer
+              // that watches frames and clicks what it sees is refused for
+              // never having called observe() — technically true and useless.
+              if (record.screen) {
+                record.screen.lastObservation = { width: frame.width, height: frame.height }
               }
               if (waiting) {
                 const resume = waiting
