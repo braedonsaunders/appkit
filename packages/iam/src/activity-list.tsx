@@ -1,6 +1,6 @@
 'use client'
 
-import { Badge, EmptyState } from '@braedonsaunders/ui'
+import { Badge, EmptyState } from '@braedonsaunders/appkit-ui'
 import { History } from 'lucide-react'
 import type { AuditEventRecord } from './types'
 

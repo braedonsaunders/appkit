@@ -1,4 +1,4 @@
-import type { StorageAdapter } from '@braedonsaunders/endpoints'
+import type { StorageAdapter } from '@braedonsaunders/appkit-endpoints'
 import { AppError, type AppFile, type AppListing, type AppMetaUpdate, type AppRun, type AppStatus, type AppStore, type AppVersion, type InstalledApp, type PersistInstallInput } from './index'
 import { contentTypeFor, parseManifest } from './manifest'
 

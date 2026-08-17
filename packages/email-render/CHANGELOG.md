@@ -1,4 +1,4 @@
-# @braedonsaunders/email-render
+# @braedonsaunders/appkit-email-render
 
 ## 0.1.1
 

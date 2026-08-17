@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0
+
+### Minor Changes
+
+- Add bounded visual-context pruning, durable fenced event execution and cursor following, and portable, provider-conformant desk state contracts.
+
 ## Unreleased
 
 - Add exact SHA-256 frame identity/deduplication, a bounded and verified

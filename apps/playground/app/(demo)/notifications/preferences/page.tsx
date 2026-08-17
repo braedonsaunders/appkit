@@ -1,4 +1,4 @@
-import { PageHeader } from '@braedonsaunders/ui'
+import { PageHeader } from '@braedonsaunders/appkit-ui'
 import { NotificationPreferencesWorkbench } from './workbench'
 
 export const metadata = { title: 'Notification preferences — appkit' }

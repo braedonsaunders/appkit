@@ -1,6 +1,6 @@
 'use client'
 
-import { Checkbox, Label, SearchSelect, cn } from '@braedonsaunders/ui'
+import { Checkbox, Label, SearchSelect, cn } from '@braedonsaunders/appkit-ui'
 import type { RoleScope, ScopeOption, ScopeOptions } from './types'
 
 type ScopeType = RoleScope['type']

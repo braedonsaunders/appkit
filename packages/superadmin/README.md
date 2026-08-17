@@ -1,4 +1,4 @@
-# @braedonsaunders/superadmin
+# @braedonsaunders/appkit-superadmin
 
 Installation-wide identity administration for platform operators. This package
 is separate from tenant IAM: it manages the accounts that can sign in to the
@@ -9,8 +9,8 @@ The root exports the guarded service contract. Optional subpaths provide memory
 and Drizzle persistence plus the production React user/session surfaces.
 
 ```ts
-import { createSuperadminService } from '@braedonsaunders/superadmin'
-import { createMemorySuperadminPersistence } from '@braedonsaunders/superadmin/memory'
+import { createSuperadminService } from '@braedonsaunders/appkit-superadmin'
+import { createMemorySuperadminPersistence } from '@braedonsaunders/appkit-superadmin/memory'
 
 const persistence = createMemorySuperadminPersistence()
 const service = createSuperadminService({

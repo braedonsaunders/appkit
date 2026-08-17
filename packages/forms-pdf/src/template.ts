@@ -1,5 +1,5 @@
-import { renderHtmlDocumentPdf } from '@braedonsaunders/pdf/html'
-import { compileTemplateHtml, renderTemplate } from '@braedonsaunders/pdf/template'
+import { renderHtmlDocumentPdf } from '@braedonsaunders/appkit-pdf/html'
+import { compileTemplateHtml, renderTemplate } from '@braedonsaunders/appkit-pdf/template'
 import type { AuthoredFormPdfInput } from './types'
 
 export type { AuthoredFormPdfInput } from './types'

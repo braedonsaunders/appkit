@@ -9,7 +9,7 @@
 // pdfkit's buffered-page range so the total page count is known.
 
 import PDFDocument from 'pdfkit'
-import { hexColor } from '@braedonsaunders/tokens'
+import { hexColor } from '@braedonsaunders/appkit-tokens'
 import {
   DEFAULT_PRIMARY_COLOR,
   type PdfDensity,

@@ -3,13 +3,13 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { BarChart3, CreditCard, Plus, Search } from 'lucide-react'
-import type { AnalyticsCatalog } from '@braedonsaunders/analytics'
+import type { AnalyticsCatalog } from '@braedonsaunders/appkit-analytics'
 import {
   Badge, Button, Drawer, EmptyState, ListPageLayout, PageHeader,
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@braedonsaunders/ui'
-import type { CardStudioResult, InsightCardDraft } from '@braedonsaunders/dashboard'
-import { CardStudio } from '@braedonsaunders/dashboard/react'
+} from '@braedonsaunders/appkit-ui'
+import type { CardStudioResult, InsightCardDraft } from '@braedonsaunders/appkit-dashboard'
+import { CardStudio } from '@braedonsaunders/appkit-dashboard/react'
 import {
   deleteInsightCardAction, publishInsightCardAction, runInsightQueryAction,
   saveInsightCardAction,

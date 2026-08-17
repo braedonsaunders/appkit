@@ -5,7 +5,7 @@ import {
   type ProcessSandboxLauncherIdentity,
   type ProcessSandboxLimits,
   type ProcessSandboxNetwork,
-} from '@braedonsaunders/process-sandbox'
+} from '@braedonsaunders/appkit-process-sandbox'
 import { AgentToolError } from './manifest'
 
 /** One isolated command, fully resolved and ready to run. */
@@ -33,7 +33,7 @@ export interface SandboxResult {
 
 /**
  * How the runtime actually runs things. The default implementation goes through
- * `@braedonsaunders/process-sandbox`; tests and non-Linux hosts substitute their own,
+ * `@braedonsaunders/appkit-process-sandbox`; tests and non-Linux hosts substitute their own,
  * which is the only supported way to run this package's lifecycle without
  * bubblewrap.
  */

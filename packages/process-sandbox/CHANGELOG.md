@@ -1,4 +1,4 @@
-# @braedonsaunders/process-sandbox
+# @braedonsaunders/appkit-process-sandbox
 
 ## 0.3.0
 

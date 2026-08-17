@@ -1,4 +1,4 @@
-# @braedonsaunders/iam
+# @braedonsaunders/appkit-iam
 
 Tenant identity and access management that can be adopted independently of an
 authentication provider.
@@ -11,12 +11,12 @@ rotation, audit events, actor-aware mutation capabilities, and the complete
 
 ## Entry points
 
-- `@braedonsaunders/iam` — contracts and permission evaluation
-- `@braedonsaunders/iam/react` — paged role, member, scope, override, activity, and audit administration
-- `@braedonsaunders/iam/drizzle` — driver-neutral tenant Postgres/RLS service with atomic audit and application lifecycle hooks
-- `@braedonsaunders/iam/memory` — deterministic browser, local-first, and test adapter
-- `@braedonsaunders/iam/http` — authenticated framework-neutral handler and full-contract client
-- `@braedonsaunders/iam/schema` — canonical identity and audit schema re-exports
+- `@braedonsaunders/appkit-iam` — contracts and permission evaluation
+- `@braedonsaunders/appkit-iam/react` — paged role, member, scope, override, activity, and audit administration
+- `@braedonsaunders/appkit-iam/drizzle` — driver-neutral tenant Postgres/RLS service with atomic audit and application lifecycle hooks
+- `@braedonsaunders/appkit-iam/memory` — deterministic browser, local-first, and test adapter
+- `@braedonsaunders/appkit-iam/http` — authenticated framework-neutral handler and full-contract client
+- `@braedonsaunders/appkit-iam/schema` — canonical identity and audit schema re-exports
 
 Applications supply their permission catalogue and any domain scope choices.
 The package never embeds product permissions, organization hierarchy, or an
@@ -41,8 +41,8 @@ exposed to the UI and re-checked at mutation time; hiding a button is never the
 security boundary.
 
 ```tsx
-import { RolesAdmin } from '@braedonsaunders/iam/react'
-import { createDrizzleIamService } from '@braedonsaunders/iam/drizzle'
+import { RolesAdmin } from '@braedonsaunders/appkit-iam/react'
+import { createDrizzleIamService } from '@braedonsaunders/appkit-iam/drizzle'
 
 const iam = createDrizzleIamService({
   db: requestContext.db,
@@ -62,5 +62,5 @@ const iam = createDrizzleIamService({
 Role and member mutations enforce built-in, current-user, and super-admin
 protections in the adapter as well as the UI. Re-selecting an existing
 member/role pair updates its scope instead of widening access with a duplicate
-assignment. `@braedonsaunders/iam/drizzle` accepts both Drizzle `node-postgres` and
+assignment. `@braedonsaunders/appkit-iam/drizzle` accepts both Drizzle `node-postgres` and
 `postgres-js` databases without an application cast.

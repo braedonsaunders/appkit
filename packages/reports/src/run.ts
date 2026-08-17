@@ -1,4 +1,4 @@
-import type { QueryResult } from '@braedonsaunders/analytics'
+import type { QueryResult } from '@braedonsaunders/appkit-analytics'
 import { queryResultToReport } from './document'
 import { assertReportDefinition, type ReportDefinition, type ReportRunResult } from './types'
 

@@ -1,5 +1,5 @@
 import cronParser from 'cron-parser'
-import { abort, forbidden, runSandbox, type SandboxHostFunction, type SandboxLimits } from '@braedonsaunders/sandbox'
+import { abort, forbidden, runSandbox, type SandboxHostFunction, type SandboxLimits } from '@braedonsaunders/appkit-sandbox'
 
 export const SCRIPT_KINDS = ['event', 'scheduled', 'endpoint', 'bulk', 'client'] as const
 export type ScriptKind = (typeof SCRIPT_KINDS)[number]

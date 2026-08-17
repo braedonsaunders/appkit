@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 // devDependency — exercises the REAL compile + merge pipeline the generated
 // template runs through in production (expand tr markers → renderTemplate).
-import { expandRepeatMarkers, renderTemplate } from '@braedonsaunders/email-render'
-import { validateFormSchema } from '@braedonsaunders/forms-core'
+import { expandRepeatMarkers, renderTemplate } from '@braedonsaunders/appkit-email-render'
+import { validateFormSchema } from '@braedonsaunders/appkit-forms-core'
 import { generateFormPdfTemplate } from './pdf-template-html'
 
 // A canonical schema exercising every generator branch: short + long fields,

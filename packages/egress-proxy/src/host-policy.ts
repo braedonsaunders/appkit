@@ -2,10 +2,10 @@
  * Host and address policy primitives for the egress chokepoint.
  *
  * The canonical treatment of outbound host policy in this repository lives in
- * `@braedonsaunders/sync`'s egress module (`packages/sync/src/egress.ts`). The rules
+ * `@braedonsaunders/appkit-sync`'s egress module (`packages/sync/src/egress.ts`). The rules
  * are mirrored here rather than imported because this proxy must remain a
  * zero-runtime-dependency stdlib package that a desk-runner can deploy on its
- * own, and pulling in `@braedonsaunders/sync` for three functions would drag a far
+ * own, and pulling in `@braedonsaunders/appkit-sync` for three functions would drag a far
  * heavier surface across the trust boundary. Keep changes to the block lists
  * and hostname rules in step with that module.
  *

@@ -1,4 +1,4 @@
-import { PageHeader } from '@braedonsaunders/ui'
+import { PageHeader } from '@braedonsaunders/appkit-ui'
 import { APP_CAPABILITIES, appsSnapshot } from '../../../../lib/server/apps-demo'
 import { AppsWorkbench } from './workbench'
 

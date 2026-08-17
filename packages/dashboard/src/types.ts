@@ -3,7 +3,7 @@ import type {
   QueryResult,
   VisualizationKey,
   VisualizationSettings,
-} from '@braedonsaunders/analytics'
+} from '@braedonsaunders/appkit-analytics'
 
 export type DashboardWidget = { id: string; x: number; y: number; w: number; h: number }
 export type DashboardQuickAction = { id: string; label: string; href: string; iconKey: string; tone: string }

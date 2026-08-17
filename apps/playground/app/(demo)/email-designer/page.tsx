@@ -1,4 +1,4 @@
-import { PageHeader } from '@braedonsaunders/ui'
+import { PageHeader } from '@braedonsaunders/appkit-ui'
 import { EmailWorkbench } from './workbench'
 
 export const metadata = { title: 'Email designer — appkit' }

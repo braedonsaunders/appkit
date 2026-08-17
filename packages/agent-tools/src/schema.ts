@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
-import { id, tenantRef } from '@braedonsaunders/db'
+import { id, tenantRef } from '@braedonsaunders/appkit-db'
 import type { AgentToolManifest } from './manifest'
 import type {
   AgentToolAction,

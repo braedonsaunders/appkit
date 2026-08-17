@@ -1,6 +1,6 @@
 'use client'
 
-import { cn } from '@braedonsaunders/ui'
+import { cn } from '@braedonsaunders/appkit-ui'
 import { phaseColor } from '../palette'
 
 /** The rotated diamond every schedule uses for a zero-duration event. */

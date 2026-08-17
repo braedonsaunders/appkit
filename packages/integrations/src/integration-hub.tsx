@@ -12,7 +12,7 @@ import {
   Upload,
   type LucideIcon,
 } from 'lucide-react'
-import { Badge, Button } from '@braedonsaunders/ui'
+import { Badge, Button } from '@braedonsaunders/appkit-ui'
 import {
   DirectionPill,
   IntegrationCatalog,

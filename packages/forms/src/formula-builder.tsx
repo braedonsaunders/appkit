@@ -19,7 +19,7 @@ import { GeneratedText } from './generated-copy'
 
 import { useMemo, useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
-import { Button, Input, Label, Select } from '@braedonsaunders/ui'
+import { Button, Input, Label, Select } from '@braedonsaunders/appkit-ui'
 import {
   ENTITY_ATTRS,
   evaluateFormulaTree,
@@ -27,7 +27,7 @@ import {
   type EvalContext,
   type FormulaExpression,
   type LogicRule,
-} from '@braedonsaunders/forms-core'
+} from '@braedonsaunders/appkit-forms-core'
 import { LogicBuilder } from './logic-builder'
 
 // Designer-facing description of a single-entity picker field in the

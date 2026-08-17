@@ -19,11 +19,11 @@ import {
   SCRIPTS_QUEUE_PROFILE,
   buildNotifyQueueJobs,
   type QueueProfile,
-} from '@braedonsaunders/jobs'
-import { createSealer } from '@braedonsaunders/crypto'
-import { renderEmail } from '@braedonsaunders/email-render'
-import { EMAIL_PROVIDER_SPECS, buildTransport } from '@braedonsaunders/emails'
-import { sendMail, syncMailbox, verifyImap, verifySmtp } from '@braedonsaunders/mailbox'
+} from '@braedonsaunders/appkit-jobs'
+import { createSealer } from '@braedonsaunders/appkit-crypto'
+import { renderEmail } from '@braedonsaunders/appkit-email-render'
+import { EMAIL_PROVIDER_SPECS, buildTransport } from '@braedonsaunders/appkit-emails'
+import { sendMail, syncMailbox, verifyImap, verifySmtp } from '@braedonsaunders/appkit-mailbox'
 import {
   XLSX_MIME_TYPE,
   excelJsAvailable,
@@ -33,7 +33,7 @@ import {
   resolveSoffice,
   sanitizeOfficeHtml,
   type WorkbookSpec,
-} from '@braedonsaunders/office'
+} from '@braedonsaunders/appkit-office'
 import {
   DEFAULT_AGENT_TOOL_POLICY,
   agentToolScope,
@@ -42,8 +42,8 @@ import {
   isSafeAgentTool,
   type AgentToolManifest,
   type AgentToolPolicyMode,
-} from '@braedonsaunders/agent-tools'
-import { buildBubblewrapPlan } from '@braedonsaunders/process-sandbox'
+} from '@braedonsaunders/appkit-agent-tools'
+import { buildBubblewrapPlan } from '@braedonsaunders/appkit-process-sandbox'
 import {
   DEFAULT_KVM_PATH,
   DEFAULT_VMM_PATH,
@@ -51,27 +51,27 @@ import {
   createDeskFrameDeduplicator,
   exportPortableDeskHome,
   isDeskSupported,
-} from '@braedonsaunders/desk'
+} from '@braedonsaunders/appkit-desk'
 import {
   isPublicHostname,
   normalizeOutboundHostname,
   readClientHelloSni,
   type EgressDecision,
   type EgressPolicyRequest,
-} from '@braedonsaunders/egress-proxy'
-import { SMS_PROVIDER_SPECS, buildSmsTransport } from '@braedonsaunders/sms'
+} from '@braedonsaunders/appkit-egress-proxy'
+import { SMS_PROVIDER_SPECS, buildSmsTransport } from '@braedonsaunders/appkit-sms'
 import {
   CARRIER_PROVIDER_SPECS,
   isValidPhoneNumber,
   resolveCarrierClient,
   validateStoredCarrierConfig,
-} from '@braedonsaunders/telephony'
+} from '@braedonsaunders/appkit-telephony'
 import {
   DEEPGRAM_STT_MODELS,
   ELEVENLABS_TTS_MODELS,
   GEMINI_LIVE_MODELS,
   OPENAI_REALTIME_MODELS,
-} from '@braedonsaunders/voice'
+} from '@braedonsaunders/appkit-voice'
 import {
   Badge,
   Button,
@@ -90,7 +90,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@braedonsaunders/ui'
+} from '@braedonsaunders/appkit-ui'
 import { getPackage } from '../../../../../lib/server/package-catalog'
 import { SceneDemoStage } from './scene-demo-stage'
 import { SuperadminDemo } from './superadmin-demo'
@@ -908,7 +908,7 @@ function AgentToolsDemo({ mode }: { mode: AgentToolPolicyMode }) {
         <Card>
           <CardHeader>
             <CardTitle>Isolation per tool</CardTitle>
-            <CardDescription>Resolved by the package, then handed to @braedonsaunders/process-sandbox.</CardDescription>
+            <CardDescription>Resolved by the package, then handed to @braedonsaunders/appkit-process-sandbox.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {decisions.map(({ manifest, plan }) => (

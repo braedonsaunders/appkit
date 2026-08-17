@@ -4,7 +4,7 @@ import {
   normalizeEmailSubject,
   renderTemplate,
   sanitizeTokenizedEmailFragment,
-} from '@braedonsaunders/email-render'
+} from '@braedonsaunders/appkit-email-render'
 import { EMAIL_DESTINATION_SUMMARY } from './destination-catalog'
 import type {
   DeliverContext,

@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { ChevronDown, ChevronUp, Eye, EyeOff, Palette, Trash2 } from 'lucide-react'
-import { Slider } from '@braedonsaunders/ui'
+import { Slider } from '@braedonsaunders/appkit-ui'
 import { resolvePartUrl, type AvatarComposition, type AvatarPart, type AvatarPartCategory } from '../composition'
 
 /**

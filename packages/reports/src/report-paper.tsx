@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
-import { cn } from '@braedonsaunders/ui'
+import { cn } from '@braedonsaunders/appkit-ui'
 import { resolveReportLayout, type ReportLayout } from './types'
 
 const PAPER_WIDTH: Record<ReportLayout['paperSize'], string> = {

@@ -1,5 +1,5 @@
 import type { PermissionGroup } from './types'
-export { applyPermissionOverrides, permissionSetCovers } from '@braedonsaunders/tenant'
+export { applyPermissionOverrides, permissionSetCovers } from '@braedonsaunders/appkit-tenant'
 
 export function validatePermissionGroups(groups: readonly PermissionGroup[]): string[] {
   const errors: string[] = []

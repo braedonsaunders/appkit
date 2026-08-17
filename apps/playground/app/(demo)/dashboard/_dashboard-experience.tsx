@@ -4,12 +4,12 @@ import {
   Activity, BookOpen, Boxes, Code2, CreditCard, Library, LockKeyhole,
   ScrollText, Shield, Sparkles, Users,
 } from 'lucide-react'
-import { apiKeys, auditLog, memberships, roles } from '@braedonsaunders/db'
+import { apiKeys, auditLog, memberships, roles } from '@braedonsaunders/appkit-db'
 import {
   AnimatedNumber, Badge, Button, Sparkline,
-} from '@braedonsaunders/ui'
-import type { DashboardLibraryItem } from '@braedonsaunders/dashboard'
-import { DashboardMetricCard, DashboardPanel, InsightCard } from '@braedonsaunders/dashboard/react'
+} from '@braedonsaunders/appkit-ui'
+import type { DashboardLibraryItem } from '@braedonsaunders/appkit-dashboard'
+import { DashboardMetricCard, DashboardPanel, InsightCard } from '@braedonsaunders/appkit-dashboard/react'
 import { getDemoEnvironment } from '../../../lib/server/demo-context'
 import { executeDemoQuery } from '../../../lib/server/analytics'
 import { loadDashboardData } from '../../../lib/server/dashboard'

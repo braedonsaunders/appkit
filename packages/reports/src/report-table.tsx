@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { cn } from '@braedonsaunders/ui'
+import { cn } from '@braedonsaunders/appkit-ui'
 
 /** Report-only table primitives: ruled document typography without list chrome. */
 export function ReportTable({ className, ...props }: React.TableHTMLAttributes<HTMLTableElement>) {

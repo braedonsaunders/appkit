@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import type { AnalyticsCatalog } from '@braedonsaunders/analytics'
+import type { AnalyticsCatalog } from '@braedonsaunders/appkit-analytics'
 import { executeDemoQueryInMemory } from './demo-analytics-memory'
 
 const catalog: AnalyticsCatalog = {

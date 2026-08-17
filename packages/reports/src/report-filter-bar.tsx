@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { ChevronsDown, ChevronsUp, SlidersHorizontal } from 'lucide-react'
-import { Popover, Select, cn } from '@braedonsaunders/ui'
+import { Popover, Select, cn } from '@braedonsaunders/appkit-ui'
 import { PERIOD_PRESETS, PERIOD_PRESET_GROUP_LABELS, type PeriodPresetGroup } from './period-presets'
 
 export type ReportFilterValue = Record<string, string | boolean | null | undefined>

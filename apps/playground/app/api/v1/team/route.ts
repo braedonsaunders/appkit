@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
-import { memberships, users } from '@braedonsaunders/db'
-import { assertCan } from '@braedonsaunders/tenant'
+import { memberships, users } from '@braedonsaunders/appkit-db'
+import { assertCan } from '@braedonsaunders/appkit-tenant'
 import { getDemoEnvironment } from '../../../../lib/server/demo-context'
 import { DEMO_MEMBERS } from '../../../../lib/server/demo-data'
 import { isDatabaseConfigured } from '../../../../lib/server/platform'

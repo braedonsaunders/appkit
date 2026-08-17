@@ -1,7 +1,7 @@
 {
-  "name": "@braedonsaunders/tenant",
+  "name": "@braedonsaunders/appkit-tenant",
   "version": "0.2.0",
-  "description": "Request context, tenant-bound DB helper, and RBAC (permissions, roles, super-admin) on top of @braedonsaunders/db.",
+  "description": "Request context, tenant-bound DB helper, and RBAC (permissions, roles, super-admin) on top of @braedonsaunders/appkit-db.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {
@@ -20,8 +20,8 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@braedonsaunders/db": "workspace:*",
-    "@braedonsaunders/i18n": "workspace:*",
+    "@braedonsaunders/appkit-db": "workspace:*",
+    "@braedonsaunders/appkit-i18n": "workspace:*",
     "drizzle-orm": "^0.45.2"
   },
   "devDependencies": {

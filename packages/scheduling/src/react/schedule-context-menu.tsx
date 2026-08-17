@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * Right-click menu for a task row, built on `@braedonsaunders/ui`'s ContextMenu: edit,
+ * Right-click menu for a task row, built on `@braedonsaunders/appkit-ui`'s ContextMenu: edit,
  * outline moves, type conversion, status, duplicate, delete.
  *
  * Everything is one flat list with separators rather than a hover submenu —
@@ -26,7 +26,7 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react'
-import { ContextMenu, type ContextMenuEntry } from '@braedonsaunders/ui'
+import { ContextMenu, type ContextMenuEntry } from '@braedonsaunders/appkit-ui'
 import type { ScheduleTask, ScheduleTaskPatchInput, ScheduleTaskStatus } from '../types'
 import { useSchedulingLabels } from './context'
 

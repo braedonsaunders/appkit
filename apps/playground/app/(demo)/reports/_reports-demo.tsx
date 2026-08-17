@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { computeNextReportRun, describeReportSchedule, reportScheduleRecipientCount, resolvePreset, resolveReportLayout, type ParsedReportScheduleForm, type ReportCustomQuery, type ReportCellContext, type ReportColumn, type ReportDrillResponse, type ReportEntityCatalog, type ReportRule, type ReportRuleGroup, type ReportRunResult, type ReportSchedule } from '@braedonsaunders/reports'
+import { computeNextReportRun, describeReportSchedule, reportScheduleRecipientCount, resolvePreset, resolveReportLayout, type ParsedReportScheduleForm, type ReportCustomQuery, type ReportCellContext, type ReportColumn, type ReportDrillResponse, type ReportEntityCatalog, type ReportRule, type ReportRuleGroup, type ReportRunResult, type ReportSchedule } from '@braedonsaunders/appkit-reports'
 import {
   ReportDrillDrawer,
   ReportFilterBar,
@@ -19,8 +19,8 @@ import {
   type ReportStudioValue,
   type StatementMatrixView,
   type StatementSectionVisibility,
-} from '@braedonsaunders/reports/react'
-import { Button, cn } from '@braedonsaunders/ui'
+} from '@braedonsaunders/appkit-reports/react'
+import { Button, cn } from '@braedonsaunders/appkit-ui'
 
 const catalog: ReportEntityCatalog = { entities: [{
   key: 'projects', label: 'Projects', category: 'Operations', description: 'Projects, owners, status, value, and key dates.', from: 'projects p', tenantColumn: 'p.tenant_id',

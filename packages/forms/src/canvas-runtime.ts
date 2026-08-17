@@ -4,7 +4,7 @@
 // block applies the authored positioned grid. This keeps phones usable while
 // desktops get the exact Appsmith/WordPress-style layout.
 
-import type { CanvasItem } from '@braedonsaunders/forms-core'
+import type { CanvasItem } from '@braedonsaunders/appkit-forms-core'
 
 // Deterministic, collision-safe class derived from the section id (no useId, so
 // it works identically in server + client render).

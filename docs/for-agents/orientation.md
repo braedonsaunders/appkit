@@ -30,11 +30,11 @@ on `<html>`; tokens flip automatically. **Rebrand the whole suite by editing the
 Motion tokens: `--ease-out` `--ease-in-out` `--ease-spring`, `--duration-{fast,
 base,slow}`. Reveal helpers: `.reveal` (CSS `@starting-style`, visible-by-default)
 and `.appkit-row` (staggered table rows). Browser-native routed-page motion is
-available through the optional `@braedonsaunders/ui/page-transition` entry point.
+available through the optional `@braedonsaunders/appkit-ui/page-transition` entry point.
 
 ## 2. Primitive index
 
-Import general primitives from `@braedonsaunders/ui`; install feature packages only when
+Import general primitives from `@braedonsaunders/appkit-ui`; install feature packages only when
 the application uses them.
 
 **Buttons & inputs** — `Button` (variants: default/secondary/outline/subtle/ghost/
@@ -50,7 +50,7 @@ protocol with progress and finalization) · `SignaturePad` (pointer/touch/stylus
 PNG capture) · `TabContent` (foreground tab-panel handoff) · `UiTextProvider`
 (host translation injection for UI primitives). Upload and signature surfaces
 use dedicated semantic document tokens so exported content stays legible in
-both themes. `RichTextEditor` lives in optional `@braedonsaunders/editor`, keeping TipTap
+both themes. `RichTextEditor` lives in optional `@braedonsaunders/appkit-editor`, keeping TipTap
 out of applications that do not author rich text.
 
 **Feedback** — `Alert` + `AlertTitle` + `AlertDescription` (variants default/
@@ -87,13 +87,13 @@ counter) · `Sparkline` (tokenized SVG trend, optional area/min-max dots).
 **Layout measurement** — `useElementSize()` returns `[ref, { width, height }]`
 from a `ResizeObserver`, for the layouts that have to do their own arithmetic
 (depth scaling, fit-the-viewport stages). Attach the ref and the size follows
-every resize. Available from `@braedonsaunders/ui` and, for consumers that want the hook
-without the component barrel, from `@braedonsaunders/ui/use-element-size`.
+every resize. Available from `@braedonsaunders/appkit-ui` and, for consumers that want the hook
+without the component barrel, from `@braedonsaunders/appkit-ui/use-element-size`.
 
 **Dashboards & insights** — fixed product dashboards can import
 `DashboardMetricCard` and `DashboardPanel` from the dependency-light
-`@braedonsaunders/dashboard/primitives` entry (plus `primitives.css`) without installing
-the builder stack. `@braedonsaunders/dashboard/react` adds `DashboardGrid` (responsive 12-column grid, view/edit
+`@braedonsaunders/appkit-dashboard/primitives` entry (plus `primitives.css`) without installing
+the builder stack. `@braedonsaunders/appkit-dashboard/react` adds `DashboardGrid` (responsive 12-column grid, view/edit
 modes, drag/resize, remove, save/reset, categorized widget/card drawer) ·
 `InsightCard` · `InsightResultView` ·
 `AdvancedInsightResultView` (flat results plus typed pivots/heatmaps and fifteen
@@ -102,8 +102,8 @@ measures, parsed formulas, dimensions, filters, visualization settings, live
 preview, autosave, publish/delete) · `DashboardStudio` (controlled metadata,
 autosave, publish, pin, delete, and grid composition). These are generalized production
 dashboard system, not gallery mockups. Framework-neutral types remain at
-`@braedonsaunders/dashboard`; persistence is explicitly installed from
-`@braedonsaunders/dashboard/schema`.
+`@braedonsaunders/appkit-dashboard`; persistence is explicitly installed from
+`@braedonsaunders/appkit-dashboard/schema`.
 
 **App shell / admin** — `PageHeader` · `AdminHub` (the settings **landing/hub** —
 grouped accent cards, with an optional detailed layout for capability inventories)
@@ -135,7 +135,7 @@ the tenant-scoped query and navigation. `NotificationsBell`, `ThemeProvider` /
 `getThemeScript` / `ThemeToggle`, `NavigationModeProvider`, and `UiLinkProvider` /
 `UiBackLinkProvider` complete the shared shell runtime.
 
-**Identity administration (`@braedonsaunders/iam/react`)** — `RolesAdmin` provides the
+**Identity administration (`@braedonsaunders/appkit-iam/react`)** — `RolesAdmin` provides the
 production paged/searchable/sortable role register with full-dataset type
 facets, keys and descriptions, complete create/edit/duplicate/delete drawer,
 grouped permission matrix, activity, member assignment, record-data scopes,
@@ -148,12 +148,12 @@ paging and sorting, before/after field diffs, structured snapshots, request
 metadata, and a fullscreen detail drawer. Actor-aware capabilities are enforced
 again in every adapter. The application injects its permission catalogue,
 hierarchy options, invitation delivery, and optional member actions/detail
-tabs; `@braedonsaunders/iam/drizzle` supports both Drizzle Postgres drivers and runs
-application projection hooks inside IAM transactions. `@braedonsaunders/iam/http`
+tabs; `@braedonsaunders/appkit-iam/drizzle` supports both Drizzle Postgres drivers and runs
+application projection hooks inside IAM transactions. `@braedonsaunders/appkit-iam/http`
 carries the full contract across an application-owned auth gate and
-`@braedonsaunders/iam/memory` supports browser-only, local-first, and test consumers.
+`@braedonsaunders/appkit-iam/memory` supports browser-only, local-first, and test consumers.
 
-**Authentication (`@braedonsaunders/auth`)** — `createAppkitAuth` owns persisted Better
+**Authentication (`@braedonsaunders/appkit-auth`)** — `createAppkitAuth` owns persisted Better
 Auth sessions, password accounts and resets, hashed magic links, provider
 accounts, and session revocation. `createInviteService` binds a successfully
 consumed one-time link to one membership generation; `/drizzle` activates and
@@ -209,7 +209,7 @@ tenant selection, and any post-acceptance domain effect.
   without relying on browser history.
 - **Dashboard pages** load a user/role/default `DashboardLayout`, build a node
   registry from built-ins plus persisted cards, and pass both to
-  `DashboardGrid` from `@braedonsaunders/dashboard/react`.
+  `DashboardGrid` from `@braedonsaunders/appkit-dashboard/react`.
   The app owns node content; appkit owns responsive layout/editing. Saved insight
   cards use `CardStudio` in a `Drawer`, appear in the library, and become
   `DashboardLibraryItem`s. The working references are `/dashboard`,
@@ -217,7 +217,7 @@ tenant selection, and any post-acceptance domain effect.
 - **Routed page transitions** keep `AppShell` outside the animated boundary and
   wrap only its changing page canvas in `PageTransition`, keyed by
   `usePathname()`. Enable Next's `experimental.viewTransition` flag and import
-  the primitive from `@braedonsaunders/ui/page-transition`. The shared styles use the
+  the primitive from `@braedonsaunders/appkit-ui/page-transition`. The shared styles use the
   motion tokens, preserve chart and text sharpness, disable motion for
   `prefers-reduced-motion`, and leave unsupported browsers with normal instant
   navigation.
@@ -229,7 +229,7 @@ tenant selection, and any post-acceptance domain effect.
   `DrawerNavigateContext`. Search results, notification data/actions, account
   preferences, and sign-out remain app-owned adapters.
 
-## 4. AI agents (`@braedonsaunders/ai`)
+## 4. AI agents (`@braedonsaunders/appkit-ai`)
 
 `runAgentTurn` is the production multi-step tool loop generalized around an
 injected AI SDK `LanguageModel`. The app resolves provider credentials per
@@ -239,7 +239,7 @@ one-step default with a bounded `stepCountIs` stop condition, streams the
 UI-message protocol, redacts provider errors, supports aborts, and reports final
 parts/token usage through `onComplete`.
 
-`@braedonsaunders/ai/react` exports `AgentPanel`, `ChatMarkdown`, and `AgentToolCard`.
+`@braedonsaunders/appkit-ai/react` exports `AgentPanel`, `ChatMarkdown`, and `AgentToolCard`.
 `AgentPanel` owns the live/reloaded parts renderer, streaming decoder, composer,
 cancellation, and disabled state; the app injects its persistence-backed send
 transport. The playground documents this contract on `/dashboard/platform`
@@ -255,7 +255,7 @@ call, result, and text field; user-supplied images are never touched. This is a
 context and cost control, not an audit policy — applications persist their
 full screenshot ledger separately.
 
-`@braedonsaunders/events` supplies the durable worker mechanics beneath those
+`@braedonsaunders/appkit-events` supplies the durable worker mechanics beneath those
 runs. `runWithFencedLease` claims a per-attempt owner/fence, renews it, aborts
 in-flight work when ownership is lost, and requires the terminal application
 commit to compare the same fence. `executeExternalEffect` records an immutable
@@ -268,7 +268,7 @@ so missed notifications and reconnects cannot lose events.
 
 ## 5. Forms and localized authoring
 
-`@braedonsaunders/forms-core` is the framework-neutral form contract shared by the
+`@braedonsaunders/appkit-forms-core` is the framework-neutral form contract shared by the
 production reference applications. It accepts both plain-string authoring copy and locale-keyed
 copy, with or without a workflow. Its field registry is the union of the source
 products: finance fields (`currency`, `percentage`, `gl_account`, `party`) sit
@@ -276,8 +276,8 @@ beside the full safety/field-operations vocabulary. The dependency-light root
 owns parsing, cross-reference linting, conditional logic, formula evaluation,
 defaults, response validation, scoring, participant extraction, attachment URL
 policy, companion-value conventions, and DOM-free text extraction. Rich document sanitization and response
-normalization are explicit `@braedonsaunders/forms-core/sanitize` and
-`@braedonsaunders/forms-core/response-normalize` entries so a validator-only service does
+normalization are explicit `@braedonsaunders/appkit-forms-core/sanitize` and
+`@braedonsaunders/appkit-forms-core/response-normalize` entries so a validator-only service does
 not allocate or bundle a browser DOM. The package has no UI, token, or
 email-rendering dependency; its small localization dependency resolves authored
 labels for companion and automation profiles.
@@ -285,13 +285,13 @@ The live `/forms/core` reference executes the schema parser and response
 validator, lists the field registry, and displays both automation vocabularies.
 
 Automation is source-native rather than artificially flattened:
-`@braedonsaunders/forms-core/safety-automation` preserves the safety workflow contract,
-while `@braedonsaunders/forms-core/business-automation` preserves the ERP
+`@braedonsaunders/appkit-forms-core/safety-automation` preserves the safety workflow contract,
+while `@braedonsaunders/appkit-forms-core/business-automation` preserves the ERP
 lifecycle contract. Both retain their complete upstream automation tests. The
 payloads intentionally remain separate where same-named actions mean different
 things.
 
-`@braedonsaunders/forms` now has two explicitly different runtime surfaces. Use
+`@braedonsaunders/appkit-forms` now has two explicitly different runtime surfaces. Use
 `ProductionFormRenderer` for production parity: it is the complete source fill
 runtime with revision-safe and unload-safe drafts, inline field saves, lazy
 draft creation, server validation, guided steps, formulas/defaults/conditional
@@ -312,7 +312,7 @@ property inspectors are present. Persistence, navigation, data sources,
 authorization, optional AI assistance, and workflow rendering are typed host
 seams. `formFlowProfile` and `lintFormFlowGraph` preserve the source companion,
 writability, photo, and top-level-field rules when composing
-`@braedonsaunders/workflows/react`.
+`@braedonsaunders/appkit-workflows/react`.
 
 `FormRenderer` and `FormDesigner` remain smaller controlled compositions for
 applications that intentionally own every callback. Neither is the production
@@ -320,23 +320,23 @@ parity surface. The live `/forms` reference now runs `ProductionFormDesigner`,
 the production Flows canvas, the complete production fill runtime, JSON
 editing, import/export, and browser-local persistence without a database.
 
-`@braedonsaunders/editor` owns the optional TipTap authoring control used by rich-text
-fields. Companion-value conventions live in `@braedonsaunders/forms-core` because forms,
-flows, and documents must agree on them. `@braedonsaunders/forms-documents` owns document
+`@braedonsaunders/appkit-editor` owns the optional TipTap authoring control used by rich-text
+fields. Companion-value conventions live in `@braedonsaunders/appkit-forms-core` because forms,
+flows, and documents must agree on them. `@braedonsaunders/appkit-forms-documents` owns document
 styles and generated bounded PDF templates and re-exports those canonical
 helpers for existing document consumers.
 
-`@braedonsaunders/i18n` resolves supported locales, Accept-Language, tenant defaults,
+`@braedonsaunders/appkit-i18n` resolves supported locales, Accept-Language, tenant defaults,
 per-user overrides, and localized authored content. Plain-string records remain
 valid during progressive adoption.
 
-`@braedonsaunders/email-render` is the extracted production rendering keystone used before
-`@braedonsaunders/emails` transport. It compiles inline, saved-template, and design modes;
+`@braedonsaunders/appkit-email-render` is the extracted production rendering keystone used before
+`@braedonsaunders/appkit-emails` transport. It compiles inline, saved-template, and design modes;
 escapes merge values; supports bounded loops and conditionals; produces HTML and
 plain text; sanitizes authored markup; and validates provider-neutral delivery
 inputs without allocating decoded attachments.
 
-## 6. Analytics and card queries (`@braedonsaunders/analytics`)
+## 6. Analytics and card queries (`@braedonsaunders/appkit-analytics`)
 
 The analytics package deliberately knows no host-application domain tables.
 An app provides an `AnalyticsCatalog`: authored source `FROM` clauses, the tenant
@@ -346,7 +346,7 @@ tenant predicate as `$1`, parameter-binds every filter/literal, validates formul
 AST functions, caps result limits, and never accepts raw user SQL.
 
 ```ts
-import { compileQuery, type AnalyticsCatalog } from '@braedonsaunders/analytics/server'
+import { compileQuery, type AnalyticsCatalog } from '@braedonsaunders/appkit-analytics/server'
 
 const catalogue: AnalyticsCatalog = { sources: [{
   key: 'orders', label: 'Orders', from: 'orders o', tenantColumn: 'o.tenant_id',
@@ -367,14 +367,14 @@ contract to `InsightResultView`.
 
 ## 7. Governed scripts and installable apps
 
-`@braedonsaunders/sandbox` is the common QuickJS execution kernel. It creates a fresh
+`@braedonsaunders/appkit-sandbox` is the common QuickJS execution kernel. It creates a fresh
 WASM runtime per invocation, exposes no ambient host APIs, deep-freezes input,
 and enforces memory, stack, deadline, and governance-unit ceilings. Add host
 capabilities explicitly as synchronous-looking async functions. Do not expose a
 database client, fetch implementation, filesystem handle, or tenant-unscoped
 service to authored code.
 
-`@braedonsaunders/process-sandbox` is deliberately separate from that authored-code
+`@braedonsaunders/appkit-process-sandbox` is deliberately separate from that authored-code
 kernel. It owns the reusable Linux bubblewrap policy for full coding-agent or
 trusted-worker processes: process/IPC/UTS/cgroup namespaces, masked host data,
 read-only system roots, explicit writable workspace/home binds, a fresh
@@ -386,7 +386,7 @@ same deterministic plan for tests, audits, and readiness UI. Desktop
 single-user execution remains an explicit application mode and must never be an
 automatic server fallback.
 
-`@braedonsaunders/scripts` builds event, scheduled, endpoint, bulk, and browser-client
+`@braedonsaunders/appkit-scripts` builds event, scheduled, endpoint, bulk, and browser-client
 automation on that kernel. The application supplies the trigger catalogue,
 mutable subject fields, tenant-bound read adapters, governed write functions,
 identity, routes, and authorization. `/client` preserves the production
@@ -397,14 +397,14 @@ surface with line numbers, folding, JavaScript completion, trigger-aware starter
 source, keyboard editing, separate run selection and log inspection, and the
 general/code/runs/log drawer flow.
 
-`@braedonsaunders/scripts/bound` is the cutover seam for an application that already
+`@braedonsaunders/appkit-scripts/bound` is the cutover seam for an application that already
 has authored scripts. Configure its existing sandbox global, native context,
 tenant resolver, host values, reads, and governed writes once; the returned
 positional `runScript`, trigger, scheduled, endpoint, and bulk methods preserve
 the caller and authored-code contract without putting application vocabulary in
 AppKit.
 
-`@braedonsaunders/apps` is the installable application platform. Its root owns validated
+`@braedonsaunders/appkit-apps` is the installable application platform. Its root owns validated
 manifests and ZIPs, install/upgrade lifecycle, capability intersection, frontend
 assembly, backend dispatch, files, storage, run history, publishing, and object
 provisioning boundaries. `/runtime` preserves the source-shaped backend import;
@@ -416,7 +416,7 @@ controls, endpoint authoring, live opaque-origin preview, run inspector, and lib
 adapters. The iframe must retain `sandbox="allow-scripts"` without
 `allow-same-origin`, and its CSP must keep `connect-src 'none'`. Effective
 capabilities are always `(administrator grants ∩ invoking user permissions)`.
-`@braedonsaunders/apps/service` similarly binds the complete positional lifecycle API to
+`@braedonsaunders/appkit-apps/service` similarly binds the complete positional lifecycle API to
 an application store and permission/runtime adapters, while
 `createAppEndpointRuntime` preserves an existing authored backend global and
 host-adapter shape.
@@ -445,12 +445,12 @@ Yarn, or Bun. Feature groups add packages, not invented domain screens or data.
 For an existing application, install only the foundation packages:
 
 ```bash
-pnpm add @braedonsaunders/ui @braedonsaunders/tokens
+pnpm add @braedonsaunders/appkit-ui @braedonsaunders/appkit-tokens
 ```
 
 ```css
 /* app globals.css — the whole system in one import (Tailwind v4 + tokens) */
-@import '@braedonsaunders/ui/styles.css';
+@import '@braedonsaunders/appkit-ui/styles.css';
 @source '../app';
 ```
 
@@ -472,14 +472,14 @@ children with `<PageTransition navigationKey={pathname}>`. This optional entry
 point tracks the current Next/React View Transition API. Then compose screens
 from the primitives above — every color a token, light + dark for free.
 
-## 8. Multi-tenancy out of the box (`@braedonsaunders/db` + `@braedonsaunders/tenant`)
+## 8. Multi-tenancy out of the box (`@braedonsaunders/appkit-db` + `@braedonsaunders/appkit-tenant`)
 
 An app on appkit is multi-tenant with super-admin from day one — you don't build
 RLS or RBAC yourself.
 
 ```ts
-import { createDb, tenantRef, id, installRlsSql, IDENTITY_TENANT_TABLES } from '@braedonsaunders/db'
-import * as schema from '@braedonsaunders/db/schema'
+import { createDb, tenantRef, id, installRlsSql, IDENTITY_TENANT_TABLES } from '@braedonsaunders/appkit-db'
+import * as schema from '@braedonsaunders/appkit-db/schema'
 
 // One factory: a tenant-scoped `db` (Postgres RLS applied per request) + a
 // BYPASSRLS `superDb` for system/super-admin work.
@@ -493,12 +493,12 @@ export const { db, superDb, withTenant, withTenantContext, withSuperAdmin } =
   (pooled) or `withTenant(tenantId, fn)` (one atomic transaction). Unscoped
   queries match **no rows** (deny-by-default). Cross-tenant/system work uses
   `withSuperAdmin(sdb => …)`.
-- **Request context** (`@braedonsaunders/tenant`): the shared context carries tenant,
+- **Request context** (`@braedonsaunders/appkit-tenant`): the shared context carries tenant,
   membership, timezone, effective/default/enabled locale policy, permissions,
   scopes, active role, impersonation, API-key attribution, and a tenant-bound
   database callback. Add application-owned identity data with
   `RequestContext<MyContextExtension>`; do not fork the core type.
-- **RBAC** (`@braedonsaunders/tenant`): resolve the user's permission set with the
+- **RBAC** (`@braedonsaunders/appkit-tenant`): resolve the user's permission set with the
   production-shaped `resolveMembershipAccess(tx, membershipId, activeRoleId?)`,
   then gate mutations with `assertCan(ctx, 'module.action')`. Bind the app's
   permission catalogue once with `createMembershipAccessResolver` when concrete
@@ -509,19 +509,19 @@ export const { db, superDb, withTenant, withTenantContext, withSuperAdmin } =
   call sites while the application continues to own its RLS implementation.
 
 The canonical identity schema (tenants, users, memberships, roles,
-role_assignments, per-user permission overrides) ships in `@braedonsaunders/db/schema` —
+role_assignments, per-user permission overrides) ships in `@braedonsaunders/appkit-db/schema` —
 extend it, don't reinvent it.
 
-`@braedonsaunders/dashboard/schema` exports `userDashboardLayouts`, `insightCards`, and
+`@braedonsaunders/appkit-dashboard/schema` exports `userDashboardLayouts`, `insightCards`, and
 `DASHBOARD_TENANT_TABLES`, and ships its own Drizzle migration. Include its table
 list in the RLS installer when the feature is installed. Layouts are personal
 per tenant/user; cards persist their semantic query, visualization, settings,
 owner, and draft/published state. Notification tables and migrations follow the
-same feature-owned pattern under `@braedonsaunders/notifications/schema`.
+same feature-owned pattern under `@braedonsaunders/appkit-notifications/schema`.
 
-## 9. Secrets and outbound delivery (`@braedonsaunders/crypto`, `@braedonsaunders/emails`, `@braedonsaunders/sms`)
+## 9. Secrets and outbound delivery (`@braedonsaunders/appkit-crypto`, `@braedonsaunders/appkit-emails`, `@braedonsaunders/appkit-sms`)
 
-- Seal tenant provider credentials with `sealSecret` from `@braedonsaunders/crypto` before
+- Seal tenant provider credentials with `sealSecret` from `@braedonsaunders/appkit-crypto` before
   persistence and inject `unsealSecret` into email/SMS transport resolution.
   Production requires the same 32+ character `APPKIT_SECRET` in every service
   that seals or consumes credentials; local development has an explicit insecure
@@ -542,11 +542,11 @@ same feature-owned pattern under `@braedonsaunders/notifications/schema`.
 
 ## 10. Reports and documents
 
-`@braedonsaunders/reports` owns fiscal periods, nested filter trees, relationship
+`@braedonsaunders/appkit-reports` owns fiscal periods, nested filter trees, relationship
 refinement, metadata-backed custom fields, tenant-bound row and summary query
 compilation, fiscal breakouts, grouped result shaping, saved definition
 registries, document layout/rendering, DST-safe cadence, schedule policy, and
-lease-based idempotent run claiming. `@braedonsaunders/reports/react` preserves the
+lease-based idempotent run claiming. `@braedonsaunders/appkit-reports/react` preserves the
 production report surface: `ReportStudio` has the one-third scrolling build rail
 and two-thirds live paper preview, grouped searchable sources, catalogue-derived
 templates, ordered/searchable columns, and debounced preview/autosave adapters;
@@ -579,8 +579,8 @@ catalogue, tenant-scoped execution, persistence, member lookup, typed drill
 target/loader, native record opener, and export/delivery transport.
 Domain-specific built-in definitions remain in the consuming application rather
 than becoming framework defaults. Applications rendering these React surfaces
-import `@braedonsaunders/reports/styles.css` alongside
-`@braedonsaunders/ui/styles.css` so Tailwind v4 scans the packaged components.
+import `@braedonsaunders/appkit-reports/styles.css` alongside
+`@braedonsaunders/appkit-ui/styles.css` so Tailwind v4 scans the packaged components.
 
 The stored query plan intentionally keeps the production contract names:
 `ReportCustomQuery`, filter leaf `op`, measure `fn`, `sort` plus `sorts`, and
@@ -592,43 +592,43 @@ query migrations. Application-owned catalogues may mark technical columns
 `hidden`; those columns remain usable by trusted `baseFilter` scope predicates
 but are excluded from the studio, defaults, and user-authored query plans.
 
-`@braedonsaunders/pdf` provides a pure-JS PDFKit report,
+`@braedonsaunders/appkit-pdf` provides a pure-JS PDFKit report,
 table, and financial-statement renderer. Bounded template rendering is under
-`@braedonsaunders/pdf/template`; HTML sanitization and hardened Chromium printing are
-under `@braedonsaunders/pdf/html`, so a report-only service does not install Chromium.
-`@braedonsaunders/forms-pdf` provides safe form-summary HTML at its root, then opt-in
+`@braedonsaunders/appkit-pdf/template`; HTML sanitization and hardened Chromium printing are
+under `@braedonsaunders/appkit-pdf/html`, so a report-only service does not install Chromium.
+`@braedonsaunders/appkit-forms-pdf` provides safe form-summary HTML at its root, then opt-in
 production browser/resource runtime, PNG conversion, summary, record/report
 template, and full-bleed design rendering entries.
 
-`@braedonsaunders/design-studio` owns the bounded multi-artboard print document. Its
-controlled editor is isolated at `@braedonsaunders/design-studio/react` and
+`@braedonsaunders/appkit-design-studio` owns the bounded multi-artboard print document. Its
+controlled editor is isolated at `@braedonsaunders/appkit-design-studio/react` and
 supports Fabric selection, drag/resize/rotation, inline text editing,
 zoom/fullscreen, artboards, insertion, layers, z-order, visibility/locking,
 the full text/shape/image/QR property inspector, factories/defaults, controlled
 copy, HTML output, and print-provider settings.
-`@braedonsaunders/design-studio/fabric` remains the lazy
+`@braedonsaunders/appkit-design-studio/fabric` remains the lazy
 canvas-runtime boundary. Data field keys, sample values, persistence, and output
 actions come from the application; product entities are not hardcoded in the
 package. The working references are `/reports` and `/design-studio`.
-Applications that render the editor import `@braedonsaunders/design-studio/styles.css`
-in their Tailwind entry alongside `@braedonsaunders/ui/styles.css`.
+Applications that render the editor import `@braedonsaunders/appkit-design-studio/styles.css`
+in their Tailwind entry alongside `@braedonsaunders/appkit-ui/styles.css`.
 
-`@braedonsaunders/storage` is the generalized S3/R2/MinIO runtime: tenant-owned object
+`@braedonsaunders/appkit-storage` is the generalized S3/R2/MinIO runtime: tenant-owned object
 keys, automatic multipart writes, client multipart completion/abort, byte
 ranges, streaming reads, rich metadata, verified ETag promotion, lifecycle
 tags, and existence-safe presigning live behind one injected configuration.
-`@braedonsaunders/storage/env` exposes a strict, portable `APPKIT_STORAGE_*` environment
+`@braedonsaunders/appkit-storage/env` exposes a strict, portable `APPKIT_STORAGE_*` environment
 contract. Applications with another configuration system use `createStorage`.
-`@braedonsaunders/storage/react` is the complete extracted record-attachment workspace:
+`@braedonsaunders/appkit-storage/react` is the complete extracted record-attachment workspace:
 upload, URL-backed search/type filters/paging, image and PDF preview, download,
 expanded preview, and removal. It retains the source `targetTable`/`targetId`
 caller shape while injecting an `AttachmentAdapter`, so authorization, tenancy,
 metadata persistence, and file routes remain application-owned.
 `createHttpAttachmentAdapter` matches the source GET/POST/DELETE response
-contract; `@braedonsaunders/storage/memory` is a functional database-free adapter for
+contract; `@braedonsaunders/appkit-storage/memory` is a functional database-free adapter for
 tests, demos, and local tools. Selecting the `storage` capability in
 `create-appkit` installs this package without pulling it into unrelated apps.
-`@braedonsaunders/jobs` supplies lazy BullMQ producer/worker connections, bounded Redis
+`@braedonsaunders/appkit-jobs` supplies lazy BullMQ producer/worker connections, bounded Redis
 readiness, source payload validators, and an atomic fixed-window rate limiter.
 Its optional queue entries preserve the production email, notify/push,
 PDF/document, report, scheduled, outbound, authored-script, sandbox, migration,
@@ -644,7 +644,7 @@ checks, bounded encrypted payloads, and terminal provider status handling.
 
 ## 11. Workflows, sync, integrations, notifications, and customization
 
-`@braedonsaunders/workflows` provides dependency-free graph conversion, persistence
+`@braedonsaunders/appkit-workflows` provides dependency-free graph conversion, persistence
 limits, cycle detection, linting, durable runs, replay-safe action claims, and
 approval gates. Its `any`/`all` quorum behavior and pause/resume seam come from
 the production reference implementations. Gate rows retain
@@ -653,7 +653,7 @@ The root also exports the record-facing approval projection contract plus
 source-compatible HTTP and fully functional memory adapters. It preserves the
 production `subjectKind`/`subjectId`, record-state query, gate-decision body,
 409 concurrency result, pending-assignee, and approval-history shapes.
-`@braedonsaunders/workflows/react` adds the production multi-flow studio: workflow
+`@braedonsaunders/appkit-workflows/react` adds the production multi-flow studio: workflow
 library rail, enable/rename/delete controls, full React Flow canvas, node
 toolbar, typed node registry, subject-compatible templates, drawer inspector,
 and live lint. The application injects its subject profile, persistence adapter,
@@ -667,14 +667,14 @@ the collapsible submitted/requested/approved/rejected/escalated/delegated event
 history. The provider injects authorization-bound state/decision I/O and the
 host router refresh seam; the controls retain their source caller shape.
 Dependency-sensitive consumers may import the same surface from
-`@braedonsaunders/workflows/approval-react` without loading the visual studio, React
+`@braedonsaunders/appkit-workflows/approval-react` without loading the visual studio, React
 Flow, or form-authoring modules.
 `/approval-tokens` signs one-click decisions;
 `/schema` and `/drizzle` own definitions, runs, gates, and action executions.
-The two source-native automation schemas remain in `@braedonsaunders/forms-core`; apps
+The two source-native automation schemas remain in `@braedonsaunders/appkit-forms-core`; apps
 adapt either schema through `WorkflowPlanner` and inject their action handlers.
 
-`@braedonsaunders/sync` is the inbound connector spine: app-defined and built-in CSV,
+`@braedonsaunders/appkit-sync` is the inbound connector spine: app-defined and built-in CSV,
 database, HTTPS JSON, managed-provider, and ERP connectors emit a
 generic `{entity, externalId, data}` envelope into an injected target adapter.
 The production orchestrator loads the configured connection, resolves secrets
@@ -695,7 +695,7 @@ tests, and the database-free playground. Canonical tables, natural-key lookup,
 field ownership, and archive writes remain the application's typed target
 adapter because those schemas are product-owned.
 
-`@braedonsaunders/integrations` is the outbound trigger-to-destination spine. Product
+`@braedonsaunders/appkit-integrations` is the outbound trigger-to-destination spine. Product
 modules emit already-authorized item namespaces; the dispatcher maps tokens,
 unseals through an app adapter, consults the delivery ledger, and records refs.
 A source-shaped publisher selects every enabled matching automation and emits
@@ -714,18 +714,18 @@ clean migration, RLS-required Drizzle store, and database-free memory store run
 the same publisher/dispatcher contract. The working reference is
 `/admin/integrations`.
 
-`@braedonsaunders/notifications` applies tenant category policy, per-user channel
+`@braedonsaunders/appkit-notifications` applies tenant category policy, per-user channel
 preferences, digest/quiet-hour behavior, critical delivery rules, and stable
 deduplication keys before invoking app-owned delivery adapters. Digest
 aggregation and push subscription lifecycle are package-owned. Its root has no
-dependencies. `@braedonsaunders/notifications/schema` owns its feature tables,
-`@braedonsaunders/notifications/drizzle` provides the RLS-aware delivery store and a
+dependencies. `@braedonsaunders/appkit-notifications/schema` owns its feature tables,
+`@braedonsaunders/appkit-notifications/drizzle` provides the RLS-aware delivery store and a
 tenant/user-bound inbox adapter with search, cursor paging, folder counts, and
 mutations. It also owns source-shaped atomic preference and tenant-configuration
 adapters, including the singular `tenant_notification_policy` table and its
 digest, quiet-hour, scan-enabled, cron, and timezone fields. Domain to-dos and
 recipient catalogue queries remain injected. The React entry
-`@braedonsaunders/notifications/react` provides the complete responsive three-pane inbox:
+`@braedonsaunders/appkit-notifications/react` provides the complete responsive three-pane inbox:
 smart and category folders, search, optimistic read/unread/delete/snooze,
 to-dos, cursor paging, a reading pane, mobile drawers, recoverable errors, and
 the matching loading shell. Applications inject the tenant/user-scoped
@@ -744,7 +744,7 @@ runtime cycles and forbidden foundation dependencies; `pnpm test:isolation`
 walks each package root's complete source import graph and fails if an optional
 adapter peer leaks into it. Both run as part of `pnpm lint`.
 
-`@braedonsaunders/customization` owns the production customization contracts: versioned
+`@braedonsaunders/appkit-customization` owns the production customization contracts: versioned
 form layouts, ordered header groups, editable line-item columns, record actions,
 saved list views, structured filters, defaults, parse/lint/refresh behavior, and
 custom-field definitions. The framework-free root also resolves explicit,
@@ -755,25 +755,25 @@ Applications bind their record metadata once with `createCustomizationEngine`;
 the returned key-based defaults, parse/lint/refresh helpers, and registry keep
 call sites source-shaped while preventing application records, storage tables,
 action vocabularies, and translation keys from leaking into AppKit.
-`@braedonsaunders/customization/react` exports the extracted `RecordListView`,
+`@braedonsaunders/appkit-customization/react` exports the extracted `RecordListView`,
 `CustomizationStudio`, `FormDesigner`, `ListViewDesigner`, and
 `CustomFieldDesigner`. `RecordListView` is the consuming record surface: saved
 view picker/defaults, compact quick filters, subtabs, sortable typed columns,
 record drill-through, actions, empty state, and controlled pagination. Currency,
 status semantics, labels, routing, and domain cell renderers are injected.
 
-`@braedonsaunders/customization/memory` supplies the complete authorization-aware saved
+`@braedonsaunders/appkit-customization/memory` supplies the complete authorization-aware saved
 view repository for database-free and local-first apps. Both memory and Drizzle
 stores require that bound registry and validate every write against it.
-`@braedonsaunders/customization/persistence-schema` owns the four extracted tenant tables
+`@braedonsaunders/appkit-customization/persistence-schema` owns the four extracted tenant tables
 for layouts/views and their per-user preferences, while
-`@braedonsaunders/customization/drizzle` supplies the RLS-compatible saved-view repository
+`@braedonsaunders/appkit-customization/drizzle` supplies the RLS-compatible saved-view repository
 with ownership checks, default uniqueness, validated writes, preference upsert,
 and deletion cleanup. `CustomizationStudio` retains the complete one-third
 library / two-thirds editor composition; the individual editors remain available
 for embedded use. Applications inject permission decisions, record catalogues,
 labels, roles, and routing. Import
-`@braedonsaunders/customization/styles.css` wherever the React editors are used so
+`@braedonsaunders/appkit-customization/styles.css` wherever the React editors are used so
 Tailwind scans the optional package. The database-free `/customization`
 reference connects that same studio to a working source-derived record list and
 browser-local persistence.

@@ -59,7 +59,7 @@ imports it improves.
   `withSuperAdmin`), schema helpers, the RLS policy installer, and the canonical
   identity schema (tenants / users / memberships / roles). An app gets tenant
   isolation + super-admin out of the box.
-- `packages/tenant` — request context + RBAC on top of `@braedonsaunders/db`:
+- `packages/tenant` — request context + RBAC on top of `@braedonsaunders/appkit-db`:
   `RequestContext`, `can` / `assertCan` (wildcards, read-tiers, per-user
   grant/deny overrides), `resolveMembershipAccess`, super-admin.
 - `packages/storage` — tenant-safe S3/R2/MinIO object storage plus the optional
@@ -200,7 +200,7 @@ code shipped here:
    infrastructure only.
 3. **Use the templates, not bespoke layouts.** Admin areas are `AdminHub`; settings areas
    are `SettingsShell`/`SettingsSection`/`SettingsRow`; lists are `RecordList`/`PagedTable`;
-   secrets are `@braedonsaunders/crypto` sealers; queues are `@braedonsaunders/jobs`. Building a local
+   secrets are `@braedonsaunders/appkit-crypto` sealers; queues are `@braedonsaunders/appkit-jobs`. Building a local
    version of an existing primitive is a bug.
 4. **No free-text where finite options exist.** If the real options are enumerable at
    runtime (models from a provider API, mailboxes, roles), load them and present a
@@ -210,7 +210,7 @@ code shipped here:
 6. **Single-source feature gates; effective-dated config; append-only history.** One
    authoritative Features switchboard; price/policy changes are new effective-dated rows,
    never edits that reinterpret history; ledgers and decided records are append-only.
-**Rich text everywhere prose is edited.** Multi-line prose fields (notes, procedures, instructions, knowledge) use @braedonsaunders/editor's RichTextEditor — lists, headings, links, tables — never a bare Textarea. When storage is markdown, round-trip at the edge (md→HTML in, HTML→GFM out); the stored format stays human-readable.
+**Rich text everywhere prose is edited.** Multi-line prose fields (notes, procedures, instructions, knowledge) use @braedonsaunders/appkit-editor's RichTextEditor — lists, headings, links, tables — never a bare Textarea. When storage is markdown, round-trip at the edge (md→HTML in, HTML→GFM out); the stored format stays human-readable.
 
 **UI copy is professional SaaS language.** Never surface engineering-internal phrasing to operators: no "documented follow-up", "not wired up yet", "TODO", roadmap talk, or references to plugins/workers/branches. If a capability is unavailable, say what the operator can use instead in product terms ("Realtime calls are available with OpenAI voices; Google voices are coming soon") — and prefer not offering unavailable options at all over explaining why they fail.
 
@@ -220,7 +220,7 @@ code shipped here:
 
 7. **Both directions.**
 
-**Row interactions open Drawers.** Clicking a list/table row opens an `@braedonsaunders/ui` Drawer with the record's detail and actions — never an inline form below the table, never a bare navigation when a drawer fits. Full-page records are for deep surfaces (profiles, run timelines); everything else drawers. Apps check appkit before building anything fresh, and backfill
+**Row interactions open Drawers.** Clicking a list/table row opens an `@braedonsaunders/appkit-ui` Drawer with the record's detail and actions — never an inline form below the table, never a bare navigation when a drawer fits. Full-page records are for deep surfaces (profiles, run timelines); everything else drawers. Apps check appkit before building anything fresh, and backfill
    generalizable capabilities into appkit as new packages (committed here directly), then
    consume them back via tarballs.
 

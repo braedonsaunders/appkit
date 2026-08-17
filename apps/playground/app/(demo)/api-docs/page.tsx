@@ -1,4 +1,4 @@
-import { ApiReference, type ApiEndpointDoc, PageContainer, PageHeader } from '@braedonsaunders/ui'
+import { ApiReference, type ApiEndpointDoc, PageContainer, PageHeader } from '@braedonsaunders/appkit-ui'
 
 const LIVE_ENDPOINTS: ApiEndpointDoc[] = [
   {

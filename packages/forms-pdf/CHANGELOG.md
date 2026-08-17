@@ -1,4 +1,4 @@
-# @braedonsaunders/forms-pdf
+# @braedonsaunders/appkit-forms-pdf
 
 ## 2.0.0
 
@@ -6,9 +6,9 @@
 
 - Updated dependencies [0eff9e0]
 - Updated dependencies [8342b35]
-  - @braedonsaunders/reports@1.0.0
-  - @braedonsaunders/sync@1.1.0
-  - @braedonsaunders/design-studio@1.0.0
+  - @braedonsaunders/appkit-reports@1.0.0
+  - @braedonsaunders/appkit-sync@1.1.0
+  - @braedonsaunders/appkit-design-studio@1.0.0
 
 ## 1.0.0
 
@@ -27,8 +27,8 @@
 - Updated dependencies [9260ff0]
 - Updated dependencies [3ab6056]
 - Updated dependencies [374beb4]
-  - @braedonsaunders/reports@0.2.0
-  - @braedonsaunders/design-studio@0.2.0
-  - @braedonsaunders/sync@1.0.0
-  - @braedonsaunders/pdf@0.1.1
-  - @braedonsaunders/tokens@0.1.1
+  - @braedonsaunders/appkit-reports@0.2.0
+  - @braedonsaunders/appkit-design-studio@0.2.0
+  - @braedonsaunders/appkit-sync@1.0.0
+  - @braedonsaunders/appkit-pdf@0.1.1
+  - @braedonsaunders/appkit-tokens@0.1.1

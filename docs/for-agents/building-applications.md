@@ -86,7 +86,7 @@ or UI primitives.
 ## E. UI / UX (what appkit encodes — hold the line)
 
 - **Fully tokenized; light + dark always.** No hardcoded colors; preserve both
-  modes in every change. Use `@braedonsaunders/ui` primitives and the page shells — don't
+  modes in every change. Use `@braedonsaunders/appkit-ui` primitives and the page shells — don't
   rebuild buttons/inputs/selects/tables/drawers. `lucide-react` icons. Keep
   operational UI dense, calm, scannable.
 - **Every table/list ships search + relevant filters + pagination**, URL-driven.

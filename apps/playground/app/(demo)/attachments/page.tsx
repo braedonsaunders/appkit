@@ -1,4 +1,4 @@
-import { Badge, PageHeader } from '@braedonsaunders/ui'
+import { Badge, PageHeader } from '@braedonsaunders/appkit-ui'
 import { AttachmentWorkbench } from './workbench'
 
 export const metadata = { title: 'Attachments — appkit' }

@@ -1,10 +1,10 @@
-import { PageContainer, PageHeader } from '@braedonsaunders/ui'
+import { PageContainer, PageHeader } from '@braedonsaunders/appkit-ui'
 import { AvatarComposerDemo } from '../../../components/avatar-composer-demo'
 
 export const metadata = { title: 'Avatars — AppKit playground' }
 
 /**
- * The @braedonsaunders/avatars proof: the real composer and the real renderer over a
+ * The @braedonsaunders/appkit-avatars proof: the real composer and the real renderer over a
  * small synthetic parts library, so the placement model, the head viewport,
  * and both render variants can be exercised without an image provider.
  */

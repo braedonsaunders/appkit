@@ -51,8 +51,8 @@ import {
   type PrintProvider,
 } from './index'
 import { loadFabric } from './fabric'
-import { Badge, Button, Input, Select, Textarea, cn } from '@braedonsaunders/ui'
-import { hexColor } from '@braedonsaunders/tokens'
+import { Badge, Button, Input, Select, Textarea, cn } from '@braedonsaunders/appkit-ui'
+import { hexColor } from '@braedonsaunders/appkit-tokens'
 import type { DesignFieldCatalog as SchemaFieldCatalog } from './schema'
 import type { DesignStudioTheme } from './defaults'
 

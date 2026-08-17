@@ -213,7 +213,7 @@ function publishedDependencies(dependencies) {
   return Object.fromEntries(
     Object.entries(dependencies).map(([name, range]) => {
       if (!range.startsWith('workspace:')) return [name, range]
-      const packageDirectory = name.replace(/^@braedonsaunders\//, '')
+      const packageDirectory = name.replace(/^@braedonsaunders\/appkit-/, '')
       const dependencyManifestPath = join(packagesRoot, packageDirectory, 'package.json')
       if (!existsSync(dependencyManifestPath)) {
         throw new Error(`${manifest.name} references missing workspace package ${name}`)

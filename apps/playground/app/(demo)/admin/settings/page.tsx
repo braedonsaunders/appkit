@@ -18,7 +18,7 @@ import {
   type SettingsNavGroup,
   stampKnownNavigationItems,
   type TenantNavigationConfig,
-} from '@braedonsaunders/ui'
+} from '@braedonsaunders/appkit-ui'
 
 const nextLink: LinkRender = ({ href, children, className }) => (
   <Link href={href} className={className}>

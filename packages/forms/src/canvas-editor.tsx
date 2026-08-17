@@ -35,8 +35,8 @@ import {
   type CanvasItem,
   type FieldType,
   type FormSection,
-} from '@braedonsaunders/forms-core'
-import type { AppLocale } from '@braedonsaunders/i18n'
+} from '@braedonsaunders/appkit-forms-core'
+import type { AppLocale } from '@braedonsaunders/appkit-i18n'
 import { ElementPreview } from './element-preview'
 
 // Curated widget palette with sensible default boxes (in grid units, 12 cols).

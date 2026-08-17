@@ -1,4 +1,10 @@
-# @braedonsaunders/ai
+# @braedonsaunders/appkit-ai
+
+## 1.0.1
+
+### Patch Changes
+
+- Add bounded visual-context pruning, durable fenced event execution and cursor following, and portable, provider-conformant desk state contracts.
 
 ## Unreleased
 
@@ -12,7 +18,7 @@
 - 8342b35: Stop killing model requests that are merely slow.
 
   Outbound requests through `secureFetch` were capped at two minutes, and
-  `@braedonsaunders/ai` asked for exactly that. Two minutes is a sensible ceiling for the
+  `@braedonsaunders/appkit-ai` asked for exactly that. Two minutes is a sensible ceiling for the
   webhooks and REST calls the egress guard was written for, and it is inside the
   normal range for the one thing that legitimately takes longer: a reasoning model
   working through a tool-using turn.
@@ -36,8 +42,8 @@
 - Updated dependencies [22e968a]
 - Updated dependencies [8342b35]
 - Updated dependencies [9f04661]
-  - @braedonsaunders/ui@0.2.0
-  - @braedonsaunders/sync@1.1.0
+  - @braedonsaunders/appkit-ui@0.2.0
+  - @braedonsaunders/appkit-sync@1.1.0
 
 ## 0.2.0
 
@@ -54,5 +60,5 @@
 - Updated dependencies [3ae036d]
 - Updated dependencies [3ab6056]
 - Updated dependencies [1319bfb]
-  - @braedonsaunders/sync@1.0.0
-  - @braedonsaunders/ui@0.1.1
+  - @braedonsaunders/appkit-sync@1.0.0
+  - @braedonsaunders/appkit-ui@0.1.1

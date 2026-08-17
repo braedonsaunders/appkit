@@ -8,7 +8,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { id, tenantRef } from '@braedonsaunders/db'
+import { id, tenantRef } from '@braedonsaunders/appkit-db'
 import type { WorkflowGate, WorkflowGraph, WorkflowRunStatus } from './index'
 
 export const workflowDefinitions = pgTable(

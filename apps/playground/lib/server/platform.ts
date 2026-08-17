@@ -1,5 +1,5 @@
 import 'server-only'
-import { createDb, type AppkitDb, schema } from '@braedonsaunders/db'
+import { createDb, type AppkitDb, schema } from '@braedonsaunders/appkit-db'
 
 // One platform instance per process. Next dev hot-reloads module graphs, so the
 // singletons live on globalThis to avoid a new pg pool per reload.

@@ -1,7 +1,7 @@
 {
-  "name": "@braedonsaunders/events",
-  "version": "0.2.0",
-  "description": "Audit trail (audit + diff) and a transactional outbox (recordDomainEvent) over @braedonsaunders/db.",
+  "name": "@braedonsaunders/appkit-events",
+  "version": "0.3.0",
+  "description": "Audit trail (audit + diff) and a transactional outbox (recordDomainEvent) over @braedonsaunders/appkit-db.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {
@@ -23,7 +23,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@braedonsaunders/db": "workspace:*",
+    "@braedonsaunders/appkit-db": "workspace:*",
     "drizzle-orm": "^0.45.2"
   },
   "devDependencies": {

@@ -1,4 +1,4 @@
-# @braedonsaunders/i18n
+# @braedonsaunders/appkit-i18n
 
 ## 0.1.1
 

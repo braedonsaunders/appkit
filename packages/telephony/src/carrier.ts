@@ -2,7 +2,7 @@
 //
 // `RawCarrierConfig` is what an app persists per tenant, with the single secret
 // sealed. `resolveCarrierClient` unseals it (via an injected `unseal`, e.g.
-// @braedonsaunders/crypto's unsealSecret) into a `CarrierClient`; `buildCarrierClient`
+// @braedonsaunders/appkit-crypto's unsealSecret) into a `CarrierClient`; `buildCarrierClient`
 // does the same from already-plaintext values. Every carrier goes through
 // `fetch` (no SDKs), so the package stays dependency-free.
 //
@@ -27,7 +27,7 @@ const MAX_ACCOUNT_ID_LENGTH = 320
 const MAX_SEALED_SECRET_LENGTH = 8_192
 const MAX_LABEL_LENGTH = 64
 
-/** Unseal a stored secret → plaintext. Supplied by the app (e.g. @braedonsaunders/crypto). */
+/** Unseal a stored secret → plaintext. Supplied by the app (e.g. @braedonsaunders/appkit-crypto). */
 export type Unseal = (sealed: { ciphertext: string; nonce: string }) => string | null
 
 // --- Stored config (secret sealed) -----------------------------------------

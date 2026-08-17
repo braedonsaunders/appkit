@@ -1,5 +1,5 @@
 {
-  "name": "@braedonsaunders/iam",
+  "name": "@braedonsaunders/appkit-iam",
   "version": "2.0.0",
   "description": "Modular tenant IAM with roles, scoped assignments, permission overrides, audit, adapters, and production React administration.",
   "license": "AGPL-3.0-or-later",
@@ -25,22 +25,22 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
-    "@braedonsaunders/db": "^0.2.0",
-    "@braedonsaunders/tenant": "^0.2.0",
-    "@braedonsaunders/ui": "^0.2.0",
+    "@braedonsaunders/appkit-db": "^0.2.0",
+    "@braedonsaunders/appkit-tenant": "^0.2.0",
+    "@braedonsaunders/appkit-ui": "^0.2.0",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
-    "@braedonsaunders/db": {
+    "@braedonsaunders/appkit-db": {
       "optional": true
     },
-    "@braedonsaunders/ui": {
+    "@braedonsaunders/appkit-ui": {
       "optional": true
     },
-    "@braedonsaunders/tenant": {
+    "@braedonsaunders/appkit-tenant": {
       "optional": true
     },
     "drizzle-orm": {
@@ -57,9 +57,9 @@
     }
   },
   "devDependencies": {
-    "@braedonsaunders/db": "workspace:*",
-    "@braedonsaunders/tenant": "workspace:*",
-    "@braedonsaunders/ui": "workspace:*",
+    "@braedonsaunders/appkit-db": "workspace:*",
+    "@braedonsaunders/appkit-tenant": "workspace:*",
+    "@braedonsaunders/appkit-ui": "workspace:*",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

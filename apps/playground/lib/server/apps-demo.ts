@@ -9,8 +9,8 @@ import {
   type AppStatus,
   type AppStore,
   type InstalledApp,
-} from '@braedonsaunders/apps'
-import { createMemoryAppStore } from '@braedonsaunders/apps/memory'
+} from '@braedonsaunders/appkit-apps'
+import { createMemoryAppStore } from '@braedonsaunders/appkit-apps/memory'
 
 const TENANT_ID = '00000000-0000-0000-0000-000000000010'
 const USER_ID = '00000000-0000-0000-0000-000000000020'

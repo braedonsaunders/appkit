@@ -19,12 +19,12 @@ import {
   schema,
   seedRoles,
   tenants,
-} from '@braedonsaunders/db'
+} from '@braedonsaunders/appkit-db'
 import {
   DASHBOARD_TENANT_TABLES,
   insightCards,
   userDashboardLayouts,
-} from '@braedonsaunders/dashboard/schema'
+} from '@braedonsaunders/appkit-dashboard/schema'
 import { and, eq } from 'drizzle-orm'
 
 const APP_URL = process.env.APPKIT_DB_URL

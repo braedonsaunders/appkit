@@ -1,14 +1,14 @@
 'use client'
 
 import * as React from 'react'
-import type { AutomationGraph } from '@braedonsaunders/forms-core/safety-automation'
-import type { FlowSubjectProfile } from '@braedonsaunders/forms-core/safety-flow-subjects'
+import type { AutomationGraph } from '@braedonsaunders/appkit-forms-core/safety-automation'
+import type { FlowSubjectProfile } from '@braedonsaunders/appkit-forms-core/safety-flow-subjects'
 import {
   FlowsCanvas,
   type FlowSummary,
   type RecipientOptions,
   type WorkflowStudioAdapter,
-} from '@braedonsaunders/workflows/react'
+} from '@braedonsaunders/appkit-workflows/react'
 
 const profile: FlowSubjectProfile = {
   subjectType: 'module',

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { hexColor } from '@braedonsaunders/tokens'
+import { hexColor } from '@braedonsaunders/appkit-tokens'
 import { createDesignDocument, normalizeDesignDocument, renderDesignDocumentHtml, validateDesignDocument } from './index'
 
 const theme = { primary: hexColor('primary'), accent: hexColor('warning'), paper: hexColor('surface'), ink: hexColor('fg'), muted: hexColor('fg-muted') }

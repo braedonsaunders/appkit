@@ -4,7 +4,7 @@
  * about (or by setting them on a parent element).
  *
  * GrapesJS's own stylesheet is pulled in here so a host needs a single import:
- *   import '@braedonsaunders/email-designer/styles.css'
+ *   import '@braedonsaunders/appkit-email-designer/styles.css'
  * If your bundler does not resolve bare specifiers in CSS `@import`, drop this
  * line and import 'grapesjs/dist/css/grapes.min.css' from your client entry. */
 @import 'grapesjs/dist/css/grapes.min.css';

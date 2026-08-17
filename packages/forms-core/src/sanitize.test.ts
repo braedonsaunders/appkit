@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { sanitizeEmailHtml } from '@braedonsaunders/email-render'
+import { sanitizeEmailHtml } from '@braedonsaunders/appkit-email-render'
 import { sanitizeDocumentHtml } from './sanitize'
 
 describe('sanitizeDocumentHtml inline styles', () => {

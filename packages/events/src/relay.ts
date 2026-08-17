@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, lte, or, sql } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
-import { domainEventEffects, domainEventOutbox } from '@braedonsaunders/db'
+import { domainEventEffects, domainEventOutbox } from '@braedonsaunders/appkit-db'
 
 type Db = NodePgDatabase<Record<string, never>>
 

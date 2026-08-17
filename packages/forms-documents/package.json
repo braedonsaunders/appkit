@@ -1,5 +1,5 @@
 {
-  "name": "@braedonsaunders/forms-documents",
+  "name": "@braedonsaunders/appkit-forms-documents",
   "version": "0.1.1",
   "description": "Optional form document styles and generated PDF templates over the shared companion-field contract.",
   "license": "AGPL-3.0-or-later",
@@ -20,12 +20,12 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@braedonsaunders/forms-core": "workspace:*",
-    "@braedonsaunders/i18n": "workspace:*",
-    "@braedonsaunders/tokens": "workspace:*"
+    "@braedonsaunders/appkit-forms-core": "workspace:*",
+    "@braedonsaunders/appkit-i18n": "workspace:*",
+    "@braedonsaunders/appkit-tokens": "workspace:*"
   },
   "devDependencies": {
-    "@braedonsaunders/email-render": "workspace:*",
+    "@braedonsaunders/appkit-email-render": "workspace:*",
     "@types/node": "^22",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"

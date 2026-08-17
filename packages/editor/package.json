@@ -1,5 +1,5 @@
 {
-  "name": "@braedonsaunders/editor",
+  "name": "@braedonsaunders/appkit-editor",
   "version": "0.2.2",
   "description": "Optional TipTap rich-text authoring for AppKit forms and documents.",
   "license": "AGPL-3.0-or-later",
@@ -19,7 +19,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@braedonsaunders/ui": "workspace:*",
+    "@braedonsaunders/appkit-ui": "workspace:*",
     "@tiptap/extension-link": "^3.27.4",
     "@tiptap/extension-placeholder": "^3.27.4",
     "@tiptap/react": "^3.27.4",

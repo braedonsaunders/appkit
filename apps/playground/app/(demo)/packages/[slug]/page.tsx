@@ -18,7 +18,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@braedonsaunders/ui'
+} from '@braedonsaunders/appkit-ui'
 import {
   getPackage,
   PACKAGE_CATALOG,

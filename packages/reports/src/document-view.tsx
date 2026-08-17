@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { cn } from '@braedonsaunders/ui'
+import { cn } from '@braedonsaunders/appkit-ui'
 import {
   buildReportDocumentCss,
   renderReportDocumentBodyHtml,

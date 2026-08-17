@@ -9,7 +9,7 @@
 
 import { useState } from 'react'
 import { Plus, Star, Trash2 } from 'lucide-react'
-import { Badge, Button, Checkbox, Dialog, Input, Label, Select, Tabs, cn } from '@braedonsaunders/ui'
+import { Badge, Button, Checkbox, Dialog, Input, Label, Select, Tabs, cn } from '@braedonsaunders/appkit-ui'
 import type {
   ScheduleBaseline,
   ScheduleBaselineKind,

@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import type { PgDatabase } from 'drizzle-orm/pg-core'
 import type { PgQueryResultHKT } from 'drizzle-orm/pg-core/session'
-import { roleAssignments, roles, userPermissionOverrides, type RoleScope } from '@braedonsaunders/db'
+import { roleAssignments, roles, userPermissionOverrides, type RoleScope } from '@braedonsaunders/appkit-db'
 
 export function permissionSetCovers(
   permissions: ReadonlySet<string>,

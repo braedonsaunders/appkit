@@ -22,8 +22,8 @@ import {
   type QueryResult,
   type VisualizationKey,
   type VisualizationSettings,
-} from '@braedonsaunders/analytics'
-import { Badge, Button, Checkbox, Input, Label, SearchSelect, Textarea, cn } from '@braedonsaunders/ui'
+} from '@braedonsaunders/appkit-analytics'
+import { Badge, Button, Checkbox, Input, Label, SearchSelect, Textarea, cn } from '@braedonsaunders/appkit-ui'
 import { InsightResultView } from './insight-card'
 import type { CardPreviewResult, CardStudioResult, InsightCardDraft } from './types'
 

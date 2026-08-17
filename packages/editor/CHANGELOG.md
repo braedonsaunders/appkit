@@ -1,4 +1,4 @@
-# @braedonsaunders/editor
+# @braedonsaunders/appkit-editor
 
 ## 0.2.2
 
@@ -6,7 +6,7 @@
 
 - Updated dependencies [22e968a]
 - Updated dependencies [9f04661]
-  - @braedonsaunders/ui@0.2.0
+  - @braedonsaunders/appkit-ui@0.2.0
 
 ## 0.2.1
 
@@ -16,7 +16,7 @@
 - Updated dependencies [0c2dde7]
 - Updated dependencies [a1d5d50]
 - Updated dependencies [8a17e9e]
-  - @braedonsaunders/ui@0.1.10
+  - @braedonsaunders/appkit-ui@0.1.10
 
 ## 0.1.1
 
@@ -28,4 +28,4 @@
   Changesets.
 - Updated dependencies [3ab6056]
 - Updated dependencies [1319bfb]
-  - @braedonsaunders/ui@0.1.1
+  - @braedonsaunders/appkit-ui@0.1.1

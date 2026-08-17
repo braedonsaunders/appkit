@@ -1,9 +1,9 @@
-import type { DestinationAuthoringDefinition } from '@braedonsaunders/integrations'
-import { slackDestination } from '@braedonsaunders/integrations/chat'
-import { emailDestinationAuthoring } from '@braedonsaunders/integrations/email'
-import { httpDestination } from '@braedonsaunders/integrations/http'
-import { sheetsDestination } from '@braedonsaunders/integrations/sheets'
-import { sqlDestination } from '@braedonsaunders/integrations/sql'
+import type { DestinationAuthoringDefinition } from '@braedonsaunders/appkit-integrations'
+import { slackDestination } from '@braedonsaunders/appkit-integrations/chat'
+import { emailDestinationAuthoring } from '@braedonsaunders/appkit-integrations/email'
+import { httpDestination } from '@braedonsaunders/appkit-integrations/http'
+import { sheetsDestination } from '@braedonsaunders/appkit-integrations/sheets'
+import { sqlDestination } from '@braedonsaunders/appkit-integrations/sql'
 import { IntegrationsWorkbench } from './workbench'
 
 const destinations: DestinationAuthoringDefinition[] = [

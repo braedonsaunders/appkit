@@ -1,14 +1,14 @@
 import 'server-only'
 import { cache } from 'react'
 import { and, eq } from 'drizzle-orm'
-import { memberships, schema, tenants, users } from '@braedonsaunders/db'
-import { resolveLocalePreferences } from '@braedonsaunders/i18n'
+import { memberships, schema, tenants, users } from '@braedonsaunders/appkit-db'
+import { resolveLocalePreferences } from '@braedonsaunders/appkit-i18n'
 import {
   makeTenantContext,
   resolveMembershipAccess,
   type RequestContext,
   type TenantDatabase,
-} from '@braedonsaunders/tenant'
+} from '@braedonsaunders/appkit-tenant'
 import { PERMISSION_CATALOGUE } from '../permissions'
 import { DEMO_TENANT, DEMO_USER } from './demo-data'
 import { isDatabaseConfigured, platform } from './platform'
@@ -75,7 +75,7 @@ export const getDemoEnvironment = cache(async (): Promise<DemoEnvironment> => {
       .limit(1)
 
     if (!row || !row.userActive) {
-      throw new Error('The appkit demo identity is missing. Run `pnpm --filter @braedonsaunders/playground seed`.')
+      throw new Error('The appkit demo identity is missing. Run `pnpm --filter @braedonsaunders/appkit-playground seed`.')
     }
 
     const access = await resolveMembershipAccess(sdb, row.membershipId, null, {

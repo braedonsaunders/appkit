@@ -14,7 +14,7 @@ import {
   cn,
   confirmDialog,
   type RecordColumn,
-} from '@braedonsaunders/ui'
+} from '@braedonsaunders/appkit-ui'
 import { Building2, KeyRound, MonitorSmartphone, ShieldCheck, UserPlus, Users } from 'lucide-react'
 import type { PlatformSessionRecord, PlatformTenantRecord, PlatformUserRecord, TenantMemberRecord } from './types'
 

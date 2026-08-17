@@ -1,4 +1,4 @@
-# @braedonsaunders/sync
+# @braedonsaunders/appkit-sync
 
 Production inbound synchronization for applications that need to ingest CSV,
 database, HTTP, managed-connector, or ERP data without giving up transaction
@@ -30,8 +30,8 @@ safety or an audit trail.
 import {
   createSyncOrchestrator,
   type SyncTarget,
-} from '@braedonsaunders/sync'
-import { createDrizzleSyncPersistence } from '@braedonsaunders/sync/drizzle'
+} from '@braedonsaunders/appkit-sync'
+import { createDrizzleSyncPersistence } from '@braedonsaunders/appkit-sync/drizzle'
 
 const runSync = createSyncOrchestrator({
   connectors,
@@ -57,17 +57,17 @@ secret store.
 
 ## Public entries
 
-- `@braedonsaunders/sync` — source-shaped runtime and the dependency-light API; optional
+- `@braedonsaunders/appkit-sync` — source-shaped runtime and the dependency-light API; optional
   SQL drivers remain isolated at `/db-drivers`
-- `@braedonsaunders/sync/catalog` and `/registry` — connector contracts and the optional
+- `@braedonsaunders/appkit-sync/catalog` and `/registry` — connector contracts and the optional
   built-in registry, isolated so unused database vendors never enter the root
-- `@braedonsaunders/sync/csv` and `/transform` — browser-safe parsing and mapping helpers
-- `@braedonsaunders/sync/connectors/*` — optional connector families
-- `@braedonsaunders/sync/runtime` — orchestration and memory adapters
-- `@braedonsaunders/sync/person-sync-policy` — extracted ownership conflict decisions
-- `@braedonsaunders/sync/snapshot-policy` — fail-closed archival planning
-- `@braedonsaunders/sync/egress` and `/db-drivers` — hardened network/database access
-- `@braedonsaunders/sync/schema` and `/drizzle` — feature-owned persistence
+- `@braedonsaunders/appkit-sync/csv` and `/transform` — browser-safe parsing and mapping helpers
+- `@braedonsaunders/appkit-sync/connectors/*` — optional connector families
+- `@braedonsaunders/appkit-sync/runtime` — orchestration and memory adapters
+- `@braedonsaunders/appkit-sync/person-sync-policy` — extracted ownership conflict decisions
+- `@braedonsaunders/appkit-sync/snapshot-policy` — fail-closed archival planning
+- `@braedonsaunders/appkit-sync/egress` and `/db-drivers` — hardened network/database access
+- `@braedonsaunders/appkit-sync/schema` and `/drizzle` — feature-owned persistence
 
 No credentials, application record schema, entity mapping, or product-specific
 route is bundled in this package.

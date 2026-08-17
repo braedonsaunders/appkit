@@ -1,8 +1,8 @@
 import 'server-only'
 
 import { and, asc, eq } from 'drizzle-orm'
-import type { DashboardLayout, InsightCardDraft } from '@braedonsaunders/dashboard'
-import { insightCards, userDashboardLayouts } from '@braedonsaunders/dashboard/schema'
+import type { DashboardLayout, InsightCardDraft } from '@braedonsaunders/appkit-dashboard'
+import { insightCards, userDashboardLayouts } from '@braedonsaunders/appkit-dashboard/schema'
 import { getDemoEnvironment } from './demo-context'
 import { cloneDemoCards, DEMO_DASHBOARD_LAYOUT } from './demo-data'
 import { isDatabaseConfigured } from './platform'

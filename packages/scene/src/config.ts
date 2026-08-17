@@ -39,7 +39,7 @@ export type SceneCharacter = {
   /**
    * A rendered figure to use instead of `imageUrl` — for characters composed
    * from layered parts rather than stored as one flattened image (see
-   * `@braedonsaunders/avatars/react`'s `ComposedAvatar`). It is stretched to the
+   * `@braedonsaunders/appkit-avatars/react`'s `ComposedAvatar`). It is stretched to the
    * character's box and mirrored with it, exactly as the image would be.
    */
   figure?: React.ReactNode

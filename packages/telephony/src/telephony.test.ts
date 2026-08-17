@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { createSealer } from '@braedonsaunders/crypto'
+import { createSealer } from '@braedonsaunders/appkit-crypto'
 import {
   CARRIER_PROVIDER_SPECS,
   CarrierError,

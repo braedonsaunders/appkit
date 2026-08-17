@@ -1,4 +1,10 @@
-# @braedonsaunders/events
+# @braedonsaunders/appkit-events
+
+## 0.3.0
+
+### Minor Changes
+
+- Add bounded visual-context pruning, durable fenced event execution and cursor following, and portable, provider-conformant desk state contracts.
 
 ## Unreleased
 
@@ -21,4 +27,4 @@
 - Updated dependencies [3ae036d]
 - Updated dependencies [3ab6056]
 - Updated dependencies [1319bfb]
-  - @braedonsaunders/db@0.2.0
+  - @braedonsaunders/appkit-db@0.2.0

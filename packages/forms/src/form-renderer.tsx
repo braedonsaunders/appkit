@@ -13,8 +13,8 @@ import {
   type FormField,
   type FormSchemaV1,
   type ValidationError,
-} from '@braedonsaunders/forms-core'
-import { DEFAULT_LOCALE, type AppLocale } from '@braedonsaunders/i18n'
+} from '@braedonsaunders/appkit-forms-core'
+import { DEFAULT_LOCALE, type AppLocale } from '@braedonsaunders/appkit-i18n'
 import {
   Alert,
   AlertDescription,
@@ -24,8 +24,8 @@ import {
   Label,
   Textarea,
   cn,
-} from '@braedonsaunders/ui'
-import { RichTextEditor } from '@braedonsaunders/editor'
+} from '@braedonsaunders/appkit-ui'
+import { RichTextEditor } from '@braedonsaunders/appkit-editor'
 import { readText } from './text'
 import { AddressField, GpsField, MatrixField, RiskField, SignatureField, SketchField, TableField } from './runtime-controls'
 import type { RiskMatrixConfig } from './risk-matrix'

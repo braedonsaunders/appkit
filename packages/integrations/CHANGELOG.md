@@ -1,4 +1,4 @@
-# @braedonsaunders/integrations
+# @braedonsaunders/appkit-integrations
 
 ## 2.0.0
 
@@ -7,8 +7,8 @@
 - Updated dependencies [22e968a]
 - Updated dependencies [8342b35]
 - Updated dependencies [9f04661]
-  - @braedonsaunders/ui@0.2.0
-  - @braedonsaunders/sync@1.1.0
+  - @braedonsaunders/appkit-ui@0.2.0
+  - @braedonsaunders/appkit-sync@1.1.0
 
 ## 1.0.0
 
@@ -28,7 +28,7 @@
 - Updated dependencies [3ab6056]
 - Updated dependencies [1319bfb]
 - Updated dependencies [1319bfb]
-  - @braedonsaunders/db@0.2.0
-  - @braedonsaunders/sync@1.0.0
-  - @braedonsaunders/email-render@0.1.1
-  - @braedonsaunders/ui@0.1.1
+  - @braedonsaunders/appkit-db@0.2.0
+  - @braedonsaunders/appkit-sync@1.0.0
+  - @braedonsaunders/appkit-email-render@0.1.1
+  - @braedonsaunders/appkit-ui@0.1.1

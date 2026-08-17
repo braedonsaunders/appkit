@@ -1,4 +1,4 @@
-import { createIamHttpHandler } from '@braedonsaunders/iam/http'
+import { createIamHttpHandler } from '@braedonsaunders/appkit-iam/http'
 import { getDemoIamService } from '../../../../lib/server/iam'
 
 /**

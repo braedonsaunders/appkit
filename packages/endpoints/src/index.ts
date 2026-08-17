@@ -1,4 +1,4 @@
-import { forbidden, runSandbox, type SandboxHostFunction, type SandboxLimits } from '@braedonsaunders/sandbox'
+import { forbidden, runSandbox, type SandboxHostFunction, type SandboxLimits } from '@braedonsaunders/appkit-sandbox'
 
 export interface EndpointRequest {
   method: string

@@ -1,5 +1,5 @@
-import type { AuditEventRecord, MemberRecord, PermissionGroup, RoleRecord } from '@braedonsaunders/iam'
-import { createMemoryIamService } from '@braedonsaunders/iam/memory'
+import type { AuditEventRecord, MemberRecord, PermissionGroup, RoleRecord } from '@braedonsaunders/appkit-iam'
+import { createMemoryIamService } from '@braedonsaunders/appkit-iam/memory'
 
 export const DEMO_PERMISSION_GROUPS: PermissionGroup[] = [
   {

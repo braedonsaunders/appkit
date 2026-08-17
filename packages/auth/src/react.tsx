@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, type FormEvent, type ReactNode } from 'react'
-import { Alert, AlertDescription, Button, Input, Label } from '@braedonsaunders/ui'
+import { Alert, AlertDescription, Button, Input, Label } from '@braedonsaunders/appkit-ui'
 
 export type AuthFormLabels = Partial<{
   passwordMode: string

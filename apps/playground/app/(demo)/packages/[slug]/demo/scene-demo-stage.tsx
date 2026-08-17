@@ -1,7 +1,7 @@
 'use client'
 
-import { CharacterScene, SceneArt, sceneGround, type SceneCharacter } from '@braedonsaunders/scene'
-import { useTheme } from '@braedonsaunders/ui'
+import { CharacterScene, SceneArt, sceneGround, type SceneCharacter } from '@braedonsaunders/appkit-scene'
+import { useTheme } from '@braedonsaunders/appkit-ui'
 
 const CHARACTERS: SceneCharacter[] = [
   {

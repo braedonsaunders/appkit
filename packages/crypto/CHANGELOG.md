@@ -1,4 +1,4 @@
-# @braedonsaunders/crypto
+# @braedonsaunders/appkit-crypto
 
 ## 0.3.0
 

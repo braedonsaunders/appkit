@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { DEFAULT_LOCALE, type AppLocale } from '@braedonsaunders/i18n'
+import { DEFAULT_LOCALE, type AppLocale } from '@braedonsaunders/appkit-i18n'
 import type { ProductionFormRuntimeAdapter } from './production-runtime-adapter'
 import {
   GeneratedCopyProvider,

@@ -1,7 +1,7 @@
-/* @braedonsaunders/scheduling — schedule-specific token channels.
+/* @braedonsaunders/appkit-scheduling — schedule-specific token channels.
  *
- * Imported once by the host, alongside `@braedonsaunders/tokens`:
- *     @import '@braedonsaunders/scheduling/styles.css';
+ * Imported once by the host, alongside `@braedonsaunders/appkit-tokens`:
+ *     @import '@braedonsaunders/appkit-scheduling/styles.css';
  *
  * Phase colours are a CATEGORICAL palette: eight hues chosen to stay
  * distinguishable next to each other and to hold contrast against both the

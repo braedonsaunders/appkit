@@ -1,5 +1,5 @@
 {
-  "name": "@braedonsaunders/sandbox",
+  "name": "@braedonsaunders/appkit-sandbox",
   "version": "0.1.0",
   "description": "Governed QuickJS isolation for user-authored JavaScript with async host capabilities, execution budgets, and structured faults.",
   "license": "AGPL-3.0-or-later",

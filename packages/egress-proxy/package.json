@@ -1,5 +1,5 @@
 {
-  "name": "@braedonsaunders/egress-proxy",
+  "name": "@braedonsaunders/appkit-egress-proxy",
   "version": "0.1.0",
   "description": "Fail-closed egress chokepoint for agent sandboxes — explicit HTTP and CONNECT proxying plus transparent DNAT interception with SNI and Host sniffing, policy and audit ports, and no TLS interception.",
   "license": "AGPL-3.0-or-later",

@@ -1,4 +1,4 @@
-import { PageHeader } from '@braedonsaunders/ui'
+import { PageHeader } from '@braedonsaunders/appkit-ui'
 import { ReportsDemo } from './_reports-demo'
 
 export const metadata = { title: 'Reports — appkit' }

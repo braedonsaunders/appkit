@@ -9,7 +9,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { cn } from '@braedonsaunders/ui'
+import { cn } from '@braedonsaunders/appkit-ui'
 import { applyDragDelta, getBarPosition } from '../timeline'
 import { normalizeScheduleProgress } from '../insights'
 import { scheduleColors } from '../palette'

@@ -40,8 +40,8 @@ auditing, dashboard and report builders, forms, workflows, notifications,
 external data sync, outbound integrations, documents, background work, and
 provider-neutral delivery.
 
-Use `@braedonsaunders/ui` for a polished shell and component system. Add
-`@braedonsaunders/db` and `@braedonsaunders/tenant` when you need multi-tenant Postgres with RLS.
+Use `@braedonsaunders/appkit-ui` for a polished shell and component system. Add
+`@braedonsaunders/appkit-db` and `@braedonsaunders/appkit-tenant` when you need multi-tenant Postgres with RLS.
 Install forms, analytics, workflows, sync, or PDF only when your product needs
 them. The package boundaries are deliberate: adopting one capability does not
 pull the whole platform into your process or browser bundle.
@@ -94,17 +94,17 @@ application without generating product-specific routes, records, or fake data.
 Install only the interface foundation:
 
 ```bash
-pnpm add @braedonsaunders/ui @braedonsaunders/tokens
+pnpm add @braedonsaunders/appkit-ui @braedonsaunders/appkit-tokens
 ```
 
 ```css
 /* app/globals.css */
-@import "@braedonsaunders/ui/styles.css";
+@import "@braedonsaunders/appkit-ui/styles.css";
 @source '../app';
 ```
 
 ```tsx
-import { AppShell, Toaster } from "@braedonsaunders/ui";
+import { AppShell, Toaster } from "@braedonsaunders/appkit-ui";
 
 export default function Application({
   children,
@@ -125,11 +125,11 @@ export default function Application({
 Add a tenant-safe backend when you need it:
 
 ```bash
-pnpm add @braedonsaunders/db @braedonsaunders/tenant drizzle-orm postgres
+pnpm add @braedonsaunders/appkit-db @braedonsaunders/appkit-tenant drizzle-orm postgres
 ```
 
 ```ts
-import { assertCan } from "@braedonsaunders/tenant";
+import { assertCan } from "@braedonsaunders/appkit-tenant";
 
 assertCan(requestContext, "projects.write");
 await requestContext.db(async (db) => {
@@ -148,25 +148,25 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 
 | Package                 | What it gives your app                                                                                                                                                        |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@braedonsaunders/tokens`        | Semantic light/dark brand, shape, elevation, and motion tokens surfaced through Tailwind v4.                                                                                  |
-| `@braedonsaunders/ui`            | Accessible primitives, topbar/sidebar app shell, account launcher, search, notifications, settings, record and paged tables, subtabs, drawers, uploads, signatures, page layouts, and route transitions. |
-| `@braedonsaunders/dashboard`     | Responsive drag/resize dashboards, reusable insight cards, a card library, query studio, visualizations, lifecycle controls, and optional Drizzle persistence.                 |
-| `@braedonsaunders/forms-core`    | Versioned schemas, field and companion-value registry, formulas, conditional logic, validation, scoring, and source-compatible business and safety automation contracts.                          |
-| `@braedonsaunders/forms`         | The complete production designer and fill runtime: 1/3–2/3 authoring, fields/canvas/tabs/sign-off, record/list/action/access configuration, workflow bridge, immutable publishing, revision-safe drafts, guided steps, data-bound controls, repeating tables, media, signatures, and typed host adapters. |
-| `@braedonsaunders/editor`        | Optional controlled TipTap rich-text authoring.                                                                                                                               |
-| `@braedonsaunders/customization` | Versioned form layouts, custom fields, and the production record-list system: saved views, subtabs, search, filters, sorting, paging, drill-through, designers, plus optional memory and tenant-scoped Drizzle persistence. Your app supplies its record catalogue once; AppKit keeps every editor, validator, and store on that contract. |
-| `@braedonsaunders/design-studio` | Bounded multi-artboard print design, safe HTML/print output, and an interactive Fabric workspace with transforms, layers, zoom, and full property editing.                     |
-| `@braedonsaunders/i18n`          | Tenant locale policy, request negotiation, user overrides, and localized authored content.                                                                                    |
-| `@braedonsaunders/scheduling`    | Project scheduling: CPM critical path, calendars, resource leveling, baselines, and a Gantt/list/board authoring surface.                                                     |
-| `@braedonsaunders/avatars`       | Avatar parts library, composition model, and composer — one full-body figure per subject with portraits derived by head viewport — plus AI image generation.                  |
-| `@braedonsaunders/scene`         | Animated character scene: characters walk, idle, and scale with depth over a configurable ground.                                                                            |
+| `@braedonsaunders/appkit-tokens`        | Semantic light/dark brand, shape, elevation, and motion tokens surfaced through Tailwind v4.                                                                                  |
+| `@braedonsaunders/appkit-ui`            | Accessible primitives, topbar/sidebar app shell, account launcher, search, notifications, settings, record and paged tables, subtabs, drawers, uploads, signatures, page layouts, and route transitions. |
+| `@braedonsaunders/appkit-dashboard`     | Responsive drag/resize dashboards, reusable insight cards, a card library, query studio, visualizations, lifecycle controls, and optional Drizzle persistence.                 |
+| `@braedonsaunders/appkit-forms-core`    | Versioned schemas, field and companion-value registry, formulas, conditional logic, validation, scoring, and source-compatible business and safety automation contracts.                          |
+| `@braedonsaunders/appkit-forms`         | The complete production designer and fill runtime: 1/3–2/3 authoring, fields/canvas/tabs/sign-off, record/list/action/access configuration, workflow bridge, immutable publishing, revision-safe drafts, guided steps, data-bound controls, repeating tables, media, signatures, and typed host adapters. |
+| `@braedonsaunders/appkit-editor`        | Optional controlled TipTap rich-text authoring.                                                                                                                               |
+| `@braedonsaunders/appkit-customization` | Versioned form layouts, custom fields, and the production record-list system: saved views, subtabs, search, filters, sorting, paging, drill-through, designers, plus optional memory and tenant-scoped Drizzle persistence. Your app supplies its record catalogue once; AppKit keeps every editor, validator, and store on that contract. |
+| `@braedonsaunders/appkit-design-studio` | Bounded multi-artboard print design, safe HTML/print output, and an interactive Fabric workspace with transforms, layers, zoom, and full property editing.                     |
+| `@braedonsaunders/appkit-i18n`          | Tenant locale policy, request negotiation, user overrides, and localized authored content.                                                                                    |
+| `@braedonsaunders/appkit-scheduling`    | Project scheduling: CPM critical path, calendars, resource leveling, baselines, and a Gantt/list/board authoring surface.                                                     |
+| `@braedonsaunders/appkit-avatars`       | Avatar parts library, composition model, and composer — one full-body figure per subject with portraits derived by head viewport — plus AI image generation.                  |
+| `@braedonsaunders/appkit-scene`         | Animated character scene: characters walk, idle, and scale with depth over a configurable ground.                                                                            |
 
 Bind customization to your records once and retain key-based calls throughout
 the application:
 
 ```ts
-import { createCustomizationEngine } from '@braedonsaunders/customization'
-import { createMemoryListViewStore } from '@braedonsaunders/customization/memory'
+import { createCustomizationEngine } from '@braedonsaunders/appkit-customization'
+import { createMemoryListViewStore } from '@braedonsaunders/appkit-customization/memory'
 
 const customization = createCustomizationEngine(recordTypes)
 const listStore = createMemoryListViewStore({ registry: customization.registry })
@@ -181,74 +181,74 @@ product’s record names, routes, queries, or permissions inside AppKit.
 
 | Package             | What it gives your app                                                                                                      |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `@braedonsaunders/db`        | Tenant-scoped Postgres execution, BYPASSRLS system access, identity schema, API keys, schema helpers, and RLS installation. |
-| `@braedonsaunders/tenant`    | Tenant-bound request context with locale/timezone policy, typed app extensions, active-role resolution, wildcard/read-tier RBAC, fail-closed grant/deny overrides, portable database-runtime binding, and super-admin behavior. |
-| `@braedonsaunders/iam`       | Optional roles, memberships, scoped assignments, permission exceptions, audit, full administration UI, and memory/HTTP/Drizzle adapters. |
-| `@braedonsaunders/auth`      | Durable sessions, passwords and resets, magic links, invitation grants, OAuth accounts, React forms, and memory/Drizzle/Next adapters. |
-| `@braedonsaunders/events`    | Structured audit records, transactional outbox, recipient resolution, leased relay, durable retries, and effects ledger.      |
-| `@braedonsaunders/api`       | API-key authorization, idempotent writes, typed public errors, and OpenAPI descriptions.                                    |
-| `@braedonsaunders/sandbox`   | Shared QuickJS isolation with memory, stack, deadline, governance, frozen-input, host-function, log, and structured-fault contracts. |
-| `@braedonsaunders/endpoints` | Resource-bounded `handler(request)` programs with storage, records, and application-governed host capabilities.             |
-| `@braedonsaunders/scripts`   | Event, scheduled, endpoint, bulk, and opaque-origin client scripts with a production CodeMirror editor, run/log inspection, vetoes, allowed mutations, cron, jobs, auditing, Drizzle storage, and a bound cutover runtime. |
-| `@braedonsaunders/apps`      | Installable app manifests and ZIPs, a nested file browser and syntax editors, immutable versions, storage, capabilities, QuickJS backends, opaque-origin preview, bridge SDK, run inspection, marketplace, memory, Drizzle, and bound lifecycle adapters. |
-| `@braedonsaunders/ai`        | Provider-neutral bounded agents, streaming React UI, and production analysis, extraction, document, vision, writing, digest, and model helpers. |
-| `@braedonsaunders/superadmin` | Instance-operator administration over platform identity: the users who can sign in, their credentials, and active sessions, with guard rails and production React components. |
-| `@braedonsaunders/process-sandbox` | Fail-closed Linux process isolation with bubblewrap, for workspace-bound coding agents and other trusted application workers. |
+| `@braedonsaunders/appkit-db`        | Tenant-scoped Postgres execution, BYPASSRLS system access, identity schema, API keys, schema helpers, and RLS installation. |
+| `@braedonsaunders/appkit-tenant`    | Tenant-bound request context with locale/timezone policy, typed app extensions, active-role resolution, wildcard/read-tier RBAC, fail-closed grant/deny overrides, portable database-runtime binding, and super-admin behavior. |
+| `@braedonsaunders/appkit-iam`       | Optional roles, memberships, scoped assignments, permission exceptions, audit, full administration UI, and memory/HTTP/Drizzle adapters. |
+| `@braedonsaunders/appkit-auth`      | Durable sessions, passwords and resets, magic links, invitation grants, OAuth accounts, React forms, and memory/Drizzle/Next adapters. |
+| `@braedonsaunders/appkit-events`    | Structured audit records, transactional outbox, recipient resolution, leased relay, durable retries, and effects ledger.      |
+| `@braedonsaunders/appkit-api`       | API-key authorization, idempotent writes, typed public errors, and OpenAPI descriptions.                                    |
+| `@braedonsaunders/appkit-sandbox`   | Shared QuickJS isolation with memory, stack, deadline, governance, frozen-input, host-function, log, and structured-fault contracts. |
+| `@braedonsaunders/appkit-endpoints` | Resource-bounded `handler(request)` programs with storage, records, and application-governed host capabilities.             |
+| `@braedonsaunders/appkit-scripts`   | Event, scheduled, endpoint, bulk, and opaque-origin client scripts with a production CodeMirror editor, run/log inspection, vetoes, allowed mutations, cron, jobs, auditing, Drizzle storage, and a bound cutover runtime. |
+| `@braedonsaunders/appkit-apps`      | Installable app manifests and ZIPs, a nested file browser and syntax editors, immutable versions, storage, capabilities, QuickJS backends, opaque-origin preview, bridge SDK, run inspection, marketplace, memory, Drizzle, and bound lifecycle adapters. |
+| `@braedonsaunders/appkit-ai`        | Provider-neutral bounded agents, streaming React UI, and production analysis, extraction, document, vision, writing, digest, and model helpers. |
+| `@braedonsaunders/appkit-superadmin` | Instance-operator administration over platform identity: the users who can sign in, their credentials, and active sessions, with guard rails and production React components. |
+| `@braedonsaunders/appkit-process-sandbox` | Fail-closed Linux process isolation with bubblewrap, for workspace-bound coding agents and other trusted application workers. |
 
 ### Analytics, workflows, and connectivity
 
 | Package                 | What it gives your app                                                                                                                                                |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@braedonsaunders/analytics`     | App-owned semantic catalogues, parsed formulas, tenant-bound parameterized SQL, result contracts, and a visualization registry.                                       |
-| `@braedonsaunders/reports`       | Production-shaped query plans and catalogues, governed SQL, recursive filters, fiscal/grouped results, a 1/3–2/3 report studio with host-owned save/delete lifecycles, full paper/statement viewers, drilldown drawers, print/export, schedules, and durable run claims. |
-| `@braedonsaunders/workflows`     | Multi-flow visual studio, compatible templates, typed inspectors, bounded graphs, durable replay-safe actions, pause/resume approval gates, record approve/reject controls and history, any/all quorum, HMAC email decisions, and optional Drizzle storage. |
-| `@braedonsaunders/sync`          | Production connector registry and orchestration: transactional batches/savepoints, run and record-change ledgers, clean-run cursors, previews, ownership conflicts, fail-closed snapshots, CSV/transforms, hardened egress, and optional SQL drivers. |
-| `@braedonsaunders/integrations`  | Outbound publisher, authoring hub/builder, token mapping, deterministic jobs, send-once/partial retry ledgers, and optional HTTP, Slack/Teams, Sheets, email, SQL, and Drizzle adapters.       |
-| `@braedonsaunders/notifications` | Responsive three-pane inbox, production preference matrix and device-push enrollment, tenant routing cockpit, audiences, escalation, digest/quiet-hour/scan policy, dispatch, and React/Drizzle entries. |
+| `@braedonsaunders/appkit-analytics`     | App-owned semantic catalogues, parsed formulas, tenant-bound parameterized SQL, result contracts, and a visualization registry.                                       |
+| `@braedonsaunders/appkit-reports`       | Production-shaped query plans and catalogues, governed SQL, recursive filters, fiscal/grouped results, a 1/3–2/3 report studio with host-owned save/delete lifecycles, full paper/statement viewers, drilldown drawers, print/export, schedules, and durable run claims. |
+| `@braedonsaunders/appkit-workflows`     | Multi-flow visual studio, compatible templates, typed inspectors, bounded graphs, durable replay-safe actions, pause/resume approval gates, record approve/reject controls and history, any/all quorum, HMAC email decisions, and optional Drizzle storage. |
+| `@braedonsaunders/appkit-sync`          | Production connector registry and orchestration: transactional batches/savepoints, run and record-change ledgers, clean-run cursors, previews, ownership conflicts, fail-closed snapshots, CSV/transforms, hardened egress, and optional SQL drivers. |
+| `@braedonsaunders/appkit-integrations`  | Outbound publisher, authoring hub/builder, token mapping, deterministic jobs, send-once/partial retry ledgers, and optional HTTP, Slack/Teams, Sheets, email, SQL, and Drizzle adapters.       |
+| `@braedonsaunders/appkit-notifications` | Responsive three-pane inbox, production preference matrix and device-push enrollment, tenant routing cockpit, audiences, escalation, digest/quiet-hour/scan policy, dispatch, and React/Drizzle entries. |
 
 ### Documents, communications, and infrastructure
 
 | Package                   | What it gives your app                                                                                                             |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `@braedonsaunders/email-render`    | Bounded templates, loops, conditions, sanitization, escaped merge values, subjects, recipients, attachments, HTML, and plain text. |
-| `@braedonsaunders/email-designer`  | Drag-and-drop message and signature authoring: email-safe blocks, merge fields, repeating tables, table tools, and a sanitize/inline/expand compile pipeline. |
-| `@braedonsaunders/emails`          | Resend, SendGrid, Mailgun, Postmark, secure SMTP, and development-only loopback SMTP behind one tenant-aware contract.            |
-| `@braedonsaunders/sms`             | Twilio, Vonage, MessageBird, Plivo, and Telnyx with strict addressing and credential-safe failures.                                |
-| `@braedonsaunders/pdf`             | Pure-JS PDFKit reports/statements plus optional authored-template and hardened Chromium rendering entries.                         |
-| `@braedonsaunders/forms-documents` | Form print styles and bounded authored PDF templates over the canonical forms-core companion-value contract.                       |
-| `@braedonsaunders/forms-pdf`       | Form summaries, repeating tables, photos, hardened browser/resource rendering, record/report templates, and full-bleed design documents. |
-| `@braedonsaunders/crypto`          | AES-256-GCM sealed secrets with configurable HKDF-derived application keys.                                                        |
-| `@braedonsaunders/jobs`            | Lazy BullMQ/Redis runtime plus production email, notification/push, PDF/document, report, scheduled, outbound, script, sandbox, migration, and capture queues with exact retries, retention, validation, deterministic IDs, schedule reconciliation, worker profiles, rate limits, and hardened Web Push. |
-| `@braedonsaunders/storage`         | Tenant-owned S3 objects plus the optional production attachment workspace: upload, search, type filters, paging, preview, download, expansion, removal, HTTP adapters, and database-free memory adapters. |
-| `@braedonsaunders/mailbox`         | Incremental IMAP sync and SMTP send with RFC-5322 threading, persistence injected so the app owns the ledger, plus the three-pane operator inbox. |
-| `@braedonsaunders/office`          | HTML to .docx/.pdf through headless LibreOffice, plain-text precision edits inside .docx, PDF concatenation, and declarative .xlsx workbooks. |
-| `@braedonsaunders/voice`           | Per-agent voice configuration, speech-provider catalogues and key verification (Deepgram, ElevenLabs, OpenAI Realtime, Gemini Live), and LiveKit token minting. |
-| `@braedonsaunders/telephony`       | Carrier phone-number provisioning and the SIP trunk the numbers arrive on, with sealed-secret config and an injectable carrier adapter. |
+| `@braedonsaunders/appkit-email-render`    | Bounded templates, loops, conditions, sanitization, escaped merge values, subjects, recipients, attachments, HTML, and plain text. |
+| `@braedonsaunders/appkit-email-designer`  | Drag-and-drop message and signature authoring: email-safe blocks, merge fields, repeating tables, table tools, and a sanitize/inline/expand compile pipeline. |
+| `@braedonsaunders/appkit-emails`          | Resend, SendGrid, Mailgun, Postmark, secure SMTP, and development-only loopback SMTP behind one tenant-aware contract.            |
+| `@braedonsaunders/appkit-sms`             | Twilio, Vonage, MessageBird, Plivo, and Telnyx with strict addressing and credential-safe failures.                                |
+| `@braedonsaunders/appkit-pdf`             | Pure-JS PDFKit reports/statements plus optional authored-template and hardened Chromium rendering entries.                         |
+| `@braedonsaunders/appkit-forms-documents` | Form print styles and bounded authored PDF templates over the canonical forms-core companion-value contract.                       |
+| `@braedonsaunders/appkit-forms-pdf`       | Form summaries, repeating tables, photos, hardened browser/resource rendering, record/report templates, and full-bleed design documents. |
+| `@braedonsaunders/appkit-crypto`          | AES-256-GCM sealed secrets with configurable HKDF-derived application keys.                                                        |
+| `@braedonsaunders/appkit-jobs`            | Lazy BullMQ/Redis runtime plus production email, notification/push, PDF/document, report, scheduled, outbound, script, sandbox, migration, and capture queues with exact retries, retention, validation, deterministic IDs, schedule reconciliation, worker profiles, rate limits, and hardened Web Push. |
+| `@braedonsaunders/appkit-storage`         | Tenant-owned S3 objects plus the optional production attachment workspace: upload, search, type filters, paging, preview, download, expansion, removal, HTTP adapters, and database-free memory adapters. |
+| `@braedonsaunders/appkit-mailbox`         | Incremental IMAP sync and SMTP send with RFC-5322 threading, persistence injected so the app owns the ledger, plus the three-pane operator inbox. |
+| `@braedonsaunders/appkit-office`          | HTML to .docx/.pdf through headless LibreOffice, plain-text precision edits inside .docx, PDF concatenation, and declarative .xlsx workbooks. |
+| `@braedonsaunders/appkit-voice`           | Per-agent voice configuration, speech-provider catalogues and key verification (Deepgram, ElevenLabs, OpenAI Realtime, Gemini Live), and LiveKit token minting. |
+| `@braedonsaunders/appkit-telephony`       | Carrier phone-number provisioning and the SIP trunk the numbers arrive on, with sealed-secret config and an injectable carrier adapter. |
 
 ## Modular by construction
 
 The core of each feature remains usable without its heaviest dependencies:
 
 ```text
-@braedonsaunders/workflows          graph + durable runtime
+@braedonsaunders/appkit-workflows          graph + durable runtime
   ├─ /react                React Flow authoring
   ├─ /approval-tokens      Node HMAC email actions
   ├─ /schema               feature-owned Drizzle tables
   └─ /drizzle              durable Postgres store
 
-@braedonsaunders/sync               connector + orchestration contracts
+@braedonsaunders/appkit-sync               connector + orchestration contracts
   ├─ /egress               DNS-pinned, SSRF-safe HTTPS
   ├─ /db-drivers           optional PostgreSQL/MySQL/MSSQL clients
   ├─ /schema               connections, runs, crosswalk
   └─ /drizzle              run and cursor persistence
 
-@braedonsaunders/integrations       dispatch + delivery ledger
+@braedonsaunders/appkit-integrations       dispatch + delivery ledger
   ├─ /http /chat /sheets   hardened outbound adapters
   ├─ /email /sql           optional render and database adapters
   ├─ /schema               definitions and delivery ledger
   └─ /drizzle              tenant-scoped persistence
 
-@braedonsaunders/apps               installable application platform
+@braedonsaunders/appkit-apps               installable application platform
   ├─ /manifest /bundle     validated manifests and ZIP packages
   ├─ /runtime /bridge      governed QuickJS backend + opaque iframe SDK
   ├─ /service              source-shaped lifecycle bound to host adapters
@@ -256,7 +256,7 @@ The core of each feature remains usable without its heaviest dependencies:
   ├─ /memory               database-free complete adapter
   └─ /schema /drizzle      tenant-scoped durable lifecycle
 
-@braedonsaunders/scripts            governed automation code
+@braedonsaunders/appkit-scripts            governed automation code
   ├─ /bound                positional cutover runtime + context mapping
   ├─ /client               opaque-origin browser validation gate
   ├─ /jobs                 queue-neutral scheduled/bulk worker handler
@@ -288,7 +288,7 @@ page for every publishable package manifest.
 
 ```bash
 pnpm install
-pnpm --filter @braedonsaunders/playground dev
+pnpm --filter @braedonsaunders/appkit-playground dev
 ```
 
 Open `http://localhost:4310/dashboard`. Use the account launcher to switch
@@ -298,7 +298,7 @@ credentials are required.
 To exercise the real tenant-scoped Postgres/RLS path, copy
 `apps/playground/.env.example` to `apps/playground/.env.local`, set both database
 URLs to your Postgres or Supabase connections, and run
-`pnpm --filter @braedonsaunders/playground seed` before starting the app. With those
+`pnpm --filter @braedonsaunders/appkit-playground seed` before starting the app. With those
 variables present, the same routes use durable package-owned persistence.
 
 ## Quality guarantees

@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Checkbox, cn } from '@braedonsaunders/ui'
+import { Checkbox, cn } from '@braedonsaunders/appkit-ui'
 import type { PermissionGroup } from './types'
 
 export type PermissionMatrixProps = {

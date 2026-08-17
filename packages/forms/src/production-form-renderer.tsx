@@ -86,7 +86,7 @@ import {
   Select,
   Textarea,
   uploadReservedFile,
-} from '@braedonsaunders/ui'
+} from '@braedonsaunders/appkit-ui'
 import {
   evaluateFormulaTree,
   evaluateLogicRule,
@@ -102,13 +102,13 @@ import {
   type DefaultValueExpression,
   type TableColumn,
   type TableConfig,
-} from '@braedonsaunders/forms-core'
+} from '@braedonsaunders/appkit-forms-core'
 import {
   normalizeFormResponseDraftData,
   normalizeRichTextLinkUrl,
-} from '@braedonsaunders/forms-core/response-normalize'
-import { sanitizeDocumentHtml } from '@braedonsaunders/forms-core/sanitize'
-import { localizeText, type AppLocale } from '@braedonsaunders/i18n'
+} from '@braedonsaunders/appkit-forms-core/response-normalize'
+import { sanitizeDocumentHtml } from '@braedonsaunders/appkit-forms-core/sanitize'
+import { localizeText, type AppLocale } from '@braedonsaunders/appkit-i18n'
 import type {
   ProductionPhotoAnalysis as SafetyVisionAnalysis,
   ProductionDataAggregateResult as DataAggregateResult,

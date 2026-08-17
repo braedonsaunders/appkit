@@ -5,16 +5,16 @@ const root = resolve(import.meta.dirname, '..')
 const packagesRoot = join(root, 'packages')
 const errors = []
 const adapterOnlyPeerPackages = new Set([
-  '@braedonsaunders/dashboard',
-  '@braedonsaunders/design-studio',
-  '@braedonsaunders/forms-pdf',
-  '@braedonsaunders/integrations',
-  '@braedonsaunders/notifications',
-  '@braedonsaunders/pdf',
-  '@braedonsaunders/workflows',
-  '@braedonsaunders/sync',
+  '@braedonsaunders/appkit-dashboard',
+  '@braedonsaunders/appkit-design-studio',
+  '@braedonsaunders/appkit-forms-pdf',
+  '@braedonsaunders/appkit-integrations',
+  '@braedonsaunders/appkit-notifications',
+  '@braedonsaunders/appkit-pdf',
+  '@braedonsaunders/appkit-workflows',
+  '@braedonsaunders/appkit-sync',
 ])
-const featureMigrationPackages = new Set(['@braedonsaunders/dashboard', '@braedonsaunders/integrations', '@braedonsaunders/notifications', '@braedonsaunders/sync', '@braedonsaunders/workflows'])
+const featureMigrationPackages = new Set(['@braedonsaunders/appkit-dashboard', '@braedonsaunders/appkit-integrations', '@braedonsaunders/appkit-notifications', '@braedonsaunders/appkit-sync', '@braedonsaunders/appkit-workflows'])
 
 const packages = new Map(
   readdirSync(packagesRoot, { withFileTypes: true })
@@ -29,38 +29,38 @@ const packages = new Map(
 )
 
 const appkitRuntimeAllowlists = {
-  '@braedonsaunders/db': [],
-  '@braedonsaunders/ui': ['@braedonsaunders/tokens'],
-  '@braedonsaunders/forms-core': ['@braedonsaunders/i18n'],
-  '@braedonsaunders/dashboard': ['@braedonsaunders/analytics'],
-  '@braedonsaunders/notifications': [],
-  '@braedonsaunders/workflows': [],
-  '@braedonsaunders/sync': [],
-  '@braedonsaunders/integrations': [],
-  '@braedonsaunders/design-studio': ['@braedonsaunders/tokens'],
-  '@braedonsaunders/pdf': ['@braedonsaunders/tokens'],
-  '@braedonsaunders/forms-pdf': ['@braedonsaunders/tokens'],
+  '@braedonsaunders/appkit-db': [],
+  '@braedonsaunders/appkit-ui': ['@braedonsaunders/appkit-tokens'],
+  '@braedonsaunders/appkit-forms-core': ['@braedonsaunders/appkit-i18n'],
+  '@braedonsaunders/appkit-dashboard': ['@braedonsaunders/appkit-analytics'],
+  '@braedonsaunders/appkit-notifications': [],
+  '@braedonsaunders/appkit-workflows': [],
+  '@braedonsaunders/appkit-sync': [],
+  '@braedonsaunders/appkit-integrations': [],
+  '@braedonsaunders/appkit-design-studio': ['@braedonsaunders/appkit-tokens'],
+  '@braedonsaunders/appkit-pdf': ['@braedonsaunders/appkit-tokens'],
+  '@braedonsaunders/appkit-forms-pdf': ['@braedonsaunders/appkit-tokens'],
 }
 
 const forbiddenRuntimeDependencies = {
-  '@braedonsaunders/db': ['@braedonsaunders/analytics', '@braedonsaunders/dashboard', '@braedonsaunders/notifications', '@braedonsaunders/ui'],
-  '@braedonsaunders/ui': [
-    '@braedonsaunders/analytics',
+  '@braedonsaunders/appkit-db': ['@braedonsaunders/appkit-analytics', '@braedonsaunders/appkit-dashboard', '@braedonsaunders/appkit-notifications', '@braedonsaunders/appkit-ui'],
+  '@braedonsaunders/appkit-ui': [
+    '@braedonsaunders/appkit-analytics',
     '@tiptap/extension-link',
     '@tiptap/extension-placeholder',
     '@tiptap/react',
     '@tiptap/starter-kit',
     'react-grid-layout',
   ],
-  '@braedonsaunders/forms-core': ['@braedonsaunders/email-render', '@braedonsaunders/tokens'],
-  '@braedonsaunders/design-studio': ['fabric'],
-  '@braedonsaunders/pdf': ['isomorphic-dompurify', 'puppeteer-core'],
-  '@braedonsaunders/forms-pdf': ['@braedonsaunders/design-studio', '@braedonsaunders/pdf'],
+  '@braedonsaunders/appkit-forms-core': ['@braedonsaunders/appkit-email-render', '@braedonsaunders/appkit-tokens'],
+  '@braedonsaunders/appkit-design-studio': ['fabric'],
+  '@braedonsaunders/appkit-pdf': ['isomorphic-dompurify', 'puppeteer-core'],
+  '@braedonsaunders/appkit-forms-pdf': ['@braedonsaunders/appkit-design-studio', '@braedonsaunders/appkit-pdf'],
 }
 
 for (const [name, { directory, manifest }] of packages) {
   const dependencies = manifest.dependencies ?? {}
-  const appkitDependencies = Object.keys(dependencies).filter((dependency) => dependency.startsWith('@braedonsaunders/'))
+  const appkitDependencies = Object.keys(dependencies).filter((dependency) => dependency.startsWith('@braedonsaunders/appkit-'))
   const allowlist = appkitRuntimeAllowlists[name]
 
   if (manifest.scripts?.build !== 'node ../../scripts/build-package.mjs') {

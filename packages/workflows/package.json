@@ -1,5 +1,5 @@
 {
-  "name": "@braedonsaunders/workflows",
+  "name": "@braedonsaunders/appkit-workflows",
   "version": "2.0.0",
   "description": "Durable workflow graphs, replay-safe actions, approval gates, and optional React and Drizzle adapters.",
   "license": "AGPL-3.0-or-later",
@@ -30,10 +30,10 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
-    "@braedonsaunders/forms": "^0.2.2",
-    "@braedonsaunders/forms-core": "^0.1.1",
-    "@braedonsaunders/ui": "^0.2.0",
-    "@braedonsaunders/db": "^0.2.0",
+    "@braedonsaunders/appkit-forms": "^0.2.2",
+    "@braedonsaunders/appkit-forms-core": "^0.1.1",
+    "@braedonsaunders/appkit-ui": "^0.2.0",
+    "@braedonsaunders/appkit-db": "^0.2.0",
     "drizzle-orm": "^0.45.2",
     "@xyflow/react": "^12.10.0",
     "lucide-react": "^1.24.0",
@@ -41,16 +41,16 @@
     "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
-    "@braedonsaunders/forms": {
+    "@braedonsaunders/appkit-forms": {
       "optional": true
     },
-    "@braedonsaunders/forms-core": {
+    "@braedonsaunders/appkit-forms-core": {
       "optional": true
     },
-    "@braedonsaunders/ui": {
+    "@braedonsaunders/appkit-ui": {
       "optional": true
     },
-    "@braedonsaunders/db": {
+    "@braedonsaunders/appkit-db": {
       "optional": true
     },
     "drizzle-orm": {
@@ -70,10 +70,10 @@
     }
   },
   "devDependencies": {
-    "@braedonsaunders/forms": "workspace:*",
-    "@braedonsaunders/forms-core": "workspace:*",
-    "@braedonsaunders/ui": "workspace:*",
-    "@braedonsaunders/db": "workspace:*",
+    "@braedonsaunders/appkit-forms": "workspace:*",
+    "@braedonsaunders/appkit-forms-core": "workspace:*",
+    "@braedonsaunders/appkit-ui": "workspace:*",
+    "@braedonsaunders/appkit-db": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "@types/node": "^22",
     "@types/react": "^19",

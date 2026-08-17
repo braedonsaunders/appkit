@@ -1,5 +1,5 @@
 {
-  "name": "@braedonsaunders/forms-core",
+  "name": "@braedonsaunders/appkit-forms-core",
   "version": "0.1.1",
   "description": "Framework-neutral form schemas, evaluation, validation, scoring, localization, and automation planning.",
   "license": "AGPL-3.0-or-later",
@@ -28,13 +28,13 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@braedonsaunders/i18n": "workspace:*",
+    "@braedonsaunders/appkit-i18n": "workspace:*",
     "htmlparser2": "^10.1.0",
     "isomorphic-dompurify": "^3.18.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@braedonsaunders/email-render": "workspace:*",
+    "@braedonsaunders/appkit-email-render": "workspace:*",
     "@types/node": "^22",
     "tsx": "^4.19.2",
     "vitest": "^3.2.4"

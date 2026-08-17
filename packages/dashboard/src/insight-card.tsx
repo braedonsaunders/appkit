@@ -1,5 +1,5 @@
-import { resolveConditionalStyle, type AnalyticResult, type ConditionalRule, type QueryResult, type VisualizationKey, type VisualizationSettings } from '@braedonsaunders/analytics'
-import { cn } from '@braedonsaunders/ui'
+import { resolveConditionalStyle, type AnalyticResult, type ConditionalRule, type QueryResult, type VisualizationKey, type VisualizationSettings } from '@braedonsaunders/appkit-analytics'
+import { cn } from '@braedonsaunders/appkit-ui'
 import { DashboardPanel } from './dashboard-primitives'
 
 const SERIES_COLORS = ['var(--color-primary)', 'var(--color-info)', 'var(--color-success)', 'var(--color-warning)', 'var(--color-danger)']

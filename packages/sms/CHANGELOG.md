@@ -1,4 +1,4 @@
-# @braedonsaunders/sms
+# @braedonsaunders/appkit-sms
 
 ## 0.2.0
 
@@ -16,4 +16,4 @@
   Changesets.
 - Updated dependencies [1319bfb]
 - Updated dependencies [3ab6056]
-  - @braedonsaunders/crypto@0.2.0
+  - @braedonsaunders/appkit-crypto@0.2.0

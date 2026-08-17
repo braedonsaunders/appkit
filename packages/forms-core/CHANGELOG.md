@@ -1,4 +1,4 @@
-# @braedonsaunders/forms-core
+# @braedonsaunders/appkit-forms-core
 
 ## 0.1.1
 
@@ -9,4 +9,4 @@
   `create-appkit` CLI, and automate version PRs and npm publication with
   Changesets.
 - Updated dependencies [3ab6056]
-  - @braedonsaunders/i18n@0.1.1
+  - @braedonsaunders/appkit-i18n@0.1.1

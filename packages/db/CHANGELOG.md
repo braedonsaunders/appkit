@@ -1,4 +1,4 @@
-# @braedonsaunders/db
+# @braedonsaunders/appkit-db
 
 ## 0.2.0
 

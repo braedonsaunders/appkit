@@ -12,7 +12,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { Badge, Button, Checkbox, Input, Label, Select, cn } from '@braedonsaunders/ui'
+import { Badge, Button, Checkbox, Input, Label, Select, cn } from '@braedonsaunders/appkit-ui'
 import {
   customFieldDefKey,
   isCustomFieldKey,

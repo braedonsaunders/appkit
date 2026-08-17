@@ -1,4 +1,4 @@
-# @braedonsaunders/design-studio
+# @braedonsaunders/appkit-design-studio
 
 ## 1.0.0
 
@@ -6,7 +6,7 @@
 
 - Updated dependencies [22e968a]
 - Updated dependencies [9f04661]
-  - @braedonsaunders/ui@0.2.0
+  - @braedonsaunders/appkit-ui@0.2.0
 
 ## 0.2.0
 
@@ -29,5 +29,5 @@
   editor.
 - Updated dependencies [3ab6056]
 - Updated dependencies [1319bfb]
-  - @braedonsaunders/tokens@0.1.1
-  - @braedonsaunders/ui@0.1.1
+  - @braedonsaunders/appkit-tokens@0.1.1
+  - @braedonsaunders/appkit-ui@0.1.1

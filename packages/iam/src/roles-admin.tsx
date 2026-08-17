@@ -19,7 +19,7 @@ import {
   Textarea,
   cn,
   confirmDialog,
-} from '@braedonsaunders/ui'
+} from '@braedonsaunders/appkit-ui'
 import { Copy, Plus, Search, Shield, Trash2, UserPlus, UsersRound, X } from 'lucide-react'
 import { PermissionMatrix } from './permission-matrix'
 import { ScopePicker } from './scope-picker'

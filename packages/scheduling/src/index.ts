@@ -1,9 +1,9 @@
 /**
- * @braedonsaunders/scheduling — dependency-free scheduling core.
+ * @braedonsaunders/appkit-scheduling — dependency-free scheduling core.
  *
  * Everything exported here runs in Node, a worker, or the browser: no React,
  * no database, no host coupling. The React authoring surface (Gantt, list,
- * board, editors) lives behind `@braedonsaunders/scheduling/react`.
+ * board, editors) lives behind `@braedonsaunders/appkit-scheduling/react`.
  */
 
 export * from './types'

@@ -1,5 +1,5 @@
 {
-  "name": "@braedonsaunders/superadmin",
+  "name": "@braedonsaunders/appkit-superadmin",
   "version": "1.0.0",
   "description": "Instance-operator administration over the platform identity: manage the users who can sign in, their credentials, and active sessions, with guard rails and production React components.",
   "license": "AGPL-3.0-or-later",
@@ -23,18 +23,18 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
-    "@braedonsaunders/db": "^0.2.0",
-    "@braedonsaunders/ui": "^0.2.0",
+    "@braedonsaunders/appkit-db": "^0.2.0",
+    "@braedonsaunders/appkit-ui": "^0.2.0",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
-    "@braedonsaunders/db": {
+    "@braedonsaunders/appkit-db": {
       "optional": true
     },
-    "@braedonsaunders/ui": {
+    "@braedonsaunders/appkit-ui": {
       "optional": true
     },
     "drizzle-orm": {
@@ -51,8 +51,8 @@
     }
   },
   "devDependencies": {
-    "@braedonsaunders/db": "workspace:*",
-    "@braedonsaunders/ui": "workspace:*",
+    "@braedonsaunders/appkit-db": "workspace:*",
+    "@braedonsaunders/appkit-ui": "workspace:*",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

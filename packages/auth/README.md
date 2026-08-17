@@ -1,4 +1,4 @@
-# @braedonsaunders/auth
+# @braedonsaunders/appkit-auth
 
 Production authentication extracted from the complete reference runtime and generalized around explicit application inputs.
 
@@ -8,7 +8,7 @@ Production authentication extracted from the complete reference runtime and gene
 - password sign-in, reset requests, reset completion, session refresh/revocation, and encrypted OAuth tokens;
 - hashed one-time magic links with framework-neutral email delivery;
 - membership-targeted invitation grants that cannot activate a different user, tenant, membership, or resend generation;
-- atomic Postgres invitation acceptance and audit through `@braedonsaunders/auth/drizzle`;
+- atomic Postgres invitation acceptance and audit through `@braedonsaunders/appkit-auth/drizzle`;
 - deterministic memory invitation storage for tests and database-free applications;
 - React sign-in, forgot-password, reset-password, and auth-screen compositions;
 - Better Auth React client and Next.js route bindings as optional entry points.
@@ -16,7 +16,7 @@ Production authentication extracted from the complete reference runtime and gene
 ## Server
 
 ```ts
-import { createAppkitAuth, createLazyAuth } from '@braedonsaunders/auth/server'
+import { createAppkitAuth, createLazyAuth } from '@braedonsaunders/appkit-auth/server'
 
 export const getAuth = createLazyAuth(() => createAppkitAuth({
   database: pool,
@@ -27,7 +27,7 @@ export const getAuth = createLazyAuth(() => createAppkitAuth({
 }))
 ```
 
-Mount `toNextJsHandler(getAuth())` from `@braedonsaunders/auth/next` in a Next.js catch-all route. Other frameworks can mount `getAuth().handler` directly.
+Mount `toNextJsHandler(getAuth())` from `@braedonsaunders/appkit-auth/next` in a Next.js catch-all route. Other frameworks can mount `getAuth().handler` directly.
 
 ## Invitations
 

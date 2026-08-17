@@ -1,4 +1,4 @@
-import { cn } from '@braedonsaunders/ui'
+import { cn } from '@braedonsaunders/appkit-ui'
 
 /**
  * The appkit mark: a stroke-drawn rounded container with a spark rising out of

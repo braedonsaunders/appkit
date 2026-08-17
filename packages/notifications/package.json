@@ -1,5 +1,5 @@
 {
-  "name": "@braedonsaunders/notifications",
+  "name": "@braedonsaunders/appkit-notifications",
   "version": "2.0.0",
   "description": "Production inbox, preferences, push enrollment, tenant routing cockpit, multi-channel runtime, and optional Drizzle adapters.",
   "license": "AGPL-3.0-or-later",
@@ -27,22 +27,22 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
-    "@braedonsaunders/db": "^0.2.0",
-    "@braedonsaunders/ui": "^0.2.0",
-    "@braedonsaunders/jobs": "^0.2.1",
+    "@braedonsaunders/appkit-db": "^0.2.0",
+    "@braedonsaunders/appkit-ui": "^0.2.0",
+    "@braedonsaunders/appkit-jobs": "^0.2.1",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
-    "@braedonsaunders/db": {
+    "@braedonsaunders/appkit-db": {
       "optional": true
     },
-    "@braedonsaunders/ui": {
+    "@braedonsaunders/appkit-ui": {
       "optional": true
     },
-    "@braedonsaunders/jobs": {
+    "@braedonsaunders/appkit-jobs": {
       "optional": true
     },
     "drizzle-orm": {
@@ -59,9 +59,9 @@
     }
   },
   "devDependencies": {
-    "@braedonsaunders/db": "workspace:*",
-    "@braedonsaunders/ui": "workspace:*",
-    "@braedonsaunders/jobs": "workspace:*",
+    "@braedonsaunders/appkit-db": "workspace:*",
+    "@braedonsaunders/appkit-ui": "workspace:*",
+    "@braedonsaunders/appkit-jobs": "workspace:*",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

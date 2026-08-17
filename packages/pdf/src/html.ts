@@ -8,7 +8,7 @@
 // fonts and stylesheets.
 
 import { existsSync } from 'node:fs'
-import { color } from '@braedonsaunders/tokens'
+import { color } from '@braedonsaunders/appkit-tokens'
 import puppeteer, { type Browser, type Page } from 'puppeteer-core'
 import type { PdfPaperSize } from './types'
 

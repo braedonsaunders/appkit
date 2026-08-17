@@ -1,4 +1,4 @@
-# `@braedonsaunders/jobs`
+# `@braedonsaunders/appkit-jobs`
 
 Production BullMQ infrastructure and reusable queue contracts for application work that must survive request boundaries.
 
@@ -26,10 +26,10 @@ Every queue module exports its payload types, validation functions, exact queue 
 ## Usage
 
 ```ts
-import { createJobs } from '@braedonsaunders/jobs'
-import { createEmailQueue } from '@braedonsaunders/jobs/email'
-import { createPdfQueue } from '@braedonsaunders/jobs/pdf'
-import { createScheduledQueue } from '@braedonsaunders/jobs/scheduled'
+import { createJobs } from '@braedonsaunders/appkit-jobs'
+import { createEmailQueue } from '@braedonsaunders/appkit-jobs/email'
+import { createPdfQueue } from '@braedonsaunders/appkit-jobs/pdf'
+import { createScheduledQueue } from '@braedonsaunders/appkit-jobs/scheduled'
 
 const jobs = createJobs({ redisUrl: process.env.REDIS_URL! })
 

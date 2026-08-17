@@ -1,5 +1,5 @@
 {
-  "name": "@braedonsaunders/scheduling",
+  "name": "@braedonsaunders/appkit-scheduling",
   "version": "1.0.0",
   "description": "Project scheduling: CPM critical path, calendars, resource leveling, baselines, and the Gantt/list/board authoring surface.",
   "license": "AGPL-3.0-or-later",
@@ -25,13 +25,13 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
-    "@braedonsaunders/ui": "^0.2.0",
+    "@braedonsaunders/appkit-ui": "^0.2.0",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
-    "@braedonsaunders/ui": {
+    "@braedonsaunders/appkit-ui": {
       "optional": true
     },
     "lucide-react": {
@@ -45,7 +45,7 @@
     }
   },
   "devDependencies": {
-    "@braedonsaunders/ui": "workspace:*",
+    "@braedonsaunders/appkit-ui": "workspace:*",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

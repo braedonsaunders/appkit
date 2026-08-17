@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import type { AppLocale } from '@braedonsaunders/i18n'
-import type { FormSchemaV1 } from '@braedonsaunders/forms-core'
+import type { AppLocale } from '@braedonsaunders/appkit-i18n'
+import type { FormSchemaV1 } from '@braedonsaunders/appkit-forms-core'
 import type { FormDataSource } from './properties'
 import type {
   ListConfig,

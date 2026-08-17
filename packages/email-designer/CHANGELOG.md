@@ -1,10 +1,10 @@
-# @braedonsaunders/email-designer
+# @braedonsaunders/appkit-email-designer
 
 ## 0.2.0
 
 ### Minor Changes
 
-- 60a30ab: Add `@braedonsaunders/email-designer`: a drag-and-drop designer for email — whole
+- 60a30ab: Add `@braedonsaunders/appkit-email-designer`: a drag-and-drop designer for email — whole
   messages and signatures — plus the compile pipeline that turns what an author
   built into markup Outlook will not mangle.
 
@@ -23,7 +23,7 @@
   top-level `<style>`, so a signature saved un-inlined would reopen stripped of
   every rule the editor had written to its stylesheet. Authored markup is
   sanitized once at save, never per send; merge values are escaped at render by
-  `@braedonsaunders/email-render`.
+  `@braedonsaunders/appkit-email-render`.
 
   The root entry is isomorphic — types, themes, block catalogues, compile,
   render, preview. GrapesJS, React, and `juice` are optional peers behind

@@ -19,7 +19,7 @@ export type SketchPadProps = {
 }
 
 // Keep both the browser-only drawing engine and its package stylesheet behind
-// the mounted boundary. Importing @braedonsaunders/forms therefore stays safe in Node,
+// the mounted boundary. Importing @braedonsaunders/appkit-forms therefore stays safe in Node,
 // while applications that actually render a sketch receive the complete UI.
 const SketchPadClient = lazy(() => import('./sketch-pad-client'))
 

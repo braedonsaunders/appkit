@@ -1,4 +1,4 @@
-# @braedonsaunders/analytics
+# @braedonsaunders/appkit-analytics
 
 ## 0.2.0
 

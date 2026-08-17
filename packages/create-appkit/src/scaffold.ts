@@ -7,31 +7,31 @@ import { promisify } from 'node:util'
 const exec = promisify(execFile)
 
 export const FEATURE_PACKAGES = {
-  ai: ['@braedonsaunders/ai'],
-  analytics: ['@braedonsaunders/analytics', '@braedonsaunders/dashboard', '@braedonsaunders/reports'],
-  communications: ['@braedonsaunders/email-render', '@braedonsaunders/emails', '@braedonsaunders/notifications', '@braedonsaunders/sms'],
-  customization: ['@braedonsaunders/customization'],
-  documents: ['@braedonsaunders/design-studio', '@braedonsaunders/forms-documents', '@braedonsaunders/forms-pdf', '@braedonsaunders/pdf'],
-  extensions: ['@braedonsaunders/apps', '@braedonsaunders/endpoints', '@braedonsaunders/sandbox', '@braedonsaunders/scripts'],
-  forms: ['@braedonsaunders/editor', '@braedonsaunders/forms', '@braedonsaunders/forms-core', '@braedonsaunders/i18n'],
-  integrations: ['@braedonsaunders/integrations', '@braedonsaunders/sync'],
-  identity: ['@braedonsaunders/auth', '@braedonsaunders/db', '@braedonsaunders/iam', '@braedonsaunders/tenant'],
-  platform: ['@braedonsaunders/api', '@braedonsaunders/auth', '@braedonsaunders/crypto', '@braedonsaunders/events'],
-  storage: ['@braedonsaunders/storage'],
-  tenancy: ['@braedonsaunders/db', '@braedonsaunders/tenant'],
-  workflows: ['@braedonsaunders/jobs', '@braedonsaunders/workflows'],
+  ai: ['@braedonsaunders/appkit-ai'],
+  analytics: ['@braedonsaunders/appkit-analytics', '@braedonsaunders/appkit-dashboard', '@braedonsaunders/appkit-reports'],
+  communications: ['@braedonsaunders/appkit-email-render', '@braedonsaunders/appkit-emails', '@braedonsaunders/appkit-notifications', '@braedonsaunders/appkit-sms'],
+  customization: ['@braedonsaunders/appkit-customization'],
+  documents: ['@braedonsaunders/appkit-design-studio', '@braedonsaunders/appkit-forms-documents', '@braedonsaunders/appkit-forms-pdf', '@braedonsaunders/appkit-pdf'],
+  extensions: ['@braedonsaunders/appkit-apps', '@braedonsaunders/appkit-endpoints', '@braedonsaunders/appkit-sandbox', '@braedonsaunders/appkit-scripts'],
+  forms: ['@braedonsaunders/appkit-editor', '@braedonsaunders/appkit-forms', '@braedonsaunders/appkit-forms-core', '@braedonsaunders/appkit-i18n'],
+  integrations: ['@braedonsaunders/appkit-integrations', '@braedonsaunders/appkit-sync'],
+  identity: ['@braedonsaunders/appkit-auth', '@braedonsaunders/appkit-db', '@braedonsaunders/appkit-iam', '@braedonsaunders/appkit-tenant'],
+  platform: ['@braedonsaunders/appkit-api', '@braedonsaunders/appkit-auth', '@braedonsaunders/appkit-crypto', '@braedonsaunders/appkit-events'],
+  storage: ['@braedonsaunders/appkit-storage'],
+  tenancy: ['@braedonsaunders/appkit-db', '@braedonsaunders/appkit-tenant'],
+  workflows: ['@braedonsaunders/appkit-jobs', '@braedonsaunders/appkit-workflows'],
 } as const
 
 export type FeatureName = keyof typeof FEATURE_PACKAGES
 
 const FEATURE_STYLES: Partial<Record<FeatureName, readonly string[]>> = {
-  analytics: ['@braedonsaunders/dashboard/styles.css', '@braedonsaunders/reports/styles.css'],
-  customization: ['@braedonsaunders/customization/styles.css'],
-  documents: ['@braedonsaunders/design-studio/styles.css'],
-  extensions: ['@braedonsaunders/apps/styles.css', '@braedonsaunders/scripts/styles.css'],
-  forms: ['@braedonsaunders/forms/styles.css'],
-  storage: ['@braedonsaunders/storage/styles.css'],
-  workflows: ['@braedonsaunders/workflows/styles.css'],
+  analytics: ['@braedonsaunders/appkit-dashboard/styles.css', '@braedonsaunders/appkit-reports/styles.css'],
+  customization: ['@braedonsaunders/appkit-customization/styles.css'],
+  documents: ['@braedonsaunders/appkit-design-studio/styles.css'],
+  extensions: ['@braedonsaunders/appkit-apps/styles.css', '@braedonsaunders/appkit-scripts/styles.css'],
+  forms: ['@braedonsaunders/appkit-forms/styles.css'],
+  storage: ['@braedonsaunders/appkit-storage/styles.css'],
+  workflows: ['@braedonsaunders/appkit-workflows/styles.css'],
 }
 
 export type PackageManager = 'pnpm' | 'npm' | 'yarn' | 'bun'
@@ -58,12 +58,12 @@ export async function scaffoldProject(options: ScaffoldOptions): Promise<{ direc
   await mkdir(directory, { recursive: true })
 
   const selectedPackages = [
-    '@braedonsaunders/tokens',
-    '@braedonsaunders/ui',
+    '@braedonsaunders/appkit-tokens',
+    '@braedonsaunders/appkit-ui',
     ...features.flatMap((feature) => FEATURE_PACKAGES[feature]),
   ].filter((value, index, values) => values.indexOf(value) === index)
   const selectedStyles = [
-    '@braedonsaunders/ui/styles.css',
+    '@braedonsaunders/appkit-ui/styles.css',
     ...features.flatMap((feature) => FEATURE_STYLES[feature] ?? []),
   ].filter((value, index, values) => values.indexOf(value) === index)
 
@@ -114,9 +114,9 @@ export async function scaffoldProject(options: ScaffoldOptions): Promise<{ direc
     )}\n`,
     'postcss.config.mjs': `export default { plugins: { '@tailwindcss/postcss': {} } }\n`,
     'src/app/globals.css': `${selectedStyles.map((stylesheet) => `@import '${stylesheet}';`).join('\n')}\n@source '../**/*.{ts,tsx}';\n\nhtml, body { min-height: 100%; }\n`,
-    'src/app/layout.tsx': `import type { Metadata } from 'next'\nimport Script from 'next/script'\nimport type { ReactNode } from 'react'\nimport { ConfirmRoot, getThemeScript, PromptRoot, Toaster } from '@braedonsaunders/ui'\nimport { AppFrame } from '@/components/app-frame'\nimport './globals.css'\n\nexport const metadata: Metadata = {\n  title: '${displayName(projectName)}',\n  description: 'Built with AppKit',\n}\n\nexport default function RootLayout({ children }: { children: ReactNode }) {\n  return (\n    <html lang="en" suppressHydrationWarning>\n      <head>\n        <Script\n          id="appkit-theme"\n          strategy="beforeInteractive"\n          dangerouslySetInnerHTML={{ __html: getThemeScript() }}\n        />\n      </head>\n      <body className="min-h-screen bg-bg text-fg antialiased">\n        <AppFrame>{children}</AppFrame>\n        <PromptRoot />\n        <ConfirmRoot />\n        <Toaster richColors closeButton />\n      </body>\n    </html>\n  )\n}\n`,
-    'src/app/page.tsx': `import { Card, CardContent, CardDescription, CardHeader, CardTitle, PageHeader } from '@braedonsaunders/ui'\n\nexport default function HomePage() {\n  return (\n    <div className="min-h-0 flex-1 overflow-y-auto">\n      <div className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">\n        <PageHeader title="${displayName(projectName)}" description="Your application foundation is ready." />\n        <Card>\n          <CardHeader>\n            <CardTitle>Build the product</CardTitle>\n            <CardDescription>AppKit supplies the shell, tokens, primitives, and optional platform packages.</CardDescription>\n          </CardHeader>\n          <CardContent className="text-sm text-fg-muted">Replace this card with your first application workflow.</CardContent>\n        </Card>\n      </div>\n    </div>\n  )\n}\n`,
-    'src/components/app-frame.tsx': `'use client'\n\nimport Link from 'next/link'\nimport { usePathname } from 'next/navigation'\nimport type { ReactNode } from 'react'\nimport { AccountMenu, AppShell, ThemeProvider, UiLinkProvider, type SidebarNavGroup } from '@braedonsaunders/ui'\nimport { PageTransition } from '@braedonsaunders/ui/page-transition'\n\nconst navigation: SidebarNavGroup[] = [\n  { id: 'app', label: 'Application', items: [{ href: '/', label: 'Home', iconKey: 'home', exact: true, mobile: true }] },\n]\n\nexport function AppFrame({ children }: { children: ReactNode }) {\n  const pathname = usePathname()\n  return (\n    <UiLinkProvider link={Link}>\n      <ThemeProvider>\n        <AppShell\n          groups={navigation}\n          pathname={pathname}\n          brand={<strong>${displayName(projectName)}</strong>}\n          header={\n            <AccountMenu\n              name="Workspace Owner"\n              email="owner@example.com"\n              contextLabel="${displayName(projectName)} · workspace"\n              status={{ label: 'Authentication not configured', variant: 'secondary' }}\n              showTheme\n            />\n          }\n        >\n          <PageTransition navigationKey={pathname}>{children}</PageTransition>\n        </AppShell>\n      </ThemeProvider>\n    </UiLinkProvider>\n  )\n}\n`,
+    'src/app/layout.tsx': `import type { Metadata } from 'next'\nimport Script from 'next/script'\nimport type { ReactNode } from 'react'\nimport { ConfirmRoot, getThemeScript, PromptRoot, Toaster } from '@braedonsaunders/appkit-ui'\nimport { AppFrame } from '@/components/app-frame'\nimport './globals.css'\n\nexport const metadata: Metadata = {\n  title: '${displayName(projectName)}',\n  description: 'Built with AppKit',\n}\n\nexport default function RootLayout({ children }: { children: ReactNode }) {\n  return (\n    <html lang="en" suppressHydrationWarning>\n      <head>\n        <Script\n          id="appkit-theme"\n          strategy="beforeInteractive"\n          dangerouslySetInnerHTML={{ __html: getThemeScript() }}\n        />\n      </head>\n      <body className="min-h-screen bg-bg text-fg antialiased">\n        <AppFrame>{children}</AppFrame>\n        <PromptRoot />\n        <ConfirmRoot />\n        <Toaster richColors closeButton />\n      </body>\n    </html>\n  )\n}\n`,
+    'src/app/page.tsx': `import { Card, CardContent, CardDescription, CardHeader, CardTitle, PageHeader } from '@braedonsaunders/appkit-ui'\n\nexport default function HomePage() {\n  return (\n    <div className="min-h-0 flex-1 overflow-y-auto">\n      <div className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">\n        <PageHeader title="${displayName(projectName)}" description="Your application foundation is ready." />\n        <Card>\n          <CardHeader>\n            <CardTitle>Build the product</CardTitle>\n            <CardDescription>AppKit supplies the shell, tokens, primitives, and optional platform packages.</CardDescription>\n          </CardHeader>\n          <CardContent className="text-sm text-fg-muted">Replace this card with your first application workflow.</CardContent>\n        </Card>\n      </div>\n    </div>\n  )\n}\n`,
+    'src/components/app-frame.tsx': `'use client'\n\nimport Link from 'next/link'\nimport { usePathname } from 'next/navigation'\nimport type { ReactNode } from 'react'\nimport { AccountMenu, AppShell, ThemeProvider, UiLinkProvider, type SidebarNavGroup } from '@braedonsaunders/appkit-ui'\nimport { PageTransition } from '@braedonsaunders/appkit-ui/page-transition'\n\nconst navigation: SidebarNavGroup[] = [\n  { id: 'app', label: 'Application', items: [{ href: '/', label: 'Home', iconKey: 'home', exact: true, mobile: true }] },\n]\n\nexport function AppFrame({ children }: { children: ReactNode }) {\n  const pathname = usePathname()\n  return (\n    <UiLinkProvider link={Link}>\n      <ThemeProvider>\n        <AppShell\n          groups={navigation}\n          pathname={pathname}\n          brand={<strong>${displayName(projectName)}</strong>}\n          header={\n            <AccountMenu\n              name="Workspace Owner"\n              email="owner@example.com"\n              contextLabel="${displayName(projectName)} · workspace"\n              status={{ label: 'Authentication not configured', variant: 'secondary' }}\n              showTheme\n            />\n          }\n        >\n          <PageTransition navigationKey={pathname}>{children}</PageTransition>\n        </AppShell>\n      </ThemeProvider>\n    </UiLinkProvider>\n  )\n}\n`,
     'tsconfig.json': `${JSON.stringify(
       {
         compilerOptions: {

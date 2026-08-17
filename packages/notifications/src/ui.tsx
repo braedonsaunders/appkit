@@ -21,7 +21,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react'
-import { Badge, Button, Checkbox, Drawer, Skeleton, UiLink, cn } from '@braedonsaunders/ui'
+import { Badge, Button, Checkbox, Drawer, Skeleton, UiLink, cn } from '@braedonsaunders/appkit-ui'
 import {
   NOTIFICATION_CHANNELS,
   type NotificationCatalog,

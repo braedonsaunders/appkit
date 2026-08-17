@@ -1,6 +1,6 @@
 // Server-only subpath: juice is a Node module (cheerio) and must not reach a
 // browser bundle. Kept out of the package entry so the core stays isomorphic —
-// import '@braedonsaunders/email-designer/inline' from a server action or job only.
+// import '@braedonsaunders/appkit-email-designer/inline' from a server action or job only.
 
 import juice from 'juice'
 

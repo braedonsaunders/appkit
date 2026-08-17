@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { auditColumns, id, tenantRef } from '@braedonsaunders/db'
+import { auditColumns, id, tenantRef } from '@braedonsaunders/appkit-db'
 import type { NotificationChannel } from './index'
 
 export const notifications = pgTable('notifications', {

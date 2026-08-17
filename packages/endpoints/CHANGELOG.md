@@ -1,4 +1,4 @@
-# @braedonsaunders/endpoints
+# @braedonsaunders/appkit-endpoints
 
 ## 0.1.1
 

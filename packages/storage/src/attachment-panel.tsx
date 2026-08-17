@@ -22,7 +22,7 @@ import {
   cn,
   toast,
   useListNav,
-} from '@braedonsaunders/ui'
+} from '@braedonsaunders/appkit-ui'
 import {
   attachmentGroup,
   formatAttachmentSize,

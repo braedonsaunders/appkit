@@ -45,20 +45,20 @@ import {
   X,
   Zap,
 } from 'lucide-react'
-import { Button, Drawer, Input, Label, Select, SearchSelect, Textarea, toast } from '@braedonsaunders/ui'
+import { Button, Drawer, Input, Label, Select, SearchSelect, Textarea, toast } from '@braedonsaunders/appkit-ui'
 import type {
   ActionData,
   AutomationGraph,
   AutomationNode,
   EmailTarget,
   TriggerData,
-} from '@braedonsaunders/forms-core/safety-automation'
+} from '@braedonsaunders/appkit-forms-core/safety-automation'
 import {
   emptyAutomationGraph,
   lintAutomationGraph,
-} from '@braedonsaunders/forms-core/safety-automation'
-import type { FlowSubjectProfile } from '@braedonsaunders/forms-core/safety-flow-subjects'
-import { LogicBuilder } from '@braedonsaunders/forms'
+} from '@braedonsaunders/appkit-forms-core/safety-automation'
+import type { FlowSubjectProfile } from '@braedonsaunders/appkit-forms-core/safety-flow-subjects'
+import { LogicBuilder } from '@braedonsaunders/appkit-forms'
 
 const MAX_FLOW_NAME_LENGTH = 120
 

@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { isDeepStrictEqual } from 'node:util'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
-import { auditLog, domainEventOutbox } from '@braedonsaunders/db'
+import { auditLog, domainEventOutbox } from '@braedonsaunders/appkit-db'
 import { assertDomainEventPayload, type DomainEventPayload } from './relay'
 
 export * from './relay'

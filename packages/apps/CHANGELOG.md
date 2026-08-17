@@ -1,4 +1,4 @@
-# @braedonsaunders/apps
+# @braedonsaunders/appkit-apps
 
 ## 2.0.0
 
@@ -6,7 +6,7 @@
 
 - Updated dependencies [22e968a]
 - Updated dependencies [9f04661]
-  - @braedonsaunders/ui@0.2.0
+  - @braedonsaunders/appkit-ui@0.2.0
 
 ## 1.0.0
 
@@ -16,6 +16,6 @@
 - Updated dependencies [3ab6056]
 - Updated dependencies [1319bfb]
 - Updated dependencies [1319bfb]
-  - @braedonsaunders/db@0.2.0
-  - @braedonsaunders/endpoints@0.1.1
-  - @braedonsaunders/ui@0.1.1
+  - @braedonsaunders/appkit-db@0.2.0
+  - @braedonsaunders/appkit-endpoints@0.1.1
+  - @braedonsaunders/appkit-ui@0.1.1
