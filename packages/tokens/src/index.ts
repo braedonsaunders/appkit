@@ -41,6 +41,16 @@ export type ColorToken =
   | 'info'
   | 'info-fg'
   | 'info-subtle'
+  /* Categorical accents — identity, not status. */
+  | 'accent-rose'
+  | 'accent-amber'
+  | 'accent-lime'
+  | 'accent-emerald'
+  | 'accent-teal'
+  | 'accent-cyan'
+  | 'accent-sky'
+  | 'accent-indigo'
+  | 'accent-violet'
   | 'ring'
 
 /** sRGB channels as `[r, g, b]`, mirroring the CSS `--ch-*` triples. */
@@ -78,6 +88,15 @@ const light: Record<ColorToken, Channels> = {
   info: [37, 99, 235],
   'info-fg': [255, 255, 255],
   'info-subtle': [239, 246, 255],
+  'accent-rose': [225, 29, 72],
+  'accent-amber': [217, 119, 6],
+  'accent-lime': [101, 163, 13],
+  'accent-emerald': [5, 150, 105],
+  'accent-teal': [13, 148, 136],
+  'accent-cyan': [8, 145, 178],
+  'accent-sky': [2, 132, 199],
+  'accent-indigo': [79, 70, 229],
+  'accent-violet': [124, 58, 237],
   ring: [20, 184, 166],
 }
 
@@ -112,6 +131,15 @@ const dark: Record<ColorToken, Channels> = {
   info: [96, 165, 250],
   'info-fg': [23, 37, 84],
   'info-subtle': [20, 33, 70],
+  'accent-rose': [251, 113, 133],
+  'accent-amber': [251, 191, 36],
+  'accent-lime': [163, 230, 53],
+  'accent-emerald': [52, 211, 153],
+  'accent-teal': [45, 212, 191],
+  'accent-cyan': [34, 211, 238],
+  'accent-sky': [56, 189, 248],
+  'accent-indigo': [129, 140, 248],
+  'accent-violet': [167, 139, 250],
   ring: [45, 212, 191],
 }
 

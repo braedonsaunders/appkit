@@ -59,6 +59,20 @@
   --ch-info-fg: 255 255 255;
   --ch-info-subtle: 239 246 255;
 
+  /* Categorical accents — for distinguishing peers (launcher cards, chart
+     series, tags), never for status. Status stays semantic: danger/warning/
+     success/info carry meaning, these carry only identity. Nine hues spaced
+     around the wheel so adjacent items stay tellable apart. */
+  --ch-accent-rose: 225 29 72;
+  --ch-accent-amber: 217 119 6;
+  --ch-accent-lime: 101 163 13;
+  --ch-accent-emerald: 5 150 105;
+  --ch-accent-teal: 13 148 136;
+  --ch-accent-cyan: 8 145 178;
+  --ch-accent-sky: 2 132 199;
+  --ch-accent-indigo: 79 70 229;
+  --ch-accent-violet: 124 58 237;
+
   /* Focus ring */
   --ch-ring: 20 184 166;
 
@@ -116,6 +130,17 @@
   --ch-info-fg: 23 37 84;
   --ch-info-subtle: 20 33 70;
 
+  /* Categorical accents — lifted for contrast on dark surfaces. */
+  --ch-accent-rose: 251 113 133;
+  --ch-accent-amber: 251 191 36;
+  --ch-accent-lime: 163 230 53;
+  --ch-accent-emerald: 52 211 153;
+  --ch-accent-teal: 45 212 191;
+  --ch-accent-cyan: 34 211 238;
+  --ch-accent-sky: 56 189 248;
+  --ch-accent-indigo: 129 140 248;
+  --ch-accent-violet: 167 139 250;
+
   --ch-ring: 45 212 191;
 
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
@@ -159,6 +184,15 @@
     --ch-info: 96 165 250;
     --ch-info-fg: 23 37 84;
     --ch-info-subtle: 20 33 70;
+    --ch-accent-rose: 251 113 133;
+    --ch-accent-amber: 251 191 36;
+    --ch-accent-lime: 163 230 53;
+    --ch-accent-emerald: 52 211 153;
+    --ch-accent-teal: 45 212 191;
+    --ch-accent-cyan: 34 211 238;
+    --ch-accent-sky: 56 189 248;
+    --ch-accent-indigo: 129 140 248;
+    --ch-accent-violet: 167 139 250;
     --ch-ring: 45 212 191;
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
     --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.4);
@@ -207,6 +241,17 @@
   --color-info: rgb(var(--ch-info));
   --color-info-fg: rgb(var(--ch-info-fg));
   --color-info-subtle: rgb(var(--ch-info-subtle));
+
+  /* Categorical accents — identity, not status. */
+  --color-accent-rose: rgb(var(--ch-accent-rose));
+  --color-accent-amber: rgb(var(--ch-accent-amber));
+  --color-accent-lime: rgb(var(--ch-accent-lime));
+  --color-accent-emerald: rgb(var(--ch-accent-emerald));
+  --color-accent-teal: rgb(var(--ch-accent-teal));
+  --color-accent-cyan: rgb(var(--ch-accent-cyan));
+  --color-accent-sky: rgb(var(--ch-accent-sky));
+  --color-accent-indigo: rgb(var(--ch-accent-indigo));
+  --color-accent-violet: rgb(var(--ch-accent-violet));
 
   --color-ring: rgb(var(--ch-ring));
 
