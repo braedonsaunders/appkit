@@ -3,7 +3,6 @@
   "version": "0.2.0",
   "description": "App-agnostic semantic query compiler, formula evaluator, result contracts, and visualization registry.",
   "license": "AGPL-3.0-or-later",
-  "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
