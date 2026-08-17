@@ -2754,6 +2754,108 @@
           "total": 620
         }
       ]
+    },
+    {
+      "at": "2026-08-17T19:54:51.215Z",
+      "sha": "162aa1f063320445f23ee34e5f3a02df0fb9406e",
+      "pr": null,
+      "actor": "braedonsaunders",
+      "files": 1001,
+      "functions": 3581,
+      "loc": 177913,
+      "languages": 12,
+      "topLanguages": [
+        {
+          "ext": "ts",
+          "pct": 46,
+          "lines": 81853
+        },
+        {
+          "ext": "tsx",
+          "pct": 35,
+          "lines": 62888
+        },
+        {
+          "ext": "yaml",
+          "pct": 8,
+          "lines": 14380
+        },
+        {
+          "ext": "json",
+          "pct": 6,
+          "lines": 10492
+        },
+        {
+          "ext": "md",
+          "pct": 3,
+          "lines": 4565
+        }
+      ],
+      "dead": 133,
+      "deadPct": 3.7,
+      "circular": 1,
+      "godObjects": 1,
+      "avgCoupling": 4,
+      "securityIssues": 76,
+      "patterns": 8,
+      "duplicates": 24,
+      "layerViolations": 378,
+      "connections": 3964,
+      "avgFnLines": 15,
+      "longestFn": 16,
+      "testFiles": 131,
+      "testRatio": 13.1,
+      "topFolders": [
+        {
+          "name": "packages",
+          "count": 877
+        },
+        {
+          "name": "apps",
+          "count": 95
+        },
+        {
+          "name": ".changeset",
+          "count": 8
+        },
+        {
+          "name": "root",
+          "count": 8
+        },
+        {
+          "name": "scripts",
+          "count": 8
+        }
+      ],
+      "folders": 5,
+      "grade": "D",
+      "score": 66,
+      "topBlast": {
+        "path": "packages/analytics/src/chart-spec.ts",
+        "direct": 267,
+        "transitive": 675,
+        "total": 942
+      },
+      "fragility": [
+        {
+          "path": "packages/analytics/src/chart-spec.ts",
+          "direct": 267,
+          "transitive": 675,
+          "total": 942
+        },
+        {
+          "path": "packages/apps/src/memory.ts",
+          "direct": 120,
+          "transitive": 557,
+          "total": 677
+        },
+        {
+          "path": "packages/desk/src/host.ts",
+          "direct": 106,
+          "transitive": 514,
+          "total": 620
+        }
+      ]
     }
   ]
 }
