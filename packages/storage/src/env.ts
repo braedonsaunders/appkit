@@ -34,7 +34,7 @@ function booleanValue(value: string | undefined, fallback: boolean): boolean {
  * Applications that use another configuration system should call createStorage directly.
  */
 export function createStorageFromEnv(
-  environment: StorageEnvironment = process.env,
+  environment: StorageEnvironment = process.env as StorageEnvironment,
   overrides: Pick<StorageConfig, 'client'> = {},
 ): Storage {
   return createStorage({
