@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import test, { after } from 'node:test'
+import test from 'node:test'
 import { Buffer } from 'node:buffer'
 import { EventEmitter } from 'node:events'
 import { Duplex } from 'node:stream'
@@ -224,43 +224,88 @@ test('a handshake nobody is behind is retried, not trusted', async () => {
     connectRetryDelayMs: 1,
     handshakeTimeoutMs: 200,
   })
-  const machine = await backend.boot(makePlan())
+  // The retry between the hollow attempt and the real one is an unref'd timer;
+  // see holdLoopOpen for why waiting on one needs a ref'd handle of its own.
+  const machine = await holdLoopOpen('the boot to retry past a hollow handshake', backend.boot(makePlan()))
   assert.ok(attempt >= 2, 'the hollow connection should have been retried')
   assert.deepEqual(await machine.request({ op: 'ping' }), { pong: true })
   await machine.shutdown()
 })
 
-function watchConnection(machine: { onConnectionChange?: (listener: (change: DeskConnectionChange) => void) => () => void }): {
+/**
+ * How long a wait may take before it is called a hang. Generous: it is a
+ * deadlock detector, not a schedule the tests are held to.
+ */
+const WAIT_CEILING_MS = 30_000
+
+/**
+ * Await something only the package's own timers can advance.
+ *
+ * Every timer on the connect and reconnect path is deliberately unref'd — a
+ * desk waiting to reach its guest must never hold the host process open. The
+ * consequence for a TEST is that between two attempts nothing in the event
+ * loop is ref'd at all, so node is free to drain it; node:test then reports
+ * whatever the test is awaiting as "Promise resolution is still pending but
+ * the event loop has already resolved" and cancels the rest of the FILE.
+ * Whether that happens is decided by what else the runner happens to hold
+ * open, which is why this file passed on Node 26 locally and aborted on Node
+ * 22 in CI — and why it aborted at a different test each time.
+ *
+ * So a test that waits on those timers holds one ref'd handle of its own for
+ * exactly as long as it waits. The same handle turns a wait that can never
+ * end into a named failure instead of a silent hang, and it is always
+ * cleared, so no wait here can outlive the test that started it.
+ */
+async function holdLoopOpen<T>(label: string, work: Promise<T>): Promise<T> {
+  let guard: NodeJS.Timeout | undefined
+  const stalled = new Promise<never>((_resolvePromise, rejectPromise) => {
+    guard = setTimeout(() => {
+      rejectPromise(new Error(`timed out waiting for ${label}`))
+    }, WAIT_CEILING_MS)
+  })
+  try {
+    return await Promise.race([work, stalled])
+  } finally {
+    clearTimeout(guard)
+  }
+}
+
+interface ConnectionWatch {
   changes: DeskConnectionChange[]
-  reconnected: Promise<DeskConnectionChange>
-  lost: Promise<DeskConnectionChange>
-} {
+  /**
+   * The first change with this state, whenever it arrived — before this call
+   * or after it. A promise is created only for an outcome a test actually
+   * asks for, so no test ever leaves one behind that cannot settle.
+   */
+  waitFor: (state: DeskConnectionChange['state']) => Promise<DeskConnectionChange>
+}
+
+function watchConnection(machine: {
+  onConnectionChange?: (listener: (change: DeskConnectionChange) => void) => () => void
+}): ConnectionWatch {
   const changes: DeskConnectionChange[] = []
-  let announceReconnect: (change: DeskConnectionChange) => void = () => undefined
-  let announceLoss: (change: DeskConnectionChange) => void = () => undefined
-  const reconnected = new Promise<DeskConnectionChange>((resolvePromise) => {
-    announceReconnect = resolvePromise
-  })
-  const lost = new Promise<DeskConnectionChange>((resolvePromise) => {
-    announceLoss = resolvePromise
-  })
+  const waiters: { state: DeskConnectionChange['state']; settle: (change: DeskConnectionChange) => void }[] = []
   assert.ok(machine.onConnectionChange, 'the default backend reports connection changes')
   machine.onConnectionChange((change) => {
     changes.push(change)
-    if (change.state === 'reconnected') announceReconnect(change)
-    else announceLoss(change)
+    for (const waiter of waiters.splice(0)) {
+      if (waiter.state === change.state) waiter.settle(change)
+      else waiters.push(waiter)
+    }
   })
-  // A test watches for one outcome or the other, so the promise it does not
-  // await stays pending for the life of the test. node:test reads a pending
-  // promise with an empty event loop as a deadlock and fails the whole file —
-  // which it did on CI and not here, because the two promises settle in
-  // different orders depending on how fast the machine is. Neither is a real
-  // await once the test is over, so both are settled on teardown.
-  after(() => {
-    announceReconnect({ state: 'reconnected', deskId: 'teardown', reason: 'test over' } as DeskConnectionChange)
-    announceLoss({ state: 'lost', deskId: 'teardown', reason: 'test over' } as DeskConnectionChange)
-  })
-  return { changes, reconnected, lost }
+  return {
+    changes,
+    waitFor: (state) => {
+      const already = changes.find((change) => change.state === state)
+      if (already) return Promise.resolve(already)
+      return holdLoopOpen(
+        `a "${state}" connection change`,
+        new Promise<DeskConnectionChange>((resolvePromise) => {
+          waiters.push({ state, settle: resolvePromise })
+        }),
+      )
+    },
+  }
 }
 
 test('a connection lost mid-lease is re-established and the desk keeps working', async () => {
@@ -285,7 +330,7 @@ test('a connection lost mid-lease is re-established and the desk keeps working',
   // A request that arrives DURING the reconnect waits for it rather than
   // being told the desk is gone.
   assert.deepEqual(await machine.request({ op: 'ping' }), { pong: true })
-  const change = await watcher.reconnected
+  const change = await watcher.waitFor('reconnected')
   assert.equal(change.state, 'reconnected')
   assert.equal(vsock.connectedPaths.length, 2)
   // And the replacement was proved with a ping, exactly as the first was.
@@ -347,7 +392,7 @@ test('event subscribers keep receiving after a reconnect', async () => {
 
   const watcher = watchConnection(machine)
   await vsock.drop()
-  await watcher.reconnected
+  await watcher.waitFor('reconnected')
 
   vsock.pushEvent({ event: 'job-exit', jobId: 'job-7', exitCode: 0, signal: null })
   await new Promise((resolvePromise) => setImmediate(resolvePromise))
@@ -395,7 +440,7 @@ test('a desk whose VMM has exited is lost, not retried', async () => {
   child.emit('exit', 1, null)
   await vsock.drop()
 
-  const change = await watcher.lost
+  const change = await watcher.waitFor('lost')
   assert.equal(change.state, 'lost')
   assert.match(change.reason, /the VMM exited/)
   assert.equal(vsock.connectedPaths.length, 1)
@@ -403,35 +448,38 @@ test('a desk whose VMM has exited is lost, not retried', async () => {
 })
 
 test('a reconnect gives up at its bound rather than spinning forever', async () => {
+  // The bound is a deadline, so the CLOCK is what this test drives — not a
+  // real window on a machine of unknown speed. The second failed attempt
+  // moves time past the window, and the give-up is then exact: two attempts,
+  // whether this runs on a quiet laptop or a loaded CI box.
   const vsock = fakeVsock(guestHandlers)
+  const clock = { value: 1_000_000 }
   let reachable = true
   let attempts = 0
   const connect = (socketPath: string): Duplex => {
-    if (!reachable) {
-      attempts += 1
-      throw new Error('ENOENT: no such vsock socket')
-    }
-    return vsock.connect(socketPath)
+    if (reachable) return vsock.connect(socketPath)
+    attempts += 1
+    if (attempts === 2) clock.value += 5_000
+    throw new Error('ENOENT: no such vsock socket')
   }
   const backend = createCloudHypervisorBackend({
     platform: 'linux',
     launcher: () => fakeChild({ exitOnKill: true }),
     connect,
+    now: () => clock.value,
     connectRetryDelayMs: 1,
-    reconnectRetryDelayMs: 5,
-    reconnectWindowMs: 150,
+    reconnectRetryDelayMs: 1,
+    reconnectWindowMs: 1_000,
   })
   const machine = await backend.boot(makePlan())
   const watcher = watchConnection(machine)
 
   reachable = false
-  const startedAt = Date.now()
   await vsock.drop()
-  const change = await watcher.lost
+  const change = await watcher.waitFor('lost')
 
   assert.match(change.reason, /could not get it back/)
-  assert.ok(attempts >= 2, 'it should have retried before giving up')
-  assert.ok(Date.now() - startedAt < 2_000, 'it should give up at its window, not keep trying')
+  assert.equal(attempts, 2, 'it retried, and stopped the moment its window was gone')
   await assert.rejects(machine.request({ op: 'ping' }), /no longer connected/)
 })
 

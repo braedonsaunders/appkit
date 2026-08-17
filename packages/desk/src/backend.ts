@@ -122,6 +122,13 @@ export interface CloudHypervisorBackendOptions {
   /** Opens the host side of the vsock Unix socket; injectable for tests. */
   connect?: (socketPath: string) => Duplex
   platform?: NodeJS.Platform
+  /**
+   * Clock behind every connect and reconnect deadline. Injectable for the same
+   * reason `DeskHostOptions.now` is: a test drives a window to its end by
+   * moving the clock, rather than sleeping for it and hoping the machine it
+   * runs on is fast enough.
+   */
+  now?: () => number
   idFactory?: () => string
   requestTimeoutMs?: number
   connectTimeoutMs?: number
@@ -168,6 +175,7 @@ export function createCloudHypervisorBackend(
   const launcher = options.launcher ?? defaultLauncher
   const connect = options.connect ?? defaultConnect
   const platform = options.platform ?? process.platform
+  const now = options.now ?? Date.now
   const idFactory = options.idFactory ?? randomUUID
   const requestTimeoutMs = options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS
   const connectTimeoutMs = options.connectTimeoutMs ?? DEFAULT_CONNECT_TIMEOUT_MS
@@ -198,6 +206,7 @@ export function createCloudHypervisorBackend(
     try {
       stream = await connectWithRetry({
         connect,
+        now,
         socketPath: plan.vsock.socketPath,
         port: guestAgentPort,
         timeoutMs: connectTimeoutMs,
@@ -226,6 +235,7 @@ export function createCloudHypervisorBackend(
       reconnect: (abandoned) =>
         connectWithRetry({
           connect,
+          now,
           socketPath: plan.vsock.socketPath,
           port: guestAgentPort,
           timeoutMs: reconnectWindowMs,
@@ -237,6 +247,7 @@ export function createCloudHypervisorBackend(
           abandoned,
         }),
       reconnectWindowMs,
+      now,
       idFactory,
       requestTimeoutMs,
       killGraceMs,
@@ -277,11 +288,13 @@ function createMachine(options: {
   /** Re-establishes the channel; resolves only once a guest has answered. */
   reconnect: (abandoned: () => boolean) => Promise<Duplex>
   reconnectWindowMs: number
+  now: () => number
   idFactory: () => string
   requestTimeoutMs: number
   killGraceMs: number
 }): DeskMachine {
-  const { deskId, child, exit, idFactory, requestTimeoutMs, killGraceMs, reconnectWindowMs } = options
+  const { deskId, child, exit, now, idFactory, requestTimeoutMs, killGraceMs, reconnectWindowMs } =
+    options
   const pending = new Map<
     string,
     { resolve: (result: unknown) => void; reject: (error: Error) => void; timer: NodeJS.Timeout }
@@ -379,7 +392,7 @@ function createMachine(options: {
       return
     }
     state = 'reconnecting'
-    const lostAt = Date.now()
+    const lostAt = now()
     // In-flight requests CANNOT be silently retried. Each of their frames
     // already reached the guest, and whether the guest ran it before the
     // channel went away is not knowable from here: an `exec` may have sent
@@ -417,7 +430,7 @@ function createMachine(options: {
     attach(next)
     state = 'live'
     reconnects += 1
-    announce({ state: 'reconnected', deskId, reason, downtimeMs: Date.now() - lostAt, reconnects })
+    announce({ state: 'reconnected', deskId, reason, downtimeMs: now() - lostAt, reconnects })
   }
 
   attach(options.stream)
@@ -430,10 +443,10 @@ function createMachine(options: {
       // caller a desk is gone when it is about to be fine is the bug this
       // machine exists to end. The wait is bounded by the same window the
       // reconnect itself is.
-      const waitUntil = Date.now() + reconnectWindowMs
+      const waitUntil = now() + reconnectWindowMs
       while (state === 'reconnecting') {
         const attempt = reconnecting
-        if (!attempt || Date.now() >= waitUntil) break
+        if (!attempt || now() >= waitUntil) break
         await attempt
       }
       if (state !== 'live') {
@@ -569,6 +582,7 @@ function runToCompletion(child: ChildProcess, label: string): Promise<void> {
  */
 async function connectWithRetry(options: {
   connect: (socketPath: string) => Duplex
+  now: () => number
   socketPath: string
   port: number
   timeoutMs: number
@@ -582,10 +596,10 @@ async function connectWithRetry(options: {
   /** Stops the loop early when the caller no longer wants the connection. */
   abandoned?: () => boolean
 }): Promise<Duplex> {
-  const deadline = Date.now() + options.timeoutMs
+  const deadline = options.now() + options.timeoutMs
   let lastFailure = 'the guest agent never answered'
   let retryDelayMs = options.retryDelayMs
-  while (Date.now() <= deadline) {
+  while (options.now() <= deadline) {
     if (options.exited.done) {
       throw new DeskError(options.exitedMessage ?? 'The VMM exited before the guest agent came up.')
     }
