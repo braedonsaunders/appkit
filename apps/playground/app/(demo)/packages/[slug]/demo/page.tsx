@@ -19,11 +19,11 @@ import {
   SCRIPTS_QUEUE_PROFILE,
   buildNotifyQueueJobs,
   type QueueProfile,
-} from '@appkitjs/jobs'
-import { createSealer } from '@appkitjs/crypto'
-import { renderEmail } from '@appkitjs/email-render'
-import { EMAIL_PROVIDER_SPECS, buildTransport } from '@appkitjs/emails'
-import { sendMail, syncMailbox, verifyImap, verifySmtp } from '@appkitjs/mailbox'
+} from '@braedonsaunders/jobs'
+import { createSealer } from '@braedonsaunders/crypto'
+import { renderEmail } from '@braedonsaunders/email-render'
+import { EMAIL_PROVIDER_SPECS, buildTransport } from '@braedonsaunders/emails'
+import { sendMail, syncMailbox, verifyImap, verifySmtp } from '@braedonsaunders/mailbox'
 import {
   XLSX_MIME_TYPE,
   excelJsAvailable,
@@ -33,7 +33,7 @@ import {
   resolveSoffice,
   sanitizeOfficeHtml,
   type WorkbookSpec,
-} from '@appkitjs/office'
+} from '@braedonsaunders/office'
 import {
   DEFAULT_AGENT_TOOL_POLICY,
   agentToolScope,
@@ -42,34 +42,34 @@ import {
   isSafeAgentTool,
   type AgentToolManifest,
   type AgentToolPolicyMode,
-} from '@appkitjs/agent-tools'
-import { buildBubblewrapPlan } from '@appkitjs/process-sandbox'
+} from '@braedonsaunders/agent-tools'
+import { buildBubblewrapPlan } from '@braedonsaunders/process-sandbox'
 import {
   DEFAULT_KVM_PATH,
   DEFAULT_VMM_PATH,
   buildDeskLaunchPlan,
   isDeskSupported,
-} from '@appkitjs/desk'
+} from '@braedonsaunders/desk'
 import {
   isPublicHostname,
   normalizeOutboundHostname,
   readClientHelloSni,
   type EgressDecision,
   type EgressPolicyRequest,
-} from '@appkitjs/egress-proxy'
-import { SMS_PROVIDER_SPECS, buildSmsTransport } from '@appkitjs/sms'
+} from '@braedonsaunders/egress-proxy'
+import { SMS_PROVIDER_SPECS, buildSmsTransport } from '@braedonsaunders/sms'
 import {
   CARRIER_PROVIDER_SPECS,
   isValidPhoneNumber,
   resolveCarrierClient,
   validateStoredCarrierConfig,
-} from '@appkitjs/telephony'
+} from '@braedonsaunders/telephony'
 import {
   DEEPGRAM_STT_MODELS,
   ELEVENLABS_TTS_MODELS,
   GEMINI_LIVE_MODELS,
   OPENAI_REALTIME_MODELS,
-} from '@appkitjs/voice'
+} from '@braedonsaunders/voice'
 import {
   Badge,
   Button,
@@ -88,7 +88,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@appkitjs/ui'
+} from '@braedonsaunders/ui'
 import { getPackage } from '../../../../../lib/server/package-catalog'
 import { SceneDemoStage } from './scene-demo-stage'
 import { SuperadminDemo } from './superadmin-demo'
@@ -906,7 +906,7 @@ function AgentToolsDemo({ mode }: { mode: AgentToolPolicyMode }) {
         <Card>
           <CardHeader>
             <CardTitle>Isolation per tool</CardTitle>
-            <CardDescription>Resolved by the package, then handed to @appkitjs/process-sandbox.</CardDescription>
+            <CardDescription>Resolved by the package, then handed to @braedonsaunders/process-sandbox.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {decisions.map(({ manifest, plan }) => (

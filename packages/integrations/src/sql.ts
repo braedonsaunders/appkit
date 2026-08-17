@@ -2,7 +2,7 @@
 // It supports ordinary mapped rows and weekly fan-out, safely reverses prior
 // inserts by identity, and returns every external id to the delivery ledger.
 
-import { connectDb, type DbConn, type DbKind } from '@appkitjs/sync/db-drivers'
+import { connectDb, type DbConn, type DbKind } from '@braedonsaunders/sync/db-drivers'
 import { resolveValue } from './resolve'
 import { SQL_DESTINATION_SUMMARY } from './destination-catalog'
 import type {

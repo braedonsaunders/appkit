@@ -1,5 +1,5 @@
 {
-  "name": "@appkitjs/integrations",
+  "name": "@braedonsaunders/integrations",
   "version": "2.0.0",
   "description": "Production outbound automation with authoring UI, durable publication, retry ledgers, and optional HTTP, chat, Sheets, email, SQL, and Drizzle adapters.",
   "license": "AGPL-3.0-or-later",
@@ -34,29 +34,29 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
-    "@appkitjs/email-render": "^0.1.1",
-    "@appkitjs/db": "^0.2.0",
-    "@appkitjs/sync": "^1.1.0",
+    "@braedonsaunders/email-render": "^0.1.1",
+    "@braedonsaunders/db": "^0.2.0",
+    "@braedonsaunders/sync": "^1.1.0",
     "drizzle-orm": "^0.45.2",
-    "@appkitjs/ui": "^0.2.0",
+    "@braedonsaunders/ui": "^0.2.0",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
-    "@appkitjs/email-render": {
+    "@braedonsaunders/email-render": {
       "optional": true
     },
-    "@appkitjs/db": {
+    "@braedonsaunders/db": {
       "optional": true
     },
-    "@appkitjs/sync": {
+    "@braedonsaunders/sync": {
       "optional": true
     },
     "drizzle-orm": {
       "optional": true
     },
-    "@appkitjs/ui": {
+    "@braedonsaunders/ui": {
       "optional": true
     },
     "lucide-react": {
@@ -70,10 +70,10 @@
     }
   },
   "devDependencies": {
-    "@appkitjs/email-render": "workspace:*",
-    "@appkitjs/db": "workspace:*",
-    "@appkitjs/sync": "workspace:*",
-    "@appkitjs/ui": "workspace:*",
+    "@braedonsaunders/email-render": "workspace:*",
+    "@braedonsaunders/db": "workspace:*",
+    "@braedonsaunders/sync": "workspace:*",
+    "@braedonsaunders/ui": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.24.0",
     "react": "^19",

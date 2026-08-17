@@ -1,14 +1,14 @@
 'use client'
 
 import * as React from 'react'
-import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@appkitjs/ui'
-import { AvatarComposer, ComposedAvatar } from '@appkitjs/avatars/react'
+import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@braedonsaunders/ui'
+import { AvatarComposer, ComposedAvatar } from '@braedonsaunders/avatars/react'
 import {
   DEFAULT_HEAD_VIEWPORT,
   type AvatarComposition,
   type AvatarPart,
   type AvatarPartCategory,
-} from '@appkitjs/avatars/composition'
+} from '@braedonsaunders/avatars/composition'
 
 /**
  * A working proof of the composition surface.

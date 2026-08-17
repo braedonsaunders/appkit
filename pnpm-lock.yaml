@@ -20,130 +20,130 @@ importers:
 
   apps/playground:
     dependencies:
-      '@appkitjs/agent-tools':
+      '@braedonsaunders/agent-tools':
         specifier: workspace:*
         version: link:../../packages/agent-tools
-      '@appkitjs/ai':
+      '@braedonsaunders/ai':
         specifier: workspace:*
         version: link:../../packages/ai
-      '@appkitjs/analytics':
+      '@braedonsaunders/analytics':
         specifier: workspace:*
         version: link:../../packages/analytics
-      '@appkitjs/apps':
+      '@braedonsaunders/apps':
         specifier: workspace:*
         version: link:../../packages/apps
-      '@appkitjs/avatars':
+      '@braedonsaunders/avatars':
         specifier: workspace:*
         version: link:../../packages/avatars
-      '@appkitjs/crypto':
+      '@braedonsaunders/crypto':
         specifier: workspace:*
         version: link:../../packages/crypto
-      '@appkitjs/customization':
+      '@braedonsaunders/customization':
         specifier: workspace:*
         version: link:../../packages/customization
-      '@appkitjs/dashboard':
+      '@braedonsaunders/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
-      '@appkitjs/db':
+      '@braedonsaunders/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@appkitjs/design-studio':
+      '@braedonsaunders/design-studio':
         specifier: workspace:*
         version: link:../../packages/design-studio
-      '@appkitjs/desk':
+      '@braedonsaunders/desk':
         specifier: workspace:*
         version: link:../../packages/desk
-      '@appkitjs/egress-proxy':
+      '@braedonsaunders/egress-proxy':
         specifier: workspace:*
         version: link:../../packages/egress-proxy
-      '@appkitjs/email-designer':
+      '@braedonsaunders/email-designer':
         specifier: workspace:*
         version: link:../../packages/email-designer
-      '@appkitjs/email-render':
+      '@braedonsaunders/email-render':
         specifier: workspace:*
         version: link:../../packages/email-render
-      '@appkitjs/emails':
+      '@braedonsaunders/emails':
         specifier: workspace:*
         version: link:../../packages/emails
-      '@appkitjs/events':
+      '@braedonsaunders/events':
         specifier: workspace:*
         version: link:../../packages/events
-      '@appkitjs/forms':
+      '@braedonsaunders/forms':
         specifier: workspace:*
         version: link:../../packages/forms
-      '@appkitjs/forms-core':
+      '@braedonsaunders/forms-core':
         specifier: workspace:*
         version: link:../../packages/forms-core
-      '@appkitjs/forms-pdf':
+      '@braedonsaunders/forms-pdf':
         specifier: workspace:*
         version: link:../../packages/forms-pdf
-      '@appkitjs/i18n':
+      '@braedonsaunders/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
-      '@appkitjs/iam':
+      '@braedonsaunders/iam':
         specifier: workspace:*
         version: link:../../packages/iam
-      '@appkitjs/integrations':
+      '@braedonsaunders/integrations':
         specifier: workspace:*
         version: link:../../packages/integrations
-      '@appkitjs/jobs':
+      '@braedonsaunders/jobs':
         specifier: workspace:*
         version: link:../../packages/jobs
-      '@appkitjs/mailbox':
+      '@braedonsaunders/mailbox':
         specifier: workspace:*
         version: link:../../packages/mailbox
-      '@appkitjs/notifications':
+      '@braedonsaunders/notifications':
         specifier: workspace:*
         version: link:../../packages/notifications
-      '@appkitjs/office':
+      '@braedonsaunders/office':
         specifier: workspace:*
         version: link:../../packages/office
-      '@appkitjs/pdf':
+      '@braedonsaunders/pdf':
         specifier: workspace:*
         version: link:../../packages/pdf
-      '@appkitjs/process-sandbox':
+      '@braedonsaunders/process-sandbox':
         specifier: workspace:*
         version: link:../../packages/process-sandbox
-      '@appkitjs/reports':
+      '@braedonsaunders/reports':
         specifier: workspace:*
         version: link:../../packages/reports
-      '@appkitjs/scene':
+      '@braedonsaunders/scene':
         specifier: workspace:*
         version: link:../../packages/scene
-      '@appkitjs/scheduling':
+      '@braedonsaunders/scheduling':
         specifier: workspace:*
         version: link:../../packages/scheduling
-      '@appkitjs/scripts':
+      '@braedonsaunders/scripts':
         specifier: workspace:*
         version: link:../../packages/scripts
-      '@appkitjs/sms':
+      '@braedonsaunders/sms':
         specifier: workspace:*
         version: link:../../packages/sms
-      '@appkitjs/storage':
+      '@braedonsaunders/storage':
         specifier: workspace:*
         version: link:../../packages/storage
-      '@appkitjs/superadmin':
+      '@braedonsaunders/superadmin':
         specifier: workspace:*
         version: link:../../packages/superadmin
-      '@appkitjs/sync':
+      '@braedonsaunders/sync':
         specifier: workspace:*
         version: link:../../packages/sync
-      '@appkitjs/telephony':
+      '@braedonsaunders/telephony':
         specifier: workspace:*
         version: link:../../packages/telephony
-      '@appkitjs/tenant':
+      '@braedonsaunders/tenant':
         specifier: workspace:*
         version: link:../../packages/tenant
-      '@appkitjs/tokens':
+      '@braedonsaunders/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      '@appkitjs/voice':
+      '@braedonsaunders/voice':
         specifier: workspace:*
         version: link:../../packages/voice
-      '@appkitjs/workflows':
+      '@braedonsaunders/workflows':
         specifier: workspace:*
         version: link:../../packages/workflows
       '@grapesjs/react':
@@ -213,14 +213,14 @@ importers:
 
   packages/agent-tools:
     dependencies:
-      '@appkitjs/process-sandbox':
+      '@braedonsaunders/process-sandbox':
         specifier: workspace:*
         version: link:../process-sandbox
       zod:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
-      '@appkitjs/db':
+      '@braedonsaunders/db':
         specifier: workspace:*
         version: link:../db
       '@types/node':
@@ -251,7 +251,7 @@ importers:
       '@ai-sdk/openai-compatible':
         specifier: ^2.0.59
         version: 2.0.62(zod@4.4.3)
-      '@appkitjs/sync':
+      '@braedonsaunders/sync':
         specifier: workspace:*
         version: link:../sync
       ai:
@@ -261,7 +261,7 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../ui
       '@types/node':
@@ -311,13 +311,13 @@ importers:
 
   packages/api:
     dependencies:
-      '@appkitjs/db':
+      '@braedonsaunders/db':
         specifier: workspace:*
         version: link:../db
-      '@appkitjs/i18n':
+      '@braedonsaunders/i18n':
         specifier: workspace:*
         version: link:../i18n
-      '@appkitjs/tenant':
+      '@braedonsaunders/tenant':
         specifier: workspace:*
         version: link:../tenant
       drizzle-orm:
@@ -334,7 +334,7 @@ importers:
 
   packages/apps:
     dependencies:
-      '@appkitjs/endpoints':
+      '@braedonsaunders/endpoints':
         specifier: workspace:*
         version: link:../endpoints
       '@codemirror/lang-css':
@@ -359,10 +359,10 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
-      '@appkitjs/db':
+      '@braedonsaunders/db':
         specifier: workspace:*
         version: link:../db
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../ui
       '@types/node':
@@ -396,10 +396,10 @@ importers:
 
   packages/auth:
     dependencies:
-      '@appkitjs/db':
+      '@braedonsaunders/db':
         specifier: workspace:*
         version: link:../db
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../ui
       better-auth:
@@ -450,7 +450,7 @@ importers:
         specifier: ^19.0.0
         version: 19.2.7(react@19.2.7)
     devDependencies:
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../ui
       '@types/node':
@@ -499,10 +499,10 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
-      '@appkitjs/db':
+      '@braedonsaunders/db':
         specifier: workspace:*
         version: link:../db
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../ui
       '@types/node':
@@ -539,14 +539,14 @@ importers:
 
   packages/dashboard:
     dependencies:
-      '@appkitjs/analytics':
+      '@braedonsaunders/analytics':
         specifier: workspace:*
         version: link:../analytics
     devDependencies:
-      '@appkitjs/db':
+      '@braedonsaunders/db':
         specifier: workspace:*
         version: link:../db
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../ui
       '@types/node':
@@ -609,11 +609,11 @@ importers:
 
   packages/design-studio:
     dependencies:
-      '@appkitjs/tokens':
+      '@braedonsaunders/tokens':
         specifier: workspace:*
         version: link:../tokens
     devDependencies:
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../ui
       '@types/node':
@@ -663,7 +663,7 @@ importers:
 
   packages/editor:
     dependencies:
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../ui
       '@tiptap/extension-link':
@@ -717,7 +717,7 @@ importers:
 
   packages/email-designer:
     dependencies:
-      '@appkitjs/email-render':
+      '@braedonsaunders/email-render':
         specifier: workspace:*
         version: link:../email-render
     devDependencies:
@@ -769,7 +769,7 @@ importers:
 
   packages/emails:
     dependencies:
-      '@appkitjs/crypto':
+      '@braedonsaunders/crypto':
         specifier: workspace:*
         version: link:../crypto
       nodemailer:
@@ -789,7 +789,7 @@ importers:
 
   packages/endpoints:
     dependencies:
-      '@appkitjs/sandbox':
+      '@braedonsaunders/sandbox':
         specifier: workspace:*
         version: link:../sandbox
     devDependencies:
@@ -803,7 +803,7 @@ importers:
 
   packages/events:
     dependencies:
-      '@appkitjs/db':
+      '@braedonsaunders/db':
         specifier: workspace:*
         version: link:../db
       drizzle-orm:
@@ -820,19 +820,19 @@ importers:
 
   packages/forms:
     dependencies:
-      '@appkitjs/editor':
+      '@braedonsaunders/editor':
         specifier: workspace:*
         version: link:../editor
-      '@appkitjs/forms-core':
+      '@braedonsaunders/forms-core':
         specifier: workspace:*
         version: link:../forms-core
-      '@appkitjs/i18n':
+      '@braedonsaunders/i18n':
         specifier: workspace:*
         version: link:../i18n
-      '@appkitjs/tokens':
+      '@braedonsaunders/tokens':
         specifier: workspace:*
         version: link:../tokens
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../ui
       '@excalidraw/excalidraw':
@@ -870,7 +870,7 @@ importers:
 
   packages/forms-core:
     dependencies:
-      '@appkitjs/i18n':
+      '@braedonsaunders/i18n':
         specifier: workspace:*
         version: link:../i18n
       htmlparser2:
@@ -883,7 +883,7 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
-      '@appkitjs/email-render':
+      '@braedonsaunders/email-render':
         specifier: workspace:*
         version: link:../email-render
       '@types/node':
@@ -899,17 +899,17 @@ importers:
 
   packages/forms-documents:
     dependencies:
-      '@appkitjs/forms-core':
+      '@braedonsaunders/forms-core':
         specifier: workspace:*
         version: link:../forms-core
-      '@appkitjs/i18n':
+      '@braedonsaunders/i18n':
         specifier: workspace:*
         version: link:../i18n
-      '@appkitjs/tokens':
+      '@braedonsaunders/tokens':
         specifier: workspace:*
         version: link:../tokens
     devDependencies:
-      '@appkitjs/email-render':
+      '@braedonsaunders/email-render':
         specifier: workspace:*
         version: link:../email-render
       '@types/node':
@@ -925,20 +925,20 @@ importers:
 
   packages/forms-pdf:
     dependencies:
-      '@appkitjs/tokens':
+      '@braedonsaunders/tokens':
         specifier: workspace:*
         version: link:../tokens
     devDependencies:
-      '@appkitjs/design-studio':
+      '@braedonsaunders/design-studio':
         specifier: workspace:*
         version: link:../design-studio
-      '@appkitjs/pdf':
+      '@braedonsaunders/pdf':
         specifier: workspace:*
         version: link:../pdf
-      '@appkitjs/reports':
+      '@braedonsaunders/reports':
         specifier: workspace:*
         version: link:../reports
-      '@appkitjs/sync':
+      '@braedonsaunders/sync':
         specifier: workspace:*
         version: link:../sync
       '@types/node':
@@ -970,13 +970,13 @@ importers:
 
   packages/iam:
     devDependencies:
-      '@appkitjs/db':
+      '@braedonsaunders/db':
         specifier: workspace:*
         version: link:../db
-      '@appkitjs/tenant':
+      '@braedonsaunders/tenant':
         specifier: workspace:*
         version: link:../tenant
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../ui
       '@types/node':
@@ -1010,16 +1010,16 @@ importers:
 
   packages/integrations:
     devDependencies:
-      '@appkitjs/db':
+      '@braedonsaunders/db':
         specifier: workspace:*
         version: link:../db
-      '@appkitjs/email-render':
+      '@braedonsaunders/email-render':
         specifier: workspace:*
         version: link:../email-render
-      '@appkitjs/sync':
+      '@braedonsaunders/sync':
         specifier: workspace:*
         version: link:../sync
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../ui
       '@types/node':
@@ -1053,10 +1053,10 @@ importers:
 
   packages/jobs:
     dependencies:
-      '@appkitjs/email-render':
+      '@braedonsaunders/email-render':
         specifier: workspace:*
         version: link:../email-render
-      '@appkitjs/sync':
+      '@braedonsaunders/sync':
         specifier: workspace:*
         version: link:../sync
       bullmq:
@@ -1092,7 +1092,7 @@ importers:
         specifier: ^9.0.1
         version: 9.0.3
     devDependencies:
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../ui
       '@types/mailparser':
@@ -1143,13 +1143,13 @@ importers:
 
   packages/notifications:
     devDependencies:
-      '@appkitjs/db':
+      '@braedonsaunders/db':
         specifier: workspace:*
         version: link:../db
-      '@appkitjs/jobs':
+      '@braedonsaunders/jobs':
         specifier: workspace:*
         version: link:../jobs
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../ui
       '@types/node':
@@ -1212,7 +1212,7 @@ importers:
 
   packages/pdf:
     dependencies:
-      '@appkitjs/tokens':
+      '@braedonsaunders/tokens':
         specifier: workspace:*
         version: link:../tokens
       pdfkit:
@@ -1257,11 +1257,11 @@ importers:
 
   packages/reports:
     dependencies:
-      '@appkitjs/analytics':
+      '@braedonsaunders/analytics':
         specifier: workspace:*
         version: link:../analytics
     devDependencies:
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../ui
       '@types/node':
@@ -1303,7 +1303,7 @@ importers:
 
   packages/scene:
     dependencies:
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../ui
       framer-motion:
@@ -1329,7 +1329,7 @@ importers:
 
   packages/scheduling:
     devDependencies:
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../ui
       '@types/node':
@@ -1360,7 +1360,7 @@ importers:
 
   packages/scripts:
     dependencies:
-      '@appkitjs/sandbox':
+      '@braedonsaunders/sandbox':
         specifier: workspace:*
         version: link:../sandbox
       '@codemirror/lang-javascript':
@@ -1373,10 +1373,10 @@ importers:
         specifier: ^4.9.0
         version: 4.9.0
     devDependencies:
-      '@appkitjs/db':
+      '@braedonsaunders/db':
         specifier: workspace:*
         version: link:../db
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../ui
       '@types/node':
@@ -1410,7 +1410,7 @@ importers:
 
   packages/sms:
     dependencies:
-      '@appkitjs/crypto':
+      '@braedonsaunders/crypto':
         specifier: workspace:*
         version: link:../crypto
     devDependencies:
@@ -1431,7 +1431,7 @@ importers:
         specifier: ^3.700.0
         version: 3.1090.0
     devDependencies:
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../ui
       '@types/node':
@@ -1459,10 +1459,10 @@ importers:
 
   packages/superadmin:
     devDependencies:
-      '@appkitjs/db':
+      '@braedonsaunders/db':
         specifier: workspace:*
         version: link:../db
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../ui
       '@types/node':
@@ -1496,7 +1496,7 @@ importers:
 
   packages/sync:
     devDependencies:
-      '@appkitjs/db':
+      '@braedonsaunders/db':
         specifier: workspace:*
         version: link:../db
       '@types/node':
@@ -1524,7 +1524,7 @@ importers:
 
   packages/telephony:
     dependencies:
-      '@appkitjs/crypto':
+      '@braedonsaunders/crypto':
         specifier: workspace:*
         version: link:../crypto
     devDependencies:
@@ -1538,10 +1538,10 @@ importers:
 
   packages/tenant:
     dependencies:
-      '@appkitjs/db':
+      '@braedonsaunders/db':
         specifier: workspace:*
         version: link:../db
-      '@appkitjs/i18n':
+      '@braedonsaunders/i18n':
         specifier: workspace:*
         version: link:../i18n
       drizzle-orm:
@@ -1572,7 +1572,7 @@ importers:
 
   packages/ui:
     dependencies:
-      '@appkitjs/tokens':
+      '@braedonsaunders/tokens':
         specifier: workspace:*
         version: link:../tokens
       class-variance-authority:
@@ -1627,16 +1627,16 @@ importers:
 
   packages/workflows:
     devDependencies:
-      '@appkitjs/db':
+      '@braedonsaunders/db':
         specifier: workspace:*
         version: link:../db
-      '@appkitjs/forms':
+      '@braedonsaunders/forms':
         specifier: workspace:*
         version: link:../forms
-      '@appkitjs/forms-core':
+      '@braedonsaunders/forms-core':
         specifier: workspace:*
         version: link:../forms-core
-      '@appkitjs/ui':
+      '@braedonsaunders/ui':
         specifier: workspace:*
         version: link:../ui
       '@types/node':

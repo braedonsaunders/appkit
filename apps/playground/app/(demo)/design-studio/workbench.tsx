@@ -9,10 +9,10 @@ import {
   type DesignData,
   type DesignDocument,
   type DesignFieldCatalog,
-} from '@appkitjs/design-studio'
-import { DesignStudioEditor } from '@appkitjs/design-studio/react'
-import { hexColor } from '@appkitjs/tokens'
-import { Button } from '@appkitjs/ui'
+} from '@braedonsaunders/design-studio'
+import { DesignStudioEditor } from '@braedonsaunders/design-studio/react'
+import { hexColor } from '@braedonsaunders/tokens'
+import { Button } from '@braedonsaunders/ui'
 
 const STORAGE_KEY = 'appkit-demo:design-document:v1'
 const theme = {

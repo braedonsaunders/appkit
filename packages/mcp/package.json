@@ -1,5 +1,5 @@
 {
-  "name": "@appkitjs/mcp",
+  "name": "@braedonsaunders/mcp",
   "version": "0.1.0",
   "description": "Expose an app's governed tool catalogue over the Model Context Protocol — framework-neutral streamable-HTTP handling, request-boundary validation, gated tool registration with audit hooks, and static resources.",
   "license": "AGPL-3.0-or-later",

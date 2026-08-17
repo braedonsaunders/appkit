@@ -43,7 +43,7 @@ export const scheduleColors = {
     alpha >= 1 ? 'rgb(var(--sched-progress))' : `rgb(var(--sched-progress) / ${alpha})`,
 } as const
 
-/** Status → `@appkitjs/ui` Badge variant. Never colour alone: the badge also
+/** Status → `@braedonsaunders/ui` Badge variant. Never colour alone: the badge also
  *  carries the status text, so the meaning survives for colour-blind readers. */
 export const statusBadgeVariant = {
   not_started: 'secondary',

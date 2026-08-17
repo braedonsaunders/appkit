@@ -1,4 +1,4 @@
-// @appkitjs/email-render — the single keystone that turns a `send_email` flow
+// @braedonsaunders/email-render — the single keystone that turns a `send_email` flow
 // action (inline / template / design) into { subject, html, text } for
 // enqueueEmail. Shared by BOTH the Builder/Forms flow runner and native-module
 // flows so there is exactly one merge + render path.

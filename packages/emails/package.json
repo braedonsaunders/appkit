@@ -1,5 +1,5 @@
 {
-  "name": "@appkitjs/emails",
+  "name": "@braedonsaunders/emails",
   "version": "0.2.1",
   "description": "Email delivery — Resend, SendGrid, Mailgun, Postmark, and SMTP transports with sealed-secret config and platform→tenant policy.",
   "license": "AGPL-3.0-or-later",
@@ -21,7 +21,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@appkitjs/crypto": "workspace:*",
+    "@braedonsaunders/crypto": "workspace:*",
     "nodemailer": "^9.0.1"
   },
   "devDependencies": {

@@ -1,4 +1,4 @@
-# @appkitjs/desk
+# @braedonsaunders/desk
 
 Per-agent Debian machines in Cloud Hypervisor microVMs: a terminal, a
 filesystem, arbitrary software, and — only when genuinely needed — a real
@@ -30,7 +30,7 @@ Size the concurrency cap against screen-open desks, not headless ones.
 ## Booting a desk
 
 ```ts
-import { createDeskHost, isDeskSupported } from '@appkitjs/desk'
+import { createDeskHost, isDeskSupported } from '@braedonsaunders/desk'
 
 if (!isDeskSupported()) {
   // Fail closed: no KVM or no Cloud Hypervisor means no desk ability at all,

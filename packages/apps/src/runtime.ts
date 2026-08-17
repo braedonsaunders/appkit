@@ -1,11 +1,11 @@
-import { runEndpoint, type EndpointRequest, type HostAdapters } from '@appkitjs/endpoints'
+import { runEndpoint, type EndpointRequest, type HostAdapters } from '@braedonsaunders/endpoints'
 
 /**
  * Source-shaped application backend runtime entry. The implementation lives in
- * @appkitjs/endpoints so standalone programmable endpoints and installed apps use
+ * @braedonsaunders/endpoints so standalone programmable endpoints and installed apps use
  * one governed QuickJS kernel.
  */
-export { runEndpoint as runAppEndpoint, DEFAULT_COSTS as APP_ENDPOINT_DEFAULT_COSTS } from '@appkitjs/endpoints'
+export { runEndpoint as runAppEndpoint, DEFAULT_COSTS as APP_ENDPOINT_DEFAULT_COSTS } from '@braedonsaunders/endpoints'
 export type {
   EndpointRequest as AppRequest,
   EndpointResult as AppEndpointResult,
@@ -13,7 +13,7 @@ export type {
   RecordsAdapter as AppRecordsAdapter,
   HostAdapters as AppHostAdapters,
   HostFunction as AppHostFunction,
-} from '@appkitjs/endpoints'
+} from '@braedonsaunders/endpoints'
 
 /**
  * Bind the generalized endpoint kernel to an application's existing authored

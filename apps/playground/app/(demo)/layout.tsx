@@ -1,5 +1,5 @@
 import { desc } from 'drizzle-orm'
-import { auditLog } from '@appkitjs/db'
+import { auditLog } from '@braedonsaunders/db'
 import { cookies } from 'next/headers'
 import { getDemoEnvironment } from '../../lib/server/demo-context'
 import { DEMO_AUDIT_EVENTS } from '../../lib/server/demo-data'

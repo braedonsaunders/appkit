@@ -11,7 +11,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { id, tenantRef } from '@appkitjs/db'
+import { id, tenantRef } from '@braedonsaunders/db'
 import type {
   SyncConnectionStatus,
   SyncEntityKey,

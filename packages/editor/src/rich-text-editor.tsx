@@ -13,7 +13,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
 import { TableKit } from '@tiptap/extension-table'
 import Placeholder from '@tiptap/extension-placeholder'
-import { cn, useUiText } from '@appkitjs/ui'
+import { cn, useUiText } from '@braedonsaunders/ui'
 
 export type RichTextEditorProps = {
   /** Controlled HTML content. */

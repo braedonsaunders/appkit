@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { CalendarClock, ChevronLeft, ChevronRight, Download, Loader2, Pause, Play, Plus, Search, Trash2, X, Zap } from 'lucide-react'
-import { Badge, Button, Input, Label, SearchSelect, Select, Textarea, cn } from '@appkitjs/ui'
+import { Badge, Button, Input, Label, SearchSelect, Select, Textarea, cn } from '@braedonsaunders/ui'
 import type { ReportEntity } from './entities'
 import { ReportFilterTree } from './filter-tree'
 import type { ReportRuleGroup } from './filters'

@@ -10,7 +10,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { id, tenants } from '@appkitjs/db'
+import { id, tenants } from '@braedonsaunders/db'
 
 export type TenantIntegrationStatus = 'draft' | 'ready' | 'error' | 'disabled'
 export type SealedIntegrationSecret = { ciphertext: string; nonce: string }

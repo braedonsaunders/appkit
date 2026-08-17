@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Button, EmptyState, UiLink, cn } from '@appkitjs/ui'
+import { Button, EmptyState, UiLink, cn } from '@braedonsaunders/ui'
 
 export type AgentMessage = {
   id: string

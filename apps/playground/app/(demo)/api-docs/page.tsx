@@ -1,4 +1,4 @@
-import { ApiReference, type ApiEndpointDoc, PageContainer, PageHeader } from '@appkitjs/ui'
+import { ApiReference, type ApiEndpointDoc, PageContainer, PageHeader } from '@braedonsaunders/ui'
 
 const LIVE_ENDPOINTS: ApiEndpointDoc[] = [
   {
@@ -8,7 +8,7 @@ const LIVE_ENDPOINTS: ApiEndpointDoc[] = [
     summary: 'List team members',
     description: 'List the people and roles in the current workspace.',
     permission: 'team.read',
-    responseExample: { data: [{ id: '…', name: 'Ada Lovelace', email: 'admin@appkitjs.dev' }], total: 2 },
+    responseExample: { data: [{ id: '…', name: 'Ada Lovelace', email: 'admin@appkit.example' }], total: 2 },
   },
 ]
 

@@ -1,11 +1,11 @@
-# @appkitjs/jobs
+# @braedonsaunders/jobs
 
 ## 0.2.1
 
 ### Patch Changes
 
 - Updated dependencies [8342b35]
-  - @appkitjs/sync@1.1.0
+  - @braedonsaunders/sync@1.1.0
 
 ## 0.2.0
 
@@ -25,5 +25,5 @@
   Changesets.
 - Updated dependencies [3ae036d]
 - Updated dependencies [3ab6056]
-  - @appkitjs/sync@1.0.0
-  - @appkitjs/email-render@0.1.1
+  - @braedonsaunders/sync@1.0.0
+  - @braedonsaunders/email-render@0.1.1

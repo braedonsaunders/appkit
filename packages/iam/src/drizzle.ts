@@ -19,7 +19,7 @@ import {
   roles,
   userPermissionOverrides,
   users,
-} from '@appkitjs/db'
+} from '@braedonsaunders/db'
 import { IamConflictError, IamNotFoundError, IamProtectedRecordError } from './memory'
 import type {
   AuditEventRecord,

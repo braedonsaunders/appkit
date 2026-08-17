@@ -15,7 +15,7 @@
 
 import { entityKindForPicker } from './entity-attrs'
 import type { I18nString } from './schema'
-import { DEFAULT_LOCALE, localizeText, type AppLocale } from '@appkitjs/i18n'
+import { DEFAULT_LOCALE, localizeText, type AppLocale } from '@braedonsaunders/i18n'
 
 /** Content-only field types that carry no mergeable value. */
 export const SKIP_FIELD_TYPES = new Set(['heading', 'paragraph', 'divider', 'metric'])

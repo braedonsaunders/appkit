@@ -2,7 +2,7 @@ import { and, asc, count, desc, eq, gt, ilike, inArray, max, ne, or, sql } from 
 import type { SQL } from 'drizzle-orm'
 import type { PgDatabase } from 'drizzle-orm/pg-core'
 import type { PgQueryResultHKT } from 'drizzle-orm/pg-core/session'
-import { authAccounts, authSessions, memberships, tenants, users } from '@appkitjs/db'
+import { authAccounts, authSessions, memberships, tenants, users } from '@braedonsaunders/db'
 import { createSuperadminService } from './service'
 import type {
   PlatformTenantRecord,
@@ -35,7 +35,7 @@ export type DrizzleSuperadminOptions<
   db: SuperadminDatabase<TQueryResult, TSchema>
 }
 
-/** Postgres persistence adapter over the @appkitjs/db identity schema. */
+/** Postgres persistence adapter over the @braedonsaunders/db identity schema. */
 export function createDrizzleSuperadminPersistence<
   TQueryResult extends PgQueryResultHKT,
   TSchema extends Record<string, unknown>,

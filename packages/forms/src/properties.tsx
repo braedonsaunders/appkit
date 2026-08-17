@@ -14,9 +14,9 @@ import {
   type FormSection,
   type TableColumn,
   type TableConfig,
-} from '@appkitjs/forms-core'
-import { type AppLocale } from '@appkitjs/i18n'
-import { Button, Checkbox, Input, Label, Select, Textarea, cn } from '@appkitjs/ui'
+} from '@braedonsaunders/forms-core'
+import { type AppLocale } from '@braedonsaunders/i18n'
+import { Button, Checkbox, Input, Label, Select, Textarea, cn } from '@braedonsaunders/ui'
 import { defaultBox } from './canvas-editor'
 import { FormulaBuilder } from './formula-builder'
 import { LogicBuilder } from './logic-builder'

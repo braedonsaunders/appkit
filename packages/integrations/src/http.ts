@@ -3,7 +3,7 @@
 // One request per item; the URL, headers and body are all token-templated. An
 // optional sealed auth header value carries a bearer token / API key.
 
-import { secureFetch } from '@appkitjs/sync/egress'
+import { secureFetch } from '@braedonsaunders/sync/egress'
 import { resolveText } from './resolve'
 import { deliveryRef } from './idempotency'
 import { HTTP_DESTINATION_SUMMARY } from './destination-catalog'

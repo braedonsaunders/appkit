@@ -1,4 +1,4 @@
-# @appkitjs/pdf
+# @braedonsaunders/pdf
 
 ## 0.1.1
 
@@ -9,4 +9,4 @@
   `create-appkit` CLI, and automate version PRs and npm publication with
   Changesets.
 - Updated dependencies [3ab6056]
-  - @appkitjs/tokens@0.1.1
+  - @braedonsaunders/tokens@0.1.1

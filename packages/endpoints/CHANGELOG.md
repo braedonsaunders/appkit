@@ -1,4 +1,4 @@
-# @appkitjs/endpoints
+# @braedonsaunders/endpoints
 
 ## 0.1.1
 

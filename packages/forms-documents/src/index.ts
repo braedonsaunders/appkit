@@ -5,6 +5,6 @@ export {
   hasTextCompanion,
   isAttachmentArrayField,
   labelText,
-} from '@appkitjs/forms-core'
+} from '@braedonsaunders/forms-core'
 export * from './pdf-template-html'
 export * from './doc-style'

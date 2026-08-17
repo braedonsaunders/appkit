@@ -14,6 +14,6 @@ export {
 
 // The composition model is re-exported here for server code that already
 // imports this package. Client bundles should import it from
-// `@appkitjs/avatars/composition`, which carries no provider dependencies.
+// `@braedonsaunders/avatars/composition`, which carries no provider dependencies.
 export * from './composition'
 export * from './parts-prompt'

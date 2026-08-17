@@ -1,4 +1,4 @@
-# @appkitjs/analytics
+# @braedonsaunders/analytics
 
 ## 0.2.0
 

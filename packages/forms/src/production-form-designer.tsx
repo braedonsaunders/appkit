@@ -78,7 +78,7 @@ import {
   Select,
   Textarea,
   toast,
-} from '@appkitjs/ui'
+} from '@braedonsaunders/ui'
 import {
   FIELD_TYPES,
   entityKindForPicker,
@@ -94,8 +94,8 @@ import {
   type FormWorkflowStep,
   type TableColumn,
   type TableConfig,
-} from '@appkitjs/forms-core'
-import { localizeText, type AppLocale } from '@appkitjs/i18n'
+} from '@braedonsaunders/forms-core'
+import { localizeText, type AppLocale } from '@braedonsaunders/i18n'
 import { RecordBehaviorPanel } from './record-behavior-panel'
 import { RecordActionsPanel } from './record-actions-panel'
 import { RecordListPanel } from './record-list-panel'

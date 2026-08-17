@@ -1,5 +1,5 @@
 // Avatar/image generation routed through the same provider layer as
-// @appkitjs/ai: consumers pass their tenant-resolved AiConfig (provider kind +
+// @braedonsaunders/ai: consumers pass their tenant-resolved AiConfig (provider kind +
 // API key), and models are constructed with the AI SDK provider factories —
 // one connection layer for every AI call, no side-channel providers.
 
@@ -7,7 +7,7 @@ import { generateImage } from 'ai'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { createOpenAI } from '@ai-sdk/openai'
 
-/** Structurally identical to @appkitjs/ai's AiConfig — pass it straight in. */
+/** Structurally identical to @braedonsaunders/ai's AiConfig — pass it straight in. */
 export type ImageAiConfig = {
   provider: string
   apiKey: string
@@ -33,7 +33,7 @@ export const IMAGE_MODELS: { id: ImageModelId; name: string; provider: 'openai' 
   { id: 'gemini-3-pro-image-preview', name: 'Gemini 3 Pro Image (Nano Banana Pro)', provider: 'google' },
 ]
 
-/** Provider kinds (as named by @appkitjs/ai) that can generate images. */
+/** Provider kinds (as named by @braedonsaunders/ai) that can generate images. */
 export const IMAGE_CAPABLE_PROVIDERS = ['openai', 'google'] as const
 
 export type ImageModelListing = {

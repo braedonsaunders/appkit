@@ -1,5 +1,5 @@
 {
-  "name": "@appkitjs/jobs",
+  "name": "@braedonsaunders/jobs",
   "version": "0.2.1",
   "description": "Production BullMQ runtime and complete reusable queue profiles for email, notifications, PDF, reports, schedules, scripts, migration, capture, and outbound work.",
   "license": "AGPL-3.0-or-later",
@@ -33,8 +33,8 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@appkitjs/email-render": "workspace:*",
-    "@appkitjs/sync": "workspace:*",
+    "@braedonsaunders/email-render": "workspace:*",
+    "@braedonsaunders/sync": "workspace:*",
     "bullmq": "^5.34.0",
     "ioredis": "^5.4.2",
     "web-push": "^3.6.7"

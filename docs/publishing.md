@@ -39,24 +39,6 @@ archive. The package gate rejects nested tarballs so a stale local pack can
 never be republished inside a later one. Artifacts live under ignored
 `.artifacts/` only for the duration of local inspection.
 
-Until the npm release credentials are available, export a clean immutable
-snapshot for an application instead of copying version-only tarballs by hand:
-
-```bash
-pnpm build:packages
-pnpm test:packages
-pnpm test:consumers
-pnpm vendor:snapshot --destination ../my-app/vendor/appkit \
-  --packages @appkitjs/ui,@appkitjs/tokens --replace
-```
-
-`vendor:snapshot` refuses artifacts from a dirty AppKit worktree, replaces only
-tarballs in the explicit destination, and writes `manifest.json`,
-`overrides.json`, and a provenance README beside them. Consumers commit that
-directory and point their `file:` dependencies and root overrides at the
-commit-qualified filenames. A snapshot is one source commit; never mix
-artifacts from separate AppKit commits under one manifest.
-
 ## Version and release flow
 
 Every publishable change includes a file under `.changeset/`. On `main`, the
@@ -70,8 +52,8 @@ causes the same workflow to:
 5. create the corresponding Git tags and GitHub releases.
 
 Repository setup requires an npm automation/granular access token saved as the
-`NPM_TOKEN` GitHub Actions secret with publish access to the `@appkitjs` scope and
-the unscoped `create-appkit` package. The workflow grants GitHub's OIDC
+`NPM_TOKEN` GitHub Actions secret with publish access to the
+`@braedonsaunders` scope. The workflow grants GitHub's OIDC
 `id-token: write` permission for npm provenance and uses the built-in
 `GITHUB_TOKEN` for release pull requests and tags.
 

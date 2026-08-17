@@ -1,4 +1,4 @@
-# @appkitjs/db
+# @braedonsaunders/db
 
 ## 0.2.0
 

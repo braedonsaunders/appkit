@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { Check, ChevronDown } from 'lucide-react'
-import { cn } from '@appkitjs/ui'
+import { cn } from '@braedonsaunders/ui'
 
 export type ProductionSectionTone =
   | 'neutral'

@@ -1,4 +1,4 @@
-# @appkitjs/reports
+# @braedonsaunders/reports
 
 ## 1.0.0
 
@@ -49,7 +49,7 @@
 
 - Updated dependencies [22e968a]
 - Updated dependencies [9f04661]
-  - @appkitjs/ui@0.2.0
+  - @braedonsaunders/ui@0.2.0
 
 ## 0.2.1
 
@@ -60,7 +60,7 @@
 - Updated dependencies [0c2dde7]
 - Updated dependencies [a1d5d50]
 - Updated dependencies [8a17e9e]
-  - @appkitjs/ui@0.1.10
+  - @braedonsaunders/ui@0.1.10
 
 ## 0.2.0
 
@@ -80,5 +80,5 @@
 - Updated dependencies [3ae036d]
 - Updated dependencies [3ab6056]
 - Updated dependencies [1319bfb]
-  - @appkitjs/analytics@0.2.0
-  - @appkitjs/ui@0.1.1
+  - @braedonsaunders/analytics@0.2.0
+  - @braedonsaunders/ui@0.1.1

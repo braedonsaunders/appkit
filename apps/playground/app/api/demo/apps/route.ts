@@ -11,7 +11,7 @@ import {
   setDemoAppStatus,
   updateDemoApp,
 } from '../../../../lib/server/apps-demo'
-import type { AppMetaUpdate, AppStatus, InstalledApp } from '@appkitjs/apps'
+import type { AppMetaUpdate, AppStatus, InstalledApp } from '@braedonsaunders/apps'
 
 export const runtime = 'nodejs'
 

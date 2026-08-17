@@ -1,4 +1,4 @@
-import type { InsightQuery, SemanticType } from '@appkitjs/analytics'
+import type { InsightQuery, SemanticType } from '@braedonsaunders/analytics'
 
 export type ReportQuery = InsightQuery
 

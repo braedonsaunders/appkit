@@ -1,4 +1,4 @@
-# @appkitjs/storage
+# @braedonsaunders/storage
 
 ## 1.0.0
 
@@ -6,7 +6,7 @@
 
 - Updated dependencies [22e968a]
 - Updated dependencies [9f04661]
-  - @appkitjs/ui@0.2.0
+  - @braedonsaunders/ui@0.2.0
 
 ## 0.2.0
 
@@ -15,7 +15,7 @@
 - 1319bfb: Add tenant-owned object keys, multipart upload, byte ranges, streaming downloads,
   verified promotion, lifecycle tags, rich metadata, existence checks, safe
   existing-object presigning, and idempotent private-bucket readiness enforcement.
-  The generic `@appkitjs/storage/env` entry supplies a strict portable environment
+  The generic `@braedonsaunders/storage/env` entry supplies a strict portable environment
   contract without application-specific defaults or credentials.
 
 ### Patch Changes
@@ -26,4 +26,4 @@
   Changesets.
 - Updated dependencies [3ab6056]
 - Updated dependencies [1319bfb]
-  - @appkitjs/ui@0.1.1
+  - @braedonsaunders/ui@0.1.1

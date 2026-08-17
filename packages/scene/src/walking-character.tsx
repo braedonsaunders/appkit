@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { motion, useMotionValue, useSpring } from 'framer-motion'
-import { cn } from '@appkitjs/ui'
+import { cn } from '@braedonsaunders/ui'
 import {
   biasedSpawn,
   calculateScale,

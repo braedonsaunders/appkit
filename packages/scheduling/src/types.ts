@@ -1,5 +1,5 @@
 /**
- * @appkitjs/scheduling — the domain model.
+ * @braedonsaunders/scheduling — the domain model.
  *
  * A schedule is a set of tasks arranged in a work-breakdown outline, linked by
  * typed dependencies, sized against working calendars, staffed by resources,

@@ -1,4 +1,4 @@
-# @appkitjs/auth
+# @braedonsaunders/auth
 
 ## 0.1.3
 
@@ -6,7 +6,7 @@
 
 - Updated dependencies [22e968a]
 - Updated dependencies [9f04661]
-  - @appkitjs/ui@0.2.0
+  - @braedonsaunders/ui@0.2.0
 
 ## 0.1.2
 
@@ -16,7 +16,7 @@
 - Updated dependencies [0c2dde7]
 - Updated dependencies [a1d5d50]
 - Updated dependencies [8a17e9e]
-  - @appkitjs/ui@0.1.10
+  - @braedonsaunders/ui@0.1.10
 
 ## 0.1.1
 
@@ -30,5 +30,5 @@
 - Updated dependencies [3ab6056]
 - Updated dependencies [1319bfb]
 - Updated dependencies [1319bfb]
-  - @appkitjs/db@0.2.0
-  - @appkitjs/ui@0.1.1
+  - @braedonsaunders/db@0.2.0
+  - @braedonsaunders/ui@0.1.1

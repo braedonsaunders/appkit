@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
-import { Button, PageContainer } from '@appkitjs/ui'
+import { Button, PageContainer } from '@braedonsaunders/ui'
 import { DashboardExperience } from '../_dashboard-experience'
 
 export const dynamic = 'force-dynamic'

@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { compileQuery, type AnalyticsCatalog, type InsightQuery, type QueryResult } from '@appkitjs/analytics/server'
+import { compileQuery, type AnalyticsCatalog, type InsightQuery, type QueryResult } from '@braedonsaunders/analytics/server'
 import { getDemoEnvironment } from './demo-context'
 import { executeDemoQueryInMemory } from './demo-analytics-memory'
 import { isDatabaseConfigured, platform } from './platform'

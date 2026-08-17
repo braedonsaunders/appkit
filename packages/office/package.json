@@ -1,5 +1,5 @@
 {
-  "name": "@appkitjs/office",
+  "name": "@braedonsaunders/office",
   "version": "0.3.0",
   "description": "Office-document authoring for AI agents and applications: HTML to .docx/.pdf via headless LibreOffice, plain-text precision edits inside .docx via Flat ODT, PDF concatenation via poppler, and declarative .xlsx workbooks via the optional exceljs adapter.",
   "license": "AGPL-3.0-or-later",

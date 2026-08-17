@@ -13,7 +13,7 @@ alongside its existing role as a governed catalogue.
   string; ranges are refused for the same reason npm ranges are — the bytes in
   the image must be the bytes the shelf describes). npm-only fields on an apt
   manifest, and apt fields on any other kind, are rejected.
-- `@appkitjs/agent-tools/image-manifest` — a pure emitter that turns a set of
+- `@braedonsaunders/agent-tools/image-manifest` — a pure emitter that turns a set of
   manifests into base-image build input. `imageManifest(tools)` returns a
   deterministically sorted `{ aptPackages, npmPackages, binaryPaths }`
   structure with each package traced to its tool id, and throws when two tools
@@ -40,5 +40,5 @@ alongside its existing role as a governed catalogue.
 
 Initial release: `defineAgentTool`, exact version pinning, the install and
 execute policy gates, bounded approval grants, health checks, the tenant
-shelf, sandboxed execution via `@appkitjs/process-sandbox`, and the in-memory
+shelf, sandboxed execution via `@braedonsaunders/process-sandbox`, and the in-memory
 and Drizzle stores.

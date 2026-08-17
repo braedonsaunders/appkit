@@ -5,7 +5,7 @@
 // the service account's client_email as an Editor.
 
 import { createSign } from 'node:crypto'
-import { secureFetch } from '@appkitjs/sync/egress'
+import { secureFetch } from '@braedonsaunders/sync/egress'
 import { resolveValue } from './resolve'
 import { SHEETS_DESTINATION_SUMMARY } from './destination-catalog'
 import type {

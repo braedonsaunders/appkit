@@ -18,7 +18,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@appkitjs/ui'
+} from '@braedonsaunders/ui'
 import {
   getPackage,
   PACKAGE_CATALOG,
@@ -159,7 +159,9 @@ export default async function PackagePage({ params }: PackagePageProps) {
 }
 
 function installCommand(item: PackageCatalogItem): string {
-  return item.name === 'create-appkit' ? 'pnpm create appkit my-app' : `pnpm add ${item.name}`
+  return item.name === '@braedonsaunders/create-appkit'
+    ? 'pnpm dlx @braedonsaunders/create-appkit my-app'
+    : `pnpm add ${item.name}`
 }
 
 function ManifestRow({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {

@@ -1,6 +1,6 @@
 import { afterEach, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { createSealer } from '@appkitjs/crypto'
+import { createSealer } from '@braedonsaunders/crypto'
 import {
   SMS_PROVIDER_SPECS,
   buildSmsTransport,

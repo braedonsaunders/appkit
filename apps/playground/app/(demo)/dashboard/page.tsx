@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { LayoutDashboard } from 'lucide-react'
-import { Button, PageContainer } from '@appkitjs/ui'
+import { Button, PageContainer } from '@braedonsaunders/ui'
 import { DashboardExperience } from './_dashboard-experience'
 import { getDemoEnvironment } from '../../../lib/server/demo-context'
 

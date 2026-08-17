@@ -1,16 +1,16 @@
-/* The whole design system in one import: Tailwind v4 + @appkitjs/tokens. */
-@import '@appkitjs/ui/styles.css';
-@import '@appkitjs/dashboard/styles.css';
-@import '@appkitjs/design-studio/styles.css';
-@import '@appkitjs/reports/styles.css';
-@import '@appkitjs/forms/styles.css';
-@import '@appkitjs/workflows/styles.css';
-@import '@appkitjs/scheduling/styles.css';
-@import '@appkitjs/customization/styles.css';
-@import '@appkitjs/apps/styles.css';
-@import '@appkitjs/scripts/styles.css';
-@import '@appkitjs/storage/styles.css';
-@import '@appkitjs/scene/styles.css';
+/* The whole design system in one import: Tailwind v4 + @braedonsaunders/tokens. */
+@import '@braedonsaunders/ui/styles.css';
+@import '@braedonsaunders/dashboard/styles.css';
+@import '@braedonsaunders/design-studio/styles.css';
+@import '@braedonsaunders/reports/styles.css';
+@import '@braedonsaunders/forms/styles.css';
+@import '@braedonsaunders/workflows/styles.css';
+@import '@braedonsaunders/scheduling/styles.css';
+@import '@braedonsaunders/customization/styles.css';
+@import '@braedonsaunders/apps/styles.css';
+@import '@braedonsaunders/scripts/styles.css';
+@import '@braedonsaunders/storage/styles.css';
+@import '@braedonsaunders/scene/styles.css';
 
 /* Scan the playground and shared component sources for class usage. */
 @source '../app';

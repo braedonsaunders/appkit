@@ -1,4 +1,4 @@
-# @appkitjs/notifications
+# @braedonsaunders/notifications
 
 ## 2.0.0
 
@@ -6,8 +6,8 @@
 
 - Updated dependencies [22e968a]
 - Updated dependencies [9f04661]
-  - @appkitjs/ui@0.2.0
-  - @appkitjs/jobs@0.2.1
+  - @braedonsaunders/ui@0.2.0
+  - @braedonsaunders/jobs@0.2.1
 
 ## 1.0.0
 
@@ -26,6 +26,6 @@
 - Updated dependencies [3ab6056]
 - Updated dependencies [1319bfb]
 - Updated dependencies [1319bfb]
-  - @appkitjs/jobs@0.2.0
-  - @appkitjs/db@0.2.0
-  - @appkitjs/ui@0.1.1
+  - @braedonsaunders/jobs@0.2.0
+  - @braedonsaunders/db@0.2.0
+  - @braedonsaunders/ui@0.1.1

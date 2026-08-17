@@ -1,4 +1,4 @@
-import { formSchemaV1Schema, type FormSchemaV1 } from '@appkitjs/forms-core'
+import { formSchemaV1Schema, type FormSchemaV1 } from '@braedonsaunders/forms-core'
 
 export const SUPPLIER_QUALIFICATION_SCHEMA: FormSchemaV1 = formSchemaV1Schema.parse({
   schemaVersion: 1,

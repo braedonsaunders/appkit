@@ -1,5 +1,5 @@
 {
-  "name": "@appkitjs/sms",
+  "name": "@braedonsaunders/sms",
   "version": "0.2.0",
   "description": "SMS delivery — five providers (Twilio, Vonage, MessageBird, Plivo, Telnyx) via fetch, sealed-secret config, platform→tenant policy.",
   "license": "AGPL-3.0-or-later",
@@ -15,7 +15,7 @@
     "src"
   ],
   "dependencies": {
-    "@appkitjs/crypto": "workspace:*"
+    "@braedonsaunders/crypto": "workspace:*"
   },
   "scripts": {
     "build": "node ../../scripts/build-package.mjs",

@@ -1,16 +1,16 @@
 // Save-time pipeline. Authored markup is sanitized ONCE here — never per send —
 // and the repeat markers are expanded into mustache blocks the renderer
-// understands. Merge values are escaped at render time by @appkitjs/email-render,
+// understands. Merge values are escaped at render time by @braedonsaunders/email-render,
 // so a compiled design is safe to store and re-render without re-sanitizing.
 
-import { expandRepeatMarkers, sanitizeEmailFragment, sanitizeEmailHtml } from '@appkitjs/email-render'
+import { expandRepeatMarkers, sanitizeEmailFragment, sanitizeEmailHtml } from '@braedonsaunders/email-render'
 import type { EmailDesign } from './types'
 
 export type CompileEmailDesignOptions = {
   /**
    * Inliner applied before sanitizing so `<style>` rules land on each element's
    * `style` attribute — Gmail and Outlook strip `<style>` blocks. Pass
-   * `inlineEmailCss` from `@appkitjs/email-designer/inline` on the server. Omit it
+   * `inlineEmailCss` from `@braedonsaunders/email-designer/inline` on the server. Omit it
    * (as a browser-side preview does) and authored rules stay in the `<style>`
    * block, which a browser honors but many mail clients do not.
    */

@@ -1,4 +1,4 @@
-# @appkitjs/process-sandbox
+# @braedonsaunders/process-sandbox
 
 ## 0.3.0
 

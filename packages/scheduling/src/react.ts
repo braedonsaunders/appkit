@@ -1,5 +1,5 @@
 /**
- * @appkitjs/scheduling/react — the authoring surface.
+ * @braedonsaunders/scheduling/react — the authoring surface.
  *
  * Client components. Wrap them in `SchedulingProvider` to supply your own
  * labels and date formatting; without it they render in English against the

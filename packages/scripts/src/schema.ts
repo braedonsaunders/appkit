@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { auditColumns, id, tenantRef } from '@appkitjs/db'
+import { auditColumns, id, tenantRef } from '@braedonsaunders/db'
 import type { ScriptKind, ScriptRunStatus } from './index'
 
 export const userScripts = pgTable('user_scripts', {

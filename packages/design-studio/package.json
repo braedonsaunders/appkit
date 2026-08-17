@@ -1,5 +1,5 @@
 {
-  "name": "@appkitjs/design-studio",
+  "name": "@braedonsaunders/design-studio",
   "version": "1.0.0",
   "description": "Bounded print-design document schema, renderer, and interactive Fabric editor.",
   "license": "AGPL-3.0-or-later",
@@ -26,17 +26,17 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@appkitjs/tokens": "workspace:*"
+    "@braedonsaunders/tokens": "workspace:*"
   },
   "peerDependencies": {
-    "@appkitjs/ui": "^0.2.0",
+    "@braedonsaunders/ui": "^0.2.0",
     "fabric": "^7.0.0",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
-    "@appkitjs/ui": {
+    "@braedonsaunders/ui": {
       "optional": true
     },
     "fabric": {
@@ -53,7 +53,7 @@
     }
   },
   "devDependencies": {
-    "@appkitjs/ui": "workspace:*",
+    "@braedonsaunders/ui": "workspace:*",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

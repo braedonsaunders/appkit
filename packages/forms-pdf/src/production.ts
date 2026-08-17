@@ -13,7 +13,7 @@ import {
   type DesignDocument,
   type DesignDocumentData,
   type EquipmentLabelDesignData,
-} from '@appkitjs/design-studio'
+} from '@braedonsaunders/design-studio'
 import {
   buildReportDocumentCss,
   buildReportPageCss,
@@ -21,7 +21,7 @@ import {
   resolveReportLayout,
   type ReportDocumentInput,
   type ReportLayoutConfig,
-} from '@appkitjs/reports/document'
+} from '@braedonsaunders/reports/document'
 import { renderCertificateHtml, type CertificateRenderInput } from './templates/certificate'
 import { renderWalletHtml, type WalletRenderInput } from './templates/wallet'
 import type {

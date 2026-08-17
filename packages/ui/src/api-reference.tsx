@@ -9,7 +9,7 @@ import { Input } from './input'
 import { cn } from './utils'
 
 // Self-documenting API reference. Feed it route descriptions (structurally the
-// same as @appkitjs/api's ApiRouteDoc) and it renders a live, interactive reference
+// same as @braedonsaunders/api's ApiRouteDoc) and it renders a live, interactive reference
 // — method badges, params, code samples, and a real "Send" button.
 
 export type ApiParamDoc = {

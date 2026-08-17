@@ -34,7 +34,7 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react'
-import { Badge, Button, Popover, cn } from '@appkitjs/ui'
+import { Badge, Button, Popover, cn } from '@braedonsaunders/ui'
 import { parseDate } from '../dates'
 import type {
   ScheduleBaseline,

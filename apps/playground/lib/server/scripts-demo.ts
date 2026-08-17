@@ -6,8 +6,8 @@ import {
   type ScriptDefinition,
   type ScriptRun,
   type ScriptStore,
-} from '@appkitjs/scripts'
-import type { ScriptEditorValue } from '@appkitjs/scripts/react'
+} from '@braedonsaunders/scripts'
+import type { ScriptEditorValue } from '@braedonsaunders/scripts/react'
 
 const TENANT_ID = '00000000-0000-0000-0000-000000000010'
 

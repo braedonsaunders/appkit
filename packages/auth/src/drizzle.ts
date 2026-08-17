@@ -1,19 +1,19 @@
 import { and, eq } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
-import type { AppkitDb } from '@appkitjs/db'
+import type { AppkitDb } from '@braedonsaunders/db'
 import {
   auditLog,
   memberships,
   tenants,
   users,
-} from '@appkitjs/db/schema'
+} from '@braedonsaunders/db/schema'
 import type {
   InviteGrantPayload,
   InviteRecord,
   InviteStore,
 } from './invites'
 import { evaluateInviteAccess } from './invites'
-import * as appkitSchema from '@appkitjs/db/schema'
+import * as appkitSchema from '@braedonsaunders/db/schema'
 
 type Schema = typeof appkitSchema
 type Database = NodePgDatabase<Schema>

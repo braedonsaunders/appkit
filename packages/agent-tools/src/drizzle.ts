@@ -82,7 +82,7 @@ function date(value: string | undefined): Date | null {
 }
 
 /**
- * Postgres-backed persistence. Pass a tenant-scoped `db` from `@appkitjs/db` so
+ * Postgres-backed persistence. Pass a tenant-scoped `db` from `@braedonsaunders/db` so
  * row-level security is the outer boundary and these predicates are the inner
  * one.
  */

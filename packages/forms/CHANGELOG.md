@@ -1,4 +1,4 @@
-# @appkitjs/forms
+# @braedonsaunders/forms
 
 ## 0.2.2
 
@@ -6,8 +6,8 @@
 
 - Updated dependencies [22e968a]
 - Updated dependencies [9f04661]
-  - @appkitjs/ui@0.2.0
-  - @appkitjs/editor@0.2.2
+  - @braedonsaunders/ui@0.2.0
+  - @braedonsaunders/editor@0.2.2
 
 ## 0.2.1
 
@@ -17,8 +17,8 @@
 - Updated dependencies [0c2dde7]
 - Updated dependencies [a1d5d50]
 - Updated dependencies [8a17e9e]
-  - @appkitjs/ui@0.1.10
-  - @appkitjs/editor@0.2.1
+  - @braedonsaunders/ui@0.1.10
+  - @braedonsaunders/editor@0.2.1
 
 ## 0.2.0
 
@@ -34,8 +34,8 @@
   Changesets.
 - Updated dependencies [3ab6056]
 - Updated dependencies [1319bfb]
-  - @appkitjs/editor@0.1.1
-  - @appkitjs/forms-core@0.1.1
-  - @appkitjs/i18n@0.1.1
-  - @appkitjs/tokens@0.1.1
-  - @appkitjs/ui@0.1.1
+  - @braedonsaunders/editor@0.1.1
+  - @braedonsaunders/forms-core@0.1.1
+  - @braedonsaunders/i18n@0.1.1
+  - @braedonsaunders/tokens@0.1.1
+  - @braedonsaunders/ui@0.1.1

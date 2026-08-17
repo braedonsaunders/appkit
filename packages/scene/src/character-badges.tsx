@@ -1,7 +1,7 @@
 'use client'
 
 import { AnimatePresence, motion } from 'framer-motion'
-import { cn } from '@appkitjs/ui'
+import { cn } from '@braedonsaunders/ui'
 import type { SceneCharacter } from './config'
 
 /**

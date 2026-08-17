@@ -2,7 +2,7 @@
 
 // A sonner-compatible toast primitive. The public surface mirrors sonner so an
 // app switches by changing the import:
-//     import { toast, Toaster } from 'sonner'   →   from '@appkitjs/ui'
+//     import { toast, Toaster } from 'sonner'   →   from '@braedonsaunders/ui'
 // `toast()` is a global imperative function (no provider/hook needed); a single
 // <Toaster /> mounted at the app root subscribes and renders. Tokenized +
 // animated with the appkit design system.

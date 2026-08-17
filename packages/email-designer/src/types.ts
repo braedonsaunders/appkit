@@ -20,7 +20,7 @@ export type EmailCollectionField = { key: string; label: string }
 /**
  * A repeating list the author can drop in as an editable table. The row carries
  * a `data-each` marker that compiles to a `{{#each}}` block — see
- * `expandRepeatMarkers` in `@appkitjs/email-render`.
+ * `expandRepeatMarkers` in `@braedonsaunders/email-render`.
  */
 export type EmailCollection = {
   key: string

@@ -1,8 +1,8 @@
 // Re-exported because this package's own public types are written in terms of
 // it — RequestContext carries scopes, AccessCtx is resolved against them — so a
-// consumer typing a variable that holds one had to reach past @appkitjs/tenant
-// into @appkitjs/db for a type it only ever sees through this API.
-export type { RoleScope } from '@appkitjs/db'
+// consumer typing a variable that holds one had to reach past @braedonsaunders/tenant
+// into @braedonsaunders/db for a type it only ever sees through this API.
+export type { RoleScope } from '@braedonsaunders/db'
 export {
   type TenantDatabase,
   type RequestContextCore,

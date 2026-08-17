@@ -1,6 +1,6 @@
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
-import type { AppkitDb, RoleScope } from '@appkitjs/db'
-import type { AppLocale } from '@appkitjs/i18n'
+import type { AppkitDb, RoleScope } from '@braedonsaunders/db'
+import type { AppLocale } from '@braedonsaunders/i18n'
 
 export type TenantDatabase<TSchema extends Record<string, unknown> = Record<string, never>> =
   NodePgDatabase<TSchema>
@@ -94,7 +94,7 @@ export function createTenantContextFactory<TDatabase>(runtime: TenantContextRunt
   return { makeTenantContext: makeContext, makeSuperAdminContext: makeAdminContext }
 }
 
-/** Build a request context over `@appkitjs/db`. */
+/** Build a request context over `@braedonsaunders/db`. */
 export function makeTenantContext<
   TSchema extends Record<string, unknown>,
   TExtension extends object = object,

@@ -19,12 +19,12 @@ import {
   schema,
   seedRoles,
   tenants,
-} from '@appkitjs/db'
+} from '@braedonsaunders/db'
 import {
   DASHBOARD_TENANT_TABLES,
   insightCards,
   userDashboardLayouts,
-} from '@appkitjs/dashboard/schema'
+} from '@braedonsaunders/dashboard/schema'
 import { and, eq } from 'drizzle-orm'
 
 const APP_URL = process.env.APPKIT_DB_URL
@@ -41,8 +41,8 @@ if (!/^[A-Za-z_][A-Za-z0-9_]{0,62}$/.test(appRole) || !appPassword) {
   process.exit(1)
 }
 
-const ADMIN_EMAIL = 'admin@appkitjs.dev'
-const MEMBER_EMAIL = 'casey@appkitjs.dev'
+const ADMIN_EMAIL = 'admin@appkit.example'
+const MEMBER_EMAIL = 'casey@appkit.example'
 
 async function main() {
   const { withSuperAdmin, superPool, pool } = createDb({ url: APP_URL!, superUrl: SUPER_URL!, schema })

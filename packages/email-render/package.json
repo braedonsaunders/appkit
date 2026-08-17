@@ -1,5 +1,5 @@
 {
-  "name": "@appkitjs/email-render",
+  "name": "@braedonsaunders/email-render",
   "version": "0.1.1",
   "description": "Framework-neutral email template rendering, sanitization, delivery input normalization, and subject handling.",
   "license": "AGPL-3.0-or-later",

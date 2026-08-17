@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { defaultListView, mergeListViewColumns, queryRecordList, type SavedListView } from '@appkitjs/customization'
+import { defaultListView, mergeListViewColumns, queryRecordList, type SavedListView } from '@braedonsaunders/customization'
 import {
   CustomizationStudio,
   RecordListView,
@@ -9,8 +9,8 @@ import {
   type CustomizationDesignerAdapter,
   type FormDefinition,
   type ListViewDefinition,
-} from '@appkitjs/customization/react'
-import { Badge, Button, Drawer, Spinner } from '@appkitjs/ui'
+} from '@braedonsaunders/customization/react'
+import { Badge, Button, Drawer, Spinner } from '@braedonsaunders/ui'
 import { DEMO_CUSTOMIZATION, DEMO_RECORD_TYPES, DEMO_VENDOR_BILL } from './catalogue'
 
 const STORAGE_KEY = 'appkit-customization-studio-v2'

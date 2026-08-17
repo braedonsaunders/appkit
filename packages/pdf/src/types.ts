@@ -1,7 +1,7 @@
-import { hexColor } from '@appkitjs/tokens'
+import { hexColor } from '@braedonsaunders/tokens'
 
 // The vendor-neutral document model the PDF engine renders. Kept dependency-
-// free and decoupled from @appkitjs/reports so this package stays a pure
+// free and decoupled from @braedonsaunders/reports so this package stays a pure
 // renderer: callers (the web report adapters, the view export path)
 // shape their own result types into this generic input.
 //

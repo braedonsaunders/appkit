@@ -1,7 +1,7 @@
 'use client'
 
 import { RotateCcw } from 'lucide-react'
-import { Button, Input, Slider } from '@appkitjs/ui'
+import { Button, Input, Slider } from '@braedonsaunders/ui'
 import type { AvatarPartCategory, AvatarPartPlacement, AvatarPartTransform } from '../composition'
 
 /**

@@ -1,4 +1,4 @@
-# @appkitjs/tokens
+# @braedonsaunders/tokens
 
 ## 0.1.1
 

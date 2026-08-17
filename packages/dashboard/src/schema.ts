@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { boolean, index, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import type { InsightQuery, VisualizationKey, VisualizationSettings } from '@appkitjs/analytics'
-import { id, tenantRef } from '@appkitjs/db'
+import type { InsightQuery, VisualizationKey, VisualizationSettings } from '@braedonsaunders/analytics'
+import { id, tenantRef } from '@braedonsaunders/db'
 import type { DashboardLayout, InsightCardStatus } from './types'
 
 export type { DashboardLayout, DashboardQuickAction, DashboardWidget, InsightCardStatus } from './types'

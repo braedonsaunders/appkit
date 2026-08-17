@@ -1,4 +1,4 @@
-# @appkitjs/integrations
+# @braedonsaunders/integrations
 
 ## 2.0.0
 
@@ -7,8 +7,8 @@
 - Updated dependencies [22e968a]
 - Updated dependencies [8342b35]
 - Updated dependencies [9f04661]
-  - @appkitjs/ui@0.2.0
-  - @appkitjs/sync@1.1.0
+  - @braedonsaunders/ui@0.2.0
+  - @braedonsaunders/sync@1.1.0
 
 ## 1.0.0
 
@@ -28,7 +28,7 @@
 - Updated dependencies [3ab6056]
 - Updated dependencies [1319bfb]
 - Updated dependencies [1319bfb]
-  - @appkitjs/db@0.2.0
-  - @appkitjs/sync@1.0.0
-  - @appkitjs/email-render@0.1.1
-  - @appkitjs/ui@0.1.1
+  - @braedonsaunders/db@0.2.0
+  - @braedonsaunders/sync@1.0.0
+  - @braedonsaunders/email-render@0.1.1
+  - @braedonsaunders/ui@0.1.1

@@ -2,7 +2,7 @@ import {
   OPERATORS_BY_KIND,
   createCustomizationEngine,
   type RecordTypeMeta,
-} from '@appkitjs/customization'
+} from '@braedonsaunders/customization'
 
 /** Demo-owned catalogue. Production applications supply the same contract. */
 export const DEMO_RECORD_TYPES: RecordTypeMeta[] = [{

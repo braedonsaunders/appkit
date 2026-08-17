@@ -21,8 +21,8 @@ import {
   type NotificationItem,
   type SidebarNavGroup,
   useNavigationMode,
-} from '@appkitjs/ui'
-import { PageTransition } from '@appkitjs/ui/page-transition'
+} from '@braedonsaunders/ui'
+import { PageTransition } from '@braedonsaunders/ui/page-transition'
 import { AppkitLogo } from './appkit-logo'
 
 const nextLink: LinkRender = ({

@@ -20,7 +20,6 @@
     "sync:package-metadata": "node scripts/sync-package-metadata.mjs",
     "test:packages": "node scripts/test-package-tarballs.mjs",
     "test:consumers": "node scripts/test-package-consumers.mjs",
-    "vendor:snapshot": "node scripts/create-vendor-snapshot.mjs",
     "validate": "pnpm -r typecheck && pnpm lint && pnpm test && pnpm build && pnpm test:packages && pnpm test:consumers",
     "dev": "turbo run dev",
     "clean": "turbo run clean && rm -rf node_modules",

@@ -1,5 +1,5 @@
 {
-  "name": "@appkitjs/telephony",
+  "name": "@braedonsaunders/telephony",
   "version": "0.2.0",
   "description": "Carrier telephony — buy phone numbers and provision the SIP trunk they arrive on, via fetch, with sealed-secret config and an injectable carrier adapter.",
   "license": "AGPL-3.0-or-later",
@@ -15,7 +15,7 @@
     "src"
   ],
   "dependencies": {
-    "@appkitjs/crypto": "workspace:*"
+    "@braedonsaunders/crypto": "workspace:*"
   },
   "scripts": {
     "build": "node ../../scripts/build-package.mjs",

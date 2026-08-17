@@ -2,7 +2,7 @@
 //
 // `RawSmsConfig` is what an app persists per tenant (and per platform), with the
 // single secret sealed. `resolveSmsTransport` unseals it (via an injected
-// `unseal`, e.g. @appkitjs/crypto's unsealSecret) into an `SmsTransport`;
+// `unseal`, e.g. @braedonsaunders/crypto's unsealSecret) into an `SmsTransport`;
 // `buildSmsTransport` does the same from already-plaintext values. `sendSmsVia`
 // performs the network send, switching on provider. Every provider goes through
 // `fetch` (no SDKs), so the package stays dependency-free.
@@ -16,7 +16,7 @@ const SMS_TIMEOUT_MS = 15_000
 const MAX_SMS_RESPONSE_BYTES = 64 * 1_024
 const MAX_SMS_BODY_CHARS = 1_600
 
-/** Unseal a stored secret → plaintext. Supplied by the app (e.g. @appkitjs/crypto). */
+/** Unseal a stored secret → plaintext. Supplied by the app (e.g. @braedonsaunders/crypto). */
 export type Unseal = (sealed: { ciphertext: string; nonce: string }) => string | null
 
 export type SendSmsInput = {

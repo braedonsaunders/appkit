@@ -1,4 +1,4 @@
-# @appkitjs/i18n
+# @braedonsaunders/i18n
 
 ## 0.1.1
 

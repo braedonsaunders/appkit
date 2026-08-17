@@ -1,10 +1,10 @@
-# @appkitjs/telephony
+# @braedonsaunders/telephony
 
 ## 0.2.0
 
 ### Minor Changes
 
-- 102851e: Add `@appkitjs/telephony`: carrier phone-number provisioning over `fetch`, with a
+- 102851e: Add `@braedonsaunders/telephony`: carrier phone-number provisioning over `fetch`, with a
   carrier catalogue, sealed-secret config, and an injectable carrier adapter.
 
   `CarrierClient` covers account verification, number search, purchase, and
@@ -14,5 +14,5 @@
   ranges) and unwinds partial failures, so a consumer maps it onto its own SIP
   layer without learning a carrier's object model.
 
-  Twilio is the first carrier; the catalogue follows the `@appkitjs/sms` provider
+  Twilio is the first carrier; the catalogue follows the `@braedonsaunders/sms` provider
   shape so others can be added beside it.

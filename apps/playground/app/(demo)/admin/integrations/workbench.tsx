@@ -11,28 +11,28 @@ import {
   type IntegrationDefinition,
   type IntegrationEditorSubmission,
   type TriggerDefinition,
-} from '@appkitjs/integrations'
-import type { IntegrationEmail } from '@appkitjs/integrations/email'
+} from '@braedonsaunders/integrations'
+import type { IntegrationEmail } from '@braedonsaunders/integrations/email'
 import {
   IntegrationBuilder,
   IntegrationHub,
   type ConnectedIntegration,
   type IntegrationCatalogItem,
-} from '@appkitjs/integrations/react'
+} from '@braedonsaunders/integrations/react'
 import {
   createConnectorRegistry,
   type SyncConnector,
   type SyncRecord,
-} from '@appkitjs/sync/catalog'
-import { parseCsv } from '@appkitjs/sync/csv'
+} from '@braedonsaunders/sync/catalog'
+import { parseCsv } from '@braedonsaunders/sync/csv'
 import {
   createMemorySyncPersistence,
   createMemorySyncTarget,
   runSync,
   type MemorySyncTransaction,
   type SyncTarget,
-} from '@appkitjs/sync/runtime'
-import { Badge, Button, SettingsRow, SettingsSection } from '@appkitjs/ui'
+} from '@braedonsaunders/sync/runtime'
+import { Badge, Button, SettingsRow, SettingsSection } from '@braedonsaunders/ui'
 
 const SAMPLE_CSV = `project_id,name,status
 P-1048,North Tower,active
@@ -373,7 +373,7 @@ function Runs() {
     setError(null)
     const sent: IntegrationEmail[] = []
     try {
-      const { createEmailDestination } = await import('@appkitjs/integrations/email')
+      const { createEmailDestination } = await import('@braedonsaunders/integrations/email')
       const destination = createEmailDestination(async (message) => { sent.push(message) })
       const registry = createIntegrationRegistry({ destinations: [destination] })
       const definition: IntegrationDefinition = {

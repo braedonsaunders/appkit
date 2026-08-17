@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { cn, useElementSize } from '@appkitjs/ui'
+import { cn, useElementSize } from '@braedonsaunders/ui'
 import {
   DEFAULT_WALKING_CONFIG,
   LOBBY_GROUND,

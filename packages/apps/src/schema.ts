@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { auditColumns, id, tenantRef } from '@appkitjs/db'
+import { auditColumns, id, tenantRef } from '@braedonsaunders/db'
 import type { AppFileKind, AppRunStatus, AppStatus, AppVersionStatus } from './index'
 import type { AppBundleFile } from './bundle'
 import type { AppManifest } from './manifest'

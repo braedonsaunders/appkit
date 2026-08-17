@@ -1,4 +1,4 @@
-# @appkitjs/workflows
+# @braedonsaunders/workflows
 
 ## 2.0.0
 
@@ -6,8 +6,8 @@
 
 - Updated dependencies [22e968a]
 - Updated dependencies [9f04661]
-  - @appkitjs/ui@0.2.0
-  - @appkitjs/forms@0.2.2
+  - @braedonsaunders/ui@0.2.0
+  - @braedonsaunders/forms@0.2.2
 
 ## 1.0.0
 
@@ -22,7 +22,7 @@
 - Updated dependencies [3ab6056]
 - Updated dependencies [1319bfb]
 - Updated dependencies [1319bfb]
-  - @appkitjs/db@0.2.0
-  - @appkitjs/forms@0.2.0
-  - @appkitjs/forms-core@0.1.1
-  - @appkitjs/ui@0.1.1
+  - @braedonsaunders/db@0.2.0
+  - @braedonsaunders/forms@0.2.0
+  - @braedonsaunders/forms-core@0.1.1
+  - @braedonsaunders/ui@0.1.1

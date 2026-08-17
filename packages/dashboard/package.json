@@ -1,5 +1,5 @@
 {
-  "name": "@appkitjs/dashboard",
+  "name": "@braedonsaunders/dashboard",
   "version": "2.0.0",
   "description": "Optional dashboard layouts, insight cards, visual studio, and feature-owned persistence.",
   "license": "AGPL-3.0-or-later",
@@ -30,11 +30,11 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@appkitjs/analytics": "workspace:*"
+    "@braedonsaunders/analytics": "workspace:*"
   },
   "peerDependencies": {
-    "@appkitjs/db": "^0.2.0",
-    "@appkitjs/ui": "^0.2.0",
+    "@braedonsaunders/db": "^0.2.0",
+    "@braedonsaunders/ui": "^0.2.0",
     "drizzle-orm": "^0.45.2",
     "lucide-react": ">=0.474.0 <2",
     "react": "^19.0.0",
@@ -42,10 +42,10 @@
     "react-grid-layout": "^2.2.3"
   },
   "peerDependenciesMeta": {
-    "@appkitjs/db": {
+    "@braedonsaunders/db": {
       "optional": true
     },
-    "@appkitjs/ui": {
+    "@braedonsaunders/ui": {
       "optional": true
     },
     "drizzle-orm": {
@@ -65,8 +65,8 @@
     }
   },
   "devDependencies": {
-    "@appkitjs/db": "workspace:*",
-    "@appkitjs/ui": "workspace:*",
+    "@braedonsaunders/db": "workspace:*",
+    "@braedonsaunders/ui": "workspace:*",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

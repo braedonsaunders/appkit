@@ -1,8 +1,8 @@
 'use client'
 
 import { Plus, Trash2 } from 'lucide-react'
-import { Button, Input, Select, cn } from '@appkitjs/ui'
-import type { LogicRule } from '@appkitjs/forms-core'
+import { Button, Input, Select, cn } from '@braedonsaunders/ui'
+import type { LogicRule } from '@braedonsaunders/forms-core'
 
 export type LogicBuilderLabels = {
   noFields: string

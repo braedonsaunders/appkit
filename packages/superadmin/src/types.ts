@@ -1,6 +1,6 @@
 /**
  * Instance-operator administration over the platform identity model. This is
- * deliberately NOT tenant IAM (@appkitjs/iam): it manages the global accounts
+ * deliberately NOT tenant IAM (@braedonsaunders/iam): it manages the global accounts
  * that can sign in at all — credentials, activation, super-admin standing,
  * and live sessions — across every tenant of the installation.
  */

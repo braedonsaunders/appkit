@@ -54,7 +54,7 @@ import {
   toast,
   Tooltip,
   useContextMenu,
-} from '@appkitjs/ui'
+} from '@braedonsaunders/ui'
 
 function Section({
   title,

@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { ChevronDown, ChevronRight, Search } from 'lucide-react'
-import { Badge, Input } from '@appkitjs/ui'
+import { Badge, Input } from '@braedonsaunders/ui'
 import { resolvePartUrl, type AvatarPart, type AvatarPartCategory } from '../composition'
 
 /**

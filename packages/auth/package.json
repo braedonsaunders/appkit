@@ -1,5 +1,5 @@
 {
-  "name": "@appkitjs/auth",
+  "name": "@braedonsaunders/auth",
   "version": "0.1.3",
   "description": "Production authentication: durable sessions, passwords, magic links, invitation grants, reset flows, React UI, and Postgres adapters.",
   "license": "AGPL-3.0-or-later",
@@ -27,8 +27,8 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@appkitjs/db": "workspace:*",
-    "@appkitjs/ui": "workspace:*",
+    "@braedonsaunders/db": "workspace:*",
+    "@braedonsaunders/ui": "workspace:*",
     "better-auth": "^1.6.23",
     "drizzle-orm": "^0.45.2",
     "pg": "^8.22.0",

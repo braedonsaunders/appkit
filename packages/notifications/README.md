@@ -1,4 +1,4 @@
-# @appkitjs/notifications
+# @braedonsaunders/notifications
 
 Production notification infrastructure and user interfaces that applications
 can adopt independently: multi-channel policy and dispatch at the root, the
@@ -9,7 +9,7 @@ lifecycle under `/push`.
 ## Install
 
 ```bash
-pnpm add @appkitjs/notifications
+pnpm add @braedonsaunders/notifications
 ```
 
 The root has no runtime dependencies. Add React/UI, Drizzle/database, jobs, or
@@ -37,18 +37,18 @@ and delivery providers. No application category or role vocabulary is bundled.
 
 ## Persistence and jobs
 
-`@appkitjs/notifications/schema` owns notifications, preferences, subscriptions,
-tenant policy, and per-category settings. `@appkitjs/notifications/drizzle`
+`@braedonsaunders/notifications/schema` owns notifications, preferences, subscriptions,
+tenant policy, and per-category settings. `@braedonsaunders/notifications/drizzle`
 provides inbox, preferences, configuration, dispatch, and subscription stores
 bound to an application-owned RLS database handle.
 
 The source-compatible BullMQ `NotifyJobData` and `PushJobData` contracts,
 validation, deterministic recipient batching, queue names, retry schedules, and
-retention settings live at `@appkitjs/jobs/notifications`.
+retention settings live at `@braedonsaunders/jobs/notifications`.
 
 ```ts
-import { createJobs } from '@appkitjs/jobs'
-import { createNotificationQueues } from '@appkitjs/jobs/notifications'
+import { createJobs } from '@braedonsaunders/jobs'
+import { createNotificationQueues } from '@braedonsaunders/jobs/notifications'
 
 const queues = createNotificationQueues(createJobs({ redisUrl: process.env.REDIS_URL! }))
 

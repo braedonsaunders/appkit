@@ -1,4 +1,4 @@
-# @appkitjs/crypto
+# @braedonsaunders/crypto
 
 ## 0.3.0
 

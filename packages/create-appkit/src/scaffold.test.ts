@@ -17,27 +17,27 @@ test('scaffolds a complete AppKit Next application without performing external a
     })
     assert.equal(result.directory, target)
     assert.deepEqual(result.packages, [
-      '@appkitjs/tokens',
-      '@appkitjs/ui',
-      '@appkitjs/editor',
-      '@appkitjs/forms',
-      '@appkitjs/forms-core',
-      '@appkitjs/i18n',
-      '@appkitjs/db',
-      '@appkitjs/tenant',
+      '@braedonsaunders/tokens',
+      '@braedonsaunders/ui',
+      '@braedonsaunders/editor',
+      '@braedonsaunders/forms',
+      '@braedonsaunders/forms-core',
+      '@braedonsaunders/i18n',
+      '@braedonsaunders/db',
+      '@braedonsaunders/tenant',
     ])
     const manifest = await readGeneratedPackage(target)
     const dependencies = manifest.dependencies as Record<string, string>
-    assert.equal(dependencies['@appkitjs/forms'], 'latest')
-    assert.equal(dependencies['@appkitjs/db'], 'latest')
+    assert.equal(dependencies['@braedonsaunders/forms'], 'latest')
+    assert.equal(dependencies['@braedonsaunders/db'], 'latest')
     assert.match(await readFile(join(target, 'src/components/app-frame.tsx'), 'utf8'), /UiLinkProvider/)
     assert.match(await readFile(join(target, 'src/components/app-frame.tsx'), 'utf8'), /PageTransition/)
     assert.match(await readFile(join(target, 'src/app/layout.tsx'), 'utf8'), /getThemeScript/)
     assert.match(await readFile(join(target, 'src/app/layout.tsx'), 'utf8'), /<PromptRoot \/>/)
     assert.match(await readFile(join(target, 'src/app/layout.tsx'), 'utf8'), /<ConfirmRoot \/>/)
     const styles = await readFile(join(target, 'src/app/globals.css'), 'utf8')
-    assert.match(styles, /@appkitjs\/ui\/styles\.css/)
-    assert.match(styles, /@appkitjs\/forms\/styles\.css/)
+    assert.match(styles, /@braedonsaunders\/ui\/styles\.css/)
+    assert.match(styles, /@braedonsaunders\/forms\/styles\.css/)
   } finally {
     await rm(root, { recursive: true, force: true })
   }
@@ -68,16 +68,16 @@ test('identity capability installs the complete optional IAM stack', async () =>
       initializeGit: false,
     })
     assert.deepEqual(result.packages, [
-      '@appkitjs/tokens',
-      '@appkitjs/ui',
-      '@appkitjs/auth',
-      '@appkitjs/db',
-      '@appkitjs/iam',
-      '@appkitjs/tenant',
+      '@braedonsaunders/tokens',
+      '@braedonsaunders/ui',
+      '@braedonsaunders/auth',
+      '@braedonsaunders/db',
+      '@braedonsaunders/iam',
+      '@braedonsaunders/tenant',
     ])
     const manifest = await readGeneratedPackage(target)
     const dependencies = manifest.dependencies as Record<string, string>
-    assert.equal(dependencies['@appkitjs/iam'], 'latest')
+    assert.equal(dependencies['@braedonsaunders/iam'], 'latest')
     assert.equal(dependencies['drizzle-orm'], '^0.45.2')
     assert.equal(dependencies.pg, '^8.13.1')
   } finally {
@@ -95,11 +95,11 @@ test('storage capability installs the object runtime and attachment workspace pa
       install: false,
       initializeGit: false,
     })
-    assert.deepEqual(result.packages, ['@appkitjs/tokens', '@appkitjs/ui', '@appkitjs/storage'])
+    assert.deepEqual(result.packages, ['@braedonsaunders/tokens', '@braedonsaunders/ui', '@braedonsaunders/storage'])
     const manifest = await readGeneratedPackage(target)
     const dependencies = manifest.dependencies as Record<string, string>
-    assert.equal(dependencies['@appkitjs/storage'], 'latest')
-    assert.match(await readFile(join(target, 'src/app/globals.css'), 'utf8'), /@appkitjs\/storage\/styles\.css/)
+    assert.equal(dependencies['@braedonsaunders/storage'], 'latest')
+    assert.match(await readFile(join(target, 'src/app/globals.css'), 'utf8'), /@braedonsaunders\/storage\/styles\.css/)
   } finally {
     await rm(root, { recursive: true, force: true })
   }

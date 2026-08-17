@@ -1,7 +1,7 @@
 // AI builder generation — turns a natural-language prompt into structured JSON
 // (a form/App schema, or an automation/Flow graph) for the visual Builder.
 //
-// Generic on purpose: this package stays decoupled from @appkitjs/forms-core.
+// Generic on purpose: this package stays decoupled from @braedonsaunders/forms-core.
 // The caller supplies the `system` spec (schema shape + field catalogue + an
 // example) and validates the returned text against the forms-core zod schemas,
 // retrying with the validation error on failure.

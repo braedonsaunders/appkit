@@ -1,5 +1,5 @@
 // Live key verification — the app calls these before sealing a credential,
-// mirroring @appkitjs/ai's ping-before-save doctrine.
+// mirroring @braedonsaunders/ai's ping-before-save doctrine.
 //
 // A check must ask for exactly the permission the product will use, and no
 // more. Providers issue scoped keys, and an operator who follows least

@@ -1,5 +1,5 @@
 // Self-documenting routes. Describe a route once with `describeRoute` and you get
-// both an interactive reference (via @appkitjs/ui's <ApiReference>) and an OpenAPI
+// both an interactive reference (via @braedonsaunders/ui's <ApiReference>) and an OpenAPI
 // document (`toOpenApi`) — docs and enforcement move together.
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'

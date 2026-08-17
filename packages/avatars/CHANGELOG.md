@@ -1,4 +1,4 @@
-# @appkitjs/avatars
+# @braedonsaunders/avatars
 
 ## 1.0.0
 
@@ -6,4 +6,4 @@
 
 - Updated dependencies [22e968a]
 - Updated dependencies [9f04661]
-  - @appkitjs/ui@0.2.0
+  - @braedonsaunders/ui@0.2.0

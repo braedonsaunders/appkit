@@ -1,8 +1,8 @@
 'use client'
 
 import * as React from 'react'
-import { ScriptStudio, type ScriptEditorValue } from '@appkitjs/scripts/react'
-import type { ScriptDefinition, ScriptRun } from '@appkitjs/scripts'
+import { ScriptStudio, type ScriptEditorValue } from '@braedonsaunders/scripts/react'
+import type { ScriptDefinition, ScriptRun } from '@braedonsaunders/scripts'
 
 interface Snapshot { scripts: ScriptDefinition[]; runs: Record<string, ScriptRun[]> }
 

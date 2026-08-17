@@ -3,7 +3,7 @@ import type { JobsOptions, Processor } from 'bullmq'
 import {
   normalizeEmailDeliveryInput,
   type EmailAttachmentPayload,
-} from '@appkitjs/email-render/delivery-input'
+} from '@braedonsaunders/email-render/delivery-input'
 import type { Jobs } from './index'
 import { createProfileQueue, createProfileWorker, type QueueProfileOverrides } from './profile'
 

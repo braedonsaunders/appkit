@@ -2,8 +2,8 @@
 
 import * as React from 'react'
 import { ExternalLink, MousePointerClick, Plus, Trash2 } from 'lucide-react'
-import type { ActionData, AutomationGraph, TriggerData } from '@appkitjs/forms-core/safety-automation'
-import { Button, Input, Label, Select, cn } from '@appkitjs/ui'
+import type { ActionData, AutomationGraph, TriggerData } from '@braedonsaunders/forms-core/safety-automation'
+import { Button, Input, Label, Select, cn } from '@braedonsaunders/ui'
 import type { RecordActionFlow, RecordActionFlowAdapter } from './record-config'
 
 type ManualTrigger = Extract<TriggerData, { trigger: 'manual' }>

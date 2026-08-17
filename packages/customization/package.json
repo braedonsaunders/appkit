@@ -1,5 +1,5 @@
 {
-  "name": "@appkitjs/customization",
+  "name": "@braedonsaunders/customization",
   "version": "2.0.0",
   "description": "Production form, custom-field, saved-view, and record-list runtime with React, memory, and Drizzle adapters.",
   "license": "AGPL-3.0-or-later",
@@ -57,18 +57,18 @@
     "zod": "^4.4.3"
   },
   "peerDependencies": {
-    "@appkitjs/db": "^0.2.0",
-    "@appkitjs/ui": "^0.2.0",
+    "@braedonsaunders/db": "^0.2.0",
+    "@braedonsaunders/ui": "^0.2.0",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
-    "@appkitjs/db": {
+    "@braedonsaunders/db": {
       "optional": true
     },
-    "@appkitjs/ui": {
+    "@braedonsaunders/ui": {
       "optional": true
     },
     "drizzle-orm": {
@@ -85,8 +85,8 @@
     }
   },
   "devDependencies": {
-    "@appkitjs/db": "workspace:*",
-    "@appkitjs/ui": "workspace:*",
+    "@braedonsaunders/db": "workspace:*",
+    "@braedonsaunders/ui": "workspace:*",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

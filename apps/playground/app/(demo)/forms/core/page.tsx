@@ -5,7 +5,7 @@ import {
   formSchemaV1Schema,
   validateResponse,
   type FieldTypeMeta,
-} from '@appkitjs/forms-core'
+} from '@braedonsaunders/forms-core'
 import {
   Badge,
   Button,
@@ -17,7 +17,7 @@ import {
   CodeBlock,
   PageContainer,
   PageHeader,
-} from '@appkitjs/ui'
+} from '@braedonsaunders/ui'
 import { SUPPLIER_QUALIFICATION_SCHEMA } from '../../../../lib/forms/example-schema'
 
 export const metadata = { title: 'Form engine — appkit' }

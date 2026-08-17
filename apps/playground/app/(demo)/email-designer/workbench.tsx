@@ -11,14 +11,14 @@ import {
   type EmailCollection,
   type EmailDesignerPreset,
   type EmailMergeField,
-} from '@appkitjs/email-designer'
-import '@appkitjs/email-designer/styles.css'
-import { hexColor } from '@appkitjs/tokens'
-import { Button, Spinner } from '@appkitjs/ui'
+} from '@braedonsaunders/email-designer'
+import '@braedonsaunders/email-designer/styles.css'
+import { hexColor } from '@braedonsaunders/tokens'
+import { Button, Spinner } from '@braedonsaunders/ui'
 
 // GrapesJS touches window, so the designer only ever loads in the browser.
 const EmailDesigner = dynamic(
-  () => import('@appkitjs/email-designer/react').then((m) => m.EmailDesigner),
+  () => import('@braedonsaunders/email-designer/react').then((m) => m.EmailDesigner),
   {
     ssr: false,
     loading: () => (

@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from 'react'
 import { GripVertical, Plus, Save, Trash2, X } from 'lucide-react'
-import { Badge, Button, Checkbox, Input, Label, Select, cn } from '@appkitjs/ui'
+import { Badge, Button, Checkbox, Input, Label, Select, cn } from '@braedonsaunders/ui'
 import type { FieldKind } from './types'
 import type {
   CustomFieldDefinition,

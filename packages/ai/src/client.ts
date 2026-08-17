@@ -9,7 +9,7 @@ import {
   resolvePublicHost,
   secureFetch,
   validateOutboundRequestConfiguration,
-} from '@appkitjs/sync/egress'
+} from '@braedonsaunders/sync/egress'
 import { generateText, type LanguageModel } from 'ai'
 
 const MAX_AI_REQUEST_BYTES = 16 * 1024 * 1024

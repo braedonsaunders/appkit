@@ -6,10 +6,10 @@ import type {
   DashboardActionResult,
   DashboardLayout,
   DashboardLibraryItem,
-} from '@appkitjs/dashboard'
+} from '@braedonsaunders/dashboard'
 import {
   DashboardGrid,
-} from '@appkitjs/dashboard/react'
+} from '@braedonsaunders/dashboard/react'
 
 export function DashboardGridController({ initialLayout, nodes, items, mode, onSave, onReset, browserPersistence = false }: {
   initialLayout: DashboardLayout

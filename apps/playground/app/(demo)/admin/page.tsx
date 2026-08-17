@@ -12,7 +12,7 @@ import {
   Shield,
   Users,
 } from 'lucide-react'
-import { AdminHub, type AdminHubGroup, type LinkRender } from '@appkitjs/ui'
+import { AdminHub, type AdminHubGroup, type LinkRender } from '@braedonsaunders/ui'
 
 const nextLink: LinkRender = ({ href, children, className, title }) => (
   <Link href={href} className={className} title={title}>

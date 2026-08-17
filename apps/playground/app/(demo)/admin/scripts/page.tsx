@@ -1,4 +1,4 @@
-import { PageHeader } from '@appkitjs/ui'
+import { PageHeader } from '@braedonsaunders/ui'
 import { scriptsSnapshot } from '../../../../lib/server/scripts-demo'
 import { ScriptsWorkbench } from './workbench'
 
