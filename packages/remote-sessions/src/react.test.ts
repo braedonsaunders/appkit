@@ -28,3 +28,17 @@ test('TerminalSurface renders durable command and output entries', () => {
   assert.match(markup, /working tree clean/)
   assert.match(markup, /completed/)
 })
+
+test('TerminalSurface hides a meaningless relative cwd and renders host controls', () => {
+  const markup = renderToStaticMarkup(
+    React.createElement(TerminalSurface, {
+      title: 'Desk terminal',
+      cwd: '.',
+      entries: [],
+      headerActions: React.createElement('button', { type: 'button' }, 'Full screen'),
+    }),
+  )
+
+  assert.doesNotMatch(markup, /<code/)
+  assert.match(markup, /Full screen/)
+})

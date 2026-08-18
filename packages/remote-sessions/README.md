@@ -20,3 +20,5 @@ for audit; do not create a browser-only scrollback that can disagree with the
 run history. It opens at the latest output and continues following while the
 viewer remains near the bottom. Scrolling upward suspends that behavior so
 polling or new output cannot pull the viewer away from what they are reading.
+Hosts can add contextual controls such as fullscreen through `headerActions`;
+placeholder working directories (`.` and `./`) are intentionally hidden.

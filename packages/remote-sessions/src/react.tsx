@@ -17,6 +17,8 @@ export interface TerminalSurfaceProps {
   cwd?: string | null
   entries: readonly TerminalSurfaceEntry[]
   status?: 'idle' | 'running' | 'failed' | 'completed'
+  /** Host-owned controls rendered beside status, such as expand-to-fullscreen. */
+  headerActions?: React.ReactNode
   className?: string
   emptyLabel?: string
 }
@@ -41,12 +43,14 @@ export function TerminalSurface({
   cwd,
   entries,
   status = 'idle',
+  headerActions,
   className,
   emptyLabel = 'Terminal output will appear here when work begins.',
 }: TerminalSurfaceProps) {
   const outputRef = React.useRef<HTMLDivElement | null>(null)
   const followOutputRef = React.useRef(true)
   const lastEntry = entries.at(-1)
+  const visibleCwd = cwd && cwd !== '.' && cwd !== './' ? cwd : null
 
   React.useLayoutEffect(() => {
     const output = outputRef.current
@@ -64,8 +68,9 @@ export function TerminalSurface({
           <p className="truncate text-xs text-fg-muted">{subtitle}</p>
         </div>
         <div className="flex min-w-0 items-center gap-2">
-          {cwd ? <code className="max-w-48 truncate rounded-full border border-border px-2 py-0.5 text-xs text-fg-muted">{cwd}</code> : null}
+          {visibleCwd ? <code className="max-w-48 truncate rounded-full border border-border px-2 py-0.5 text-xs text-fg-muted">{visibleCwd}</code> : null}
           <span className="rounded-full border border-border px-2 py-0.5 text-xs capitalize text-fg-muted">{status}</span>
+          {headerActions}
         </div>
       </header>
       <div
