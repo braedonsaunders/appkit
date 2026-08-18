@@ -1,7 +1,16 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { Buffer } from 'node:buffer'
-import { createDeskHost, verifyDeskHost, type DeskStartOptions } from './host'
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import {
+  assertOverlayReflink,
+  createDeskHost,
+  verifyDeskHost,
+  verifyOverlayReflink,
+  type DeskStartOptions,
+} from './host'
 import type { DeskBackend, DeskConnectionChange, DeskMachine } from './backend'
 import { DEFAULT_KERNEL_CMDLINE, type DeskLaunchPlan } from './plan'
 import type { GuestCommand, GuestEventMessage } from './protocol'
@@ -18,7 +27,27 @@ interface FakeMachine {
   readonly shutdowns: number
 }
 
-function fakeMachine(deskId: string): FakeMachine {
+interface Deferred<T> {
+  promise: Promise<T>
+  resolve: (value: T | PromiseLike<T>) => void
+  reject: (reason?: unknown) => void
+}
+
+function deferred<T>(): Deferred<T> {
+  let resolve!: Deferred<T>['resolve']
+  let reject!: Deferred<T>['reject']
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise
+    reject = rejectPromise
+  })
+  return { promise, resolve, reject }
+}
+
+function nextTurn(): Promise<void> {
+  return new Promise((resolvePromise) => setImmediate(resolvePromise))
+}
+
+function fakeMachine(deskId: string, shutdown?: () => Promise<void>): FakeMachine {
   const requests: GuestCommand[] = []
   const listeners = new Set<(event: GuestEventMessage) => void>()
   const watchers = new Set<(change: DeskConnectionChange) => void>()
@@ -75,6 +104,7 @@ function fakeMachine(deskId: string): FakeMachine {
     },
     async shutdown() {
       shutdowns += 1
+      await shutdown?.()
     },
   }
   return {
@@ -92,13 +122,18 @@ function fakeMachine(deskId: string): FakeMachine {
   }
 }
 
-function fakeBackendFactory() {
+function fakeBackendFactory(options: {
+  beforeBoot?: (plan: DeskLaunchPlan, index: number) => Promise<void>
+  shutdown?: (plan: DeskLaunchPlan, index: number) => Promise<void>
+} = {}) {
   const machines: FakeMachine[] = []
   const plans: DeskLaunchPlan[] = []
   const backend: DeskBackend = {
     async boot(plan) {
       plans.push(plan)
-      const machine = fakeMachine(plan.deskId)
+      const index = plans.length - 1
+      await options.beforeBoot?.(plan, index)
+      const machine = fakeMachine(plan.deskId, () => options.shutdown?.(plan, index) ?? Promise.resolve())
       machines.push(machine)
       return machine.machine
     },
@@ -113,11 +148,16 @@ function makeHost(overrides: {
   policy?: DeskPorts['policy']
   backend?: DeskBackend
   kernelCmdline?: string
+  minFreeBytes?: number
+  freeBytes?: (path: string) => Promise<number>
+  trimOnSuspend?: boolean
 } = {}) {
   const events: DeskEvent[] = []
   const audits: DeskAuditEntry[] = []
   const clock = { value: 1_000_000 }
   const factory = fakeBackendFactory()
+  /** Every overlay path the host asked to reclaim, in order. */
+  const removed: string[] = []
   const host = createDeskHost({
     imageRoot: '/images',
     backend: overrides.backend ?? factory.backend,
@@ -137,8 +177,14 @@ function makeHost(overrides: {
     now: () => clock.value,
     pathExists: () => true,
     deviceExists: () => true,
+    removeOverlay: async (path) => {
+      removed.push(path)
+    },
+    ...(overrides.minFreeBytes === undefined ? {} : { minFreeBytes: overrides.minFreeBytes }),
+    ...(overrides.freeBytes === undefined ? {} : { freeBytes: overrides.freeBytes }),
+    ...(overrides.trimOnSuspend === undefined ? {} : { trimOnSuspend: overrides.trimOnSuspend }),
   })
-  return { host, events, audits, clock, ...factory }
+  return { host, events, audits, clock, removed, ...factory }
 }
 
 function startOptions(deskId: string): DeskStartOptions {
@@ -276,6 +322,81 @@ test('a suspended desk resumes from its stored options and old handles stay dead
   assert.equal(context.plans[1]?.overlay.path, '/images/overlays/agent-1.qcow2')
 
   await assert.rejects(context.host.resume('agent-unknown'), /Unknown desk/)
+})
+
+test('concurrent starts for one desk coalesce into one boot and one handle', async () => {
+  const bootEntered = deferred<void>()
+  const releaseBoot = deferred<void>()
+  const factory = fakeBackendFactory({
+    async beforeBoot(_plan, index) {
+      if (index !== 0) return
+      bootEntered.resolve()
+      await releaseBoot.promise
+    },
+  })
+  const context = makeHost({ backend: factory.backend })
+
+  const firstStart = context.host.start(startOptions('agent-1'))
+  await bootEntered.promise
+  const secondStart = context.host.start(startOptions('agent-1'))
+  await nextTurn()
+
+  assert.equal(factory.plans.length, 1, 'the second start must join the first transition')
+  releaseBoot.resolve()
+  const [first, second] = await Promise.all([firstStart, secondStart])
+  assert.equal(first, second)
+  assert.equal(factory.machines.length, 1)
+})
+
+test('concurrent resumes for one suspended desk coalesce into one boot and one handle', async () => {
+  const factory = fakeBackendFactory()
+  const context = makeHost({ backend: factory.backend })
+  await context.host.start(startOptions('agent-1'))
+  await context.host.suspend('agent-1')
+
+  const [first, second] = await Promise.all([
+    context.host.resume('agent-1'),
+    context.host.resume('agent-1'),
+  ])
+
+  assert.equal(first, second)
+  assert.equal(factory.plans.length, 2, 'initial boot plus exactly one resumed boot')
+  assert.equal(factory.machines.length, 2)
+})
+
+test('connection-loss teardown finishes shutdown before a simultaneous resume boots', async () => {
+  const shutdownEntered = deferred<void>()
+  const releaseShutdown = deferred<void>()
+  const factory = fakeBackendFactory({
+    async shutdown(_plan, index) {
+      if (index !== 0) return
+      shutdownEntered.resolve()
+      await releaseShutdown.promise
+    },
+  })
+  const context = makeHost({ backend: factory.backend, trimOnSuspend: false })
+  const original = await context.host.start(startOptions('agent-1'))
+  const originalMachine = factory.machines[0]
+  assert.ok(originalMachine)
+
+  originalMachine.announce({
+    state: 'lost',
+    deskId: 'agent-1',
+    reason: 'guest connection could not be recovered',
+  })
+  await shutdownEntered.promise
+
+  const resumedPromise = context.host.resume('agent-1')
+  await nextTurn()
+  assert.equal(factory.plans.length, 1, 'no replacement may boot while the old VMM still runs')
+  assert.equal(context.host.stats().suspended, 0, 'a running VMM is not yet suspended')
+
+  releaseShutdown.resolve()
+  const resumed = await resumedPromise
+  assert.equal(factory.plans.length, 2)
+  assert.equal(originalMachine.shutdowns, 1)
+  assert.notEqual(resumed, original)
+  assert.equal((await resumed.exec({ command: '/bin/true' })).exitCode, 0)
 })
 
 test('a reconnect is visible to an operator and ends the streams the guest lost', async () => {
@@ -772,4 +893,308 @@ test('verifyDeskHost throws when the host itself is unusable', async () => {
     }),
     /could not boot a probe VM/,
   )
+})
+
+test('destroying a desk reclaims its overlay', async () => {
+  const context = makeHost()
+  await context.host.start(startOptions('agent-1'))
+
+  await context.host.destroy('agent-1')
+
+  assert.deepEqual(context.removed, ['/images/overlays/agent-1.qcow2'])
+})
+
+test('suspending a desk KEEPS its overlay, because the overlay is the suspended desk', async () => {
+  const context = makeHost()
+  await context.host.start(startOptions('agent-1'))
+
+  await context.host.suspend('agent-1')
+  assert.deepEqual(context.removed, [], 'suspend must never touch the disk')
+
+  // And the desk is still resumable onto the very same disk.
+  await context.host.resume('agent-1')
+  assert.deepEqual(context.removed, [])
+  assert.equal(context.plans.length, 2)
+  assert.equal(context.plans[1]?.overlay.path, '/images/overlays/agent-1.qcow2')
+})
+
+test('the idle/lease sweep suspends without reclaiming any overlay', async () => {
+  const context = makeHost({ idleSuspendMs: 1_000 })
+  await context.host.start(startOptions('agent-1'))
+
+  context.clock.value += 5_000
+  const swept = await context.host.sweep()
+
+  assert.equal(swept, 1)
+  assert.deepEqual(context.removed, [], 'a swept desk is suspended, not destroyed')
+})
+
+test('destroy reclaims the overlay only after the machine has stopped', async () => {
+  const context = makeHost()
+  await context.host.start(startOptions('agent-1'))
+  const machine = context.machines[0]
+  assert.ok(machine)
+
+  await context.host.destroy('agent-1')
+
+  // Unlinking under a live VMM would leave the guest writing an orphaned
+  // inode, so the shutdown must have happened before the reclaim.
+  assert.equal(machine.shutdowns, 1)
+  assert.deepEqual(context.removed, ['/images/overlays/agent-1.qcow2'])
+})
+
+test('destroying an unknown desk reclaims nothing', async () => {
+  const context = makeHost()
+  await context.host.destroy('never-existed')
+  assert.deepEqual(context.removed, [])
+})
+
+test('a desk is refused when the overlay filesystem is below its headroom floor', async () => {
+  const context = makeHost({
+    minFreeBytes: 10_000_000_000,
+    freeBytes: async () => 1_000_000_000,
+  })
+
+  await assert.rejects(
+    () => context.host.start(startOptions('agent-1')),
+    /below the 10000000000-byte floor/,
+  )
+  // Refused before anything booted: no plan, no VM, no half-made overlay.
+  assert.equal(context.plans.length, 0)
+})
+
+test('a desk is admitted when the overlay filesystem has headroom', async () => {
+  const context = makeHost({
+    minFreeBytes: 1_000_000_000,
+    freeBytes: async () => 40_000_000_000,
+  })
+
+  await context.host.start(startOptions('agent-1'))
+  assert.equal(context.plans.length, 1)
+})
+
+test('an unreadable filesystem fails the free-space check OPEN rather than refusing the desk', async () => {
+  const context = makeHost({
+    minFreeBytes: 1_000_000_000,
+    freeBytes: async () => {
+      throw new Error('statfs exploded')
+    },
+  })
+
+  await context.host.start(startOptions('agent-1'))
+  assert.equal(context.plans.length, 1)
+  assert.match(String(context.host.stats().lastError), /statfs exploded/)
+})
+
+test('a failed unlink still drops the record and is reported rather than thrown', async () => {
+  const events: DeskEvent[] = []
+  const factory = fakeBackendFactory()
+  const host = createDeskHost({
+    imageRoot: '/images',
+    backend: factory.backend,
+    ports: { onEvent: (event) => events.push(event), audit: () => undefined },
+    pathExists: () => true,
+    deviceExists: () => true,
+    removeOverlay: async () => {
+      throw new Error('device or resource busy')
+    },
+  })
+  await host.start(startOptions('agent-1'))
+
+  await host.destroy('agent-1')
+
+  assert.match(String(host.stats().lastError), /Overlay was not reclaimed for agent-1/)
+  // The desk is gone from the ledger even though its file survived, so it
+  // cannot be leased again while a stale disk sits there.
+  await assert.rejects(() => host.resume('agent-1'), /Unknown desk/)
+})
+
+test('the reflink probe reports support when cp --reflink=always succeeds', async () => {
+  const attempts: Array<[string, string]> = []
+  const check = await verifyOverlayReflink({
+    overlayDirectory: tmpdir(),
+    idFactory: () => 'probe',
+    copy: async (source, destination) => {
+      attempts.push([source, destination])
+    },
+  })
+
+  assert.equal(check.supported, true)
+  assert.equal(attempts.length, 1)
+  assert.match(String(attempts[0]?.[0]), /\.reflink-probe-probe$/)
+})
+
+test('the reflink probe reports NO support when cp refuses to clone, carrying the reason', async () => {
+  const check = await verifyOverlayReflink({
+    overlayDirectory: tmpdir(),
+    idFactory: () => 'probe',
+    copy: async () => {
+      throw new Error('failed to clone: Operation not supported')
+    },
+  })
+
+  assert.equal(check.supported, false)
+  assert.match(check.detail, /Operation not supported/)
+})
+
+test('the reflink probe cleans up both of its files whichever way it goes', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'reflink-'))
+  try {
+    await verifyOverlayReflink({
+      overlayDirectory: directory,
+      idFactory: () => 'probe',
+      copy: async (_source, destination) => {
+        await writeFile(destination, 'clone')
+      },
+    })
+    assert.deepEqual(await readdir(directory), [], 'probe files must not be left behind')
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test('asserting reflink support throws loudly, naming the cost, on a filesystem without it', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'reflink-'))
+  try {
+    await assert.rejects(
+      () =>
+        assertOverlayReflink({
+          overlayDirectory: directory,
+          idFactory: () => 'probe',
+          copy: async () => {
+            throw new Error('Operation not supported')
+          },
+        }),
+      /FULL-COPY the base image/,
+    )
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test('asserting reflink support passes through the check on a filesystem with it', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'reflink-'))
+  try {
+    const check = await assertOverlayReflink({
+      overlayDirectory: directory,
+      idFactory: () => 'probe',
+      copy: async () => undefined,
+    })
+    assert.equal(check.supported, true)
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test('an unwritable overlay directory is reported as a broken deployment, not as a missing reflink', async () => {
+  await assert.rejects(
+    () =>
+      verifyOverlayReflink({
+        overlayDirectory: '/definitely/not/a/real/directory',
+        idFactory: () => 'probe',
+        copy: async () => undefined,
+      }),
+    /could not be written to, so reflink support could not be determined/,
+  )
+})
+
+test('end to end on a real filesystem: suspend preserves the overlay and its contents, destroy unlinks it', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'desk-overlays-'))
+  const overlayPath = join(directory, 'agent-1.raw')
+  try {
+    const factory = fakeBackendFactory()
+    // No removeOverlay override: this exercises the real rm() the host ships with.
+    const host = createDeskHost({
+      imageRoot: '/images',
+      backend: factory.backend,
+      ports: { onEvent: () => undefined, audit: () => undefined },
+      pathExists: () => true,
+      deviceExists: () => true,
+    })
+    const options: DeskStartOptions = {
+      deskId: 'agent-1',
+      baseImage: '/images/base.raw',
+      overlayPath,
+    }
+    // Stand in for the disk a booted desk would have written.
+    await writeFile(overlayPath, 'the desk’s persistent state')
+
+    await host.start(options)
+    await host.suspend('agent-1')
+    assert.equal(
+      await readFile(overlayPath, 'utf8'),
+      'the desk’s persistent state',
+      'a suspended desk must come back to the same disk, byte for byte',
+    )
+
+    await host.resume('agent-1')
+    assert.equal(await readFile(overlayPath, 'utf8'), 'the desk’s persistent state')
+
+    await host.destroy('agent-1')
+    assert.deepEqual(await readdir(directory), [], 'destroy must leave nothing behind')
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test('a desk is trimmed in the guest just before it suspends, so freed blocks go back to the host', async () => {
+  const context = makeHost()
+  await context.host.start(startOptions('agent-1'))
+  const machine = context.machines[0]
+  assert.ok(machine)
+
+  await context.host.suspend('agent-1')
+
+  const trim = machine.requests.find((request) => request.op === 'exec')
+  assert.ok(trim?.op === 'exec', 'suspend must ask the guest to trim')
+  assert.equal(trim.command, '/usr/sbin/fstrim')
+  assert.deepEqual(trim.args, ['/'])
+  // Trim while the guest is still there to answer, not after it is gone.
+  assert.equal(machine.shutdowns, 1)
+})
+
+test('the sweep trims too, since an idle-suspended desk is the common way a desk parks', async () => {
+  const context = makeHost({ idleSuspendMs: 1_000 })
+  await context.host.start(startOptions('agent-1'))
+  const machine = context.machines[0]
+  assert.ok(machine)
+
+  context.clock.value += 5_000
+  await context.host.sweep()
+
+  assert.ok(machine.requests.some((request) => request.op === 'exec'))
+})
+
+test('a guest that cannot be trimmed still suspends promptly, with the failure reported', async () => {
+  const factory = fakeBackendFactory()
+  const failing: DeskBackend = {
+    async boot(plan) {
+      const machine = await factory.backend.boot(plan)
+      return {
+        ...machine,
+        async request(command) {
+          if (command.op === 'exec') throw new Error('guest is wedged')
+          return machine.request(command)
+        },
+      }
+    },
+  }
+  const context = makeHost({ backend: failing })
+  await context.host.start(startOptions('agent-1'))
+
+  await context.host.suspend('agent-1')
+
+  assert.match(String(context.host.stats().lastError), /Trim before suspend failed for agent-1/)
+  assert.equal(context.host.stats().resident, 0, 'the desk must still have suspended')
+})
+
+test('trimming can be turned off for a guest that has no fstrim', async () => {
+  const context = makeHost({ trimOnSuspend: false })
+  await context.host.start(startOptions('agent-1'))
+  const machine = context.machines[0]
+  assert.ok(machine)
+
+  await context.host.suspend('agent-1')
+
+  assert.equal(machine.requests.some((request) => request.op === 'exec'), false)
 })

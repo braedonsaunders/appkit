@@ -9,9 +9,10 @@
  * never touches a database and knows nothing about tenants or approvals.
  */
 import { existsSync } from 'node:fs'
-import { rm } from 'node:fs/promises'
+import { execFile } from 'node:child_process'
+import { rm, statfs, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { Buffer } from 'node:buffer'
 import {
@@ -55,6 +56,10 @@ import type {
 export const DEFAULT_CAPACITY = 4
 export const DEFAULT_IDLE_SUSPEND_MS = 5 * 60_000
 export const DEFAULT_LEASE_MS = 15 * 60_000
+/** The in-guest trim run before a desk suspends — see `trimGuest`. */
+export const DEFAULT_TRIM_COMMAND = '/usr/sbin/fstrim'
+export const DEFAULT_TRIM_ARGS: readonly string[] = ['/']
+export const DEFAULT_TRIM_TIMEOUT_MS = 60_000
 export const DEFAULT_CID_BASE = 100
 const MAX_BUFFERED_FRAMES = 60
 /**
@@ -114,6 +119,37 @@ export interface DeskHostOptions {
   now?: () => number
   pathExists?: (path: string) => boolean
   deviceExists?: (path: string) => boolean
+  /**
+   * Delete a destroyed desk's overlay. Injectable so the destroy path is
+   * testable without a filesystem; defaults to `rm(path, { force: true })`.
+   */
+  removeOverlay?: (path: string) => Promise<void>
+  /**
+   * Bytes that must remain free on the overlay filesystem AFTER admitting a
+   * desk. A desk whose overlay cannot be grown fails deep inside the guest —
+   * ENOSPC surfaces as a corrupt filesystem or a boot that hangs, which reads
+   * as a product bug rather than as a full disk. Refusing the lease up front
+   * turns that into one clear error. Zero disables the check.
+   */
+  minFreeBytes?: number
+  /**
+   * Free bytes on the filesystem holding `path`. Injectable for tests;
+   * defaults to `statfs`.
+   */
+  freeBytes?: (path: string) => Promise<number>
+  /**
+   * Run `fstrim` in the guest just before it suspends, returning the blocks it
+   * has freed to the host filesystem. On by default: an overlay that is never
+   * trimmed only grows. Set false for a guest without the binary, or one whose
+   * filesystem should never be discarded.
+   */
+  trimOnSuspend?: boolean
+  /** The in-guest trim binary. */
+  trimCommand?: string
+  /** Arguments for the trim binary; defaults to trimming the guest root. */
+  trimArgs?: readonly string[]
+  /** Bound on the trim; a slow trim must not hold up a suspend indefinitely. */
+  trimTimeoutMs?: number
 }
 
 export interface DeskStartOptions {
@@ -374,7 +410,7 @@ interface ScreenState {
 interface DeskRecord {
   deskId: string
   startOptions: DeskStartOptions
-  status: 'resident' | 'suspended'
+  status: 'resident' | 'suspending' | 'suspended'
   machine: DeskMachine | null
   epoch: number
   leaseDeadline: number
@@ -403,6 +439,13 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
   const now = options.now ?? Date.now
   const pathExists = options.pathExists ?? existsSync
   const deviceExists = options.deviceExists ?? existsSync
+  const removeOverlay = options.removeOverlay ?? ((path: string) => rm(path, { force: true }))
+  const freeBytes = options.freeBytes ?? defaultFreeBytes
+  const minFreeBytes = nonNegativeInteger(options.minFreeBytes ?? 0, 'minFreeBytes')
+  const trimOnSuspend = options.trimOnSuspend ?? true
+  const trimCommand = options.trimCommand ?? DEFAULT_TRIM_COMMAND
+  const trimArgs = options.trimArgs ?? DEFAULT_TRIM_ARGS
+  const trimTimeoutMs = positiveInteger(options.trimTimeoutMs ?? DEFAULT_TRIM_TIMEOUT_MS, 'trimTimeoutMs')
   const capacity = positiveInteger(options.capacity ?? DEFAULT_CAPACITY, 'capacity')
   const idleSuspendMs = positiveInteger(options.idleSuspendMs ?? DEFAULT_IDLE_SUSPEND_MS, 'idleSuspendMs')
   const defaultLeaseMs = positiveInteger(options.defaultLeaseMs ?? DEFAULT_LEASE_MS, 'defaultLeaseMs')
@@ -416,6 +459,14 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
   const kernelCmdline = options.kernelCmdline
 
   const records = new Map<string, DeskRecord>()
+  /**
+   * The last lifecycle transition scheduled for each desk. A desk may only
+   * have one VMM child touching its overlay, so boot and teardown are ordered
+   * on the desk identity rather than allowed to race through independent API
+   * calls. The stored tail always resolves; callers still receive their own
+   * operation's result or error.
+   */
+  const lifecycleTransitions = new Map<string, Promise<void>>()
   const queue: QueueEntry[] = []
   let occupied = 0
   let nextCid = positiveInteger(options.cidBase ?? DEFAULT_CID_BASE, 'cidBase')
@@ -428,6 +479,22 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
 
   function iso(timestamp: number): string {
     return new Date(timestamp).toISOString()
+  }
+
+  function serializeLifecycle<T>(deskId: string, transition: () => Promise<T>): Promise<T> {
+    const previous = lifecycleTransitions.get(deskId)
+    // Preserve the host's existing synchronous admission semantics when this
+    // desk has no transition in flight. Only conflicts need the promise tail;
+    // unrelated starts must still appear in queue stats before `start` returns.
+    const current = previous ? previous.then(transition, transition) : transition()
+    const tail = current.then(
+      () => undefined,
+      () => undefined,
+    )
+    lifecycleTransitions.set(deskId, tail)
+    return current.finally(() => {
+      if (lifecycleTransitions.get(deskId) === tail) lifecycleTransitions.delete(deskId)
+    })
   }
 
   function emit(record: DeskRecord, detail: DeskEventDetail): void {
@@ -525,8 +592,60 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     })
   }
 
-  async function teardown(record: DeskRecord): Promise<void> {
-    if (record.status !== 'resident') return
+  /**
+   * Stop the machine and keep the disk. This is the SUSPEND half of the
+   * lifecycle and it is shared by three callers — `suspend`, `sweep`, and
+   * `destroy` — so it must never delete, truncate, or rewrite the overlay.
+   *
+   * That is not a stylistic preference. For a suspended desk the overlay IS
+   * the desk: its home directory, its installed state, its half-written work.
+   * A desk that comes back from suspend with a fresh disk has silently lost
+   * everything, and the loss surfaces long after the code that caused it.
+   * Reclaiming the disk is the exclusive business of `reclaimOverlay`, which
+   * is called from exactly one place — `destroy` — where the caller has said
+   * the desk should cease to exist.
+   */
+  /**
+   * Hand the guest's freed blocks back to the host, as the last thing the
+   * guest does before it stops.
+   *
+   * An overlay only ever GROWS otherwise. A block the guest writes is
+   * allocated on the host filesystem forever; deleting the file inside the
+   * guest frees it in the guest's own filesystem and tells the host nothing,
+   * so a long-lived desk ratchets upward until the volume is full even though
+   * the guest reports itself half empty. `fstrim` is what closes that loop:
+   * it walks the guest filesystem's free space and issues discards, which
+   * Cloud Hypervisor's virtio-blk turns into hole-punches on the raw overlay.
+   *
+   * Suspend is the right moment for it. The image's own `fstrim.timer` fires
+   * WEEKLY, and a desk that idle-suspends after minutes is almost never up
+   * when that lands — so on a leased-and-parked desk the scheduled trim
+   * effectively never runs. Suspend, by contrast, is exactly when the guest
+   * has stopped needing its scratch and the host wants the space back.
+   *
+   * This does not violate the disk contract on `teardown`. `fstrim` discards
+   * only blocks the guest's filesystem already considers free; it cannot
+   * remove a suspended desk's state, and a desk resumed afterwards sees an
+   * identical filesystem. It is also strictly best-effort and bounded: a
+   * guest that is wedged, disconnected, or lacks the binary must still
+   * suspend promptly, so every failure here is swallowed into `lastError`.
+   */
+  async function trimGuest(record: DeskRecord, machine: DeskMachine): Promise<void> {
+    if (!trimOnSuspend) return
+    try {
+      await machine.request({
+        op: 'exec',
+        command: trimCommand,
+        args: trimArgs,
+        timeoutMs: trimTimeoutMs,
+      })
+    } catch (error) {
+      lastError = `Trim before suspend failed for ${record.deskId}: ${errorMessage(error)}`
+    }
+  }
+
+  async function teardown(record: DeskRecord): Promise<boolean> {
+    if (record.status !== 'resident') return false
     await endHandover(record, 'revoked')
     for (const stop of [...record.streamStops]) stop()
     record.streamStops.clear()
@@ -549,9 +668,13 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     record.timer = null
     const machine = record.machine
     record.machine = null
-    record.status = 'suspended'
+    // Do not advertise this desk as suspended until its VMM child is actually
+    // down. `serializeLifecycle` prevents a new boot from entering while this
+    // transitional state still owns the overlay.
+    record.status = 'suspending'
     record.handle = null
     if (machine) {
+      await trimGuest(record, machine)
       try {
         await machine.shutdown()
       } catch (error) {
@@ -560,7 +683,9 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     }
     lastSuspendedAt = iso(now())
     occupied -= 1
+    record.status = 'suspended'
     drainQueue()
+    return true
   }
 
   function drainQueue(): void {
@@ -590,7 +715,38 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     })
   }
 
+  /**
+   * Refuse a desk the overlay filesystem cannot afford. A reflink clone costs
+   * almost nothing at creation and then grows as the guest writes, so the
+   * moment that matters is not the `cp` — it is every write after it. Checking
+   * headroom here converts a mid-boot ENOSPC, which the guest reports as a
+   * corrupt disk or a hang, into one refusal naming the actual shortage.
+   */
+  async function admitDisk(overlayPath: string): Promise<void> {
+    if (minFreeBytes <= 0) return
+    let free: number
+    try {
+      free = await freeBytes(overlayPath)
+    } catch (error) {
+      // Fail OPEN on an unreadable filesystem: a desk refused because statfs
+      // hiccuped is a worse outcome than one admitted onto a disk that turns
+      // out to be full, which at least fails with a real disk error.
+      lastError = `Free-space check failed for ${overlayPath}: ${errorMessage(error)}`
+      return
+    }
+    if (free < minFreeBytes) {
+      throw new DeskError(
+        `Refusing to start a desk: the overlay filesystem holding ${overlayPath} has `
+          + `${free} bytes free, below the ${minFreeBytes}-byte floor. Reclaim destroyed `
+          + 'desks’ overlays or grow the volume before leasing another desk.',
+      )
+    }
+  }
+
   async function boot(deskId: string, startOptions: DeskStartOptions): Promise<DeskHandle> {
+    // Before the plan, so a full disk is reported as a full disk rather than
+    // as whatever the overlay copy fails with.
+    await admitDisk(startOptions.overlayPath)
     const plan = buildDeskLaunchPlan(
       {
         deskId,
@@ -739,7 +895,13 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     // is about. Suspending it frees the capacity slot and makes the next
     // `resume()` boot a healthy desk.
     lastError = change.reason
-    void teardown(record).catch((error: unknown) => {
+    void serializeLifecycle(record.deskId, async () => {
+      // The loss belongs to the epoch that registered this watcher. If an
+      // earlier queued transition already replaced that machine, this stale
+      // signal must not retire the fresh resident.
+      if (record.status !== 'resident' || record.epoch !== epoch) return
+      await teardown(record)
+    }).catch((error: unknown) => {
       lastError = errorMessage(error)
     })
   }
@@ -1218,48 +1380,86 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
 
   async function start(startOptions: DeskStartOptions): Promise<DeskHandle> {
     const deskId = cleanDeskId(startOptions.deskId)
-    const existing = records.get(deskId)
-    if (existing?.status === 'resident' && existing.handle) return existing.handle
-    return admit(() => boot(deskId, { ...startOptions, deskId }))
+    return serializeLifecycle(deskId, async () => {
+      const existing = records.get(deskId)
+      if (existing?.status === 'resident' && existing.handle) return existing.handle
+      return admit(() => boot(deskId, { ...startOptions, deskId }))
+    })
   }
 
   async function resume(deskId: string): Promise<DeskHandle> {
-    const record = records.get(cleanDeskId(deskId))
-    if (!record) throw new DeskError(`Unknown desk: ${deskId}`)
-    if (record.status === 'resident' && record.handle) return record.handle
-    return admit(() => boot(record.deskId, record.startOptions))
+    const id = cleanDeskId(deskId)
+    return serializeLifecycle(id, async () => {
+      const record = records.get(id)
+      if (!record) throw new DeskError(`Unknown desk: ${deskId}`)
+      if (record.status === 'resident' && record.handle) return record.handle
+      return admit(() => boot(record.deskId, record.startOptions))
+    })
   }
 
   async function suspend(deskId: string): Promise<void> {
-    const record = records.get(cleanDeskId(deskId))
-    if (!record) return
-    await teardown(record)
+    const id = cleanDeskId(deskId)
+    await serializeLifecycle(id, async () => {
+      const record = records.get(id)
+      if (!record) return
+      await teardown(record)
+    })
+  }
+
+  /**
+   * Delete a desk's overlay. The ONLY place in this module that removes a
+   * desk's disk, and it is reachable from `destroy` alone — see the contract
+   * on `teardown` for why suspend must never come near it.
+   *
+   * The record is dropped whether or not the unlink succeeds: a desk the
+   * caller has destroyed must not stay leaseable because its file was busy.
+   * A failed unlink is surfaced through `lastError` and leaves the file for
+   * the reaper rather than being retried here.
+   */
+  async function reclaimOverlay(record: DeskRecord): Promise<void> {
+    try {
+      await removeOverlay(record.startOptions.overlayPath)
+    } catch (error) {
+      lastError = `Overlay was not reclaimed for ${record.deskId}: ${errorMessage(error)}`
+    }
   }
 
   async function destroy(deskId: string): Promise<void> {
     const id = cleanDeskId(deskId)
-    const record = records.get(id)
-    if (!record) return
-    await teardown(record)
-    records.delete(id)
+    await serializeLifecycle(id, async () => {
+      const record = records.get(id)
+      if (!record) return
+      await teardown(record)
+      records.delete(id)
+      // Strictly after teardown: the VMM still has the file open until its child
+      // has exited, and unlinking underneath a live guest would leave the desk
+      // writing into an orphaned inode instead of failing loudly.
+      await reclaimOverlay(record)
+    })
   }
 
   async function sweep(): Promise<number> {
     const timestamp = now()
     let suspendedCount = 0
     for (const record of [...records.values()]) {
-      if (record.status !== 'resident') continue
-      const handover = record.screen?.handover
-      if (handover && handover.deadline <= timestamp) {
-        await endHandover(record, 'expired')
-      }
-      if (
-        record.leaseDeadline <= timestamp
-        || timestamp - record.lastActivityAt >= idleSuspendMs
-      ) {
-        await teardown(record)
-        suspendedCount += 1
-      }
+      const suspended = await serializeLifecycle(record.deskId, async () => {
+        // A destroy and a later start may have replaced a captured record
+        // before its turn in the sweep. Never apply the old deadline to the
+        // new desk that happens to share its id.
+        if (records.get(record.deskId) !== record || record.status !== 'resident') return false
+        const handover = record.screen?.handover
+        if (handover && handover.deadline <= timestamp) {
+          await endHandover(record, 'expired')
+        }
+        if (
+          record.leaseDeadline <= timestamp
+          || timestamp - record.lastActivityAt >= idleSuspendMs
+        ) {
+          return teardown(record)
+        }
+        return false
+      })
+      if (suspended) suspendedCount += 1
     }
     return suspendedCount
   }
@@ -1309,6 +1509,96 @@ export interface VerifyDeskHostOptions {
   pathExists?: (path: string) => boolean
   deviceExists?: (path: string) => boolean
   idFactory?: () => string
+}
+
+export interface OverlayReflinkCheck {
+  /** Whether `cp --reflink` produced a block-sharing clone in this directory. */
+  supported: boolean
+  overlayDirectory: string
+  /** Why the answer is what it is — the `cp` failure when unsupported. */
+  detail: string
+}
+
+/**
+ * Whether the overlay directory's filesystem can make reflink clones.
+ *
+ * This exists because `cp --reflink=auto` — what `buildDeskLaunchPlan` uses,
+ * deliberately, so a desk still boots on a filesystem without reflink — is
+ * SILENT when it falls back. On XFS or Btrfs a 20GB base clones instantly and
+ * costs kilobytes; on ext4 the identical command copies all 20GB, slowly, per
+ * desk. The failure is invisible until a disk sized for reflink sharing fills
+ * after two desks, which looks like a capacity bug rather than the filesystem
+ * choice it actually is.
+ *
+ * So the probe uses `--reflink=always`, which REFUSES to fall back, on a tiny
+ * throwaway file. Call it at startup and refuse to serve rather than discover
+ * this in production — see `assertOverlayReflink`.
+ */
+export async function verifyOverlayReflink(options: {
+  overlayDirectory: string
+  idFactory?: () => string
+  copy?: (source: string, destination: string) => Promise<void>
+}): Promise<OverlayReflinkCheck> {
+  const overlayDirectory = options.overlayDirectory
+  const idFactory = options.idFactory ?? randomUUID
+  const copy = options.copy ?? reflinkAlways
+  const token = idFactory()
+  const source = join(overlayDirectory, `.reflink-probe-${token}`)
+  const destination = join(overlayDirectory, `.reflink-probe-${token}.clone`)
+  try {
+    try {
+      await writeFile(source, 'reflink probe')
+    } catch (error) {
+      // A directory that cannot be written to is not a filesystem without
+      // reflink — it is a broken deployment, and reporting it as the former
+      // would send an operator to reformat a disk over a permissions bug.
+      throw new DeskError(
+        `The overlay directory ${overlayDirectory} could not be written to, so reflink `
+          + `support could not be determined: ${errorMessage(error)}`,
+      )
+    }
+    await copy(source, destination)
+    return { supported: true, overlayDirectory, detail: 'cp --reflink=always succeeded.' }
+  } catch (error) {
+    if (error instanceof DeskError) throw error
+    return { supported: false, overlayDirectory, detail: errorMessage(error) }
+  } finally {
+    await rm(source, { force: true }).catch(() => undefined)
+    await rm(destination, { force: true }).catch(() => undefined)
+  }
+}
+
+/**
+ * Fail loudly at startup on a filesystem without reflink support, naming the
+ * cost so the operator can act on it.
+ */
+export async function assertOverlayReflink(options: {
+  overlayDirectory: string
+  idFactory?: () => string
+  copy?: (source: string, destination: string) => Promise<void>
+}): Promise<OverlayReflinkCheck> {
+  const check = await verifyOverlayReflink(options)
+  if (!check.supported) {
+    throw new DeskError(
+      `The overlay directory ${check.overlayDirectory} is on a filesystem without reflink `
+        + 'support, so every desk would FULL-COPY the base image instead of sharing its '
+        + 'blocks — gigabytes and minutes per desk, and a disk sized for sharing fills after '
+        + `a handful of them. Put the overlay directory on XFS or Btrfs. Probe said: ${check.detail}`,
+    )
+  }
+  return check
+}
+
+async function reflinkAlways(source: string, destination: string): Promise<void> {
+  await new Promise<void>((resolvePromise, rejectPromise) => {
+    execFile('cp', ['--reflink=always', source, destination], (error, _stdout, stderr) => {
+      if (error) {
+        rejectPromise(new Error(stderr.trim() || errorMessage(error)))
+        return
+      }
+      resolvePromise()
+    })
+  })
 }
 
 export interface DeskHostVerification {
@@ -1425,6 +1715,22 @@ function positiveInteger(value: number, field: string): number {
     throw new DeskError(`${field} must be a positive integer.`)
   }
   return value
+}
+
+function nonNegativeInteger(value: number, field: string): number {
+  if (!Number.isInteger(value) || value < 0) {
+    throw new DeskError(`${field} must be an integer of zero or more.`)
+  }
+  return value
+}
+
+/**
+ * Free bytes on the filesystem holding `path`, measured against the directory
+ * so the answer is the same before and after the overlay itself exists.
+ */
+async function defaultFreeBytes(path: string): Promise<number> {
+  const stats = await statfs(dirname(path))
+  return Number(stats.bsize) * Number(stats.bavail)
 }
 
 function errorMessage(error: unknown): string {

@@ -8,6 +8,10 @@
 
 ## Unreleased
 
+- Serialize lifecycle transitions per desk so a start or resume cannot boot against an overlay
+  whose prior Cloud Hypervisor child is still shutting down. Concurrent starts and resumes now
+  coalesce, and a desk is reported suspended only after shutdown completes.
+
 - Add exact SHA-256 frame identity/deduplication, a bounded and verified
   provider-neutral home export/import contract with atomic staging semantics,
   and an executable backend lifecycle conformance check.
@@ -33,7 +37,7 @@
   the guest and whether the guest ran it is not knowable from the host — an `exec` may have sent
   mail, a `click` may have landed. Replaying a side-effecting operation to paper over a blip is the
   wrong kind of resilience, so the ambiguity is named and the caller decides. A request that
-  arrives *during* a reconnect instead WAITS for it, up to the same window, and one that fails
+  arrives _during_ a reconnect instead WAITS for it, up to the same window, and one that fails
   after the desk is lost rejects with a plain `DeskError` — it never left the host, so repeating it
   is safe. The difference between those two errors is the whole contract.
 
@@ -45,6 +49,11 @@
   clears the coordinate anchor, since the screen behind it may be gone or a different size. An
   active handover is deliberately left alone: unmasking a session a human may still be in fails in
   the wrong direction, so it expires on its TTL.
+
+- `createCloudHypervisorBackend` accepts a `now` clock, as `createDeskHost` already did. Connect and
+  reconnect windows are deadlines, so a test drives one to its end by moving the clock instead of
+  sleeping for it and hoping the machine it runs on is fast enough. Defaults to `Date.now`; nothing
+  about a real desk changes.
 
 - **Reconnects are visible.** `DeskHostStats` gains `reconnects`, `lastReconnectAt` and
   `lastReconnectDeskId`, and every reconnect also writes `lastError` with the downtime and the
