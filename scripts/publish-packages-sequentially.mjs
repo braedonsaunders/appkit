@@ -2,6 +2,7 @@ import { readdir, readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawn } from 'node:child_process'
+import { orderManifestsForPublication } from './publish-order.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const packagesRoot = join(root, 'packages')
@@ -72,10 +73,10 @@ for (const entry of await readdir(packagesRoot, { withFileTypes: true })) {
   manifests.push({ directory, name: manifest.name, version: manifest.version })
 }
 
-manifests.sort((left, right) => left.name.localeCompare(right.name))
+const orderedManifests = orderManifestsForPublication(manifests)
 
 let lastPublishAt = 0
-for (const manifest of manifests) {
+for (const manifest of orderedManifests) {
   if (await isPublished(manifest.name, manifest.version)) {
     process.stdout.write(`Skipping published ${manifest.name}@${manifest.version}.\n`)
     continue
