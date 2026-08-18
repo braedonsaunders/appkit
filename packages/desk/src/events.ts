@@ -78,7 +78,7 @@ export type DeskEventDetail =
       signal: string | null
     }
   | { kind: 'app_launch'; appId: string; args: readonly string[] }
-  | { kind: 'click'; x: number; y: number; button: DeskPointerButton }
+  | { kind: 'click'; x: number; y: number; button: DeskPointerButton; clicks: 1 | 2 }
   | { kind: 'type'; text: string }
   | { kind: 'key'; combo: string }
   | { kind: 'scroll'; x: number; y: number; dx: number; dy: number }

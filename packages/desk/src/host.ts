@@ -244,7 +244,7 @@ export interface DeskVideoChunk {
 
 export interface DeskScreenInput {
   move(x: number, y: number): Promise<void>
-  click(x: number, y: number, button?: DeskPointerButton): Promise<void>
+  click(x: number, y: number, button?: DeskPointerButton, clicks?: 1 | 2): Promise<void>
   type(text: string): Promise<void>
   key(combo: string): Promise<void>
   scroll(x: number, y: number, dx: number, dy: number): Promise<void>
@@ -1100,10 +1100,11 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
           assertCoordinates(record, [{ x, y }])
           await sendInput(null, { type: 'move', x, y })
         },
-        async click(x, y, button = 'left') {
+        async click(x, y, button = 'left', clicks = 1) {
           requireScreen(record, epoch)
           assertCoordinates(record, [{ x, y }])
-          await sendInput({ kind: 'click', x, y, button }, { type: 'click', x, y, button })
+          if (clicks !== 1 && clicks !== 2) throw new DeskError('clicks must be 1 or 2.')
+          await sendInput({ kind: 'click', x, y, button, clicks }, { type: 'click', x, y, button, clicks })
         },
         async type(text) {
           requireScreen(record, epoch)

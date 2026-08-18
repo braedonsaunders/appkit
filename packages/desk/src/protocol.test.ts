@@ -76,6 +76,14 @@ test('guest requests parse strictly and unknown ops are rejected', () => {
     () => parseGuestRequest({ id: 'r', op: 'input', input: { type: 'hover', x: 1, y: 1 } }),
     /Unknown input type/,
   )
+  assert.deepEqual(
+    parseGuestRequest({ id: 'r', op: 'input', input: { type: 'click', x: 1, y: 2, button: 'left', clicks: 2 } }),
+    { id: 'r', op: 'input', input: { type: 'click', x: 1, y: 2, button: 'left', clicks: 2 } },
+  )
+  assert.throws(
+    () => parseGuestRequest({ id: 'r', op: 'input', input: { type: 'click', x: 1, y: 2, button: 'left', clicks: 3 } }),
+    /clicks must be 1 or 2/,
+  )
   assert.throws(
     () => parseGuestRequest({ id: 'r', op: 'handover-begin', ttlMs: 1, scope: 'everything' }),
     /scope/,

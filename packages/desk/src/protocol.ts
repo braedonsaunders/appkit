@@ -39,7 +39,7 @@ export class DeskProtocolError extends Error {
 
 export type GuestInput =
   | { type: 'move'; x: number; y: number }
-  | { type: 'click'; x: number; y: number; button: DeskPointerButton }
+  | { type: 'click'; x: number; y: number; button: DeskPointerButton; clicks: 1 | 2 }
   | { type: 'type'; text: string }
   | { type: 'key'; combo: string }
   | { type: 'scroll'; x: number; y: number; dx: number; dy: number }
@@ -320,6 +320,7 @@ export function parseGuestInput(value: unknown): GuestInput {
         x: requireCoordinate(record, 'x'),
         y: requireCoordinate(record, 'y'),
         button: parsePointerButton(record.button),
+        clicks: parseClickCount(record.clicks),
       }
     case 'type':
       return { type, text: requireString(record, 'text') }
@@ -338,6 +339,12 @@ export function parseGuestInput(value: unknown): GuestInput {
     default:
       throw new DeskProtocolError(`Unknown input type: ${type}`)
   }
+}
+
+function parseClickCount(value: unknown): 1 | 2 {
+  if (value === undefined || value === 1) return 1
+  if (value === 2) return 2
+  throw new DeskProtocolError('clicks must be 1 or 2.')
 }
 
 /** Validate a guest-to-host message: a correlated response or an event. */

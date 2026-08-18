@@ -519,7 +519,7 @@ test('coordinate input is enforced against the pixel space of the most recent vi
   assert.equal(observation.height, 900)
   assert.deepEqual(observation.png, Buffer.from('pixels'))
 
-  await screen.input.click(1279, 899)
+  await screen.input.click(1279, 899, 'left', 2)
   await assert.rejects(screen.input.click(1280, 899), /outside the most recent view/)
   await assert.rejects(screen.input.move(10, 900), /outside the most recent view/)
   await assert.rejects(screen.input.drag({ x: 5, y: 5 }, { x: 6, y: 1200 }), /outside/)
@@ -528,6 +528,14 @@ test('coordinate input is enforced against the pixel space of the most recent vi
   assert.ok(clickEvent?.kind === 'click')
   assert.equal(clickEvent.x, 1279)
   assert.equal(clickEvent.y, 899)
+  assert.equal(clickEvent.clicks, 2)
+  const clickRequest = context.machines[0]?.requests.find(
+    (request) => request.op === 'input' && request.input.type === 'click',
+  )
+  assert.deepEqual(clickRequest, {
+    op: 'input',
+    input: { type: 'click', x: 1279, y: 899, button: 'left', clicks: 2 },
+  })
 })
 
 test('input injected during a handover reaches the guest but never the recorded events', async () => {
