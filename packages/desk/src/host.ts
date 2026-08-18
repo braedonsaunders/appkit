@@ -883,7 +883,15 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       // space of a screen that no longer exists lands somewhere nobody chose.
       // Input then refuses until the caller observes again — the existing
       // contract, not a new one.
-      if (record.screen) record.screen.lastObservation = null
+      if (record.screen) {
+        record.screen.lastObservation = null
+        // The reconnected channel proves the machine is alive, not that the
+        // guest compositor survived. Treat the screen as needing an explicit
+        // restart so screen.start() reaches the guest instead of returning the
+        // stale handle forever. Keep ScreenState itself so an active handover
+        // remains masked in the safe direction until its explicit/TTL end.
+        record.screen.running = false
+      }
       // A handover is deliberately NOT ended here. If a human is still on that
       // screen, dropping the mask would start recording them; letting the TTL
       // expire it fails in the safe direction.
@@ -994,6 +1002,21 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         }
         touch(record)
         await machine.request({ op: 'screen-start', width: cleanWidth, height: cleanHeight })
+        const existing = record.screen
+        if (existing) {
+          // A guest-agent reconnect invalidates what the host knew about the
+          // compositor without necessarily ending an active handover. Reuse
+          // the same handle so existing consumers can recover, and retain the
+          // handover mask until its explicit/TTL end rather than briefly
+          // exposing a human's private input while the screen restarts.
+          existing.running = true
+          existing.width = cleanWidth
+          existing.height = cleanHeight
+          existing.lastObservation = null
+          existing.lastFocusedId = null
+          emit(record, { kind: 'screen_open', width: cleanWidth, height: cleanHeight })
+          return existing.handle
+        }
         const handle = makeScreenHandle(record, epoch)
         record.screen = {
           running: true,

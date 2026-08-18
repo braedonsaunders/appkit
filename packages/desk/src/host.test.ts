@@ -436,8 +436,20 @@ test('a reconnect is visible to an operator and ends the streams the guest lost'
   // The guest's capture did not come back with the channel, so the consumer
   // is told the stream is over instead of waiting on frames forever.
   assert.equal((await iterator.next()).done, true)
-  // And the pixel space it was aiming in is no longer trustworthy.
-  await assert.rejects(screen.input.click(10, 10), /frame of reference/)
+  // And the screen and pixel space it was aiming in are no longer trusted.
+  await assert.rejects(screen.input.click(10, 10), /no screen running/)
+  // The compositor is not assumed to have survived the guest-agent restart.
+  // A fresh start must reach the guest rather than return the stale handle
+  // forever, while keeping that handle stable for existing consumers.
+  assert.equal(handle.screen.running, false)
+  const restarted = await handle.screen.start({ width: 1280, height: 900 })
+  assert.equal(restarted, screen)
+  assert.equal(handle.screen.running, true)
+  assert.deepEqual(
+    machine.requests.filter((request) => request.op === 'screen-start').map((request) => request.op),
+    ['screen-start', 'screen-start'],
+  )
+  assert.equal((await restarted.observe()).width, 1280)
   // The desk itself is still usable, which is the entire point.
   assert.equal((await handle.exec({ command: '/bin/true' })).exitCode, 0)
 })
