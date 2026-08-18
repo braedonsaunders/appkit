@@ -162,6 +162,20 @@ tests. `/client`, `/next`, and `/react` provide optional framework and UI layers
 Applications inject email delivery, brand rendering, route authorization,
 tenant selection, and any post-acceptance domain effect.
 
+**Raw SQL workbench (`@braedonsaunders/appkit-query-console/react`)** — `QueryConsole`
+is the extracted governed-query workspace: resizable SQL editor, selection
+execution, live searchable schema tree, insert/browse actions, saved snippets,
+deduplicated history, row limits, sortable/filterable results, and hardened CSV
+copy/download. The root supplies the result/schema contracts, response
+validation, source-compatible read-only statement precheck, browser/memory
+persistence, and an HTTP adapter. Applications must keep authentication,
+permission and scope checks, governed views, tenant-bound database execution,
+SELECT-only role, read-only transaction, timeout, cap, and audit inside their
+adapter. `validateReadOnlySql` is defense in depth and is never the security
+boundary. Import `@braedonsaunders/appkit-query-console/styles.css` with the UI
+stylesheet. The runnable `/query-console` proof uses a real read-only in-memory
+SQL database without privileged mutations.
+
 ## 3. Composition patterns
 
 - **Records are flyout-first.** Create/view/edit a record in a `Drawer` /

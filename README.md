@@ -189,6 +189,7 @@ product’s record names, routes, queries, or permissions inside AppKit.
 | `@braedonsaunders/appkit-api`       | API-key authorization, idempotent writes, typed public errors, and OpenAPI descriptions.                                    |
 | `@braedonsaunders/appkit-sandbox`   | Shared QuickJS isolation with memory, stack, deadline, governance, frozen-input, host-function, log, and structured-fault contracts. |
 | `@braedonsaunders/appkit-endpoints` | Resource-bounded `handler(request)` programs with storage, records, and application-governed host capabilities.             |
+| `@braedonsaunders/appkit-query-console` | Governed raw-SQL workbench with live schema discovery, reusable snippets, local or injected persistence, sortable/filterable results, CSV export, and a host-owned execution boundary. |
 | `@braedonsaunders/appkit-scripts`   | Event, scheduled, endpoint, bulk, and opaque-origin client scripts with a production CodeMirror editor, run/log inspection, vetoes, allowed mutations, cron, jobs, auditing, Drizzle storage, and a bound cutover runtime. |
 | `@braedonsaunders/appkit-apps`      | Installable app manifests and ZIPs, a nested file browser and syntax editors, immutable versions, storage, capabilities, QuickJS backends, opaque-origin preview, bridge SDK, run inspection, marketplace, memory, Drizzle, and bound lifecycle adapters. |
 | `@braedonsaunders/appkit-ai`        | Provider-neutral bounded agents, streaming React UI, and production analysis, extraction, document, vision, writing, digest, and model helpers. |
@@ -262,6 +263,10 @@ The core of each feature remains usable without its heaviest dependencies:
   ├─ /jobs                 queue-neutral scheduled/bulk worker handler
   ├─ /react                searchable list and full-screen authoring drawer
   └─ /schema /drizzle      definitions, schedules, and run history
+
+@braedonsaunders/appkit-query-console      governed raw-SQL workbench
+  ├─ /react                schema, snippets, history, editor, and results UI
+  └─ /styles.css           optional-package Tailwind source registration
 ```
 
 The repository enforces this architecture. Boundary checks reject runtime

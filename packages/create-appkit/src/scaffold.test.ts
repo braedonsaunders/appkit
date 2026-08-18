@@ -104,3 +104,26 @@ test('storage capability installs the object runtime and attachment workspace pa
     await rm(root, { recursive: true, force: true })
   }
 })
+
+test('extensions capability includes the governed query console and its styles', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'create-appkit-extensions-'))
+  const target = join(root, 'workspace')
+  try {
+    const result = await scaffoldProject({
+      directory: target,
+      features: ['extensions'],
+      install: false,
+      initializeGit: false,
+    })
+    assert.ok(result.packages.includes('@braedonsaunders/appkit-query-console'))
+    const manifest = await readGeneratedPackage(target)
+    const dependencies = manifest.dependencies as Record<string, string>
+    assert.equal(dependencies['@braedonsaunders/appkit-query-console'], 'latest')
+    assert.match(
+      await readFile(join(target, 'src/app/globals.css'), 'utf8'),
+      /@braedonsaunders\/appkit-query-console\/styles\.css/,
+    )
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})

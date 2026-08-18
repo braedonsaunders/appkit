@@ -35,6 +35,10 @@ imports it improves.
 - `packages/analytics` — the app-agnostic dashboard query core: semantic
   catalogues, safe formula AST/parser, parameter-bound Postgres compiler, result
   contract, and visualization registry. Apps provide domain sources/fields.
+- `packages/query-console` — the governed raw-SQL workbench: schema discovery,
+  snippets/history, sortable results, CSV export, and portable HTTP/storage
+  adapters. Apps retain authorization, tenant scope, governed views, and the
+  database-enforced read-only executor.
 - `packages/dashboard` — the optional dashboard feature: dependency-light
   layouts/card types at the root, React Grid/Card Studio under `/react`, and
   feature-owned Drizzle persistence under `/schema`.

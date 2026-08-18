@@ -41,6 +41,7 @@
     "@braedonsaunders/appkit-office": "workspace:*",
     "@braedonsaunders/appkit-pdf": "workspace:*",
     "@braedonsaunders/appkit-process-sandbox": "workspace:*",
+    "@braedonsaunders/appkit-query-console": "workspace:*",
     "@braedonsaunders/appkit-reports": "workspace:*",
     "@braedonsaunders/appkit-scene": "workspace:*",
     "@braedonsaunders/appkit-scheduling": "workspace:*",

@@ -34,6 +34,7 @@ import oauth from '../../../../packages/oauth/package.json'
 import office from '../../../../packages/office/package.json'
 import pdf from '../../../../packages/pdf/package.json'
 import processSandbox from '../../../../packages/process-sandbox/package.json'
+import queryConsole from '../../../../packages/query-console/package.json'
 import reports from '../../../../packages/reports/package.json'
 import sandbox from '../../../../packages/sandbox/package.json'
 import scene from '../../../../packages/scene/package.json'
@@ -136,7 +137,7 @@ export const PACKAGE_CATEGORIES: readonly {
     description: 'AI, governed code, installable apps, workflows, integrations, and sync.',
     names: [
       '@braedonsaunders/appkit-ai', '@braedonsaunders/appkit-agent-tools', '@braedonsaunders/appkit-mcp', '@braedonsaunders/appkit-sandbox', '@braedonsaunders/appkit-endpoints', '@braedonsaunders/appkit-scripts', '@braedonsaunders/appkit-apps',
-      '@braedonsaunders/appkit-workflows', '@braedonsaunders/appkit-integrations', '@braedonsaunders/appkit-sync',
+      '@braedonsaunders/appkit-query-console', '@braedonsaunders/appkit-workflows', '@braedonsaunders/appkit-integrations', '@braedonsaunders/appkit-sync',
     ],
   },
 ]
@@ -178,6 +179,7 @@ const MANIFESTS: WorkspacePackageManifest[] = [
   office,
   pdf,
   processSandbox,
+  queryConsole,
   reports,
   sandbox,
   scene,
@@ -230,6 +232,7 @@ const DEMO_ROUTES: Record<string, string> = {
   '@braedonsaunders/appkit-agent-tools': '/packages/agent-tools/demo',
   '@braedonsaunders/appkit-mcp': '/api-docs',
   '@braedonsaunders/appkit-process-sandbox': '/packages/process-sandbox/demo',
+  '@braedonsaunders/appkit-query-console': '/query-console',
   '@braedonsaunders/appkit-desk': '/packages/desk/demo',
   '@braedonsaunders/appkit-egress-proxy': '/packages/egress-proxy/demo',
   '@braedonsaunders/appkit-email-render': '/packages/email-render/demo',
