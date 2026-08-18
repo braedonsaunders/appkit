@@ -15,3 +15,29 @@ test('AgentPanel renders optional actions in its main header', () => {
   assert.match(markup, /<header[^>]*h-12[^>]*>/)
   assert.match(markup, /<div class="ml-auto flex items-center gap-2"><button type="button">Hide work<\/button><\/div>/)
 })
+
+test('AgentPanel collapses a multi-step tool run to its latest action', () => {
+  const props = {
+    enabled: false,
+    initialMessages: [
+      {
+        id: 'assistant-1',
+        role: 'assistant' as const,
+        parts: [
+          { type: 'dynamic-tool', toolName: 'open_desktop', state: 'output-available', output: { opened: true } },
+          { type: 'step-start' },
+          { type: 'dynamic-tool', toolName: 'run_shell', state: 'output-available', output: { exitCode: 0 } },
+        ],
+      },
+    ],
+    toolLabels: { open_desktop: 'Open desktop', run_shell: 'Run shell' },
+  } satisfies AgentPanelProps
+
+  const markup = renderToStaticMarkup(React.createElement(AgentPanel, props))
+
+  assert.match(markup, /aria-expanded="false"/)
+  assert.match(markup, />2 steps</)
+  assert.match(markup, />Run shell</)
+  assert.doesNotMatch(markup, /Open desktop/)
+  assert.doesNotMatch(markup, /exitCode/)
+})

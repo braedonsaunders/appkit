@@ -257,7 +257,9 @@ parts/token usage through `onComplete`.
 `AgentPanel` owns the live/reloaded parts renderer, streaming decoder, composer,
 cancellation, and disabled state; the app injects its persistence-backed send
 transport and may supply contextual controls through `headerActions` for the
-panel's fixed header. The playground documents this contract on `/dashboard/platform`
+panel's fixed header. Consecutive tool calls render as one subtle activity line
+showing the newest step and total count; the complete inputs and results expand
+in place, so long agent runs do not overwhelm the conversation. The playground documents this contract on `/dashboard/platform`
 without inventing a credential, fake conversation, or provider-specific demo.
 The root also exports the production provider catalogue and model policy,
 writing, extraction, dataset analysis, activity digest, document-agent, bounded
