@@ -53,6 +53,7 @@ import {
   isDeskSupported,
 } from '@braedonsaunders/appkit-desk'
 import { REMOTE_PROTOCOLS } from '@braedonsaunders/appkit-remote-sessions'
+import { TerminalSurface } from '@braedonsaunders/appkit-remote-sessions/react'
 import {
   isPublicHostname,
   normalizeOutboundHostname,
@@ -228,6 +229,18 @@ function RemoteSessionsDemo() {
               ))}
             </TableBody>
           </Table>
+        </div>
+        <div className="h-72 overflow-hidden rounded-md border border-border">
+          <TerminalSurface
+            title="Claims workstation"
+            subtitle="SSH · durable observer surface"
+            cwd="/srv/claims"
+            status="completed"
+            entries={[
+              { id: 'command', kind: 'command', prompt: '/srv/claims $', text: 'git status --short' },
+              { id: 'output', kind: 'stdout', text: 'Working tree clean' },
+            ]}
+          />
         </div>
       </CardContent>
     </Card>

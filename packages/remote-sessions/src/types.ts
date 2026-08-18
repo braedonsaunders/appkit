@@ -69,11 +69,22 @@ export type RemoteSessionEvent = RemoteSessionEventDetail & {
   at: string
 }
 
-export interface RemoteViewerConnection {
-  /** A short-lived, audience-bound URL. Applications should prefer same-origin exchange routes. */
-  url: string
-  expiresAt: string
-}
+export type RemoteViewerConnection =
+  | {
+      /** A short-lived, audience-bound URL. Applications should prefer same-origin exchange routes. */
+      kind?: 'iframe'
+      url: string
+      expiresAt: string
+    }
+  | {
+      /** A browser-native Apache Guacamole WebSocket connection. */
+      kind: 'guacamole'
+      bridgeWsUrl: string
+      connectQuery: string
+      expiresAt: string
+      width?: number
+      height?: number
+    }
 
 export interface RemoteProviderOpenRequest {
   session: RemoteSession

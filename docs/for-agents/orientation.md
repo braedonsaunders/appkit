@@ -289,8 +289,9 @@ target belongs to the customer and has separate credentials, policies, leases, a
 The root exports provider-neutral RDP/VNC and SSH/WinRM/PowerShell-SSH/Telnet contracts,
 fenced immutable leases, append-only events, one-time signed viewer grants, cancellation,
 terminal streaming, and executable provider conformance. `/memory` supplies the deterministic
-store and `/react` supplies the browser viewer shell. Applications inject tenant/RLS storage,
-feature gates, credential resolution, policy, provider bridges, routes, and audit projection.
+store, `/react` supplies the browser viewer plus the durable read-only terminal, and `/guacamole`
+supplies the encrypted Apache Guacamole bridge contract. Applications inject tenant/RLS storage,
+feature gates, credential resolution, policy, routes, and audit projection.
 
 ## 5. Forms and localized authoring
 
