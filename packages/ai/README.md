@@ -11,6 +11,8 @@ functions already enforce its `RequestContext` and RBAC policy.
 `@braedonsaunders/appkit-ai/react` supplies the streaming assistant thread, UI-message decoder,
 markdown renderer, generic tool-use cards, abort control, composer, welcome and
 disabled states. Conversation persistence and the HTTP transport stay app-owned.
+Hosts can place contextual controls in the panel's fixed header with the optional
+`headerActions` prop.
 
 ```ts
 import { runAgentTurn } from '@braedonsaunders/appkit-ai'

@@ -256,7 +256,8 @@ parts/token usage through `onComplete`.
 `@braedonsaunders/appkit-ai/react` exports `AgentPanel`, `ChatMarkdown`, and `AgentToolCard`.
 `AgentPanel` owns the live/reloaded parts renderer, streaming decoder, composer,
 cancellation, and disabled state; the app injects its persistence-backed send
-transport. The playground documents this contract on `/dashboard/platform`
+transport and may supply contextual controls through `headerActions` for the
+panel's fixed header. The playground documents this contract on `/dashboard/platform`
 without inventing a credential, fake conversation, or provider-specific demo.
 The root also exports the production provider catalogue and model policy,
 writing, extraction, dataset analysis, activity digest, document-agent, bounded
