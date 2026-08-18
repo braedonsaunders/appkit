@@ -1,6 +1,6 @@
 {
   "name": "@braedonsaunders/appkit-storage",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Tenant-safe S3-compatible storage with multipart upload, streaming, ranges, promotion, lifecycle policy, and presigned access.",
   "license": "AGPL-3.0-or-later",
   "type": "module",

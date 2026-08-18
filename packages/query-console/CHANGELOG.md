@@ -1,5 +1,11 @@
 # @braedonsaunders/appkit-query-console
 
+## 2.0.0
+
+### Major Changes
+
+- 0bb5ff0: Extract OpenBooks' governed raw-SQL workbench into an optional AppKit package with host-owned execution and a live playground proof.
+
 ## 1.0.0
 
 - Extract the OpenBooks raw-SQL workbench behind host-owned execution, schema,
