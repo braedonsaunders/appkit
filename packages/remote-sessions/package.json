@@ -1,0 +1,52 @@
+{
+  "name": "@braedonsaunders/appkit-remote-sessions",
+  "version": "0.1.0",
+  "description": "Provider-neutral remote computer and terminal sessions with fenced leases, one-time viewer grants, append-only events, observable control, and executable provider conformance.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./memory": "./src/memory.ts",
+    "./react": "./src/react.tsx",
+    "./package.json": "./package.json"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "files": ["src"],
+  "scripts": {
+    "build": "node ../../scripts/build-package.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "peerDependencies": {
+    "react": ">=18.2.0"
+  },
+  "peerDependenciesMeta": {
+    "react": { "optional": true }
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
+  },
+  "author": "Braedon Saunders",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/braedonsaunders/appkit.git",
+    "directory": "packages/remote-sessions"
+  },
+  "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/remote-sessions#readme",
+  "bugs": { "url": "https://github.com/braedonsaunders/appkit/issues" },
+  "engines": { "node": ">=22" },
+  "keywords": ["agents", "appkit", "remote-desktop", "rdp", "vnc", "ssh", "winrm", "terminal"],
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist",
+    "linkDirectory": false,
+    "provenance": true
+  }
+}

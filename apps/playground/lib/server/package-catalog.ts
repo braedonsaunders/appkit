@@ -35,6 +35,7 @@ import office from '../../../../packages/office/package.json'
 import pdf from '../../../../packages/pdf/package.json'
 import processSandbox from '../../../../packages/process-sandbox/package.json'
 import queryConsole from '../../../../packages/query-console/package.json'
+import remoteSessions from '../../../../packages/remote-sessions/package.json'
 import reports from '../../../../packages/reports/package.json'
 import sandbox from '../../../../packages/sandbox/package.json'
 import scene from '../../../../packages/scene/package.json'
@@ -126,7 +127,7 @@ export const PACKAGE_CATEGORIES: readonly {
     names: [
       '@braedonsaunders/appkit-db', '@braedonsaunders/appkit-tenant', '@braedonsaunders/appkit-auth', '@braedonsaunders/appkit-iam', '@braedonsaunders/appkit-superadmin', '@braedonsaunders/appkit-api',
       '@braedonsaunders/appkit-events', '@braedonsaunders/appkit-jobs', '@braedonsaunders/appkit-notifications', '@braedonsaunders/appkit-storage',
-      '@braedonsaunders/appkit-crypto', '@braedonsaunders/appkit-oauth', '@braedonsaunders/appkit-process-sandbox', '@braedonsaunders/appkit-desk', '@braedonsaunders/appkit-egress-proxy',
+      '@braedonsaunders/appkit-crypto', '@braedonsaunders/appkit-oauth', '@braedonsaunders/appkit-process-sandbox', '@braedonsaunders/appkit-desk', '@braedonsaunders/appkit-remote-sessions', '@braedonsaunders/appkit-egress-proxy',
       '@braedonsaunders/appkit-email-render', '@braedonsaunders/appkit-email-designer',
       '@braedonsaunders/appkit-emails', '@braedonsaunders/appkit-mailbox', '@braedonsaunders/appkit-sms', '@braedonsaunders/appkit-telephony', '@braedonsaunders/appkit-voice',
     ],
@@ -180,6 +181,7 @@ const MANIFESTS: WorkspacePackageManifest[] = [
   pdf,
   processSandbox,
   queryConsole,
+  remoteSessions,
   reports,
   sandbox,
   scene,
@@ -234,6 +236,7 @@ const DEMO_ROUTES: Record<string, string> = {
   '@braedonsaunders/appkit-process-sandbox': '/packages/process-sandbox/demo',
   '@braedonsaunders/appkit-query-console': '/query-console',
   '@braedonsaunders/appkit-desk': '/packages/desk/demo',
+  '@braedonsaunders/appkit-remote-sessions': '/packages/remote-sessions/demo',
   '@braedonsaunders/appkit-egress-proxy': '/packages/egress-proxy/demo',
   '@braedonsaunders/appkit-email-render': '/packages/email-render/demo',
   '@braedonsaunders/appkit-email-designer': '/email-designer',

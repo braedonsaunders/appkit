@@ -283,6 +283,15 @@ results. `followDurableCursor` always backfills ordered database rows after its
 cursor; an injected LISTEN/NOTIFY or equivalent wake port only reduces latency,
 so missed notifications and reconnects cannot lose events.
 
+`@braedonsaunders/appkit-remote-sessions` is the boundary for work on an existing external
+computer. It deliberately does not extend Desk: a Desk belongs to the agent, while a remote
+target belongs to the customer and has separate credentials, policies, leases, and lifecycle.
+The root exports provider-neutral RDP/VNC and SSH/WinRM/PowerShell-SSH/Telnet contracts,
+fenced immutable leases, append-only events, one-time signed viewer grants, cancellation,
+terminal streaming, and executable provider conformance. `/memory` supplies the deterministic
+store and `/react` supplies the browser viewer shell. Applications inject tenant/RLS storage,
+feature gates, credential resolution, policy, provider bridges, routes, and audit projection.
+
 ## 5. Forms and localized authoring
 
 `@braedonsaunders/appkit-forms-core` is the framework-neutral form contract shared by the

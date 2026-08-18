@@ -52,6 +52,7 @@ import {
   exportPortableDeskHome,
   isDeskSupported,
 } from '@braedonsaunders/appkit-desk'
+import { REMOTE_PROTOCOLS } from '@braedonsaunders/appkit-remote-sessions'
 import {
   isPublicHostname,
   normalizeOutboundHostname,
@@ -99,6 +100,7 @@ const PACKAGE_DEMOS = {
   'agent-tools': 'Managed agent tools',
   crypto: 'Secret sealing',
   desk: 'Agent desks',
+  'remote-sessions': 'Remote sessions',
   'egress-proxy': 'Egress control',
   'email-render': 'Email rendering',
   emails: 'Email delivery',
@@ -168,6 +170,8 @@ function renderPackageDemo(
       return <CryptoDemo />
     case 'desk':
       return <DeskDemo />
+    case 'remote-sessions':
+      return <RemoteSessionsDemo />
     case 'egress-proxy':
       return <EgressProxyDemo />
     case 'email-render':
@@ -193,6 +197,41 @@ function renderPackageDemo(
     case 'voice':
       return <VoiceDemo />
   }
+}
+
+function RemoteSessionsDemo() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>External computer session boundary</CardTitle>
+        <CardDescription>
+          Remote sessions connect an agent to an existing customer computer. They remain separate from the
+          agent&apos;s own desk and require an application-supplied provider, policy, credential resolver, and ledger.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Metric label="Protocols" value={String(REMOTE_PROTOCOLS.length)} />
+          <Metric label="Viewer scopes" value="Observe · Control" />
+          <Metric label="Grant exchange" value="One time" />
+        </div>
+        <div className="overflow-x-auto rounded-md border border-border">
+          <Table>
+            <TableHeader><TableRow><TableHead>Protocol</TableHead><TableHead>Surface</TableHead><TableHead>Expected provider</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {REMOTE_PROTOCOLS.map((protocol) => (
+                <TableRow key={protocol}>
+                  <TableCell className="font-mono text-xs">{protocol}</TableCell>
+                  <TableCell>{protocol === 'rdp' || protocol === 'vnc' ? 'Remote computer' : 'Remote terminal'}</TableCell>
+                  <TableCell>{protocol === 'rdp' || protocol === 'vnc' ? 'Browser-viewable relay' : 'Credential-aware command transport'}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  )
 }
 
 const JOB_PROFILES: readonly { label: string; profile: QueueProfile }[] = [

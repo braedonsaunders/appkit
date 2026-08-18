@@ -43,6 +43,7 @@
     "@braedonsaunders/appkit-process-sandbox": "workspace:*",
     "@braedonsaunders/appkit-query-console": "workspace:*",
     "@braedonsaunders/appkit-reports": "workspace:*",
+    "@braedonsaunders/appkit-remote-sessions": "workspace:*",
     "@braedonsaunders/appkit-scene": "workspace:*",
     "@braedonsaunders/appkit-scheduling": "workspace:*",
     "@braedonsaunders/appkit-scripts": "workspace:*",
