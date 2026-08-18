@@ -95,10 +95,12 @@ import {
 } from '@braedonsaunders/appkit-ui'
 import { getPackage } from '../../../../../lib/server/package-catalog'
 import { SceneDemoStage } from './scene-demo-stage'
+import { AgentConversationDemo } from './agent-conversation-demo'
 import { SuperadminDemo } from './superadmin-demo'
 
 const PACKAGE_DEMOS = {
   'agent-tools': 'Managed agent tools',
+  ai: 'Agent conversations',
   crypto: 'Secret sealing',
   desk: 'Agent desks',
   'remote-sessions': 'Remote sessions',
@@ -167,6 +169,8 @@ function renderPackageDemo(
   switch (slug) {
     case 'agent-tools':
       return <AgentToolsDemo mode={queryValue(query.mode, DEFAULT_AGENT_TOOL_POLICY.execute) as AgentToolPolicyMode} />
+    case 'ai':
+      return <AgentConversationDemo />
     case 'crypto':
       return <CryptoDemo />
     case 'desk':

@@ -17,6 +17,35 @@ application stage through `emptyContent`. Consecutive tool calls collapse into
 one quiet activity line showing the newest action and total step count; operators can expand it to
 inspect every input and result without letting a long run overwhelm the thread.
 
+Applications with durable session dispatch can pass `dispatchState` and an
+ordered `queuedMessages` collection. While work is running, recovering, or
+already queued, new composer submissions go through the app-owned `enqueue`
+callback instead of bypassing the queue. AppKit presents queue position and
+lifecycle state and exposes optional edit, remove, and retry actions; the host
+continues to own persistence, authorization, FIFO claiming, idempotency, and
+recovery.
+
+```tsx
+<AgentPanel
+  enabled
+  dispatchState="running"
+  queuedMessages={queue.map((entry) => ({
+    id: entry.id,
+    text: entry.prompt,
+    position: entry.position,
+    status: entry.status,
+    editable: entry.status === 'queued',
+    removable: entry.status === 'queued',
+    retryable: entry.status === 'failed',
+  }))}
+  enqueue={persistQueuedTurn}
+  onEditQueuedMessage={openQueueEditor}
+  onRemoveQueuedMessage={removeQueuedTurn}
+  onRetryQueuedMessage={retryQueuedTurn}
+  send={startTurn}
+/>
+```
+
 ```ts
 import { runAgentTurn } from '@braedonsaunders/appkit-ai'
 

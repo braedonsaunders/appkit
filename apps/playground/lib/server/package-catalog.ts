@@ -245,7 +245,7 @@ const DEMO_ROUTES: Record<string, string> = {
   '@braedonsaunders/appkit-sms': '/packages/sms/demo',
   '@braedonsaunders/appkit-telephony': '/packages/telephony/demo',
   '@braedonsaunders/appkit-voice': '/packages/voice/demo',
-  '@braedonsaunders/appkit-ai': '/dashboard/platform',
+  '@braedonsaunders/appkit-ai': '/packages/ai/demo',
   '@braedonsaunders/appkit-sandbox': '/admin/scripts',
   '@braedonsaunders/appkit-endpoints': '/api-docs',
   '@braedonsaunders/appkit-apps': '/admin/apps',
