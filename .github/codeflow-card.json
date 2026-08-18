@@ -2,108 +2,6 @@
   "version": 1,
   "runs": [
     {
-      "at": "2026-08-04T15:20:27.496Z",
-      "sha": "9f04661ad0ee4c97adfc0b17684a7ad5097f4af2",
-      "pr": null,
-      "actor": "braedonsaunders",
-      "files": 958,
-      "functions": 3366,
-      "loc": 165706,
-      "languages": 12,
-      "topLanguages": [
-        {
-          "ext": "ts",
-          "pct": 44,
-          "lines": 72296
-        },
-        {
-          "ext": "tsx",
-          "pct": 38,
-          "lines": 62543
-        },
-        {
-          "ext": "yaml",
-          "pct": 8,
-          "lines": 13692
-        },
-        {
-          "ext": "json",
-          "pct": 6,
-          "lines": 10269
-        },
-        {
-          "ext": "md",
-          "pct": 2,
-          "lines": 3859
-        }
-      ],
-      "dead": 131,
-      "deadPct": 3.9,
-      "circular": 1,
-      "godObjects": 1,
-      "avgCoupling": 3.9,
-      "securityIssues": 76,
-      "patterns": 8,
-      "duplicates": 23,
-      "layerViolations": 380,
-      "connections": 3762,
-      "avgFnLines": 15,
-      "longestFn": 16,
-      "testFiles": 119,
-      "testRatio": 12.4,
-      "topFolders": [
-        {
-          "name": "packages",
-          "count": 835
-        },
-        {
-          "name": "apps",
-          "count": 95
-        },
-        {
-          "name": "root",
-          "count": 8
-        },
-        {
-          "name": "scripts",
-          "count": 8
-        },
-        {
-          "name": ".changeset",
-          "count": 7
-        }
-      ],
-      "folders": 5,
-      "grade": "D",
-      "score": 66,
-      "topBlast": {
-        "path": "packages/analytics/src/chart-spec.ts",
-        "direct": 250,
-        "transitive": 653,
-        "total": 903
-      },
-      "fragility": [
-        {
-          "path": "packages/analytics/src/chart-spec.ts",
-          "direct": 250,
-          "transitive": 653,
-          "total": 903
-        },
-        {
-          "path": "packages/oauth/src/index.ts",
-          "direct": 136,
-          "transitive": 565,
-          "total": 701
-        },
-        {
-          "path": "packages/apps/src/memory.ts",
-          "direct": 114,
-          "transitive": 542,
-          "total": 656
-        }
-      ]
-    },
-    {
       "at": "2026-08-05T18:23:01.129Z",
       "sha": "b9e79e2dd569ac65c69cc9f3b66c48bde52f053d",
       "pr": null,
@@ -3029,6 +2927,108 @@
         {
           "name": ".changeset",
           "count": 6
+        }
+      ],
+      "folders": 5,
+      "grade": "D",
+      "score": 67,
+      "topBlast": {
+        "path": "packages/analytics/src/chart-spec.ts",
+        "direct": 280,
+        "transitive": 718,
+        "total": 998
+      },
+      "fragility": [
+        {
+          "path": "packages/analytics/src/chart-spec.ts",
+          "direct": 280,
+          "transitive": 718,
+          "total": 998
+        },
+        {
+          "path": "packages/apps/src/memory.ts",
+          "direct": 125,
+          "transitive": 583,
+          "total": 708
+        },
+        {
+          "path": "packages/desk/src/host.ts",
+          "direct": 113,
+          "transitive": 529,
+          "total": 642
+        }
+      ]
+    },
+    {
+      "at": "2026-08-18T22:46:37.238Z",
+      "sha": "afe732a16bf164a88ebce7f3805d1239e75b385e",
+      "pr": null,
+      "actor": "braedonsaunders",
+      "files": 1056,
+      "functions": 3768,
+      "loc": 185408,
+      "languages": 12,
+      "topLanguages": [
+        {
+          "ext": "ts",
+          "pct": 47,
+          "lines": 86388
+        },
+        {
+          "ext": "tsx",
+          "pct": 35,
+          "lines": 64690
+        },
+        {
+          "ext": "yaml",
+          "pct": 8,
+          "lines": 14489
+        },
+        {
+          "ext": "json",
+          "pct": 6,
+          "lines": 10681
+        },
+        {
+          "ext": "md",
+          "pct": 3,
+          "lines": 5188
+        }
+      ],
+      "dead": 135,
+      "deadPct": 3.6,
+      "circular": 1,
+      "godObjects": 1,
+      "avgCoupling": 3.9,
+      "securityIssues": 78,
+      "patterns": 8,
+      "duplicates": 25,
+      "layerViolations": 377,
+      "connections": 4130,
+      "avgFnLines": 15,
+      "longestFn": 16,
+      "testFiles": 145,
+      "testRatio": 13.7,
+      "topFolders": [
+        {
+          "name": "packages",
+          "count": 927
+        },
+        {
+          "name": "apps",
+          "count": 98
+        },
+        {
+          "name": "scripts",
+          "count": 11
+        },
+        {
+          "name": "root",
+          "count": 8
+        },
+        {
+          "name": ".changeset",
+          "count": 7
         }
       ],
       "folders": 5,
