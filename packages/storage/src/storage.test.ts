@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createServer } from 'node:http'
 import test from 'node:test'
 import type { S3Client } from '@aws-sdk/client-s3'
 import { assertTenantObjectKey, createStorage, multipartPartCount, newTenantObjectKey, objectKeyFromStorageUrl, shouldUseMultipartUpload } from './index'
@@ -59,7 +60,7 @@ test('portable environment configuration is strict and application-agnostic', ()
   )
 })
 
-test('private-bucket readiness is explicit, idempotent, and verifies anonymous reads', async () => {
+test('private-bucket readiness is explicit, idempotent, and verifies anonymous reads without waiting for a response body', { timeout: 2_000 }, async () => {
   const commands: string[] = []
   const client = {
     async send(command: object) {
@@ -68,12 +69,21 @@ test('private-bucket readiness is explicit, idempotent, and verifies anonymous r
       return {}
     },
   } as unknown as S3Client
-  const originalFetch = globalThis.fetch
-  globalThis.fetch = async () => new Response(null, { status: 403 })
+  const server = createServer((_request, response) => {
+    response.writeHead(403, { 'content-length': '128' })
+    response.flushHeaders()
+  })
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', resolve)
+  })
+  const address = server.address()
+  assert.ok(address && typeof address === 'object')
   try {
-    await createStorage({ endpoint: 'http://storage.example.test', bucket: 'private', accessKeyId: 'key', secretAccessKey: 'secret', client }).ensureReady()
+    await createStorage({ endpoint: `http://127.0.0.1:${address.port}`, bucket: 'private', accessKeyId: 'key', secretAccessKey: 'secret', client }).ensureReady()
   } finally {
-    globalThis.fetch = originalFetch
+    server.closeAllConnections()
+    await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()))
   }
   assert.deepEqual(commands, [
     'HeadBucketCommand',

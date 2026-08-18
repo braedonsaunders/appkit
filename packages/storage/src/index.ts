@@ -21,6 +21,8 @@ import {
   UploadPartCommand,
 } from '@aws-sdk/client-s3'
 import { randomUUID } from 'node:crypto'
+import { request as httpRequest } from 'node:http'
+import { request as httpsRequest } from 'node:https'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { storageObjectTagging, withManagedStorageLifecycleRules, type StorageObjectLifecycle } from './lifecycle'
 import { MULTIPART_UPLOAD_PART_SIZE_BYTES, multipartPartCount, shouldUseMultipartUpload } from './multipart'
@@ -90,6 +92,24 @@ export type Storage = {
   promote: (input: { sourceKey: string; sourceEtag: string; destinationKey: string; contentType: string; contentDisposition: 'inline' | 'attachment' }) => Promise<void>
   /** Idempotently create the bucket, remove anonymous policy, install lifecycle rules, and prove private reads. */
   ensureReady: () => Promise<void>
+}
+
+function anonymousReadStatus(target: URL, timeoutMs: number): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const request = (target.protocol === 'https:' ? httpsRequest : httpRequest)(
+      target,
+      { method: 'GET', headers: { connection: 'close' } },
+      (response) => {
+        const status = response.statusCode
+        response.destroy()
+        if (status === undefined) reject(new Error('Storage privacy verification received no HTTP status'))
+        else resolve(status)
+      },
+    )
+    request.setTimeout(timeoutMs, () => request.destroy(new Error(`Storage privacy verification timed out after ${timeoutMs}ms`)))
+    request.once('error', reject)
+    request.end()
+  })
 }
 
 export function createStorage(config: StorageConfig): Storage {
@@ -275,10 +295,8 @@ export function createStorage(config: StorageConfig): Storage {
     try {
       const base = config.endpoint.replace(/\/$/, '')
       const encodedKey = probeKey.split('/').map(encodeURIComponent).join('/')
-      const response = await fetch(`${base}/${encodeURIComponent(Bucket)}/${encodedKey}`, { method: 'GET', redirect: 'manual', signal: AbortSignal.timeout(15_000) })
-      try {
-        if (response.status >= 200 && response.status < 400) throw new Error(`Storage privacy verification failed: anonymous read returned HTTP ${response.status}`)
-      } finally { await response.body?.cancel() }
+      const status = await anonymousReadStatus(new URL(`${base}/${encodeURIComponent(Bucket)}/${encodedKey}`), 15_000)
+      if (status >= 200 && status < 400) throw new Error(`Storage privacy verification failed: anonymous read returned HTTP ${status}`)
     } finally { await del(probeKey) }
   }
 
