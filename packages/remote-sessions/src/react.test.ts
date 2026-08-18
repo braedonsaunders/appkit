@@ -2,7 +2,12 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { TerminalSurface } from './react'
+import { shouldFollowTerminalOutput, TerminalSurface } from './react'
+
+test('TerminalSurface follows output only while the viewer remains near the bottom', () => {
+  assert.equal(shouldFollowTerminalOutput({ scrollHeight: 1_000, scrollTop: 760, clientHeight: 200 }), true)
+  assert.equal(shouldFollowTerminalOutput({ scrollHeight: 1_000, scrollTop: 300, clientHeight: 200 }), false)
+})
 
 test('TerminalSurface renders durable command and output entries', () => {
   const markup = renderToStaticMarkup(

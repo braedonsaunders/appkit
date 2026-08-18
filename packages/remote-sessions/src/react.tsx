@@ -21,6 +21,14 @@ export interface TerminalSurfaceProps {
   emptyLabel?: string
 }
 
+/** Keep following output only while the viewer has not intentionally scrolled away. */
+export function shouldFollowTerminalOutput(
+  metrics: Pick<HTMLElement, 'scrollHeight' | 'scrollTop' | 'clientHeight'>,
+  threshold = 48,
+): boolean {
+  return metrics.scrollHeight - metrics.scrollTop - metrics.clientHeight <= threshold
+}
+
 /**
  * A provider-neutral, human-observable terminal. Hosts feed it their durable
  * command/output ledger; it never owns execution or keeps a second history.
@@ -37,11 +45,13 @@ export function TerminalSurface({
   emptyLabel = 'Terminal output will appear here when work begins.',
 }: TerminalSurfaceProps) {
   const outputRef = React.useRef<HTMLDivElement | null>(null)
+  const followOutputRef = React.useRef(true)
+  const lastEntry = entries.at(-1)
 
   React.useLayoutEffect(() => {
     const output = outputRef.current
-    if (output) output.scrollTop = output.scrollHeight
-  }, [entries, status])
+    if (output && followOutputRef.current) output.scrollTop = output.scrollHeight
+  }, [entries.length, lastEntry?.id, lastEntry?.text, status])
 
   return (
     <section
@@ -58,7 +68,11 @@ export function TerminalSurface({
           <span className="rounded-full border border-border px-2 py-0.5 text-xs capitalize text-fg-muted">{status}</span>
         </div>
       </header>
-      <div ref={outputRef} className="min-h-0 flex-1 overflow-auto bg-fg px-4 py-4 font-mono text-[13px] text-bg">
+      <div
+        ref={outputRef}
+        onScroll={(event) => { followOutputRef.current = shouldFollowTerminalOutput(event.currentTarget) }}
+        className="min-h-0 flex-1 overflow-auto bg-fg px-4 py-4 font-mono text-[13px] text-bg"
+      >
         {entries.length === 0 ? <p className="text-bg/60">{emptyLabel}</p> : null}
         <div className="space-y-2">
           {entries.map((entry) => (

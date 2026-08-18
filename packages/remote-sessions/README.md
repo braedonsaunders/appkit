@@ -17,4 +17,6 @@ Never persist provider viewer URLs or raw credentials. Exchange a short-lived, s
 `TerminalSurface` is deliberately execution-free. Feed it recorded command,
 stdout, stderr, and system entries from the same append-only session record used
 for audit; do not create a browser-only scrollback that can disagree with the
-run history.
+run history. It opens at the latest output and continues following while the
+viewer remains near the bottom. Scrolling upward suspends that behavior so
+polling or new output cannot pull the viewer away from what they are reading.
