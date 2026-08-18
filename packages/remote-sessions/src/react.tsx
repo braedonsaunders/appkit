@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import type { ITheme, Terminal } from '@xterm/xterm'
 import type { RemoteControlScope, RemoteProtocol, RemoteViewerConnection } from './types'
 
 export type TerminalSurfaceEntry = {
@@ -31,6 +32,134 @@ export function shouldFollowTerminalOutput(
   return metrics.scrollHeight - metrics.scrollTop - metrics.clientHeight <= threshold
 }
 
+/** Render one immutable ledger entry as terminal bytes. ANSI from commands is preserved. */
+export function terminalEntryText(entry: TerminalSurfaceEntry): string {
+  const text = entry.text.replaceAll('\r\n', '\n').replaceAll('\r', '\n')
+  if (entry.kind === 'command') {
+    return `\u001b[2m${entry.prompt ?? '$'}\u001b[0m \u001b[1m${text}\u001b[0m\r\n`
+  }
+  const line = text.endsWith('\n') ? text : `${text}\n`
+  if (entry.kind === 'stderr') return `\u001b[31m${line}\u001b[0m`
+  if (entry.kind === 'system') return `\u001b[2m${line}\u001b[0m`
+  return line
+}
+
+function semanticTerminalTheme(host: HTMLElement): ITheme {
+  const swatch = (className: string): string => {
+    const node = document.createElement('span')
+    node.className = className
+    node.hidden = true
+    host.append(node)
+    const color = getComputedStyle(node).color
+    node.remove()
+    return color
+  }
+  return {
+    background: swatch('text-fg'),
+    foreground: swatch('text-bg'),
+    cursor: swatch('text-bg'),
+    selectionBackground: swatch('text-info'),
+    black: swatch('text-fg'),
+    red: swatch('text-danger'),
+    green: swatch('text-success'),
+    yellow: swatch('text-warning'),
+    blue: swatch('text-info'),
+    magenta: swatch('text-accent'),
+    cyan: swatch('text-info'),
+    white: swatch('text-bg'),
+    brightBlack: swatch('text-fg-muted'),
+    brightRed: swatch('text-danger'),
+    brightGreen: swatch('text-success'),
+    brightYellow: swatch('text-warning'),
+    brightBlue: swatch('text-info'),
+    brightMagenta: swatch('text-accent'),
+    brightCyan: swatch('text-info'),
+    brightWhite: swatch('text-bg'),
+  }
+}
+
+function TerminalEmulator({ entries, emptyLabel }: { entries: readonly TerminalSurfaceEntry[]; emptyLabel: string }) {
+  const hostRef = React.useRef<HTMLDivElement | null>(null)
+  const terminalRef = React.useRef<Terminal | null>(null)
+  const fitRef = React.useRef<{ fit(): void } | null>(null)
+  const renderedRef = React.useRef<readonly TerminalSurfaceEntry[]>([])
+  const latestEntriesRef = React.useRef(entries)
+  latestEntriesRef.current = entries
+
+  React.useEffect(() => {
+    const host = hostRef.current
+    if (!host) return
+    let disposed = false
+    let resizeObserver: ResizeObserver | null = null
+    let themeObserver: MutationObserver | null = null
+
+    void Promise.all([import('@xterm/xterm'), import('@xterm/addon-fit')]).then(([xterm, fit]) => {
+      if (disposed) return
+      const terminal = new xterm.Terminal({
+        allowProposedApi: false,
+        convertEol: true,
+        cursorBlink: false,
+        disableStdin: true,
+        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+        fontSize: 13,
+        lineHeight: 1.35,
+        scrollback: 10_000,
+        screenReaderMode: false,
+        theme: semanticTerminalTheme(host),
+      })
+      const fitAddon = new fit.FitAddon()
+      terminal.loadAddon(fitAddon)
+      terminal.open(host)
+      terminalRef.current = terminal
+      fitRef.current = fitAddon
+      fitAddon.fit()
+      const currentEntries = latestEntriesRef.current
+      const initial = currentEntries.length ? currentEntries : [{ id: 'empty', kind: 'system' as const, text: emptyLabel }]
+      terminal.write(initial.map(terminalEntryText).join(''))
+      renderedRef.current = currentEntries
+
+      resizeObserver = new ResizeObserver(() => fitAddon.fit())
+      resizeObserver.observe(host)
+      themeObserver = new MutationObserver(() => { terminal.options.theme = semanticTerminalTheme(host) })
+      themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style'] })
+    })
+
+    return () => {
+      disposed = true
+      resizeObserver?.disconnect()
+      themeObserver?.disconnect()
+      terminalRef.current?.dispose()
+      terminalRef.current = null
+      fitRef.current = null
+      renderedRef.current = []
+    }
+  }, [])
+
+  React.useEffect(() => {
+    const terminal = terminalRef.current
+    if (!terminal) return
+    const previous = renderedRef.current
+    const extendsPrevious =
+      previous.length <= entries.length &&
+      previous.every((entry, index) => entry.id === entries[index]?.id && entry.text === entries[index]?.text)
+    const buffer = terminal.buffer.active
+    const wasFollowing = buffer.viewportY >= buffer.baseY - 1
+
+    if (!extendsPrevious || (previous.length === 0 && entries.length > 0)) {
+      terminal.reset()
+      const next = entries.length ? entries : [{ id: 'empty', kind: 'system' as const, text: emptyLabel }]
+      terminal.write(next.map(terminalEntryText).join(''))
+    } else if (entries.length > previous.length) {
+      terminal.write(entries.slice(previous.length).map(terminalEntryText).join(''))
+    }
+    renderedRef.current = entries
+    if (wasFollowing) terminal.scrollToBottom()
+    fitRef.current?.fit()
+  }, [emptyLabel, entries])
+
+  return <div ref={hostRef} className="appkit-terminal size-full min-h-0 px-2 py-2" aria-hidden />
+}
+
 /**
  * A provider-neutral, human-observable terminal. Hosts feed it their durable
  * command/output ledger; it never owns execution or keeps a second history.
@@ -47,15 +176,7 @@ export function TerminalSurface({
   className,
   emptyLabel = 'Terminal output will appear here when work begins.',
 }: TerminalSurfaceProps) {
-  const outputRef = React.useRef<HTMLDivElement | null>(null)
-  const followOutputRef = React.useRef(true)
-  const lastEntry = entries.at(-1)
   const visibleCwd = cwd && cwd !== '.' && cwd !== './' ? cwd : null
-
-  React.useLayoutEffect(() => {
-    const output = outputRef.current
-    if (output && followOutputRef.current) output.scrollTop = output.scrollHeight
-  }, [entries.length, lastEntry?.id, lastEntry?.text, status])
 
   return (
     <section
@@ -73,34 +194,17 @@ export function TerminalSurface({
           {headerActions}
         </div>
       </header>
-      <div
-        ref={outputRef}
-        onScroll={(event) => { followOutputRef.current = shouldFollowTerminalOutput(event.currentTarget) }}
-        className="min-h-0 flex-1 overflow-auto bg-fg px-4 py-4 font-mono text-[13px] text-bg"
-      >
-        {entries.length === 0 ? <p className="text-bg/60">{emptyLabel}</p> : null}
-        <div className="space-y-2">
-          {entries.map((entry) => (
-            <div key={entry.id} className="whitespace-pre-wrap break-words">
-              {entry.kind === 'command' ? (
-                <div className="flex gap-3">
-                  <span className="select-none text-bg/60">{entry.prompt ?? '$'}</span>
-                  <span>{entry.text}</span>
-                </div>
-              ) : (
-                <pre className={['whitespace-pre-wrap break-words font-inherit leading-6', entry.kind === 'stderr' ? 'text-danger' : entry.kind === 'system' ? 'text-bg/60' : 'text-bg'].join(' ')}>
-                  {entry.text}
-                </pre>
-              )}
-            </div>
-          ))}
-          {status === 'running' ? (
-            <div className="flex items-center gap-2 text-bg/60">
-              <span aria-hidden className="size-2 animate-pulse rounded-full bg-bg" />
-              <span>Running command…</span>
-            </div>
-          ) : null}
+      <div className="relative min-h-0 flex-1 overflow-hidden bg-fg">
+        <TerminalEmulator entries={entries} emptyLabel={emptyLabel} />
+        <div className="sr-only" role="log" aria-live="polite">
+          {entries.length === 0 ? emptyLabel : entries.map((entry) => `${entry.prompt ? `${entry.prompt} ` : ''}${entry.text}`).join('\n')}
         </div>
+        {status === 'running' ? (
+          <div className="pointer-events-none absolute bottom-3 right-4 flex items-center gap-2 rounded-full border border-border bg-surface/90 px-2.5 py-1 text-xs text-fg-muted shadow-sm">
+            <span aria-hidden className="size-2 animate-pulse rounded-full bg-info" />
+            <span>Running</span>
+          </div>
+        ) : null}
       </div>
     </section>
   )

@@ -9,12 +9,16 @@
     "./memory": "./src/memory.ts",
     "./react": "./src/react.tsx",
     "./guacamole": "./src/guacamole.ts",
+    "./styles.css": "./src/styles.css",
     "./package.json": "./package.json"
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "files": [
     "src"
+  ],
+  "sideEffects": [
+    "*.css"
   ],
   "scripts": {
     "build": "node ../../scripts/build-package.mjs",
@@ -70,6 +74,8 @@
     "provenance": true
   },
   "dependencies": {
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
     "guacamole-common-js": "^1.5.0",
     "guacamole-lite": "^1.2.0"
   }

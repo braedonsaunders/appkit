@@ -1,0 +1,14 @@
+@import '@xterm/xterm/css/xterm.css';
+
+/* Register the optional remote-session React surface with Tailwind v4. */
+@source './';
+
+.appkit-terminal .xterm,
+.appkit-terminal .xterm-screen,
+.appkit-terminal .xterm-viewport {
+  height: 100%;
+}
+
+.appkit-terminal .xterm-viewport {
+  scrollbar-gutter: stable;
+}
