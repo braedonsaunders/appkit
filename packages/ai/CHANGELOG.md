@@ -1,5 +1,12 @@
 # @braedonsaunders/appkit-ai
 
+## 1.0.2
+
+### Patch Changes
+
+- e9d9ad8: Allow applications to replace AgentPanel's stock empty card with a full-height branded stage while retaining the shared header, composer, streaming, and persistence behavior.
+- 1db6afd: Allow applications to place contextual controls in `AgentPanel`'s fixed header through the optional `headerActions` prop. Existing conversations now open at their newest message, streaming scroll stays inside the message viewport instead of moving the surrounding page, and consecutive tool calls collapse to a subtle latest-step summary with expandable details.
+
 ## 1.0.1
 
 ### Patch Changes

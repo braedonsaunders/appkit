@@ -1,6 +1,6 @@
 {
   "name": "@braedonsaunders/appkit-desk",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Per-agent Debian microVMs under Cloud Hypervisor — headless machines with an on-demand screen, a framed vsock guest-agent protocol, leases with idle suspend and a bounded queue, and load-bearing handover masking behind consumer-supplied policy and recording ports.",
   "license": "AGPL-3.0-or-later",
   "type": "module",

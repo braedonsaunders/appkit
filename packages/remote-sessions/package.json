@@ -1,6 +1,6 @@
 {
   "name": "@braedonsaunders/appkit-remote-sessions",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Provider-neutral remote computer and terminal sessions with fenced leases, one-time viewer grants, append-only events, observable control, and executable provider conformance.",
   "license": "AGPL-3.0-or-later",
   "type": "module",

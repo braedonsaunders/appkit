@@ -1,6 +1,6 @@
 {
   "name": "@braedonsaunders/create-appkit",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Create a production-ready Next.js application on the modular AppKit foundation.",
   "license": "AGPL-3.0-or-later",
   "type": "module",

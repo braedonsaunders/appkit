@@ -1,6 +1,6 @@
 {
   "name": "@braedonsaunders/appkit-query-console",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A governed raw-SQL workbench with schema discovery, snippets, history, sortable results, CSV export, and host-owned execution.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
