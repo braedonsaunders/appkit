@@ -12,8 +12,9 @@ functions already enforce its `RequestContext` and RBAC policy.
 markdown renderer, generic tool-use cards, abort control, composer, welcome and
 disabled states. Conversation persistence and the HTTP transport stay app-owned.
 Hosts can place contextual controls in the panel's fixed header with the optional
-`headerActions` prop. Consecutive tool calls collapse into one quiet activity
-line showing the newest action and total step count; operators can expand it to
+`headerActions` prop and replace the stock first-message card with a full-height
+application stage through `emptyContent`. Consecutive tool calls collapse into
+one quiet activity line showing the newest action and total step count; operators can expand it to
 inspect every input and result without letting a long run overwhelm the thread.
 
 ```ts

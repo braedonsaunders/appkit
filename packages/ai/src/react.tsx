@@ -67,6 +67,8 @@ export type AgentPanelProps = {
   suggestions?: string[]
   labels?: Partial<AgentPanelLabels>
   headerActions?: React.ReactNode
+  /** Replaces the stock empty-state card while preserving the panel header and composer. */
+  emptyContent?: React.ReactNode
   send?: (prompt: string, signal: AbortSignal) => Promise<Response>
   maxPromptCharacters?: number
   toolLabels?: Record<string, string>
@@ -83,6 +85,7 @@ export function AgentPanel({
   suggestions = [],
   labels: labelOverrides,
   headerActions,
+  emptyContent,
   send,
   maxPromptCharacters = 32_000,
   toolLabels,
@@ -147,10 +150,16 @@ export function AgentPanel({
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-bg-subtle">
       <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border bg-surface px-4"><Sparkles size={16} className="text-primary" /><span className="text-sm font-medium text-fg">{labels.title}</span>{headerActions != null ? <div className="ml-auto flex items-center gap-2">{headerActions}</div> : null}</header>
-      <div ref={messageViewportRef} className="app-scroll min-h-0 flex-1 overflow-y-auto"><div className="mx-auto w-full max-w-3xl px-4 py-6">
-        {messages.length === 0 ? <AgentWelcome enabled={enabled} title={enabled ? labels.welcomeTitle : labels.disabledTitle} description={enabled ? labels.welcomeDescription : labels.disabledDescription} suggestions={suggestions} onPick={(value) => void submit(value)} /> : <div className="space-y-6">{messages.map((message) => message.role === 'system' ? null : <AgentMessageRow key={message.id} message={message} streaming={streaming} labels={labels} toolLabels={toolLabels} />)}</div>}
-        {error ? <div role="alert" className="mt-5 rounded-lg border border-danger/25 bg-danger-subtle px-3 py-2 text-sm text-danger">{error}</div> : null}
-      </div></div>
+      <div ref={messageViewportRef} className="app-scroll min-h-0 flex-1 overflow-y-auto">
+        {messages.length === 0 && emptyContent != null ? (
+          <div className="flex min-h-full flex-col">{emptyContent}</div>
+        ) : (
+          <div className="mx-auto w-full max-w-3xl px-4 py-6">
+            {messages.length === 0 ? <AgentWelcome enabled={enabled} title={enabled ? labels.welcomeTitle : labels.disabledTitle} description={enabled ? labels.welcomeDescription : labels.disabledDescription} suggestions={suggestions} onPick={(value) => void submit(value)} /> : <div className="space-y-6">{messages.map((message) => message.role === 'system' ? null : <AgentMessageRow key={message.id} message={message} streaming={streaming} labels={labels} toolLabels={toolLabels} />)}</div>}
+          </div>
+        )}
+        {error ? <div role="alert" className="mx-auto mb-5 w-[calc(100%-2rem)] max-w-3xl rounded-lg border border-danger/25 bg-danger-subtle px-3 py-2 text-sm text-danger">{error}</div> : null}
+      </div>
       {enabled ? <div className="shrink-0 border-t border-border bg-surface px-4 py-3"><div className="mx-auto w-full max-w-3xl"><div className="flex items-end gap-2 rounded-2xl border border-border-strong bg-surface p-2 shadow-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/20"><textarea value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void submit(input) } }} maxLength={maxPromptCharacters} rows={1} placeholder={labels.placeholder} className="max-h-40 flex-1 resize-none overflow-y-auto border-0 bg-transparent px-2 py-1.5 text-base text-fg outline-none placeholder:text-fg-subtle sm:text-sm" />{streaming ? <Button type="button" variant="outline" size="icon" onClick={() => abortRef.current?.abort()} aria-label={labels.stop}><Square size={16} /></Button> : <Button type="button" size="icon" onClick={() => void submit(input)} disabled={!input.trim() || !send} aria-label={labels.send}><Send size={16} /></Button>}</div></div></div> : null}
     </div>
   )

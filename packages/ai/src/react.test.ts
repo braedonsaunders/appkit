@@ -16,6 +16,19 @@ test('AgentPanel renders optional actions in its main header', () => {
   assert.match(markup, /<div class="ml-auto flex items-center gap-2"><button type="button">Hide work<\/button><\/div>/)
 })
 
+test('AgentPanel accepts an application-owned full empty stage', () => {
+  const props = {
+    enabled: false,
+    emptyContent: React.createElement('div', { 'data-call-stage': true }, 'Employee stage'),
+  } satisfies AgentPanelProps
+
+  const markup = renderToStaticMarkup(React.createElement(AgentPanel, props))
+
+  assert.match(markup, /data-call-stage="true"/)
+  assert.match(markup, /min-h-full/)
+  assert.doesNotMatch(markup, /How can I help\?/)
+})
+
 test('AgentPanel collapses a multi-step tool run to its latest action', () => {
   const props = {
     enabled: false,
