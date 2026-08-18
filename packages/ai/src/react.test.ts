@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import * as React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { AgentPanel, type AgentPanelProps } from './react'
+import { AgentMessageQueue, AgentPanel, type AgentPanelProps } from './react'
 
 test('AgentPanel renders optional actions in its main header', () => {
   const props = {
@@ -53,4 +53,31 @@ test('AgentPanel collapses a multi-step tool run to its latest action', () => {
   assert.match(markup, />Run shell</)
   assert.doesNotMatch(markup, /Open desktop/)
   assert.doesNotMatch(markup, /exitCode/)
+})
+
+test('AgentMessageQueue renders durable position, state, and available recovery actions', () => {
+  const markup = renderToStaticMarkup(React.createElement(AgentMessageQueue, {
+    messages: [
+      {
+        id: 'queued-1',
+        text: 'Prepare the customer follow-up',
+        position: 2,
+        status: 'failed' as const,
+        editable: true,
+        removable: true,
+        retryable: true,
+      },
+    ],
+    onEdit: () => undefined,
+    onRemove: () => undefined,
+    onRetry: () => undefined,
+  }))
+
+  assert.match(markup, /aria-label="Up next"/)
+  assert.match(markup, /aria-label="Position 2"/)
+  assert.match(markup, /Prepare the customer follow-up/)
+  assert.match(markup, /This queued message needs attention\./)
+  assert.match(markup, /aria-label="Retry queued message"/)
+  assert.match(markup, /aria-label="Edit queued message"/)
+  assert.match(markup, /aria-label="Remove queued message"/)
 })

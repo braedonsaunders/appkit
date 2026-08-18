@@ -12,10 +12,14 @@ import {
   CheckCircle2,
   ChevronRight,
   Database,
+  ListPlus,
   Loader2,
+  Pencil,
+  RotateCcw,
   Send,
   Sparkles,
   Square,
+  Trash2,
 } from 'lucide-react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -26,6 +30,19 @@ export type AgentMessage = {
   role: 'user' | 'assistant' | 'system'
   parts: unknown[]
 }
+
+export type AgentQueuedMessage = {
+  id: string
+  text: string
+  position: number
+  status: 'queued' | 'dispatching' | 'retrying' | 'failed'
+  statusLabel?: string
+  editable?: boolean
+  removable?: boolean
+  retryable?: boolean
+}
+
+export type AgentDispatchState = 'idle' | 'running' | 'recovering'
 
 export type AgentPanelLabels = {
   title: string
@@ -42,6 +59,16 @@ export type AgentPanelLabels = {
   working: string
   step: string
   steps: string
+  queue: string
+  queueTitle: string
+  queuePosition: string
+  queued: string
+  dispatching: string
+  retrying: string
+  queueFailed: string
+  editQueued: string
+  removeQueued: string
+  retryQueued: string
 }
 
 const DEFAULT_LABELS: AgentPanelLabels = {
@@ -59,6 +86,16 @@ const DEFAULT_LABELS: AgentPanelLabels = {
   working: 'Working',
   step: 'step',
   steps: 'steps',
+  queue: 'Add to queue',
+  queueTitle: 'Up next',
+  queuePosition: 'Position',
+  queued: 'Queued',
+  dispatching: 'Starting',
+  retrying: 'Retrying',
+  queueFailed: 'This queued message needs attention.',
+  editQueued: 'Edit queued message',
+  removeQueued: 'Remove queued message',
+  retryQueued: 'Retry queued message',
 }
 
 export type AgentPanelProps = {
@@ -70,6 +107,15 @@ export type AgentPanelProps = {
   /** Replaces the stock empty-state card while preserving the panel header and composer. */
   emptyContent?: React.ReactNode
   send?: (prompt: string, signal: AbortSignal) => Promise<Response>
+  /** Durable dispatch state supplied by the application after reload or handoff. */
+  dispatchState?: AgentDispatchState
+  /** Application-owned queue, already ordered by its durable dispatch position. */
+  queuedMessages?: readonly AgentQueuedMessage[]
+  /** Persists a turn behind the active or previously queued work. */
+  enqueue?: (prompt: string) => Promise<void>
+  onEditQueuedMessage?: (message: AgentQueuedMessage) => void
+  onRemoveQueuedMessage?: (message: AgentQueuedMessage) => void
+  onRetryQueuedMessage?: (message: AgentQueuedMessage) => void
   maxPromptCharacters?: number
   toolLabels?: Record<string, string>
 }
@@ -87,6 +133,12 @@ export function AgentPanel({
   headerActions,
   emptyContent,
   send,
+  dispatchState = 'idle',
+  queuedMessages = [],
+  enqueue,
+  onEditQueuedMessage,
+  onRemoveQueuedMessage,
+  onRetryQueuedMessage,
   maxPromptCharacters = 32_000,
   toolLabels,
 }: AgentPanelProps) {
@@ -94,6 +146,7 @@ export function AgentPanel({
   const [messages, setMessages] = React.useState(initialMessages)
   const [input, setInput] = React.useState('')
   const [streaming, setStreaming] = React.useState(false)
+  const [enqueueing, setEnqueueing] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const abortRef = React.useRef<AbortController | null>(null)
   const messageViewportRef = React.useRef<HTMLDivElement>(null)
@@ -114,7 +167,23 @@ export function AgentPanel({
 
   const submit = React.useCallback(async (raw: string) => {
     const prompt = raw.trim()
-    if (!enabled || !send || !prompt || prompt.length > maxPromptCharacters || abortRef.current) return
+    if (!enabled || !prompt || prompt.length > maxPromptCharacters) return
+    const shouldEnqueue = dispatchState !== 'idle' || abortRef.current !== null || queuedMessages.length > 0
+    if (shouldEnqueue) {
+      if (!enqueue || enqueueing) return
+      setEnqueueing(true)
+      setError(null)
+      try {
+        await enqueue(prompt)
+        setInput('')
+      } catch {
+        setError(labels.queueFailed)
+      } finally {
+        setEnqueueing(false)
+      }
+      return
+    }
+    if (!send) return
     const controller = new AbortController()
     abortRef.current = controller
     const stamp = Date.now()
@@ -145,7 +214,9 @@ export function AgentPanel({
       setStreaming(false)
       if (abortRef.current === controller) abortRef.current = null
     }
-  }, [enabled, labels.failed, maxPromptCharacters, scrollToBottom, send])
+  }, [dispatchState, enabled, enqueue, enqueueing, labels.failed, labels.queueFailed, maxPromptCharacters, queuedMessages.length, scrollToBottom, send])
+
+  const queueMode = dispatchState !== 'idle' || streaming || queuedMessages.length > 0
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-bg-subtle">
@@ -160,9 +231,49 @@ export function AgentPanel({
         )}
         {error ? <div role="alert" className="mx-auto mb-5 w-[calc(100%-2rem)] max-w-3xl rounded-lg border border-danger/25 bg-danger-subtle px-3 py-2 text-sm text-danger">{error}</div> : null}
       </div>
-      {enabled ? <div className="shrink-0 border-t border-border bg-surface px-4 py-3"><div className="mx-auto w-full max-w-3xl"><div className="flex items-end gap-2 rounded-2xl border border-border-strong bg-surface p-2 shadow-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/20"><textarea value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void submit(input) } }} maxLength={maxPromptCharacters} rows={1} placeholder={labels.placeholder} className="max-h-40 flex-1 resize-none overflow-y-auto border-0 bg-transparent px-2 py-1.5 text-base text-fg outline-none placeholder:text-fg-subtle sm:text-sm" />{streaming ? <Button type="button" variant="outline" size="icon" onClick={() => abortRef.current?.abort()} aria-label={labels.stop}><Square size={16} /></Button> : <Button type="button" size="icon" onClick={() => void submit(input)} disabled={!input.trim() || !send} aria-label={labels.send}><Send size={16} /></Button>}</div></div></div> : null}
+      {enabled ? <div className="shrink-0 border-t border-border bg-surface px-4 py-3"><div className="mx-auto w-full max-w-3xl">{queuedMessages.length > 0 ? <AgentMessageQueue messages={queuedMessages} labels={labels} onEdit={onEditQueuedMessage} onRemove={onRemoveQueuedMessage} onRetry={onRetryQueuedMessage} /> : null}<div className="flex items-end gap-2 rounded-2xl border border-border-strong bg-surface p-2 shadow-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/20"><textarea value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void submit(input) } }} maxLength={maxPromptCharacters} rows={1} placeholder={labels.placeholder} className="max-h-40 flex-1 resize-none overflow-y-auto border-0 bg-transparent px-2 py-1.5 text-base text-fg outline-none placeholder:text-fg-subtle sm:text-sm" />{streaming ? <Button type="button" variant="outline" size="icon" onClick={() => abortRef.current?.abort()} aria-label={labels.stop}><Square size={16} /></Button> : null}<Button type="button" size="icon" onClick={() => void submit(input)} disabled={!input.trim() || (queueMode ? !enqueue || enqueueing : !send)} aria-label={queueMode ? labels.queue : labels.send}>{enqueueing ? <Loader2 size={16} className="animate-spin" /> : queueMode ? <ListPlus size={16} /> : <Send size={16} />}</Button></div></div></div> : null}
     </div>
   )
+}
+
+export function AgentMessageQueue({
+  messages,
+  labels: labelOverrides,
+  onEdit,
+  onRemove,
+  onRetry,
+}: {
+  messages: readonly AgentQueuedMessage[]
+  labels?: Partial<AgentPanelLabels>
+  onEdit?: (message: AgentQueuedMessage) => void
+  onRemove?: (message: AgentQueuedMessage) => void
+  onRetry?: (message: AgentQueuedMessage) => void
+}) {
+  const labels = { ...DEFAULT_LABELS, ...labelOverrides }
+  return (
+    <section className="mb-3 rounded-xl border border-border bg-bg-subtle p-2" aria-label={labels.queueTitle}>
+      <div className="px-2 pb-1 text-xs font-medium text-fg-muted">{labels.queueTitle}</div>
+      <ol className="space-y-1">
+        {messages.map((message) => (
+          <li key={message.id} className="flex min-w-0 items-center gap-2 rounded-lg bg-surface px-2 py-1.5 shadow-xs">
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary-subtle text-xs font-medium text-primary" aria-label={`${labels.queuePosition} ${message.position}`}>{message.position}</span>
+            <span className="min-w-0 flex-1 truncate text-sm text-fg">{message.text}</span>
+            <span className={cn('shrink-0 text-xs', message.status === 'failed' ? 'text-danger' : 'text-fg-muted')}>{message.statusLabel ?? queueStatusLabel(message.status, labels)}</span>
+            {message.retryable && onRetry ? <Button type="button" variant="ghost" size="icon" className="size-7" onClick={() => onRetry(message)} aria-label={labels.retryQueued}><RotateCcw size={14} /></Button> : null}
+            {message.editable && onEdit ? <Button type="button" variant="ghost" size="icon" className="size-7" onClick={() => onEdit(message)} aria-label={labels.editQueued}><Pencil size={14} /></Button> : null}
+            {message.removable && onRemove ? <Button type="button" variant="ghost" size="icon" className="size-7" onClick={() => onRemove(message)} aria-label={labels.removeQueued}><Trash2 size={14} /></Button> : null}
+          </li>
+        ))}
+      </ol>
+    </section>
+  )
+}
+
+function queueStatusLabel(status: AgentQueuedMessage['status'], labels: AgentPanelLabels): string {
+  if (status === 'dispatching') return labels.dispatching
+  if (status === 'retrying') return labels.retrying
+  if (status === 'failed') return labels.queueFailed
+  return labels.queued
 }
 
 function replaceLastAssistantParts(messages: AgentMessage[], parts: unknown[]): AgentMessage[] {
