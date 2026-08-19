@@ -1,5 +1,11 @@
 # @braedonsaunders/appkit-ai
 
+## 1.1.4
+
+### Patch Changes
+
+- 8c15266: Render durable governed-action approval requests inline in agent conversations, with optional exact-action details, operator notes, and approve or decline callbacks.
+
 ## 1.1.3
 
 ### Patch Changes
