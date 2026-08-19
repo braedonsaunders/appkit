@@ -1059,12 +1059,12 @@ importers:
 
   packages/jobs:
     dependencies:
+      '@braedonsaunders/appkit-egress-proxy':
+        specifier: workspace:*
+        version: link:../egress-proxy
       '@braedonsaunders/appkit-email-render':
         specifier: workspace:*
         version: link:../email-render
-      '@braedonsaunders/appkit-sync':
-        specifier: workspace:*
-        version: link:../sync
       bullmq:
         specifier: ^5.34.0
         version: 5.80.9

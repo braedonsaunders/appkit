@@ -33,8 +33,8 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
+    "@braedonsaunders/appkit-egress-proxy": "workspace:*",
     "@braedonsaunders/appkit-email-render": "workspace:*",
-    "@braedonsaunders/appkit-sync": "workspace:*",
     "bullmq": "^5.34.0",
     "ioredis": "^5.4.2",
     "web-push": "^3.6.7"
