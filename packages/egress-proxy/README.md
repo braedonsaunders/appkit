@@ -52,6 +52,22 @@ const bound = await proxy.listen()
 await proxy.close()
 ```
 
+Server-side HTTP clients use the same public-address policy through the
+DNS-pinned secure transport:
+
+```ts
+import { secureFetch } from '@braedonsaunders/appkit-egress-proxy/secure-fetch'
+
+const response = await secureFetch('https://api.example.com/data', {
+  timeoutMs: 15_000,
+  maxResponseBytes: 1024 * 1024,
+})
+```
+
+The transport accepts HTTPS only, validates every DNS answer before opening
+the socket, connects to the validated address without re-resolving, validates
+redirects at every hop, and bounds request size, response size, and time.
+
 ## The policy and audit port contract
 
 The **policy** port is consulted once per flow, before any byte reaches the
@@ -95,8 +111,9 @@ would reject every IPv4 address). Supply `resolveUpstream` to integrate a
 different resolver; whatever it returns is dialled verbatim, so it inherits
 responsibility for the address check.
 
-The canonical treatment of these host rules lives in `@braedonsaunders/appkit-sync`'s egress
-module; this package mirrors the logic locally to stay dependency-free.
+The canonical host rules and DNS-pinned HTTPS transport live in this package.
+`@braedonsaunders/appkit-sync/egress` remains a compatibility re-export for
+existing connector consumers.
 
 ## Transparent deployment sketch
 

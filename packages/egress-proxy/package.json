@@ -6,6 +6,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./secure-fetch": "./src/secure-fetch.ts",
     "./package.json": "./package.json"
   },
   "main": "./src/index.ts",
