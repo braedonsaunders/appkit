@@ -1,5 +1,12 @@
 # @braedonsaunders/appkit-remote-sessions
 
+## 0.1.1
+
+### Patch Changes
+
+- adab5f2: Make durable, non-PTY terminal transcripts visually scannable with semantic ANSI for prompts,
+  shell commands, stream kinds, and status while preserving provider-supplied ANSI and reader scroll.
+
 ## 0.1.0
 
 ### Minor Changes
