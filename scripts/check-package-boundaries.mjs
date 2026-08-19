@@ -35,7 +35,7 @@ const appkitRuntimeAllowlists = {
   '@braedonsaunders/appkit-dashboard': ['@braedonsaunders/appkit-analytics'],
   '@braedonsaunders/appkit-notifications': [],
   '@braedonsaunders/appkit-workflows': [],
-  '@braedonsaunders/appkit-sync': [],
+  '@braedonsaunders/appkit-sync': ['@braedonsaunders/appkit-egress-proxy'],
   '@braedonsaunders/appkit-integrations': [],
   '@braedonsaunders/appkit-design-studio': ['@braedonsaunders/appkit-tokens'],
   '@braedonsaunders/appkit-pdf': ['@braedonsaunders/appkit-tokens'],

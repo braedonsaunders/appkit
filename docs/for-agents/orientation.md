@@ -715,7 +715,8 @@ run. Partial and failed runs retain the old cursor so the next pull covers every
 failed row again. Authoritative snapshots refuse to archive when a pull is
 empty, authority is missing, or any row failed; archive changes share the same
 ledger. The exact production people convergence/natural-adoption policy is
-available under `/person-sync-policy`. `/egress` is the DNS-pinned SSRF-safe HTTPS implementation;
+available under `/person-sync-policy`. `/egress` compatibility-re-exports the DNS-pinned,
+SSRF-safe HTTPS transport from `@braedonsaunders/appkit-egress-proxy/secure-fetch`;
 `/db-drivers` adds TLS-only PostgreSQL, MySQL, MariaDB, and SQL Server; `/schema`
 and `/drizzle` own connections, crosswalks, full run state, and record changes.
 The memory adapter runs the same state machine for local-first applications,
@@ -736,7 +737,7 @@ A failed multi-item delivery resumes known successes, while send-once suppresses
 only a completely pushed delivery. HTTP, Slack/Teams, Google Sheets, email, and
 SQL are optional entries. Email receives the app's transport. SQL preserves the
 production row and weekly fan-out modes, required-field filtering, value maps,
-and identity-based reversal. HTTP/chat/Sheets use sync's hardened egress entry.
+and identity-based reversal. HTTP/chat/Sheets use the shared hardened egress transport.
 The source-shaped `tenant_integrations` and `integration_export_log` schema,
 clean migration, RLS-required Drizzle store, and database-free memory store run
 the same publisher/dispatcher contract. The working reference is

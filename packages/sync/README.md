@@ -66,7 +66,8 @@ secret store.
 - `@braedonsaunders/appkit-sync/runtime` — orchestration and memory adapters
 - `@braedonsaunders/appkit-sync/person-sync-policy` — extracted ownership conflict decisions
 - `@braedonsaunders/appkit-sync/snapshot-policy` — fail-closed archival planning
-- `@braedonsaunders/appkit-sync/egress` and `/db-drivers` — hardened network/database access
+- `@braedonsaunders/appkit-sync/egress` and `/db-drivers` — compatibility access to the
+  hardened `@braedonsaunders/appkit-egress-proxy/secure-fetch` transport and database drivers
 - `@braedonsaunders/appkit-sync/schema` and `/drizzle` — feature-owned persistence
 
 No credentials, application record schema, entity mapping, or product-specific

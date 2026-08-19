@@ -4,7 +4,15 @@
 
 ### Minor Changes
 
-- 6a061bd: Add an application-controlled durable message queue to `AgentPanel`, including ordered status presentation and edit, remove, and retry actions.
+- c557f47: Add an application-controlled durable message queue to `AgentPanel`, including ordered status presentation and edit, remove, and retry actions.
+
+## 1.0.3
+
+### Patch Changes
+
+- cfe19a9: Move the DNS-pinned, SSRF-safe HTTPS transport into the shared egress package and remove AI's accidental runtime dependency on the data-sync package. Sync continues to re-export the transport for compatibility.
+- Updated dependencies [cfe19a9]
+  - @braedonsaunders/appkit-egress-proxy@0.1.1
 
 ## 1.0.2
 

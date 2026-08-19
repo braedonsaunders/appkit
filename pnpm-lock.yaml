@@ -257,9 +257,9 @@ importers:
       '@ai-sdk/openai-compatible':
         specifier: ^2.0.59
         version: 2.0.62(zod@4.4.3)
-      '@braedonsaunders/appkit-sync':
+      '@braedonsaunders/appkit-egress-proxy':
         specifier: workspace:*
-        version: link:../sync
+        version: link:../egress-proxy
       ai:
         specifier: ^6.0.224
         version: 6.0.230(zod@4.4.3)
@@ -1059,12 +1059,12 @@ importers:
 
   packages/jobs:
     dependencies:
+      '@braedonsaunders/appkit-egress-proxy':
+        specifier: workspace:*
+        version: link:../egress-proxy
       '@braedonsaunders/appkit-email-render':
         specifier: workspace:*
         version: link:../email-render
-      '@braedonsaunders/appkit-sync':
-        specifier: workspace:*
-        version: link:../sync
       bullmq:
         specifier: ^5.34.0
         version: 5.80.9
@@ -1573,6 +1573,10 @@ importers:
     publishDirectory: dist
 
   packages/sync:
+    dependencies:
+      '@braedonsaunders/appkit-egress-proxy':
+        specifier: workspace:^0.1.0
+        version: link:../egress-proxy
     devDependencies:
       '@braedonsaunders/appkit-db':
         specifier: workspace:*

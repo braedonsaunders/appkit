@@ -25,7 +25,7 @@
     "@ai-sdk/google": "^3.0.91",
     "@ai-sdk/openai": "^3.0.84",
     "@ai-sdk/openai-compatible": "^2.0.59",
-    "@braedonsaunders/appkit-sync": "workspace:*",
+    "@braedonsaunders/appkit-egress-proxy": "workspace:*",
     "ai": "^6.0.224",
     "zod": "^4.4.3"
   },

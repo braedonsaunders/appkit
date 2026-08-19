@@ -14,8 +14,10 @@
     "lint": "pnpm check:quality && pnpm check:provenance && pnpm check:boundaries && pnpm test:isolation && turbo run lint",
     "check:quality": "node scripts/check-production-quality.mjs",
     "check:provenance": "node scripts/check-provenance.mjs",
-    "test": "turbo run test && pnpm test:release-order",
+    "test": "turbo run test && pnpm test:release-order && pnpm test:registry-closure",
     "test:release-order": "node --test scripts/publish-order.test.mjs",
+    "test:registry-closure": "node --test scripts/registry-dependency-closure.test.mjs",
+    "test:registry-consumers": "node scripts/test-registry-consumers.mjs",
     "check:boundaries": "node scripts/check-package-boundaries.mjs",
     "test:isolation": "node scripts/check-package-isolation.mjs",
     "sync:package-metadata": "node scripts/sync-package-metadata.mjs",
@@ -26,7 +28,7 @@
     "clean": "turbo run clean && rm -rf node_modules",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm build:packages && pnpm test:packages && pnpm test:consumers && node scripts/publish-packages-sequentially.mjs && changeset tag"
+    "release": "pnpm build:packages && pnpm test:packages && pnpm test:consumers && node scripts/publish-packages-sequentially.mjs && pnpm test:registry-consumers && changeset tag"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.7",

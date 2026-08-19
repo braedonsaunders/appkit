@@ -36,6 +36,9 @@
     "test": "node --import tsx --test src/*.test.ts",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
+  "dependencies": {
+    "@braedonsaunders/appkit-egress-proxy": "workspace:^0.1.0"
+  },
   "peerDependencies": {
     "@braedonsaunders/appkit-db": "^0.2.0",
     "drizzle-orm": "^0.45.2",
