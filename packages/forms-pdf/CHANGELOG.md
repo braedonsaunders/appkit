@@ -1,5 +1,11 @@
 # @braedonsaunders/appkit-forms-pdf
 
+## 2.0.1
+
+### Patch Changes
+
+- 0bf3181: Allow cold Chromium starts on contended workers more time and recover cleanly after a transient launch failure.
+
 ## 2.0.0
 
 ### Patch Changes
