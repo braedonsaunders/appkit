@@ -24,6 +24,11 @@ plus parts for the optimistic user turn. Persisted user messages can include
 `{ type: 'file', filename, url? }` parts, which render as compact attachment
 links.
 
+While the first assistant parts are streaming, `AgentPanel` renders a subtle
+three-dot typing cadence through the exported `AgentTypingIndicator`. Its pure
+CSS motion uses AppKit duration/easing tokens, is independent of an app's
+Tailwind content scan, and becomes a static ellipsis under reduced motion.
+
 Applications with durable session dispatch can pass `dispatchState` and an
 ordered `queuedMessages` collection. While work is running, recovering, or
 already queued, new composer submissions go through the app-owned `enqueue`

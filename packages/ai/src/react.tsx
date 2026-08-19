@@ -69,6 +69,7 @@ export type AgentPanelLabels = {
   editQueued: string
   removeQueued: string
   retryQueued: string
+  responding: string
 }
 
 const DEFAULT_LABELS: AgentPanelLabels = {
@@ -96,6 +97,7 @@ const DEFAULT_LABELS: AgentPanelLabels = {
   editQueued: 'Edit queued message',
   removeQueued: 'Remove queued message',
   retryQueued: 'Retry queued message',
+  responding: 'Assistant is responding',
 }
 
 export type AgentPanelProps = {
@@ -307,7 +309,51 @@ function AgentMessageRow({ message, streaming, labels, toolLabels }: { message: 
     const files = message.parts.filter(isAgentFilePart)
     return <div className="flex justify-end"><div className="max-w-[85%] space-y-2 rounded-2xl rounded-br-md bg-primary px-4 py-2 text-sm whitespace-pre-wrap text-primary-fg">{text ? <div>{text}</div> : null}{files.length > 0 ? <div className="flex flex-wrap justify-end gap-1.5">{files.map((file, index) => file.url ? <a key={`${file.filename}-${index}`} href={file.url} className="rounded-md border border-primary-fg/25 bg-primary-fg/10 px-2 py-1 text-xs font-medium hover:bg-primary-fg/15" download>{file.filename}</a> : <span key={`${file.filename}-${index}`} className="rounded-md border border-primary-fg/25 bg-primary-fg/10 px-2 py-1 text-xs font-medium">{file.filename}</span>)}</div> : null}</div></div>
   }
-  return <div className="flex gap-3"><span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-fg shadow-sm"><Sparkles size={16} /></span><div className="min-w-0 flex-1 pt-0.5">{message.parts.length === 0 && streaming ? <div className="flex items-center gap-1 py-1.5">{[0,1,2].map((index) => <span key={index} className="size-1.5 animate-bounce rounded-full bg-fg-subtle" style={{ animationDelay: `${index * 0.15}s` }} />)}</div> : <AgentMessageParts parts={message.parts} labels={labels} toolLabels={toolLabels} />}</div></div>
+  return <div className="flex gap-3"><span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-fg shadow-sm"><Sparkles size={16} /></span><div className="min-w-0 flex-1 pt-0.5">{message.parts.length === 0 && streaming ? <AgentTypingIndicator label={labels.responding} /> : <AgentMessageParts parts={message.parts} labels={labels} toolLabels={toolLabels} />}</div></div>
+}
+
+const TYPING_DOT_DELAYS = [
+  '0ms',
+  'var(--duration-fast)',
+  'calc(var(--duration-fast) + var(--duration-fast))',
+] as const
+
+/**
+ * A self-contained streaming cue that does not depend on the consuming app's
+ * Tailwind content scan. The cadence uses AppKit motion tokens and becomes a
+ * still, readable ellipsis when the user requests reduced motion.
+ */
+export function AgentTypingIndicator({ label = DEFAULT_LABELS.responding }: { label?: string }) {
+  return (
+    <div role="status" aria-label={label} className="flex items-center gap-1 py-1.5">
+      <style>{`
+        @keyframes appkit-agent-typing-dot {
+          0%, 36%, 100% { opacity: 0.55; transform: translateY(0); }
+          18% { opacity: 1; transform: translateY(-0.2rem); }
+        }
+        .appkit-agent-typing-dot {
+          animation: appkit-agent-typing-dot calc(var(--duration-slow) + var(--duration-slow) + var(--duration-slow)) var(--ease-out) infinite;
+          will-change: transform, opacity;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .appkit-agent-typing-dot {
+            animation: none;
+            opacity: 0.7;
+            transform: none;
+            will-change: auto;
+          }
+        }
+      `}</style>
+      {TYPING_DOT_DELAYS.map((animationDelay) => (
+        <span
+          key={animationDelay}
+          aria-hidden="true"
+          className="appkit-agent-typing-dot size-1.5 rounded-full bg-fg-subtle"
+          style={{ animationDelay }}
+        />
+      ))}
+    </div>
+  )
 }
 
 function isAgentFilePart(part: unknown): part is { type: 'file'; filename: string; url?: string } {

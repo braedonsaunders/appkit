@@ -1,12 +1,17 @@
 'use client'
 
-import { AgentPanel } from '@braedonsaunders/appkit-ai/react'
+import { AgentPanel, AgentTypingIndicator } from '@braedonsaunders/appkit-ai/react'
 import { Card } from '@braedonsaunders/appkit-ui'
 
 export function AgentConversationDemo() {
   return (
-    <Card className="h-[42rem] overflow-hidden">
-      <AgentPanel
+    <div className="space-y-4">
+      <Card className="flex items-center gap-3 p-4">
+        <span className="text-sm font-medium text-fg">Live response</span>
+        <AgentTypingIndicator />
+      </Card>
+      <Card className="h-[42rem] overflow-hidden">
+        <AgentPanel
         enabled
         dispatchState="running"
         initialMessages={[
@@ -21,7 +26,8 @@ export function AgentConversationDemo() {
         onEditQueuedMessage={() => undefined}
         onRemoveQueuedMessage={() => undefined}
         onRetryQueuedMessage={() => undefined}
-      />
-    </Card>
+        />
+      </Card>
+    </div>
   )
 }

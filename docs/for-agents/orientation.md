@@ -262,6 +262,9 @@ panel's fixed header, and may replace the stock first-message card through
 tool calls render as one subtle activity line showing the newest step and total count; the complete inputs and results expand
 in place, so long agent runs do not overwhelm the conversation. The playground documents this contract on `/dashboard/platform`
 without inventing a credential, fake conversation, or provider-specific demo.
+The empty streaming turn uses `AgentTypingIndicator`: a token-timed, staggered
+three-dot cadence with a static reduced-motion fallback that does not depend on
+the consuming application's Tailwind content scan.
 The root also exports the production provider catalogue and model policy,
 writing, extraction, dataset analysis, activity digest, document-agent, bounded
 vision, and structured builder helpers. Applications still supply credentials,

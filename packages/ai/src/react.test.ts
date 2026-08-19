@@ -2,7 +2,21 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import * as React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { AgentMessageQueue, AgentPanel, type AgentPanelProps } from './react'
+import { AgentMessageQueue, AgentPanel, AgentTypingIndicator, type AgentPanelProps } from './react'
+
+test('AgentTypingIndicator renders a tokenized stagger and a reduced-motion fallback', () => {
+  const markup = renderToStaticMarkup(React.createElement(AgentTypingIndicator))
+
+  assert.match(markup, /role="status"/)
+  assert.match(markup, /aria-label="Assistant is responding"/)
+  assert.match(markup, /@keyframes appkit-agent-typing-dot/)
+  assert.match(markup, /var\(--duration-slow\)/)
+  assert.match(markup, /var\(--ease-out\)/)
+  assert.match(markup, /prefers-reduced-motion: reduce/)
+  assert.match(markup, /animation-delay:var\(--duration-fast\)/)
+  assert.equal(markup.match(/appkit-agent-typing-dot size-1\.5/g)?.length, 3)
+  assert.doesNotMatch(markup, /animate-bounce/)
+})
 
 test('AgentPanel renders optional actions in its main header', () => {
   const props = {
