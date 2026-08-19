@@ -1,5 +1,11 @@
 # @braedonsaunders/appkit-ai
 
+## 1.1.0
+
+### Minor Changes
+
+- c557f47: Add an application-controlled durable message queue to `AgentPanel`, including ordered status presentation and edit, remove, and retry actions.
+
 ## 1.0.3
 
 ### Patch Changes
