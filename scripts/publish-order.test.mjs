@@ -8,12 +8,9 @@ import {
 test('every cutover package is ordered before optional publication targets', () => {
   const optionalNames = [
     '@braedonsaunders/appkit-analytics',
-    '@braedonsaunders/create-appkit',
     '@braedonsaunders/appkit-integrations',
     '@braedonsaunders/appkit-mcp',
     '@braedonsaunders/appkit-query-console',
-    '@braedonsaunders/appkit-reports',
-    '@braedonsaunders/appkit-scheduling',
   ]
   const manifests = [...optionalNames, ...releasePriorityPackageNames.toReversed()]
     .map((name) => ({ name }))
@@ -42,16 +39,18 @@ test('publication ordering does not mutate the manifest inventory', () => {
   assert.deepEqual(manifests, original)
 })
 
-test('existing package updates publish before the blocked Sync name', () => {
+test('remaining new package names publish before the create-appkit update', () => {
   const ordered = orderManifestsForPublication([
+    { name: '@braedonsaunders/appkit-reports' },
+    { name: '@braedonsaunders/appkit-scheduling' },
     { name: '@braedonsaunders/appkit-sync' },
-    { name: '@braedonsaunders/appkit-forms-pdf' },
-    { name: '@braedonsaunders/appkit-remote-sessions' },
+    { name: '@braedonsaunders/create-appkit' },
   ]).map(({ name }) => name)
 
   assert.deepEqual(ordered, [
-    '@braedonsaunders/appkit-remote-sessions',
-    '@braedonsaunders/appkit-forms-pdf',
+    '@braedonsaunders/appkit-reports',
+    '@braedonsaunders/appkit-scheduling',
     '@braedonsaunders/appkit-sync',
+    '@braedonsaunders/create-appkit',
   ])
 })

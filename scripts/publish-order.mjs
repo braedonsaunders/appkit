@@ -4,17 +4,21 @@
  * must be attempted before optional packages. Already-published versions are
  * inspected and skipped by the publisher without consuming a publish slot.
  *
- * Keep version updates first: they do not consume a new-name slot, and Desk's
- * lifecycle fix is required by the host currently running the application.
+ * Keep the remaining new package names ahead of create-appkit's existing-name
+ * update so one serialized release proves the quota cutover in the intended
+ * order. Already-live priority versions are inspected and skipped.
  */
 export const releasePriorityPackageNames = Object.freeze([
+  '@braedonsaunders/appkit-reports',
+  '@braedonsaunders/appkit-scheduling',
+  '@braedonsaunders/appkit-sync',
+  '@braedonsaunders/create-appkit',
   '@braedonsaunders/appkit-egress-proxy',
   '@braedonsaunders/appkit-ai',
   '@braedonsaunders/appkit-desk',
   '@braedonsaunders/appkit-jobs',
   '@braedonsaunders/appkit-remote-sessions',
   '@braedonsaunders/appkit-forms-pdf',
-  '@braedonsaunders/appkit-sync',
   '@braedonsaunders/appkit-workflows',
   '@braedonsaunders/appkit-tokens',
   '@braedonsaunders/appkit-ui',
