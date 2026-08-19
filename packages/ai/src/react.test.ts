@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import * as React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { AgentMessageQueue, AgentPanel, AgentSecretRequestCard, AgentTypingIndicator, type AgentPanelProps } from './react'
+import { AgentApprovalRequestCard, AgentMessageQueue, AgentPanel, AgentSecretRequestCard, AgentTypingIndicator, type AgentPanelProps } from './react'
 
 test('AgentTypingIndicator renders a tokenized stagger and a reduced-motion fallback', () => {
   const markup = renderToStaticMarkup(React.createElement(AgentTypingIndicator))
@@ -173,6 +173,49 @@ test('AgentSecretRequestCard rejects unsafe help URLs', () => {
 
   assert.doesNotMatch(markup, /javascript:/)
   assert.doesNotMatch(markup, /Open setup instructions/)
+})
+
+test('AgentPanel renders a transcript-safe pending approval with inline decisions', () => {
+  const markup = renderToStaticMarkup(React.createElement(AgentPanel, {
+    enabled: true,
+    initialMessages: [{
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [{
+        type: 'approval-request',
+        approvalId: 'approval-1',
+        categoryLabel: 'Record change',
+        description: 'Create the SocialData X/Twitter integration proposal.',
+        details: [{ label: 'Provider', value: 'SocialData' }],
+        status: 'pending',
+      }],
+    }],
+    onDecideApprovalRequest: async () => undefined,
+  } satisfies AgentPanelProps))
+
+  assert.match(markup, /Approval needed/)
+  assert.match(markup, /Create the SocialData X\/Twitter integration proposal\./)
+  assert.match(markup, /Provider/)
+  assert.match(markup, /SocialData/)
+  assert.match(markup, />Approve</)
+  assert.match(markup, />Decline</)
+})
+
+test('AgentApprovalRequestCard renders settled states without decision controls', () => {
+  const markup = renderToStaticMarkup(React.createElement(AgentApprovalRequestCard, {
+    request: {
+      type: 'approval-request',
+      approvalId: 'approval-2',
+      categoryLabel: 'External email',
+      description: 'Send the prepared customer update.',
+      status: 'approved',
+      decisionNote: 'Send it this morning.',
+    },
+  }))
+
+  assert.match(markup, /Approved\. The agent will continue automatically\./)
+  assert.match(markup, /Send it this morning\./)
+  assert.doesNotMatch(markup, />Decline</)
 })
 
 test('AgentMessageQueue renders durable position, state, and available recovery actions', () => {

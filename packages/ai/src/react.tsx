@@ -21,6 +21,7 @@ import {
   Pencil,
   RotateCcw,
   Send,
+  ShieldCheck,
   Sparkles,
   Square,
   Trash2,
@@ -47,6 +48,43 @@ export type AgentQueuedMessage = {
 }
 
 export type AgentSecretRequestStatus = 'pending' | 'stored' | 'expired'
+
+export type AgentApprovalRequestStatus = 'pending' | 'approved' | 'rejected' | 'expired'
+
+/** Transcript-safe metadata for an inline governed-action decision. */
+export type AgentApprovalRequestPart = {
+  type: 'approval-request'
+  approvalId: string
+  categoryLabel: string
+  description: string
+  details?: Array<{ label: string; value: string }>
+  status: AgentApprovalRequestStatus
+  decisionNote?: string
+}
+
+export type AgentApprovalRequestLabels = {
+  title: string
+  note: string
+  approve: string
+  reject: string
+  deciding: string
+  approved: string
+  rejected: string
+  expired: string
+  failed: string
+}
+
+const DEFAULT_APPROVAL_REQUEST_LABELS: AgentApprovalRequestLabels = {
+  title: 'Approval needed',
+  note: 'Add a note (optional)',
+  approve: 'Approve',
+  reject: 'Decline',
+  deciding: 'Saving decision',
+  approved: 'Approved. The agent will continue automatically.',
+  rejected: 'Declined. The agent will receive your decision.',
+  expired: 'This approval request has expired.',
+  failed: 'The decision could not be saved. Please retry.',
+}
 
 /** Transcript-safe metadata for an inline credential request. */
 export type AgentSecretRequestPart = {
@@ -177,6 +215,8 @@ export type AgentPanelProps = {
   onSubmitSecretRequest?: (requestId: string, secret: string) => void | Promise<void>
   onCancelSecretRequest?: (requestId: string) => void | Promise<void>
   secretRequestLabels?: Partial<AgentSecretRequestLabels>
+  onDecideApprovalRequest?: (approvalId: string, decision: 'approved' | 'rejected', note?: string) => void | Promise<void>
+  approvalRequestLabels?: Partial<AgentApprovalRequestLabels>
   maxPromptCharacters?: number
   toolLabels?: Record<string, string>
 }
@@ -206,6 +246,8 @@ export function AgentPanel({
   onSubmitSecretRequest,
   onCancelSecretRequest,
   secretRequestLabels,
+  onDecideApprovalRequest,
+  approvalRequestLabels,
   maxPromptCharacters = 32_000,
   toolLabels,
 }: AgentPanelProps) {
@@ -293,7 +335,7 @@ export function AgentPanel({
           <div className="flex min-h-full flex-col">{emptyContent}</div>
         ) : (
           <div className="mx-auto w-full max-w-3xl px-4 py-6">
-            {messages.length === 0 ? <AgentWelcome enabled={enabled} title={enabled ? labels.welcomeTitle : labels.disabledTitle} description={enabled ? labels.welcomeDescription : labels.disabledDescription} suggestions={suggestions} onPick={(value) => void submit(value)} /> : <div className="space-y-6">{messages.map((message) => message.role === 'system' ? null : <AgentMessageRow key={message.id} message={message} streaming={streaming} labels={labels} toolLabels={toolLabels} onSubmitSecretRequest={onSubmitSecretRequest} onCancelSecretRequest={onCancelSecretRequest} secretRequestLabels={secretRequestLabels} />)}</div>}
+            {messages.length === 0 ? <AgentWelcome enabled={enabled} title={enabled ? labels.welcomeTitle : labels.disabledTitle} description={enabled ? labels.welcomeDescription : labels.disabledDescription} suggestions={suggestions} onPick={(value) => void submit(value)} /> : <div className="space-y-6">{messages.map((message) => message.role === 'system' ? null : <AgentMessageRow key={message.id} message={message} streaming={streaming} labels={labels} toolLabels={toolLabels} onSubmitSecretRequest={onSubmitSecretRequest} onCancelSecretRequest={onCancelSecretRequest} secretRequestLabels={secretRequestLabels} onDecideApprovalRequest={onDecideApprovalRequest} approvalRequestLabels={approvalRequestLabels} />)}</div>}
           </div>
         )}
         {error ? <div role="alert" className="mx-auto mb-5 w-[calc(100%-2rem)] max-w-3xl rounded-lg border border-danger/25 bg-danger-subtle px-3 py-2 text-sm text-danger">{error}</div> : null}
@@ -355,13 +397,13 @@ function AgentWelcome({ enabled, title, description, suggestions, onPick }: { en
   return <div className="pt-10"><EmptyState icon={<Sparkles />} title={title} description={description} />{enabled && suggestions.length ? <div className="mx-auto mt-6 grid max-w-2xl gap-2 sm:grid-cols-2">{suggestions.map((suggestion) => <button key={suggestion} type="button" onClick={() => onPick(suggestion)} className="rounded-xl border border-border bg-surface px-4 py-3 text-left text-sm text-fg-muted shadow-sm transition-colors hover:border-primary/40 hover:bg-primary-subtle hover:text-fg">{suggestion}</button>)}</div> : null}</div>
 }
 
-function AgentMessageRow({ message, streaming, labels, toolLabels, onSubmitSecretRequest, onCancelSecretRequest, secretRequestLabels }: { message: AgentMessage; streaming: boolean; labels: AgentPanelLabels; toolLabels?: Record<string, string>; onSubmitSecretRequest?: AgentPanelProps['onSubmitSecretRequest']; onCancelSecretRequest?: AgentPanelProps['onCancelSecretRequest']; secretRequestLabels?: Partial<AgentSecretRequestLabels> }) {
+function AgentMessageRow({ message, streaming, labels, toolLabels, onSubmitSecretRequest, onCancelSecretRequest, secretRequestLabels, onDecideApprovalRequest, approvalRequestLabels }: { message: AgentMessage; streaming: boolean; labels: AgentPanelLabels; toolLabels?: Record<string, string>; onSubmitSecretRequest?: AgentPanelProps['onSubmitSecretRequest']; onCancelSecretRequest?: AgentPanelProps['onCancelSecretRequest']; secretRequestLabels?: Partial<AgentSecretRequestLabels>; onDecideApprovalRequest?: AgentPanelProps['onDecideApprovalRequest']; approvalRequestLabels?: Partial<AgentApprovalRequestLabels> }) {
   if (message.role === 'user') {
     const text = (message.parts.find((part) => (part as { type?: string }).type === 'text') as { text?: string } | undefined)?.text
     const files = message.parts.filter(isAgentFilePart)
     return <div className="flex justify-end"><div className="max-w-[85%] space-y-2 rounded-2xl rounded-br-md bg-primary px-4 py-2 text-sm whitespace-pre-wrap text-primary-fg">{text ? <div>{text}</div> : null}{files.length > 0 ? <div className="flex flex-wrap justify-end gap-1.5">{files.map((file, index) => file.url ? <a key={`${file.filename}-${index}`} href={file.url} className="rounded-md border border-primary-fg/25 bg-primary-fg/10 px-2 py-1 text-xs font-medium hover:bg-primary-fg/15" download>{file.filename}</a> : <span key={`${file.filename}-${index}`} className="rounded-md border border-primary-fg/25 bg-primary-fg/10 px-2 py-1 text-xs font-medium">{file.filename}</span>)}</div> : null}</div></div>
   }
-  return <div className="flex gap-3"><span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-fg shadow-sm"><Sparkles size={16} /></span><div className="min-w-0 flex-1 pt-0.5">{message.parts.length === 0 && streaming ? <AgentTypingIndicator label={labels.responding} /> : <AgentMessageParts parts={message.parts} labels={labels} toolLabels={toolLabels} onSubmitSecretRequest={onSubmitSecretRequest} onCancelSecretRequest={onCancelSecretRequest} secretRequestLabels={secretRequestLabels} />}</div></div>
+  return <div className="flex gap-3"><span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-fg shadow-sm"><Sparkles size={16} /></span><div className="min-w-0 flex-1 pt-0.5">{message.parts.length === 0 && streaming ? <AgentTypingIndicator label={labels.responding} /> : <AgentMessageParts parts={message.parts} labels={labels} toolLabels={toolLabels} onSubmitSecretRequest={onSubmitSecretRequest} onCancelSecretRequest={onCancelSecretRequest} secretRequestLabels={secretRequestLabels} onDecideApprovalRequest={onDecideApprovalRequest} approvalRequestLabels={approvalRequestLabels} />}</div></div>
 }
 
 const TYPING_DOT_DELAYS = [
@@ -417,7 +459,7 @@ function isAgentFilePart(part: unknown): part is { type: 'file'; filename: strin
     && (candidate.url === undefined || typeof candidate.url === 'string')
 }
 
-function AgentMessageParts({ parts, labels, toolLabels, onSubmitSecretRequest, onCancelSecretRequest, secretRequestLabels }: { parts: unknown[]; labels: AgentPanelLabels; toolLabels?: Record<string, string>; onSubmitSecretRequest?: AgentPanelProps['onSubmitSecretRequest']; onCancelSecretRequest?: AgentPanelProps['onCancelSecretRequest']; secretRequestLabels?: Partial<AgentSecretRequestLabels> }) {
+function AgentMessageParts({ parts, labels, toolLabels, onSubmitSecretRequest, onCancelSecretRequest, secretRequestLabels, onDecideApprovalRequest, approvalRequestLabels }: { parts: unknown[]; labels: AgentPanelLabels; toolLabels?: Record<string, string>; onSubmitSecretRequest?: AgentPanelProps['onSubmitSecretRequest']; onCancelSecretRequest?: AgentPanelProps['onCancelSecretRequest']; secretRequestLabels?: Partial<AgentSecretRequestLabels>; onDecideApprovalRequest?: AgentPanelProps['onDecideApprovalRequest']; approvalRequestLabels?: Partial<AgentApprovalRequestLabels> }) {
   const rendered: React.ReactNode[] = []
   let tools: AgentToolPart[] = []
   let toolGroupStart = 0
@@ -440,12 +482,100 @@ function AgentMessageParts({ parts, labels, toolLabels, onSubmitSecretRequest, o
       rendered.push(<AgentSecretRequestCard key={`secret-${part.requestId}-${part.status}`} request={part} labels={secretRequestLabels} onSubmit={onSubmitSecretRequest} onCancel={onCancelSecretRequest} />)
       return
     }
+    if (isAgentApprovalRequestPart(part)) {
+      rendered.push(<AgentApprovalRequestCard key={`approval-${part.approvalId}-${part.status}`} request={part} labels={approvalRequestLabels} onDecide={onDecideApprovalRequest} />)
+      return
+    }
     if (part.type === 'text' && typeof part.text === 'string' && part.text.trim()) {
       rendered.push(<ChatMarkdown key={`text-${index}`}>{part.text}</ChatMarkdown>)
     }
   })
   flushTools()
   return <div className="space-y-2.5">{rendered}</div>
+}
+
+function isAgentApprovalRequestPart(part: { type: string; [key: string]: unknown }): part is AgentApprovalRequestPart & { [key: string]: unknown } {
+  return part.type === 'approval-request'
+    && typeof part.approvalId === 'string'
+    && part.approvalId.trim().length > 0
+    && typeof part.categoryLabel === 'string'
+    && part.categoryLabel.trim().length > 0
+    && typeof part.description === 'string'
+    && part.description.trim().length > 0
+    && (part.details === undefined || (Array.isArray(part.details) && part.details.every((detail) => (
+      detail !== null
+      && typeof detail === 'object'
+      && typeof (detail as { label?: unknown }).label === 'string'
+      && typeof (detail as { value?: unknown }).value === 'string'
+    ))))
+    && (part.status === 'pending' || part.status === 'approved' || part.status === 'rejected' || part.status === 'expired')
+    && (part.decisionNote === undefined || typeof part.decisionNote === 'string')
+}
+
+export type AgentApprovalRequestCardProps = {
+  request: AgentApprovalRequestPart
+  labels?: Partial<AgentApprovalRequestLabels>
+  onDecide?: (approvalId: string, decision: 'approved' | 'rejected', note?: string) => void | Promise<void>
+}
+
+/** Inline, transcript-safe approval for a governed action. */
+export function AgentApprovalRequestCard({ request, labels: labelOverrides, onDecide }: AgentApprovalRequestCardProps) {
+  const labels = { ...DEFAULT_APPROVAL_REQUEST_LABELS, ...labelOverrides }
+  const [deciding, setDeciding] = React.useState<'approved' | 'rejected' | null>(null)
+  const [settledStatus, setSettledStatus] = React.useState<'approved' | 'rejected' | null>(null)
+  const [error, setError] = React.useState<string | null>(null)
+  const noteRef = React.useRef<HTMLInputElement>(null)
+  const status = settledStatus ?? request.status
+
+  const decide = React.useCallback(async (decision: 'approved' | 'rejected') => {
+    if (!onDecide || deciding || status !== 'pending') return
+    const note = noteRef.current?.value.trim() || undefined
+    setError(null)
+    setDeciding(decision)
+    try {
+      await onDecide(request.approvalId, decision, note)
+      setSettledStatus(decision)
+      if (noteRef.current) noteRef.current.value = ''
+    } catch {
+      setError(labels.failed)
+    } finally {
+      setDeciding(null)
+    }
+  }, [deciding, labels.failed, onDecide, request.approvalId, status])
+
+  const statusText = status === 'approved'
+    ? labels.approved
+    : status === 'rejected'
+      ? labels.rejected
+      : status === 'expired'
+        ? labels.expired
+        : null
+
+  return (
+    <section className="rounded-xl border border-border bg-surface-raised p-3 shadow-sm" aria-label={labels.title}>
+      <div className="flex items-start gap-2.5">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-warning-subtle text-warning"><ShieldCheck size={17} /></span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-fg">{labels.title}</p>
+            <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-fg-muted">{request.categoryLabel}</span>
+          </div>
+          <p className="mt-1 text-sm leading-5 text-fg-muted">{request.description}</p>
+          {request.details?.length ? <dl className="mt-2 grid gap-1 rounded-lg bg-surface-muted p-2 text-xs">{request.details.map((detail) => <div key={`${detail.label}:${detail.value}`} className="grid grid-cols-[minmax(5rem,auto)_1fr] gap-2"><dt className="font-medium text-fg-muted">{detail.label}</dt><dd className="min-w-0 break-words text-fg">{detail.value}</dd></div>)}</dl> : null}
+          {status === 'pending' ? (
+            <div className="mt-3 space-y-2">
+              <Input ref={noteRef} placeholder={labels.note} aria-label={labels.note} disabled={!onDecide || deciding !== null} />
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" size="sm" onClick={() => void decide('approved')} disabled={!onDecide || deciding !== null}>{deciding === 'approved' ? <Loader2 className="size-4 animate-spin" /> : null}{deciding === 'approved' ? labels.deciding : labels.approve}</Button>
+                <Button type="button" size="sm" variant="outline" onClick={() => void decide('rejected')} disabled={!onDecide || deciding !== null}>{deciding === 'rejected' ? <Loader2 className="size-4 animate-spin" /> : null}{deciding === 'rejected' ? labels.deciding : labels.reject}</Button>
+              </div>
+            </div>
+          ) : <p className="mt-2 text-xs font-medium text-fg-muted">{statusText}{request.decisionNote ? ` Note: ${request.decisionNote}` : ''}</p>}
+          {error ? <p role="alert" className="mt-2 text-xs text-danger">{error}</p> : null}
+        </div>
+      </div>
+    </section>
+  )
 }
 
 function isAgentSecretRequestPart(part: { type: string; [key: string]: unknown }): part is AgentSecretRequestPart & { [key: string]: unknown } {

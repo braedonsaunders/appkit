@@ -39,6 +39,14 @@ and never added to message parts, React state, rendered text, or AppKit-owned
 persistence. The application remains responsible for authorization, sealing,
 storage, audit, and updating the durable request status.
 
+Governed actions can use a typed `approval-request` part with an approval id,
+category, human-readable description, optional exact-action details, and a
+durable pending/approved/rejected/expired status. `AgentPanel` renders the
+exported `AgentApprovalRequestCard` inline, so an agent can end a suspended turn
+with a clear handoff instead of a bare tool call. Applications persist and
+authorize the decision through `onDecideApprovalRequest`; AppKit never treats
+rendering the card as authorization.
+
 ```tsx
 <AgentPanel
   enabled
