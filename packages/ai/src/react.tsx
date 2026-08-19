@@ -701,14 +701,14 @@ export function AgentSecretRequestCard({ request, labels: labelOverrides, onSubm
         </div>
       </div>
       {status === 'pending' ? (
-        <form onSubmit={(event) => void submit(event)} onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); void cancel() } }} className="space-y-2.5 border-t border-border bg-bg-subtle p-3">
+        <form onSubmit={(event) => void submit(event)} onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); void cancel() } }} className="relative space-y-2.5 border-t border-border bg-bg-subtle p-3">
           <label htmlFor={inputId} className="sr-only">{request.credentialLabel}</label>
           <div className="relative">
             <Input ref={inputRef} id={inputId} type={revealed ? 'text' : 'password'} autoComplete="new-password" autoCapitalize="none" spellCheck={false} disabled={submitting || !onSubmit} aria-invalid={error ? true : undefined} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.form?.requestSubmit() } }} className="pr-11 font-mono" />
             <button type="button" onClick={() => setRevealed((value) => !value)} disabled={submitting || !onSubmit} aria-label={revealed ? labels.hide : labels.show} aria-pressed={revealed} className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-md text-fg-muted transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/60 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none">{revealed ? <EyeOff size={16} /> : <Eye size={16} />}</button>
           </div>
           {error ? <p role="alert" className="text-xs text-danger">{error}</p> : null}
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center justify-end gap-2 pt-1">
             <Button type="button" variant="ghost" size="sm" onClick={() => void cancel()} disabled={submitting || !onCancel}>{labels.cancel}</Button>
             <Button type="submit" size="sm" disabled={submitting || !onSubmit}>{submitting ? <><Loader2 size={14} className="animate-spin motion-reduce:animate-none" />{labels.submitting}</> : labels.submit}</Button>
           </div>

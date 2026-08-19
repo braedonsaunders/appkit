@@ -135,6 +135,8 @@ test('AgentPanel renders a transcript-safe pending secret request', () => {
   assert.match(markup, /type="password"/)
   assert.match(markup, /autoComplete="new-password"|autocomplete="new-password"/)
   assert.match(markup, /Submit securely/)
+  assert.match(markup, /relative space-y-2\.5 border-t/)
+  assert.match(markup, /justify-end gap-2 pt-1/)
   assert.match(markup, /aria-label="Show credential"/)
   assert.match(markup, /href="https:\/\/docs\.example\.com\/keys"/)
   assert.doesNotMatch(markup, /request-never-rendered/)
