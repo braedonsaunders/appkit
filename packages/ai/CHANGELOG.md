@@ -1,5 +1,13 @@
 # @braedonsaunders/appkit-ai
 
+## 1.1.3
+
+### Patch Changes
+
+- b8f7184: Add an inline, transcript-safe credential request card with accessible pending,
+  stored, and expired states, caller-owned submission, and immediate input
+  clearing. Harden tool activity counting against duplicated rendered steps.
+
 ## 1.1.2
 
 ### Patch Changes
