@@ -1,5 +1,11 @@
 # @braedonsaunders/appkit-jobs
 
+## 0.2.2
+
+### Patch Changes
+
+- c085d3b: Route Web Push validation and delivery through AppKit's dedicated secure egress transport instead of pulling the full synchronization package into queue consumers.
+
 ## 0.2.1
 
 ### Patch Changes
