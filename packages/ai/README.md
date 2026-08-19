@@ -17,6 +17,13 @@ application stage through `emptyContent`. Consecutive tool calls collapse into
 one quiet activity line showing the newest action and total step count; operators can expand it to
 inspect every input and result without letting a long run overwhelm the thread.
 
+The composer remains extensible without being replaced. `composerActions` adds
+controls beside the text input, `composerContent` renders application-owned
+draft state above it, and `composerDraft` supplies a file-only fallback prompt
+plus parts for the optimistic user turn. Persisted user messages can include
+`{ type: 'file', filename, url? }` parts, which render as compact attachment
+links.
+
 Applications with durable session dispatch can pass `dispatchState` and an
 ordered `queuedMessages` collection. While work is running, recovering, or
 already queued, new composer submissions go through the app-owned `enqueue`

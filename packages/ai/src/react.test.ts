@@ -29,6 +29,44 @@ test('AgentPanel accepts an application-owned full empty stage', () => {
   assert.doesNotMatch(markup, /How can I help\?/)
 })
 
+test('AgentPanel renders application-owned attachment composer content', () => {
+  const props = {
+    enabled: true,
+    composerContent: React.createElement('span', { 'data-draft-file': true }, 'budget.xlsx'),
+    composerActions: React.createElement('button', { type: 'button' }, 'Attach files'),
+    composerDraft: {
+      fallbackPrompt: 'Review the attached file.',
+      parts: [{ type: 'file', filename: 'budget.xlsx', url: '/files/budget' }],
+    },
+  } satisfies AgentPanelProps
+
+  const markup = renderToStaticMarkup(React.createElement(AgentPanel, props))
+
+  assert.match(markup, /data-draft-file="true"/)
+  assert.match(markup, />Attach files</)
+  assert.doesNotMatch(markup, /aria-label="Send"[^>]*disabled/)
+})
+
+test('AgentPanel renders file parts on a user turn', () => {
+  const props = {
+    enabled: false,
+    initialMessages: [{
+      id: 'user-file',
+      role: 'user' as const,
+      parts: [
+        { type: 'text', text: 'Please review this.' },
+        { type: 'file', filename: 'forecast.xlsx', url: '/api/files/file-1' },
+      ],
+    }],
+  } satisfies AgentPanelProps
+
+  const markup = renderToStaticMarkup(React.createElement(AgentPanel, props))
+
+  assert.match(markup, /Please review this\./)
+  assert.match(markup, /href="\/api\/files\/file-1"/)
+  assert.match(markup, />forecast\.xlsx</)
+})
+
 test('AgentPanel collapses a multi-step tool run to its latest action', () => {
   const props = {
     enabled: false,

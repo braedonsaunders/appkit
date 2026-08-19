@@ -106,6 +106,16 @@ export type AgentPanelProps = {
   headerActions?: React.ReactNode
   /** Replaces the stock empty-state card while preserving the panel header and composer. */
   emptyContent?: React.ReactNode
+  /** Application-owned draft UI rendered immediately above the composer row. */
+  composerContent?: React.ReactNode
+  /** Application-owned controls rendered before the text input. */
+  composerActions?: React.ReactNode
+  /**
+   * Non-text content currently attached to the draft. `fallbackPrompt` makes
+   * a file-only draft sendable; `parts` are included in the optimistic user
+   * turn so the attachment does not disappear while the response streams.
+   */
+  composerDraft?: { fallbackPrompt?: string; parts?: readonly unknown[] }
   send?: (prompt: string, signal: AbortSignal) => Promise<Response>
   /** Durable dispatch state supplied by the application after reload or handoff. */
   dispatchState?: AgentDispatchState
@@ -132,6 +142,9 @@ export function AgentPanel({
   labels: labelOverrides,
   headerActions,
   emptyContent,
+  composerContent,
+  composerActions,
+  composerDraft,
   send,
   dispatchState = 'idle',
   queuedMessages = [],
@@ -166,7 +179,7 @@ export function AgentPanel({
   }, [scrollToBottom])
 
   const submit = React.useCallback(async (raw: string) => {
-    const prompt = raw.trim()
+    const prompt = raw.trim() || composerDraft?.fallbackPrompt?.trim() || ''
     if (!enabled || !prompt || prompt.length > maxPromptCharacters) return
     const shouldEnqueue = dispatchState !== 'idle' || abortRef.current !== null || queuedMessages.length > 0
     if (shouldEnqueue) {
@@ -189,7 +202,7 @@ export function AgentPanel({
     const stamp = Date.now()
     setInput('')
     setError(null)
-    setMessages((current) => [...current, { id: `user-${stamp}`, role: 'user', parts: [{ type: 'text', text: prompt }] }, { id: `assistant-${stamp}`, role: 'assistant', parts: [] }])
+    setMessages((current) => [...current, { id: `user-${stamp}`, role: 'user', parts: [{ type: 'text', text: prompt }, ...(composerDraft?.parts ?? [])] }, { id: `assistant-${stamp}`, role: 'assistant', parts: [] }])
     setStreaming(true)
     scrollToBottom()
     let producedParts = false
@@ -214,7 +227,7 @@ export function AgentPanel({
       setStreaming(false)
       if (abortRef.current === controller) abortRef.current = null
     }
-  }, [dispatchState, enabled, enqueue, enqueueing, labels.failed, labels.queueFailed, maxPromptCharacters, queuedMessages.length, scrollToBottom, send])
+  }, [composerDraft, dispatchState, enabled, enqueue, enqueueing, labels.failed, labels.queueFailed, maxPromptCharacters, queuedMessages.length, scrollToBottom, send])
 
   const queueMode = dispatchState !== 'idle' || streaming || queuedMessages.length > 0
 
@@ -231,7 +244,7 @@ export function AgentPanel({
         )}
         {error ? <div role="alert" className="mx-auto mb-5 w-[calc(100%-2rem)] max-w-3xl rounded-lg border border-danger/25 bg-danger-subtle px-3 py-2 text-sm text-danger">{error}</div> : null}
       </div>
-      {enabled ? <div className="shrink-0 border-t border-border bg-surface px-4 py-3"><div className="mx-auto w-full max-w-3xl">{queuedMessages.length > 0 ? <AgentMessageQueue messages={queuedMessages} labels={labels} onEdit={onEditQueuedMessage} onRemove={onRemoveQueuedMessage} onRetry={onRetryQueuedMessage} /> : null}<div className="flex items-end gap-2 rounded-2xl border border-border-strong bg-surface p-2 shadow-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/20"><textarea value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void submit(input) } }} maxLength={maxPromptCharacters} rows={1} placeholder={labels.placeholder} className="max-h-40 flex-1 resize-none overflow-y-auto border-0 bg-transparent px-2 py-1.5 text-base text-fg outline-none placeholder:text-fg-subtle sm:text-sm" />{streaming ? <Button type="button" variant="outline" size="icon" onClick={() => abortRef.current?.abort()} aria-label={labels.stop}><Square size={16} /></Button> : null}<Button type="button" size="icon" onClick={() => void submit(input)} disabled={!input.trim() || (queueMode ? !enqueue || enqueueing : !send)} aria-label={queueMode ? labels.queue : labels.send}>{enqueueing ? <Loader2 size={16} className="animate-spin" /> : queueMode ? <ListPlus size={16} /> : <Send size={16} />}</Button></div></div></div> : null}
+      {enabled ? <div className="shrink-0 border-t border-border bg-surface px-4 py-3"><div className="mx-auto w-full max-w-3xl">{queuedMessages.length > 0 ? <AgentMessageQueue messages={queuedMessages} labels={labels} onEdit={onEditQueuedMessage} onRemove={onRemoveQueuedMessage} onRetry={onRetryQueuedMessage} /> : null}{composerContent != null ? <div className="mb-2">{composerContent}</div> : null}<div className="flex items-end gap-2 rounded-2xl border border-border-strong bg-surface p-2 shadow-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/20">{composerActions}<textarea value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void submit(input) } }} maxLength={maxPromptCharacters} rows={1} placeholder={labels.placeholder} className="max-h-40 flex-1 resize-none overflow-y-auto border-0 bg-transparent px-2 py-1.5 text-base text-fg outline-none placeholder:text-fg-subtle sm:text-sm" />{streaming ? <Button type="button" variant="outline" size="icon" onClick={() => abortRef.current?.abort()} aria-label={labels.stop}><Square size={16} /></Button> : null}<Button type="button" size="icon" onClick={() => void submit(input)} disabled={!(input.trim() || composerDraft?.fallbackPrompt?.trim()) || (queueMode ? !enqueue || enqueueing : !send)} aria-label={queueMode ? labels.queue : labels.send}>{enqueueing ? <Loader2 size={16} className="animate-spin" /> : queueMode ? <ListPlus size={16} /> : <Send size={16} />}</Button></div></div></div> : null}
     </div>
   )
 }
@@ -291,9 +304,19 @@ function AgentWelcome({ enabled, title, description, suggestions, onPick }: { en
 function AgentMessageRow({ message, streaming, labels, toolLabels }: { message: AgentMessage; streaming: boolean; labels: AgentPanelLabels; toolLabels?: Record<string, string> }) {
   if (message.role === 'user') {
     const text = (message.parts.find((part) => (part as { type?: string }).type === 'text') as { text?: string } | undefined)?.text
-    return <div className="flex justify-end"><div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-2 text-sm whitespace-pre-wrap text-primary-fg">{text}</div></div>
+    const files = message.parts.filter(isAgentFilePart)
+    return <div className="flex justify-end"><div className="max-w-[85%] space-y-2 rounded-2xl rounded-br-md bg-primary px-4 py-2 text-sm whitespace-pre-wrap text-primary-fg">{text ? <div>{text}</div> : null}{files.length > 0 ? <div className="flex flex-wrap justify-end gap-1.5">{files.map((file, index) => file.url ? <a key={`${file.filename}-${index}`} href={file.url} className="rounded-md border border-primary-fg/25 bg-primary-fg/10 px-2 py-1 text-xs font-medium hover:bg-primary-fg/15" download>{file.filename}</a> : <span key={`${file.filename}-${index}`} className="rounded-md border border-primary-fg/25 bg-primary-fg/10 px-2 py-1 text-xs font-medium">{file.filename}</span>)}</div> : null}</div></div>
   }
   return <div className="flex gap-3"><span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-fg shadow-sm"><Sparkles size={16} /></span><div className="min-w-0 flex-1 pt-0.5">{message.parts.length === 0 && streaming ? <div className="flex items-center gap-1 py-1.5">{[0,1,2].map((index) => <span key={index} className="size-1.5 animate-bounce rounded-full bg-fg-subtle" style={{ animationDelay: `${index * 0.15}s` }} />)}</div> : <AgentMessageParts parts={message.parts} labels={labels} toolLabels={toolLabels} />}</div></div>
+}
+
+function isAgentFilePart(part: unknown): part is { type: 'file'; filename: string; url?: string } {
+  if (!part || typeof part !== 'object') return false
+  const candidate = part as { type?: unknown; filename?: unknown; url?: unknown }
+  return candidate.type === 'file'
+    && typeof candidate.filename === 'string'
+    && candidate.filename.trim().length > 0
+    && (candidate.url === undefined || typeof candidate.url === 'string')
 }
 
 function AgentMessageParts({ parts, labels, toolLabels }: { parts: unknown[]; labels: AgentPanelLabels; toolLabels?: Record<string, string> }) {
