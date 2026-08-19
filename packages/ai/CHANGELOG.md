@@ -1,5 +1,12 @@
 # @braedonsaunders/appkit-ai
 
+## 1.1.1
+
+### Patch Changes
+
+- 857c73f: Let applications add attachment actions and draft content to AgentPanel, send
+  file-only drafts, and render file parts on persisted and optimistic user turns.
+
 ## 1.1.0
 
 ### Minor Changes
