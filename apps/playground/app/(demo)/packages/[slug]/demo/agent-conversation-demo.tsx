@@ -6,6 +6,7 @@ import { Card } from '@braedonsaunders/appkit-ui'
 
 export function AgentConversationDemo() {
   const [secretStatus, setSecretStatus] = React.useState<'pending' | 'stored' | 'expired'>('pending')
+  const [approvalStatus, setApprovalStatus] = React.useState<'pending' | 'approved' | 'rejected'>('pending')
 
   return (
     <div className="space-y-4">
@@ -15,7 +16,7 @@ export function AgentConversationDemo() {
       </Card>
       <Card className="h-[42rem] overflow-hidden">
         <AgentPanel
-          key={secretStatus}
+          key={`${secretStatus}:${approvalStatus}`}
           enabled
           dispatchState="running"
           initialMessages={[
@@ -26,6 +27,25 @@ export function AgentConversationDemo() {
               parts: [
                 { type: 'text', text: 'I can send the carrier update once you connect the delivery provider.' },
                 { type: 'secret-request', requestId: 'delivery-provider-demo', providerLabel: 'Delivery provider', credentialLabel: 'API key', purpose: 'Authorize the approved carrier status update.', helpUrl: 'https://example.com/docs/api-keys', status: secretStatus },
+              ],
+            },
+            { id: 'user-2', role: 'user', parts: [{ type: 'text', text: 'Go ahead and prepare the customer update.' }] },
+            {
+              id: 'assistant-2',
+              role: 'assistant',
+              parts: [
+                { type: 'text', text: 'It’s ready for your approval. Once you approve it, I’ll continue automatically.' },
+                {
+                  type: 'approval-request',
+                  approvalId: 'customer-update-demo',
+                  categoryLabel: 'External email',
+                  description: 'Send the prepared delivery update to the affected customers.',
+                  details: [
+                    { label: 'Audience', value: '12 affected customers' },
+                    { label: 'Subject', value: 'Update on today’s delivery' },
+                  ],
+                  status: approvalStatus,
+                },
               ],
             },
           ]}
@@ -42,6 +62,7 @@ export function AgentConversationDemo() {
             setSecretStatus('stored')
           }}
           onCancelSecretRequest={async () => setSecretStatus('expired')}
+          onDecideApprovalRequest={async (_approvalId, decision) => setApprovalStatus(decision)}
         />
       </Card>
     </div>
