@@ -13,6 +13,7 @@ export const releasePriorityPackageNames = Object.freeze([
   '@braedonsaunders/appkit-desk',
   '@braedonsaunders/appkit-jobs',
   '@braedonsaunders/appkit-remote-sessions',
+  '@braedonsaunders/appkit-forms-pdf',
   '@braedonsaunders/appkit-sync',
   '@braedonsaunders/appkit-workflows',
   '@braedonsaunders/appkit-tokens',

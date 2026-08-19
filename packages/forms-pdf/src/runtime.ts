@@ -28,6 +28,7 @@ const MAX_CONCURRENT_RESOURCES = 4
 const MAX_TOTAL_RESOURCE_BYTES = 32 * 1024 * 1024
 const MAX_REPORTED_RESOURCE_ERRORS = 20
 const MAX_DOCUMENT_HTML_BYTES = 16 * 1024 * 1024
+const BROWSER_LAUNCH_TIMEOUT_MS = 60_000
 const ALLOWED_RESOURCE_TYPES = new Set(['image', 'stylesheet', 'font'])
 type PdfResourceState = {
   errors: Error[]
@@ -282,15 +283,24 @@ function resolveExecutablePath(): string {
 
 export function getBrowser(): Promise<Browser> {
   if (!browserPromise) {
-    browserPromise = puppeteer.launch({
-      executablePath: resolveExecutablePath(),
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--font-render-hinting=none',
-      ],
-    })
+    browserPromise = puppeteer
+      .launch({
+        executablePath: resolveExecutablePath(),
+        timeout: BROWSER_LAUNCH_TIMEOUT_MS,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--font-render-hinting=none',
+        ],
+      })
+      .catch((error: unknown) => {
+        // A transient cold-start failure must not poison every later render in
+        // this worker. The next request gets one fresh, independently bounded
+        // launch attempt.
+        browserPromise = null
+        throw error
+      })
   }
   return browserPromise
 }

@@ -5,7 +5,7 @@ import { renderDesignDocumentPngs } from './production'
 // A cold Chromium launch plus two 300-DPI screenshots can exceed Vitest's
 // default timeout on shared CI runners. Each page render already has its own
 // bounded timeout; this outer bound allows both renders and browser startup.
-const RENDER_TEST_TIMEOUT_MS = 90_000
+const RENDER_TEST_TIMEOUT_MS = 120_000
 
 describe('design studio PNG rendering', () => {
   it(

@@ -42,14 +42,16 @@ test('publication ordering does not mutate the manifest inventory', () => {
   assert.deepEqual(manifests, original)
 })
 
-test('existing Remote Sessions updates publish before the blocked Sync name', () => {
+test('existing package updates publish before the blocked Sync name', () => {
   const ordered = orderManifestsForPublication([
     { name: '@braedonsaunders/appkit-sync' },
+    { name: '@braedonsaunders/appkit-forms-pdf' },
     { name: '@braedonsaunders/appkit-remote-sessions' },
   ]).map(({ name }) => name)
 
   assert.deepEqual(ordered, [
     '@braedonsaunders/appkit-remote-sessions',
+    '@braedonsaunders/appkit-forms-pdf',
     '@braedonsaunders/appkit-sync',
   ])
 })
