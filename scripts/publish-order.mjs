@@ -8,6 +8,7 @@
  * lifecycle fix is required by the host currently running the application.
  */
 export const releasePriorityPackageNames = Object.freeze([
+  '@braedonsaunders/appkit-egress-proxy',
   '@braedonsaunders/appkit-ai',
   '@braedonsaunders/appkit-desk',
   '@braedonsaunders/appkit-sync',
