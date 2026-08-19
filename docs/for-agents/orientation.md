@@ -293,6 +293,10 @@ terminal streaming, and executable provider conformance. `/memory` supplies the 
 store, `/react` supplies the browser viewer plus the durable read-only terminal, and `/guacamole`
 supplies the encrypted Apache Guacamole bridge contract. Applications inject tenant/RLS storage,
 feature gates, credential resolution, policy, routes, and audit projection.
+The terminal treats the append-only ledger as authoritative while applying deterministic semantic
+ANSI to otherwise plain non-PTY entries: prompts and shell tokens remain scannable, stream kinds
+are distinct, provider ANSI passes through unchanged, and polling follows output only while the
+viewer stays at the bottom.
 
 ## 5. Forms and localized authoring
 

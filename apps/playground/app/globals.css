@@ -12,6 +12,7 @@
 @import '@braedonsaunders/appkit-storage/styles.css';
 @import '@braedonsaunders/appkit-scene/styles.css';
 @import '@braedonsaunders/appkit-query-console/styles.css';
+@import '@braedonsaunders/appkit-remote-sessions/styles.css';
 
 /* Scan the playground and shared component sources for class usage. */
 @source '../app';
@@ -26,6 +27,7 @@
 @source '../../../packages/scheduling/src';
 @source '../../../packages/customization/src';
 @source '../../../packages/query-console/src';
+@source '../../../packages/remote-sessions/src';
 
 /* The playground has a 56px sticky header; drawers sit beneath it. An app shell
    sets this to its own header height (default is 0 = full height). */

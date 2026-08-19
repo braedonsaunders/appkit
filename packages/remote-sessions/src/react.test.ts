@@ -9,9 +9,28 @@ test('TerminalSurface follows output only while the viewer remains near the bott
   assert.equal(shouldFollowTerminalOutput({ scrollHeight: 1_000, scrollTop: 300, clientHeight: 200 }), false)
 })
 
-test('terminal ledger entries preserve ANSI output and add semantic command styling', () => {
-  assert.equal(terminalEntryText({ id: 'c', kind: 'command', prompt: '~/work $', text: 'git status' }), '\u001b[2m~/work $\u001b[0m \u001b[1mgit status\u001b[0m\r\n')
-  assert.equal(terminalEntryText({ id: 'e', kind: 'stderr', text: 'failed' }), '\u001b[31mfailed\n\u001b[0m')
+test('terminal ledger commands receive deterministic semantic ANSI token styling', () => {
+  const command = terminalEntryText({
+    id: 'c',
+    kind: 'command',
+    prompt: '/srv/claims $',
+    text: 'env MODE=check git status --short | grep "$USER" && printf \'%s\\n\' $HOME',
+  })
+
+  assert.equal(command, [
+    '\u001b[1;36m/srv/claims\u001b[0m \u001b[1;32m$\u001b[0m ',
+    '\u001b[1;32menv\u001b[0m \u001b[36mMODE=check\u001b[0m \u001b[1;32mgit\u001b[0m status ',
+    '\u001b[33m--short\u001b[0m \u001b[1;94m|\u001b[0m \u001b[1;32mgrep\u001b[0m ',
+    '\u001b[35m"$USER"\u001b[0m \u001b[1;94m&&\u001b[0m \u001b[1;32mprintf\u001b[0m ',
+    '\u001b[35m\'%s\\n\'\u001b[0m \u001b[36m$HOME\u001b[0m\r\n',
+  ].join(''))
+})
+
+test('terminal ledger streams are distinct while source ANSI remains byte-for-byte intact', () => {
+  assert.equal(terminalEntryText({ id: 'e', kind: 'stderr', text: 'failed' }), '\u001b[1;31m[stderr]\u001b[0m \u001b[31mfailed\n\u001b[0m')
+  assert.equal(terminalEntryText({ id: 's', kind: 'system', text: 'connected' }), '\u001b[2;36m[system]\u001b[0m \u001b[36mconnected\n\u001b[0m')
+  assert.equal(terminalEntryText({ id: 't', kind: 'status', text: 'completed' }), '\u001b[1;32m[status]\u001b[0m \u001b[32mcompleted\n\u001b[0m')
+  assert.equal(terminalEntryText({ id: 'p', kind: 'stdout', text: 'plain' }), '\u001b[2;90m│\u001b[0m \u001b[37mplain\n\u001b[0m')
   assert.equal(terminalEntryText({ id: 'o', kind: 'stdout', text: '\u001b[32mok\u001b[0m\n' }), '\u001b[32mok\u001b[0m\n')
 })
 
@@ -25,6 +44,7 @@ test('TerminalSurface renders durable command and output entries', () => {
       entries: [
         { id: 'command', kind: 'command', prompt: '/srv/claims $', text: 'git status' },
         { id: 'stdout', kind: 'stdout', text: 'working tree clean' },
+        { id: 'status', kind: 'status', text: 'Command completed successfully' },
       ],
     }),
   )
@@ -32,7 +52,9 @@ test('TerminalSurface renders durable command and output entries', () => {
   assert.match(markup, /Claims workstation/)
   assert.match(markup, /git status/)
   assert.match(markup, /working tree clean/)
+  assert.match(markup, /Command completed successfully/)
   assert.match(markup, /completed/)
+  assert.match(markup, /bg-success-subtle/)
 })
 
 test('TerminalSurface hides a meaningless relative cwd and renders host controls', () => {

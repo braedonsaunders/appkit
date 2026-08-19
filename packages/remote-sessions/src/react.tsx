@@ -6,7 +6,7 @@ import type { RemoteControlScope, RemoteProtocol, RemoteViewerConnection } from 
 
 export type TerminalSurfaceEntry = {
   id: string
-  kind: 'system' | 'command' | 'stdout' | 'stderr'
+  kind: 'system' | 'status' | 'command' | 'stdout' | 'stderr'
   text: string
   prompt?: string
   at?: string
@@ -32,41 +32,160 @@ export function shouldFollowTerminalOutput(
   return metrics.scrollHeight - metrics.scrollTop - metrics.clientHeight <= threshold
 }
 
-/** Render one immutable ledger entry as terminal bytes. ANSI from commands is preserved. */
+const ANSI_SEQUENCE = /\u001B(?:\[[0-?]*[ -/]*[@-~]|\][^\u0007]*(?:\u0007|\u001B\\))/
+const SHELL_OPERATOR = /^(?:2>>|2>|&>|&&|\|\||>>|<<|[|;&<>()])/u
+const COMMAND_PREFIXES = new Set(['builtin', 'command', 'env', 'exec', 'nohup', 'sudo', 'time'])
+
+function ansi(style: string, text: string): string {
+  return `\u001b[${style}m${text}\u001b[0m`
+}
+
+function hasAnsi(text: string): boolean {
+  return ANSI_SEQUENCE.test(text)
+}
+
+function semanticPrompt(prompt: string): string {
+  if (hasAnsi(prompt)) return prompt
+  const match = /^(.*?)(\s*)([$#>%❯])$/u.exec(prompt.trimEnd())
+  if (!match) return ansi('1;36', prompt)
+  const [, cwd = '', spacing = '', sigil = ''] = match
+  return `${cwd ? ansi('1;36', cwd) : ''}${spacing}${ansi('1;32', sigil)}`
+}
+
+function readQuotedToken(text: string, start: number): number {
+  const quote = text[start]
+  let index = start + 1
+  while (index < text.length) {
+    if (text[index] === '\\' && quote === '"') {
+      index += 2
+      continue
+    }
+    if (text[index] === quote) return index + 1
+    index += 1
+  }
+  return text.length
+}
+
+function readVariableToken(text: string, start: number): number {
+  if (text[start + 1] === '{') {
+    const close = text.indexOf('}', start + 2)
+    return close === -1 ? text.length : close + 1
+  }
+  if (text[start + 1] === '(') {
+    let depth = 1
+    let index = start + 2
+    while (index < text.length && depth > 0) {
+      if (text[index] === '(') depth += 1
+      if (text[index] === ')') depth -= 1
+      index += 1
+    }
+    return index
+  }
+  const match = /^\$(?:[A-Za-z_][A-Za-z0-9_]*|[0-9@#?$!*-])/u.exec(text.slice(start))
+  return match ? start + match[0].length : start + 1
+}
+
+function semanticShellCommand(text: string): string {
+  if (hasAnsi(text)) return text
+  let output = ''
+  let index = 0
+  let expectCommand = true
+
+  while (index < text.length) {
+    const character = text[index] ?? ''
+    if (/\s/u.test(character)) {
+      output += character
+      index += 1
+      continue
+    }
+    if (character === '#') {
+      output += ansi('2;90', text.slice(index))
+      break
+    }
+    if (character === "'" || character === '"') {
+      const end = readQuotedToken(text, index)
+      output += ansi('35', text.slice(index, end))
+      index = end
+      continue
+    }
+    if (character === '$') {
+      const end = readVariableToken(text, index)
+      output += ansi('36', text.slice(index, end))
+      index = end
+      continue
+    }
+
+    const operator = SHELL_OPERATOR.exec(text.slice(index))?.[0]
+    if (operator) {
+      output += ansi('1;94', operator)
+      index += operator.length
+      if (operator === '|' || operator === '||' || operator === '&&' || operator === ';' || operator === '(') {
+        expectCommand = true
+      }
+      continue
+    }
+
+    let end = index + 1
+    while (end < text.length) {
+      const next = text[end] ?? ''
+      if (/\s/u.test(next) || next === "'" || next === '"' || next === '$' || SHELL_OPERATOR.test(text.slice(end))) break
+      end += 1
+    }
+    const token = text.slice(index, end)
+    const assignment = /^[A-Za-z_][A-Za-z0-9_]*=/u.test(token)
+    if (expectCommand && assignment) {
+      output += ansi('36', token)
+    } else if (expectCommand) {
+      output += ansi('1;32', token)
+      expectCommand = COMMAND_PREFIXES.has(token)
+    } else if (token.startsWith('-')) {
+      output += ansi('33', token)
+    } else {
+      output += token
+    }
+    index = end
+  }
+
+  return output
+}
+
+/** Render one immutable ledger entry as terminal bytes without replacing source ANSI. */
 export function terminalEntryText(entry: TerminalSurfaceEntry): string {
   const text = entry.text.replaceAll('\r\n', '\n').replaceAll('\r', '\n')
   if (entry.kind === 'command') {
-    return `\u001b[2m${entry.prompt ?? '$'}\u001b[0m \u001b[1m${text}\u001b[0m\r\n`
+    return `${semanticPrompt(entry.prompt ?? '$')} ${semanticShellCommand(text)}\r\n`
   }
   const line = text.endsWith('\n') ? text : `${text}\n`
-  if (entry.kind === 'stderr') return `\u001b[31m${line}\u001b[0m`
-  if (entry.kind === 'system') return `\u001b[2m${line}\u001b[0m`
-  return line
+  if (hasAnsi(line)) return line
+  if (entry.kind === 'stderr') return `${ansi('1;31', '[stderr]')} ${ansi('31', line)}`
+  if (entry.kind === 'system') return `${ansi('2;36', '[system]')} ${ansi('36', line)}`
+  if (entry.kind === 'status') return `${ansi('1;32', '[status]')} ${ansi('32', line)}`
+  return `${ansi('2;90', '│')} ${ansi('37', line)}`
 }
 
 function semanticTerminalTheme(host: HTMLElement): ITheme {
-  const swatch = (className: string): string => {
+  const swatch = (className: string, property: 'color' | 'backgroundColor' = 'color'): string => {
     const node = document.createElement('span')
     node.className = className
     node.hidden = true
     host.append(node)
-    const color = getComputedStyle(node).color
+    const color = getComputedStyle(node)[property]
     node.remove()
     return color
   }
   return {
-    background: swatch('text-fg'),
-    foreground: swatch('text-bg'),
-    cursor: swatch('text-bg'),
-    selectionBackground: swatch('text-info'),
-    black: swatch('text-fg'),
+    background: swatch('bg-bg-subtle', 'backgroundColor'),
+    foreground: swatch('text-fg'),
+    cursor: swatch('text-fg'),
+    selectionBackground: swatch('bg-info-subtle', 'backgroundColor'),
+    black: swatch('text-fg-subtle'),
     red: swatch('text-danger'),
     green: swatch('text-success'),
     yellow: swatch('text-warning'),
     blue: swatch('text-info'),
     magenta: swatch('text-accent'),
     cyan: swatch('text-info'),
-    white: swatch('text-bg'),
+    white: swatch('text-fg'),
     brightBlack: swatch('text-fg-muted'),
     brightRed: swatch('text-danger'),
     brightGreen: swatch('text-success'),
@@ -74,7 +193,7 @@ function semanticTerminalTheme(host: HTMLElement): ITheme {
     brightBlue: swatch('text-info'),
     brightMagenta: swatch('text-accent'),
     brightCyan: swatch('text-info'),
-    brightWhite: swatch('text-bg'),
+    brightWhite: swatch('text-fg'),
   }
 }
 
@@ -177,6 +296,12 @@ export function TerminalSurface({
   emptyLabel = 'Terminal output will appear here when work begins.',
 }: TerminalSurfaceProps) {
   const visibleCwd = cwd && cwd !== '.' && cwd !== './' ? cwd : null
+  const statusClassName = {
+    idle: 'border-border bg-bg-subtle text-fg-muted',
+    running: 'border-info/30 bg-info-subtle text-info',
+    failed: 'border-danger/30 bg-danger-subtle text-danger',
+    completed: 'border-success/30 bg-success-subtle text-success',
+  }[status]
 
   return (
     <section
@@ -190,11 +315,11 @@ export function TerminalSurface({
         </div>
         <div className="flex min-w-0 items-center gap-2">
           {visibleCwd ? <code className="max-w-48 truncate rounded-full border border-border px-2 py-0.5 text-xs text-fg-muted">{visibleCwd}</code> : null}
-          <span className="rounded-full border border-border px-2 py-0.5 text-xs capitalize text-fg-muted">{status}</span>
+          <span className={`rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${statusClassName}`}>{status}</span>
           {headerActions}
         </div>
       </header>
-      <div className="relative min-h-0 flex-1 overflow-hidden bg-fg">
+      <div className="relative min-h-0 flex-1 overflow-hidden bg-bg-subtle">
         <TerminalEmulator entries={entries} emptyLabel={emptyLabel} />
         <div className="sr-only" role="log" aria-live="polite">
           {entries.length === 0 ? emptyLabel : entries.map((entry) => `${entry.prompt ? `${entry.prompt} ` : ''}${entry.text}`).join('\n')}

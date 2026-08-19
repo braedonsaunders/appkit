@@ -241,8 +241,10 @@ function RemoteSessionsDemo() {
             cwd="/srv/claims"
             status="completed"
             entries={[
-              { id: 'command', kind: 'command', prompt: '/srv/claims $', text: 'git status --short' },
-              { id: 'output', kind: 'stdout', text: 'Working tree clean' },
+              { id: 'system', kind: 'system', text: 'Connected to claims-workstation over SSH' },
+              { id: 'command', kind: 'command', prompt: '/srv/claims $', text: 'env MODE=audit pnpm test --filter "claims-*" | tail -n 3' },
+              { id: 'output', kind: 'stdout', text: 'Tests: 18 passed, 18 total' },
+              { id: 'status', kind: 'status', text: 'Command completed successfully in 4.8s' },
             ]}
           />
         </div>
