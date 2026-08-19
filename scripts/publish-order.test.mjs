@@ -14,7 +14,6 @@ test('every cutover package is ordered before optional publication targets', () 
     '@braedonsaunders/appkit-query-console',
     '@braedonsaunders/appkit-reports',
     '@braedonsaunders/appkit-scheduling',
-    '@braedonsaunders/appkit-sync',
   ]
   const manifests = [...optionalNames, ...releasePriorityPackageNames.toReversed()]
     .map((name) => ({ name }))
