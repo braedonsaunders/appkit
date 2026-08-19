@@ -1,5 +1,11 @@
 # @braedonsaunders/appkit-ai
 
+## 1.1.2
+
+### Patch Changes
+
+- 303b940: Animate the AgentPanel streaming indicator with a subtle tokenized stagger and a static reduced-motion fallback.
+
 ## 1.1.1
 
 ### Patch Changes

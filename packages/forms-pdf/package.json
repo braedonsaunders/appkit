@@ -1,6 +1,6 @@
 {
   "name": "@braedonsaunders/appkit-forms-pdf",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Composable form-summary HTML with optional PDF, template, and design-document adapters.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
