@@ -29,6 +29,39 @@ three-dot typing cadence through the exported `AgentTypingIndicator`. Its pure
 CSS motion uses AppKit duration/easing tokens, is independent of an app's
 Tailwind content scan, and becomes a static ellipsis under reduced motion.
 
+Assistant messages may also contain a typed `secret-request` part with a
+request id, provider label, credential label, purpose, optional HTTPS help URL,
+and `pending`, `stored`, or `expired` status. `AgentPanel` renders the exported
+`AgentSecretRequestCard` inline and delegates submission and cancellation to
+`onSubmitSecretRequest` / `onCancelSecretRequest`. The credential is held only
+in the uncontrolled password field, cleared before the submit handler runs,
+and never added to message parts, React state, rendered text, or AppKit-owned
+persistence. The application remains responsible for authorization, sealing,
+storage, audit, and updating the durable request status.
+
+```tsx
+<AgentPanel
+  enabled
+  initialMessages={[{
+    id: 'assistant-credential',
+    role: 'assistant',
+    parts: [{
+      type: 'secret-request',
+      requestId: request.id,
+      providerLabel: 'Delivery provider',
+      credentialLabel: 'API key',
+      purpose: 'Authorize approved carrier status updates.',
+      helpUrl: 'https://provider.example/docs/api-keys',
+      status: request.status,
+    }],
+  }]}
+  onSubmitSecretRequest={async (requestId, secret) => {
+    await storeSealedCredential({ requestId, secret })
+  }}
+  onCancelSecretRequest={expireCredentialRequest}
+/>
+```
+
 Applications with durable session dispatch can pass `dispatchState` and an
 ordered `queuedMessages` collection. While work is running, recovering, or
 already queued, new composer submissions go through the app-owned `enqueue`

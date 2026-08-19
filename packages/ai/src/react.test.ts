@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import * as React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { AgentMessageQueue, AgentPanel, AgentTypingIndicator, type AgentPanelProps } from './react'
+import { AgentMessageQueue, AgentPanel, AgentSecretRequestCard, AgentTypingIndicator, type AgentPanelProps } from './react'
 
 test('AgentTypingIndicator renders a tokenized stagger and a reduced-motion fallback', () => {
   const markup = renderToStaticMarkup(React.createElement(AgentTypingIndicator))
@@ -101,10 +101,78 @@ test('AgentPanel collapses a multi-step tool run to its latest action', () => {
   const markup = renderToStaticMarkup(React.createElement(AgentPanel, props))
 
   assert.match(markup, /aria-expanded="false"/)
-  assert.match(markup, />2 steps</)
+  assert.equal(markup.match(/>2 steps</g)?.length, 1)
+  assert.doesNotMatch(markup, />4 steps</)
   assert.match(markup, />Run shell</)
   assert.doesNotMatch(markup, /Open desktop/)
   assert.doesNotMatch(markup, /exitCode/)
+})
+
+test('AgentPanel renders a transcript-safe pending secret request', () => {
+  const props = {
+    enabled: false,
+    initialMessages: [{
+      id: 'assistant-secret',
+      role: 'assistant' as const,
+      parts: [{
+        type: 'secret-request',
+        requestId: 'request-never-rendered',
+        providerLabel: 'Acme Mail',
+        credentialLabel: 'API key',
+        purpose: 'Send the approved campaign from your connected account.',
+        helpUrl: 'https://docs.example.com/keys',
+        status: 'pending',
+      }],
+    }],
+    onSubmitSecretRequest: async () => undefined,
+    onCancelSecretRequest: async () => undefined,
+  } satisfies AgentPanelProps
+
+  const markup = renderToStaticMarkup(React.createElement(AgentPanel, props))
+
+  assert.match(markup, /Acme Mail/)
+  assert.match(markup, /API key/)
+  assert.match(markup, /type="password"/)
+  assert.match(markup, /autoComplete="new-password"|autocomplete="new-password"/)
+  assert.match(markup, /Submit securely/)
+  assert.match(markup, /aria-label="Show credential"/)
+  assert.match(markup, /href="https:\/\/docs\.example\.com\/keys"/)
+  assert.doesNotMatch(markup, /request-never-rendered/)
+  assert.doesNotMatch(markup, /value=/)
+})
+
+test('AgentSecretRequestCard renders stored and expired states without an input', () => {
+  const baseRequest = {
+    type: 'secret-request' as const,
+    requestId: 'request-1',
+    providerLabel: 'Acme Mail',
+    credentialLabel: 'API key',
+    purpose: 'Send approved messages.',
+  }
+  const stored = renderToStaticMarkup(React.createElement(AgentSecretRequestCard, { request: { ...baseRequest, status: 'stored' as const } }))
+  const expired = renderToStaticMarkup(React.createElement(AgentSecretRequestCard, { request: { ...baseRequest, status: 'expired' as const } }))
+
+  assert.match(stored, /Credential stored securely\./)
+  assert.match(expired, /This credential request has expired\./)
+  assert.doesNotMatch(stored, /<input/)
+  assert.doesNotMatch(expired, /<input/)
+})
+
+test('AgentSecretRequestCard rejects unsafe help URLs', () => {
+  const markup = renderToStaticMarkup(React.createElement(AgentSecretRequestCard, {
+    request: {
+      type: 'secret-request',
+      requestId: 'request-1',
+      providerLabel: 'Acme Mail',
+      credentialLabel: 'API key',
+      purpose: 'Send approved messages.',
+      helpUrl: 'javascript:alert(1)',
+      status: 'pending',
+    },
+  }))
+
+  assert.doesNotMatch(markup, /javascript:/)
+  assert.doesNotMatch(markup, /Open setup instructions/)
 })
 
 test('AgentMessageQueue renders durable position, state, and available recovery actions', () => {

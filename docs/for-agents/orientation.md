@@ -265,6 +265,12 @@ without inventing a credential, fake conversation, or provider-specific demo.
 The empty streaming turn uses `AgentTypingIndicator`: a token-timed, staggered
 three-dot cadence with a static reduced-motion fallback that does not depend on
 the consuming application's Tailwind content scan.
+Typed `secret-request` message parts render through `AgentSecretRequestCard` as
+an inline, accessible credential handoff with pending, stored, and expired
+states. The part contains only request metadata; the uncontrolled password
+field is cleared before the app-owned submit handler runs and the credential is
+never placed in transcript or React state. Applications own authorization,
+sealing, durable storage, audit, and the status transition.
 The root also exports the production provider catalogue and model policy,
 writing, extraction, dataset analysis, activity digest, document-agent, bounded
 vision, and structured builder helpers. Applications still supply credentials,

@@ -12,6 +12,10 @@ import {
   CheckCircle2,
   ChevronRight,
   Database,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  KeyRound,
   ListPlus,
   Loader2,
   Pencil,
@@ -23,7 +27,7 @@ import {
 } from 'lucide-react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Button, EmptyState, UiLink, cn } from '@braedonsaunders/appkit-ui'
+import { Button, EmptyState, Input, UiLink, cn } from '@braedonsaunders/appkit-ui'
 
 export type AgentMessage = {
   id: string
@@ -40,6 +44,47 @@ export type AgentQueuedMessage = {
   editable?: boolean
   removable?: boolean
   retryable?: boolean
+}
+
+export type AgentSecretRequestStatus = 'pending' | 'stored' | 'expired'
+
+/** Transcript-safe metadata for an inline credential request. */
+export type AgentSecretRequestPart = {
+  type: 'secret-request'
+  requestId: string
+  providerLabel: string
+  credentialLabel: string
+  purpose: string
+  helpUrl?: string
+  status: AgentSecretRequestStatus
+}
+
+export type AgentSecretRequestLabels = {
+  show: string
+  hide: string
+  submit: string
+  cancel: string
+  help: string
+  submitting: string
+  stored: string
+  expired: string
+  required: string
+  failed: string
+  cancelFailed: string
+}
+
+const DEFAULT_SECRET_REQUEST_LABELS: AgentSecretRequestLabels = {
+  show: 'Show credential',
+  hide: 'Hide credential',
+  submit: 'Submit securely',
+  cancel: 'Cancel',
+  help: 'Open setup instructions',
+  submitting: 'Submitting securely',
+  stored: 'Credential stored securely.',
+  expired: 'This credential request has expired.',
+  required: 'Enter the credential before submitting.',
+  failed: 'The credential could not be submitted. Enter it again and retry.',
+  cancelFailed: 'The credential request could not be canceled. Please retry.',
 }
 
 export type AgentDispatchState = 'idle' | 'running' | 'recovering'
@@ -128,6 +173,10 @@ export type AgentPanelProps = {
   onEditQueuedMessage?: (message: AgentQueuedMessage) => void
   onRemoveQueuedMessage?: (message: AgentQueuedMessage) => void
   onRetryQueuedMessage?: (message: AgentQueuedMessage) => void
+  /** Receives the transient input value after AppKit clears the field. */
+  onSubmitSecretRequest?: (requestId: string, secret: string) => void | Promise<void>
+  onCancelSecretRequest?: (requestId: string) => void | Promise<void>
+  secretRequestLabels?: Partial<AgentSecretRequestLabels>
   maxPromptCharacters?: number
   toolLabels?: Record<string, string>
 }
@@ -154,6 +203,9 @@ export function AgentPanel({
   onEditQueuedMessage,
   onRemoveQueuedMessage,
   onRetryQueuedMessage,
+  onSubmitSecretRequest,
+  onCancelSecretRequest,
+  secretRequestLabels,
   maxPromptCharacters = 32_000,
   toolLabels,
 }: AgentPanelProps) {
@@ -241,7 +293,7 @@ export function AgentPanel({
           <div className="flex min-h-full flex-col">{emptyContent}</div>
         ) : (
           <div className="mx-auto w-full max-w-3xl px-4 py-6">
-            {messages.length === 0 ? <AgentWelcome enabled={enabled} title={enabled ? labels.welcomeTitle : labels.disabledTitle} description={enabled ? labels.welcomeDescription : labels.disabledDescription} suggestions={suggestions} onPick={(value) => void submit(value)} /> : <div className="space-y-6">{messages.map((message) => message.role === 'system' ? null : <AgentMessageRow key={message.id} message={message} streaming={streaming} labels={labels} toolLabels={toolLabels} />)}</div>}
+            {messages.length === 0 ? <AgentWelcome enabled={enabled} title={enabled ? labels.welcomeTitle : labels.disabledTitle} description={enabled ? labels.welcomeDescription : labels.disabledDescription} suggestions={suggestions} onPick={(value) => void submit(value)} /> : <div className="space-y-6">{messages.map((message) => message.role === 'system' ? null : <AgentMessageRow key={message.id} message={message} streaming={streaming} labels={labels} toolLabels={toolLabels} onSubmitSecretRequest={onSubmitSecretRequest} onCancelSecretRequest={onCancelSecretRequest} secretRequestLabels={secretRequestLabels} />)}</div>}
           </div>
         )}
         {error ? <div role="alert" className="mx-auto mb-5 w-[calc(100%-2rem)] max-w-3xl rounded-lg border border-danger/25 bg-danger-subtle px-3 py-2 text-sm text-danger">{error}</div> : null}
@@ -303,13 +355,13 @@ function AgentWelcome({ enabled, title, description, suggestions, onPick }: { en
   return <div className="pt-10"><EmptyState icon={<Sparkles />} title={title} description={description} />{enabled && suggestions.length ? <div className="mx-auto mt-6 grid max-w-2xl gap-2 sm:grid-cols-2">{suggestions.map((suggestion) => <button key={suggestion} type="button" onClick={() => onPick(suggestion)} className="rounded-xl border border-border bg-surface px-4 py-3 text-left text-sm text-fg-muted shadow-sm transition-colors hover:border-primary/40 hover:bg-primary-subtle hover:text-fg">{suggestion}</button>)}</div> : null}</div>
 }
 
-function AgentMessageRow({ message, streaming, labels, toolLabels }: { message: AgentMessage; streaming: boolean; labels: AgentPanelLabels; toolLabels?: Record<string, string> }) {
+function AgentMessageRow({ message, streaming, labels, toolLabels, onSubmitSecretRequest, onCancelSecretRequest, secretRequestLabels }: { message: AgentMessage; streaming: boolean; labels: AgentPanelLabels; toolLabels?: Record<string, string>; onSubmitSecretRequest?: AgentPanelProps['onSubmitSecretRequest']; onCancelSecretRequest?: AgentPanelProps['onCancelSecretRequest']; secretRequestLabels?: Partial<AgentSecretRequestLabels> }) {
   if (message.role === 'user') {
     const text = (message.parts.find((part) => (part as { type?: string }).type === 'text') as { text?: string } | undefined)?.text
     const files = message.parts.filter(isAgentFilePart)
     return <div className="flex justify-end"><div className="max-w-[85%] space-y-2 rounded-2xl rounded-br-md bg-primary px-4 py-2 text-sm whitespace-pre-wrap text-primary-fg">{text ? <div>{text}</div> : null}{files.length > 0 ? <div className="flex flex-wrap justify-end gap-1.5">{files.map((file, index) => file.url ? <a key={`${file.filename}-${index}`} href={file.url} className="rounded-md border border-primary-fg/25 bg-primary-fg/10 px-2 py-1 text-xs font-medium hover:bg-primary-fg/15" download>{file.filename}</a> : <span key={`${file.filename}-${index}`} className="rounded-md border border-primary-fg/25 bg-primary-fg/10 px-2 py-1 text-xs font-medium">{file.filename}</span>)}</div> : null}</div></div>
   }
-  return <div className="flex gap-3"><span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-fg shadow-sm"><Sparkles size={16} /></span><div className="min-w-0 flex-1 pt-0.5">{message.parts.length === 0 && streaming ? <AgentTypingIndicator label={labels.responding} /> : <AgentMessageParts parts={message.parts} labels={labels} toolLabels={toolLabels} />}</div></div>
+  return <div className="flex gap-3"><span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-fg shadow-sm"><Sparkles size={16} /></span><div className="min-w-0 flex-1 pt-0.5">{message.parts.length === 0 && streaming ? <AgentTypingIndicator label={labels.responding} /> : <AgentMessageParts parts={message.parts} labels={labels} toolLabels={toolLabels} onSubmitSecretRequest={onSubmitSecretRequest} onCancelSecretRequest={onCancelSecretRequest} secretRequestLabels={secretRequestLabels} />}</div></div>
 }
 
 const TYPING_DOT_DELAYS = [
@@ -365,7 +417,7 @@ function isAgentFilePart(part: unknown): part is { type: 'file'; filename: strin
     && (candidate.url === undefined || typeof candidate.url === 'string')
 }
 
-function AgentMessageParts({ parts, labels, toolLabels }: { parts: unknown[]; labels: AgentPanelLabels; toolLabels?: Record<string, string> }) {
+function AgentMessageParts({ parts, labels, toolLabels, onSubmitSecretRequest, onCancelSecretRequest, secretRequestLabels }: { parts: unknown[]; labels: AgentPanelLabels; toolLabels?: Record<string, string>; onSubmitSecretRequest?: AgentPanelProps['onSubmitSecretRequest']; onCancelSecretRequest?: AgentPanelProps['onCancelSecretRequest']; secretRequestLabels?: Partial<AgentSecretRequestLabels> }) {
   const rendered: React.ReactNode[] = []
   let tools: AgentToolPart[] = []
   let toolGroupStart = 0
@@ -374,7 +426,9 @@ function AgentMessageParts({ parts, labels, toolLabels }: { parts: unknown[]; la
     rendered.push(<AgentToolActivity key={`tools-${toolGroupStart}`} parts={tools} labels={labels} toolLabels={toolLabels} />)
     tools = []
   }
-  ;(parts as { type: string; [key: string]: unknown }[]).forEach((part, index) => {
+  parts.forEach((value, index) => {
+    if (!value || typeof value !== 'object' || typeof (value as { type?: unknown }).type !== 'string') return
+    const part = value as { type: string; [key: string]: unknown }
     if (isAgentToolPart(part)) {
       if (tools.length === 0) toolGroupStart = index
       tools.push(part)
@@ -382,12 +436,161 @@ function AgentMessageParts({ parts, labels, toolLabels }: { parts: unknown[]; la
     }
     if (part.type === 'step-start' || part.type === 'reasoning') return
     flushTools()
+    if (isAgentSecretRequestPart(part)) {
+      rendered.push(<AgentSecretRequestCard key={`secret-${part.requestId}-${part.status}`} request={part} labels={secretRequestLabels} onSubmit={onSubmitSecretRequest} onCancel={onCancelSecretRequest} />)
+      return
+    }
     if (part.type === 'text' && typeof part.text === 'string' && part.text.trim()) {
       rendered.push(<ChatMarkdown key={`text-${index}`}>{part.text}</ChatMarkdown>)
     }
   })
   flushTools()
   return <div className="space-y-2.5">{rendered}</div>
+}
+
+function isAgentSecretRequestPart(part: { type: string; [key: string]: unknown }): part is AgentSecretRequestPart & { [key: string]: unknown } {
+  return part.type === 'secret-request'
+    && typeof part.requestId === 'string'
+    && part.requestId.trim().length > 0
+    && typeof part.providerLabel === 'string'
+    && part.providerLabel.trim().length > 0
+    && typeof part.credentialLabel === 'string'
+    && part.credentialLabel.trim().length > 0
+    && typeof part.purpose === 'string'
+    && part.purpose.trim().length > 0
+    && (part.helpUrl === undefined || typeof part.helpUrl === 'string')
+    && (part.status === 'pending' || part.status === 'stored' || part.status === 'expired')
+}
+
+function safeSecretHelpUrl(value: string | undefined): string | undefined {
+  if (!value) return undefined
+  if (value.startsWith('/') && !value.startsWith('//')) return value
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' ? url.href : undefined
+  } catch {
+    return undefined
+  }
+}
+
+export type AgentSecretRequestCardProps = {
+  request: AgentSecretRequestPart
+  labels?: Partial<AgentSecretRequestLabels>
+  onSubmit?: (requestId: string, secret: string) => void | Promise<void>
+  onCancel?: (requestId: string) => void | Promise<void>
+}
+
+/**
+ * Inline credential handoff for an assistant transcript. The password field is
+ * uncontrolled: its value is read directly from the DOM, cleared before the
+ * caller receives it, and never copied into React or transcript state.
+ */
+export function AgentSecretRequestCard({ request, labels: labelOverrides, onSubmit, onCancel }: AgentSecretRequestCardProps) {
+  const labels = { ...DEFAULT_SECRET_REQUEST_LABELS, ...labelOverrides }
+  const inputId = React.useId()
+  const inputRef = React.useRef<HTMLInputElement>(null)
+  const [revealed, setRevealed] = React.useState(false)
+  const [submitting, setSubmitting] = React.useState(false)
+  const [settledStatus, setSettledStatus] = React.useState<Exclude<AgentSecretRequestStatus, 'pending'> | null>(null)
+  const [error, setError] = React.useState<string | null>(null)
+  const requestIdentityRef = React.useRef(`${request.requestId}:${request.status}`)
+  const status = settledStatus ?? request.status
+  const helpUrl = safeSecretHelpUrl(request.helpUrl)
+
+  const clearInput = React.useCallback(() => {
+    if (inputRef.current) inputRef.current.value = ''
+  }, [])
+
+  React.useEffect(() => {
+    const identity = `${request.requestId}:${request.status}`
+    if (requestIdentityRef.current !== identity) {
+      requestIdentityRef.current = identity
+      clearInput()
+      setRevealed(false)
+      setSubmitting(false)
+      setSettledStatus(null)
+      setError(null)
+    }
+  }, [clearInput, request.requestId, request.status])
+
+  React.useEffect(() => {
+    return clearInput
+  }, [clearInput])
+
+  const submit = React.useCallback(async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!onSubmit || submitting || status !== 'pending') return
+    const secret = inputRef.current?.value ?? ''
+    if (secret.length === 0) {
+      setError(labels.required)
+      inputRef.current?.focus()
+      return
+    }
+    clearInput()
+    setRevealed(false)
+    setError(null)
+    setSubmitting(true)
+    try {
+      await onSubmit(request.requestId, secret)
+      setSettledStatus('stored')
+    } catch {
+      setError(labels.failed)
+      inputRef.current?.focus()
+    } finally {
+      clearInput()
+      setSubmitting(false)
+    }
+  }, [clearInput, labels.failed, labels.required, onSubmit, request.requestId, status, submitting])
+
+  const cancel = React.useCallback(async () => {
+    if (!onCancel || submitting || status !== 'pending') return
+    clearInput()
+    setRevealed(false)
+    setError(null)
+    setSubmitting(true)
+    try {
+      await onCancel(request.requestId)
+      setSettledStatus('expired')
+    } catch {
+      setError(labels.cancelFailed)
+    } finally {
+      clearInput()
+      setSubmitting(false)
+    }
+  }, [clearInput, labels.cancelFailed, onCancel, request.requestId, status, submitting])
+
+  return (
+    <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm" aria-labelledby={`${inputId}-title`}>
+      <div className="flex items-start gap-3 p-3">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-subtle text-primary"><KeyRound size={16} /></span>
+        <div className="min-w-0 flex-1">
+          <div id={`${inputId}-title`} className="text-sm font-semibold text-fg">{request.providerLabel}</div>
+          <div className="mt-0.5 text-xs font-medium text-fg-muted">{request.credentialLabel}</div>
+          <p className="mt-1.5 text-sm leading-relaxed text-fg-muted">{request.purpose}</p>
+          {helpUrl ? helpUrl.startsWith('/') ? <UiLink href={helpUrl} className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">{labels.help}</UiLink> : <a href={helpUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">{labels.help}<ExternalLink size={12} aria-hidden="true" /></a> : null}
+        </div>
+      </div>
+      {status === 'pending' ? (
+        <form onSubmit={(event) => void submit(event)} onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); void cancel() } }} className="space-y-2.5 border-t border-border bg-bg-subtle p-3">
+          <label htmlFor={inputId} className="sr-only">{request.credentialLabel}</label>
+          <div className="relative">
+            <Input ref={inputRef} id={inputId} type={revealed ? 'text' : 'password'} autoComplete="new-password" autoCapitalize="none" spellCheck={false} disabled={submitting || !onSubmit} aria-invalid={error ? true : undefined} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.form?.requestSubmit() } }} className="pr-11 font-mono" />
+            <button type="button" onClick={() => setRevealed((value) => !value)} disabled={submitting || !onSubmit} aria-label={revealed ? labels.hide : labels.show} aria-pressed={revealed} className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-md text-fg-muted transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/60 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none">{revealed ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+          </div>
+          {error ? <p role="alert" className="text-xs text-danger">{error}</p> : null}
+          <div className="flex items-center justify-end gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={() => void cancel()} disabled={submitting || !onCancel}>{labels.cancel}</Button>
+            <Button type="submit" size="sm" disabled={submitting || !onSubmit}>{submitting ? <><Loader2 size={14} className="animate-spin motion-reduce:animate-none" />{labels.submitting}</> : labels.submit}</Button>
+          </div>
+        </form>
+      ) : (
+        <div role="status" className={cn('flex items-center gap-2 border-t border-border px-3 py-2.5 text-sm font-medium', status === 'stored' ? 'bg-success-subtle text-success' : 'bg-bg-subtle text-fg-muted')}>
+          {status === 'stored' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+          {status === 'stored' ? labels.stored : labels.expired}
+        </div>
+      )}
+    </section>
+  )
 }
 
 type AgentToolPart = { type: string; toolName?: unknown; state?: unknown; input?: unknown; output?: unknown }
