@@ -49,7 +49,17 @@ export type AgentQueuedMessage = {
 
 export type AgentSecretRequestStatus = 'pending' | 'stored' | 'expired'
 
-export type AgentApprovalRequestStatus = 'pending' | 'approved' | 'rejected' | 'expired'
+/**
+ * `failed` is deliberately distinct from `rejected`: the decision was made and
+ * the action was attempted, and it is CARRYING IT OUT that did not work.
+ *
+ * Without it, a decided approval whose execution died has nowhere truthful to
+ * sit. It stays `approved` — the card keeps saying the work will continue
+ * automatically, indefinitely, while nothing is happening — and the reader is
+ * left to conclude the agent simply forgot. A surface that cannot say "this
+ * did not happen" will always eventually say something untrue.
+ */
+export type AgentApprovalRequestStatus = 'pending' | 'approved' | 'rejected' | 'expired' | 'failed'
 
 /** Transcript-safe metadata for an inline governed-action decision. */
 export type AgentApprovalRequestPart = {
@@ -60,6 +70,12 @@ export type AgentApprovalRequestPart = {
   details?: Array<{ label: string; value: string }>
   status: AgentApprovalRequestStatus
   decisionNote?: string
+  /**
+   * Why carrying the decision out failed, in the operator's words. Shown
+   * verbatim beside a `failed` status — a failure the reader cannot see the
+   * reason for is only marginally better than one they cannot see at all.
+   */
+  failureReason?: string
 }
 
 export type AgentApprovalRequestLabels = {
@@ -71,7 +87,10 @@ export type AgentApprovalRequestLabels = {
   approved: string
   rejected: string
   expired: string
+  /** The decision itself could not be saved — the reader should press again. */
   failed: string
+  /** The decision saved, and acting on it failed. Nothing to press again. */
+  carryOutFailed: string
 }
 
 const DEFAULT_APPROVAL_REQUEST_LABELS: AgentApprovalRequestLabels = {
@@ -84,6 +103,7 @@ const DEFAULT_APPROVAL_REQUEST_LABELS: AgentApprovalRequestLabels = {
   rejected: 'Declined. The agent will receive your decision.',
   expired: 'This approval request has expired.',
   failed: 'The decision could not be saved. Please retry.',
+  carryOutFailed: 'Approved, but the action could not be carried out. The agent has not continued.',
 }
 
 /** Transcript-safe metadata for an inline credential request. */
@@ -511,8 +531,9 @@ function isAgentApprovalRequestPart(part: { type: string; [key: string]: unknown
       && typeof (detail as { label?: unknown }).label === 'string'
       && typeof (detail as { value?: unknown }).value === 'string'
     ))))
-    && (part.status === 'pending' || part.status === 'approved' || part.status === 'rejected' || part.status === 'expired')
+    && (part.status === 'pending' || part.status === 'approved' || part.status === 'rejected' || part.status === 'expired' || part.status === 'failed')
     && (part.decisionNote === undefined || typeof part.decisionNote === 'string')
+    && (part.failureReason === undefined || typeof part.failureReason === 'string')
 }
 
 export type AgentApprovalRequestCardProps = {
@@ -552,7 +573,13 @@ export function AgentApprovalRequestCard({ request, labels: labelOverrides, onDe
       ? labels.rejected
       : status === 'expired'
         ? labels.expired
-        : null
+        : status === 'failed'
+          ? labels.carryOutFailed
+          : null
+
+  // A carry-out failure is the one settled state the reader has to act on, so
+  // it is the one that does not read as quiet grey afterthought text.
+  const settledFailure = status === 'failed'
 
   return (
     <section className="rounded-xl border border-border bg-surface-raised p-3 shadow-sm" aria-label={labels.title}>
@@ -571,6 +598,15 @@ export function AgentApprovalRequestCard({ request, labels: labelOverrides, onDe
               <div className="flex flex-wrap gap-2">
                 <Button type="button" size="sm" onClick={() => void decide('approved')} disabled={!onDecide || deciding !== null}>{deciding === 'approved' ? <Loader2 className="size-4 animate-spin" /> : null}{deciding === 'approved' ? labels.deciding : labels.approve}</Button>
                 <Button type="button" size="sm" variant="outline" onClick={() => void decide('rejected')} disabled={!onDecide || deciding !== null}>{deciding === 'rejected' ? <Loader2 className="size-4 animate-spin" /> : null}{deciding === 'rejected' ? labels.deciding : labels.reject}</Button>
+              </div>
+            </div>
+          ) : settledFailure ? (
+            <div role="alert" className="mt-2 flex items-start gap-2 rounded-lg bg-danger-subtle p-2 text-xs text-danger">
+              <AlertCircle size={14} className="mt-px shrink-0" />
+              <div className="min-w-0">
+                <p className="font-medium">{statusText}</p>
+                {request.failureReason ? <p className="mt-0.5 break-words opacity-90">{request.failureReason}</p> : null}
+                {request.decisionNote ? <p className="mt-0.5 break-words opacity-90">Note: {request.decisionNote}</p> : null}
               </div>
             </div>
           ) : <p className="mt-2 text-xs font-medium text-fg-muted">{statusText}{request.decisionNote ? ` Note: ${request.decisionNote}` : ''}</p>}
