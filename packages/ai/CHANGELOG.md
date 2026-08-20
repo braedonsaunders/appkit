@@ -1,5 +1,11 @@
 # @braedonsaunders/appkit-ai
 
+## 1.1.5
+
+### Patch Changes
+
+- dea1537: Contain visually hidden credential labels within inline secret cards so long transcripts cannot expand the document scroll area, and add breathing room above the secure-submit actions.
+
 ## 1.1.4
 
 ### Patch Changes
