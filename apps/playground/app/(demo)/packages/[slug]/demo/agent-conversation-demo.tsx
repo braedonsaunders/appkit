@@ -14,10 +14,11 @@ export function AgentConversationDemo() {
         <span className="text-sm font-medium text-fg">Live response</span>
         <AgentTypingIndicator />
       </Card>
-      <Card className="h-[42rem] overflow-hidden">
+      <Card className="flex h-[42rem] overflow-hidden">
         <AgentPanel
           key={`${secretStatus}:${approvalStatus}`}
           enabled
+          assistantAvatar={<span role="img" aria-label="Avery Morgan" className="flex size-full items-center justify-center bg-primary-subtle text-[10px] font-semibold text-primary">AM</span>}
           dispatchState="running"
           initialMessages={[
             { id: 'user-1', role: 'user', parts: [{ type: 'text', text: 'Reconcile this morning’s delivery exceptions.' }] },
