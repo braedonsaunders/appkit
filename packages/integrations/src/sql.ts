@@ -1,4 +1,4 @@
-// Multi-dialect SQL destination extracted from the production implementation.
+// Multi-dialect SQL destination.
 // It supports ordinary mapped rows and weekly fan-out, safely reverses prior
 // inserts by identity, and returns every external id to the delivery ledger.
 

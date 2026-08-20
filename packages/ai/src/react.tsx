@@ -224,7 +224,7 @@ export type AgentPanelProps = {
 }
 
 /**
- * The streaming thread/composer extracted from the sibling assistant. The app
+ * The streaming thread/composer. The app
  * owns persistence and the HTTP transport; appkit owns UI-message decoding,
  * cancellation, ordered part rendering, and tool cards.
  */

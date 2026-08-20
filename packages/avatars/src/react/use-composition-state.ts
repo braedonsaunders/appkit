@@ -14,9 +14,9 @@ import {
 } from '../composition'
 
 /**
- * The composer's editing state, ported from OpenStudio's `useCanvasState`
- * reducer — the same action vocabulary (place, remove, select, transform,
- * reorder, recolour, reset, undo, redo) and the same bounded history stack.
+ * The composer's editing state uses a focused action vocabulary (place,
+ * remove, select, transform, reorder, recolour, reset, undo, redo) and a
+ * bounded history stack.
  *
  * Two changes come from the composition model: a category holds one part, so
  * "add layer" is "place part in category" and selection is a category id; and

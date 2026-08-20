@@ -4,7 +4,7 @@
 
 ### Minor Changes
 
-- 0bb5ff0: Extract OpenBooks' governed raw-SQL workbench into an optional AppKit package with host-owned execution and a live playground proof.
+- 0bb5ff0: Add a governed raw-SQL workbench as an optional AppKit package with host-owned execution and a live playground proof.
 
 ## 0.1.1
 

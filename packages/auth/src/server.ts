@@ -51,8 +51,8 @@ export type AppkitAuthOptions = {
 }
 
 /**
- * Complete persisted authentication runtime extracted from the production
- * reference: password sign-in/reset, hashed one-time magic links, invitation
+ * Complete persisted authentication runtime: password sign-in/reset, hashed
+ * one-time magic links, invitation
  * activation, durable sessions/accounts/verifications, client-compatible APIs,
  * and optional social-provider extension. Product delivery and domain effects
  * are injected.

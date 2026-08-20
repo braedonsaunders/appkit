@@ -86,18 +86,8 @@ const { prompt } = buildPartPrompt({
 const { images } = await generateImages(aiConfig, { prompt, model, count: 4 })
 ```
 
-## Provenance
+## Application boundaries
 
-Extracted from the OpenStudio avatar component system: `src/types/avatar.ts`
-(categories, layer order, render boxes, selections), `src/lib/avatar/compositor.ts`
-(layer sort and scaled placement), `src/lib/avatar/generator.ts` (the asset
-prompt discipline), and `src/components/avatar/canvas/*` (the editor —
-`AvatarCanvasEditor`, `CanvasWorkspace`, `LayerPanel`, `AssetLibraryPanel`,
-`TransformControls`, `useCanvasState`).
-
-Decoupled on the way across: the unlock/rarity economy, Supabase and R2
-storage, and the product's API routes. Changed deliberately: a 512×768 portrait
-stage instead of 512×512; DOM layers instead of Konva; rotation about the frame
-centre instead of the top-left origin; a single `scale` instead of independent
-width and height; and the head viewport as part of the document, replacing the
-separately stored headshot.
+The package does not own unlock or rarity policy, storage, or API routes. It
+uses a 512×768 portrait stage, composable DOM layers, centre-based rotation, a
+single aspect-preserving scale, and a head viewport stored with the composition.

@@ -1,6 +1,6 @@
 # @braedonsaunders/appkit-query-console
 
-A governed raw-SQL workbench extracted from OpenBooks. The package owns the
+A governed raw-SQL workbench. The package owns the
 editor, live schema tree, snippets, history, sortable/filterable results, CSV
 export, browser or injected persistence, response validation, and HTTP adapter.
 

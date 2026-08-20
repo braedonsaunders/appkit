@@ -47,7 +47,7 @@ const DEFAULT_LABELS: Required<NavigationConfigEditorLabels> = {
 }
 
 /**
- * Controlled tenant navigation editor extracted from the production sibling.
+ * Controlled tenant navigation editor.
  * Persistence and authorization stay application-owned.
  */
 export function NavigationConfigEditor({

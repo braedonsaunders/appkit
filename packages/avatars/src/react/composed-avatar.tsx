@@ -50,9 +50,7 @@ export type ComposedAvatarProps = {
  * The one avatar renderer: a composition painted as absolutely positioned
  * `<img>` layers inside a scaled stage.
  *
- * OpenStudio composited to a `<canvas>` and stored the flattened PNG, which
- * cost it a stored image per size and per crop and made per-layer motion
- * impossible. Layering in the DOM instead keeps every part addressable — so a
+ * Layering in the DOM keeps every part addressable — so a
  * mouth can move while a call is live — and stays sharp at any size, because
  * the browser rasterizes the source art at the size actually shown.
  */

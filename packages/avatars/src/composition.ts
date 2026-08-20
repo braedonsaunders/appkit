@@ -1,20 +1,14 @@
 // The avatar composition model — a parts library placed on one full-body
 // stage, and the head crop that derives every portrait from it.
 //
-// Extracted from the OpenStudio avatar component system (`src/types/avatar.ts`,
-// `src/lib/avatar/compositor.ts`, `src/components/avatar/canvas/*`) and
-// generalized: no unlock rules, no rarity economy, no product storage. What
-// remains is the part library, the per-layer transform, the layer order, and
-// the head viewport.
+// The model contains no unlock rules, rarity economy, or product storage. It
+// owns the part library, per-layer transforms, layer order, and head viewport.
 //
 // ## The coordinate model
 //
 // One canvas, {@link CANVAS_WIDTH} × {@link CANVAS_HEIGHT} **canvas units**,
-// origin at the top-left, +x right and +y down. OpenStudio composed on a
-// square 512×512 stage, which cannot hold a standing figure without wasting
-// half the frame on empty margin; a portrait 512×768 stage fits one head-to-
-// feet character with the same 512-unit horizontal vocabulary, so ported
-// horizontal offsets carry over unchanged.
+// origin at the top-left, +x right and +y down. A portrait 512×768 stage fits
+// one head-to-feet character while preserving a 512-unit horizontal vocabulary.
 //
 // There is exactly **one** composition per subject — the full body. A headshot
 // is not a second image: it is {@link AvatarComposition.headViewport}, a
@@ -30,14 +24,11 @@ export const CANVAS_HEIGHT = 768
  * Where one part sits on the stage.
  *
  * `x`/`y` are the **top-left** of the part's frame (the category's
- * {@link AvatarPartCategory.frame}) in canvas units — the same anchor
- * OpenStudio's `renderX`/`renderY` used. `scale` multiplies that frame, and
+ * {@link AvatarPartCategory.frame}) in canvas units. `scale` multiplies that frame, and
  * `rotation` is degrees clockwise **about the frame's centre**.
  *
- * (OpenStudio rotated about the top-left origin, inherited from Konva's node
- * model, which swings a part away from the pointer as it turns. Rotating about
- * the centre is the same data with the pivot moved to where a person expects
- * it; nothing else about the transform changed.)
+ * Rotating about the centre keeps the pivot where a person expects it during
+ * direct manipulation.
  */
 export type AvatarPartTransform = {
   x: number
@@ -54,7 +45,7 @@ export type AvatarPartTransform = {
 export type AvatarPartCategory = {
   id: string
   label: string
-  /** Lower paints first (behind). Ported from OpenStudio's `layerOrder`. */
+  /** Lower paints first (behind). */
   layerOrder: number
   /** A composition without this category is incomplete. */
   required?: boolean
@@ -65,9 +56,8 @@ export type AvatarPartCategory = {
   /** Where a newly placed part of this category lands. */
   defaultTransform: AvatarPartTransform
   /**
-   * Category-specific art direction appended to the generation prompt —
-   * OpenStudio's `promptAddition`, kept because a library is only as coherent
-   * as the sentence that produced it.
+   * Category-specific art direction appended to the generation prompt. A
+   * library is only as coherent as the sentence that produced it.
    */
   promptAddition?: string
 }
@@ -114,7 +104,7 @@ export type AvatarHeadViewport = { x: number; y: number; width: number; height: 
 export type AvatarComposition = {
   /** Schema version, so stored compositions can be migrated in place. */
   version: 1
-  /** Keyed by category id — one part per category, as OpenStudio's selections were. */
+  /** Keyed by category id — one part per category. */
   parts: Record<string, AvatarPartPlacement>
   headViewport: AvatarHeadViewport
 }
@@ -151,9 +141,8 @@ export type AvatarLayer = {
 /**
  * Resolve a composition into back-to-front paint order.
  *
- * Ported from OpenStudio's compositor, which sorted the categories by
- * `layerOrder` and drew each selection at the category's fixed render box.
- * Here the placement carries its own transform, so the box is the category
+ * Categories sort by `layerOrder`, while each placement carries its own
+ * transform. The box is the category
  * frame scaled by the placement — free placement rather than fixed slots —
  * and the order may be overridden per layer.
  *
@@ -293,4 +282,3 @@ export function clampHeadViewport(viewport: AvatarHeadViewport): AvatarHeadViewp
     y: Math.min(CANVAS_HEIGHT - height, Math.max(0, viewport.y)),
   }
 }
-

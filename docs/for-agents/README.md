@@ -7,11 +7,8 @@ immediately. Start at the repo root [`AGENTS.md`](../../AGENTS.md), then:
   index, and the composition patterns. Read it and you can build a
   suite-consistent screen.
 - **[building-applications.md](building-applications.md)** — the generalized,
-  app-agnostic rules for building any application on this foundation (distilled
-  from the production reference applications). Apps built on appkit adopt these
-  and add only their domain-specific rules.
-- **[provenance.md](provenance.md)** — the audited split between faithful
-  extractions, generalized production patterns, and appkit-original code.
+  app-agnostic rules for building any application on this foundation. Apps built
+  on appkit adopt these and add only their domain-specific rules.
 
 The living reference for everything documented here is `apps/playground` — a
 runnable app that exercises every primitive plus an `/admin` area. When a doc and

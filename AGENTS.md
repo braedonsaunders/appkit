@@ -10,19 +10,14 @@ the rest of the suite lives here, so it is never re-invented per app.
   suite-consistent screen immediately.
 - [`building-applications.md`](docs/for-agents/building-applications.md) — the
   **generalized, app-agnostic rules** for building any application on this
-  foundation (distilled from the production reference applications). Apps built
-  on appkit should adopt these verbatim.
-- [`provenance.md`](docs/for-agents/provenance.md) — the audited distinction
-  between faithful extraction, generalized production pattern, and
-  appkit-original code. Never claim parity without a named sibling source.
+  foundation. Apps built on appkit should adopt these verbatim.
 
 ## Mission
 
 appkit is a pre-launch, production-bound foundation, not a prototype. Leave it
-more coherent than you found it. The production reference applications already
-share this DNA so closely that primitives were byte-identical between them —
-appkit ends that duplication. When you improve a primitive here, every app that
-imports it improves.
+more coherent than you found it. Applications share this foundation instead of
+duplicating it. When you improve a primitive here, every app that imports it
+improves.
 
 ## Repo map
 
@@ -67,7 +62,7 @@ imports it improves.
   `RequestContext`, `can` / `assertCan` (wildcards, read-tiers, per-user
   grant/deny overrides), `resolveMembershipAccess`, super-admin.
 - `packages/storage` — tenant-safe S3/R2/MinIO object storage plus the optional
-  source-extracted attachment workspace under `/react`; HTTP and database-free
+  attachment workspace under `/react`; HTTP and database-free
   memory adapters keep application authorization and persistence injectable.
 - `packages/auth` — optional persisted authentication over the canonical
   identity schema: password/reset and magic-link flows, membership-bound invite
@@ -108,14 +103,11 @@ dependencies, styles, migrations, README, and license for npm publication.
 
 ## Working in appkit
 
-- **Extract, don't invent.** These primitives are extracted from the real
-  production reference sources and tokenized. When adding one, locate the real
-  source in the adjacent reference repositories and port it faithfully
-  (decouple app coupling — i18n, app-specific offsets — into props). Do **not**
-  approximate from memory. If no source exists, say so and build it to the same
-  quality bar.
-- **Parity before generalization.** Extract the complete reusable source surface
-  and its behavior before calling a package complete. A schema, loader,
+- **Build from evidence, not memory.** Search the repository and playground
+  before adding a primitive. Preserve established behavior, and decouple
+  application concerns such as i18n and layout offsets into typed props.
+- **Completeness before generalization.** Implement the complete reusable
+  surface and its behavior before calling a package complete. A schema, loader,
   read-only preview, partial shell, or demo-specific imitation is not parity
   when the source application also has an editor, inspector, runtime, adapter,
   or persistence seam. Generalize product coupling through typed inputs; do not
@@ -179,15 +171,18 @@ The full, generalized set is in
    systems. Flag and clean up in the same change.
 7. **Docs are part of the feature** — keep the playground and these docs truthful
    in the same change that alters a primitive.
-8. **Commit atomically to local `main`.** Stage only files you intentionally
-   touched (concurrent worktrees exist — never revert files you didn't edit). End
-   commit messages with the Claude co-author trailer.
+8. **Keep changes atomic.** Stage only files you intentionally touched
+   (concurrent worktrees exist — never revert files you didn't edit).
 9. **Every package ships with a playground proof.** Adding a package also means
    adding it to the playground package catalogue, assigning its category and demo
    route, and building a concise working showcase from the package's real exports.
    A generic manifest-only detail page is not enough when behavior can be
    demonstrated safely; server-only or environment-specific packages should render
    a deterministic plan/readiness demo without performing privileged mutations.
+10. **Keep the public surface public-safe.** Do not commit internal provenance
+    dossiers, private repository or product names, pinned private commits, local
+    user paths, credentials, or implementation-lineage commentary. Standard npm
+    supply-chain provenance metadata remains required.
 
 ## Application standards (owner directives — apply to every app built on appkit)
 
@@ -209,7 +204,7 @@ code shipped here:
 4. **No free-text where finite options exist.** If the real options are enumerable at
    runtime (models from a provider API, mailboxes, roles), load them and present a
    searchable dropdown — first pass, not a follow-up.
-5. **Screen complexity on par with the production reference apps on the first pass.**
+5. **Screen complexity on par with the rest of the suite on the first pass.**
    No thin placeholder UIs that need second and third passes.
 6. **Single-source feature gates; effective-dated config; append-only history.** One
    authoritative Features switchboard; price/policy changes are new effective-dated rows,

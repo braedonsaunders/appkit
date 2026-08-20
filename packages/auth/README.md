@@ -1,6 +1,6 @@
 # @braedonsaunders/appkit-auth
 
-Production authentication extracted from the complete reference runtime and generalized around explicit application inputs.
+Production authentication generalized around explicit application inputs.
 
 ## What ships
 

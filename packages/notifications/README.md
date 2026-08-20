@@ -62,11 +62,10 @@ await queues.enqueueNotification({
 })
 ```
 
-## Source provenance
+## Application boundaries
 
-The inbox, preference matrix, push enrollment, routing cockpit, schedule
-grammar, policy schema, notify/push queue profiles, digest behavior, and Web
-Push handling are faithful generalized extractions from the pinned production
-reference listed in `docs/for-agents/provenance.md`. Framework routing,
-application categories, domain recipient queries, credentials, and provider
-delivery remain typed host boundaries.
+The package owns the inbox, preference matrix, push enrollment, routing
+cockpit, schedule grammar, policy schema, notify/push queue profiles, digest
+behavior, and Web Push handling. Framework routing, application categories,
+domain recipient queries, credentials, and provider delivery remain typed host
+boundaries.

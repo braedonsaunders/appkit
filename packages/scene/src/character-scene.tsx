@@ -20,7 +20,7 @@ export type CharacterSceneProps = {
   /**
    * A painted stage — trees, fire, skyline — rendered over the gradients and
    * under every character (see `scene-art.tsx`). Characters always walk in
-   * front of the art, exactly as OpenStudio layered its homepage world.
+   * front of the art according to the stage depth.
    */
   art?: React.ReactNode
   /** Keep characters out of the area the overlay content occupies. */

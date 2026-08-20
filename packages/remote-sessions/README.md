@@ -2,7 +2,7 @@
 
 Remote computers are not agent desks. A desk is an application-owned machine belonging to an agent; a remote session connects that agent to an existing customer computer or appliance over RDP, VNC, SSH, WinRM, PowerShell-over-SSH, or Telnet.
 
-This package extracts Steward's working remote-computer model and terminal presentation and hardens their reusable boundary: provider-neutral targets, fenced immutable leases, append-only events, one-time viewer grants, cancellation, terminal output, programmatic RDP/VNC actions with returned frames, an injected credential resolver, policy ports, a memory adapter, provider conformance, a browser-safe React viewer, and a read-only `TerminalSurface` that renders an application-owned durable command ledger. The application owns tenant persistence, authorization, feature gates, credentials, audit projection, routes, and the provider bridge.
+This package provides a hardened remote-computer model and terminal presentation with provider-neutral targets, fenced immutable leases, append-only events, one-time viewer grants, cancellation, terminal output, programmatic RDP/VNC actions with returned frames, an injected credential resolver, policy ports, a memory adapter, provider conformance, a browser-safe React viewer, and a read-only `TerminalSurface` that renders an application-owned durable command ledger. The application owns tenant persistence, authorization, feature gates, credentials, audit projection, routes, and the provider bridge.
 
 ```ts
 const remote = createRemoteSessionService({ store, provider, policy, resolveCredential })

@@ -1,7 +1,7 @@
 'use client'
 
-// Production category × channel preference matrix, extracted from the source
-// route. Missing rows deliberately render enabled, matching dispatcher
+// Production category × channel preference matrix. Missing rows deliberately
+// render enabled, matching dispatcher
 // semantics; save submits the complete bounded matrix in one operation.
 
 import * as React from 'react'

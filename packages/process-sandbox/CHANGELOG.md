@@ -66,5 +66,5 @@
 
 ### Minor Changes
 
-- Add the generalized, fail-closed bubblewrap policy extracted from Bidwright's
-  production multi-tenant coding-agent runtime.
+- Add a generalized, fail-closed bubblewrap policy for production multi-tenant
+  coding-agent runtimes.

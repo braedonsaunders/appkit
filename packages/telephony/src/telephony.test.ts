@@ -189,7 +189,7 @@ test('ensureTrunk returns the normalized seam and never a carrier object model',
     ],
     async (calls) => {
       const trunk = await client().ensureTrunk({
-        label: 'bunkhouse',
+        label: 'workspace',
         originationUri: 'sip:voice.example.com:5060',
       })
       assert.equal(trunk.carrierTrunkId, 'TK1')
@@ -216,7 +216,7 @@ test('a half-built trunk is unwound rather than left pointing nowhere', async ()
     ],
     async (calls) => {
       await assert.rejects(
-        client().ensureTrunk({ label: 'bunkhouse', originationUri: 'sip:voice.example.com:5060' }),
+        client().ensureTrunk({ label: 'workspace', originationUri: 'sip:voice.example.com:5060' }),
         (error: unknown) => {
           assert.ok(error instanceof CarrierError)
           assert.equal(error.code, 21631)
@@ -233,7 +233,7 @@ test('a half-built trunk is unwound rather than left pointing nowhere', async ()
 test('a malformed origination URI is refused before a trunk is created', async () => {
   await withFetch([], async () => {
     await assert.rejects(
-      client().ensureTrunk({ label: 'bunkhouse', originationUri: 'voice.example.com' }),
+      client().ensureTrunk({ label: 'workspace', originationUri: 'voice.example.com' }),
       /must be a SIP URI/,
     )
   })

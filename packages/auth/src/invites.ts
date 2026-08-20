@@ -82,7 +82,7 @@ export type InviteService = {
 }
 
 /**
- * The complete invitation grant flow extracted from the production runtime.
+ * The complete invitation grant flow.
  * Better Auth's one-time magic-link token proves mailbox possession; this
  * independently signed grant binds that verified callback to exactly one
  * pending membership generation.

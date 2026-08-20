@@ -310,7 +310,7 @@ viewer stays at the bottom.
 ## 5. Forms and localized authoring
 
 `@braedonsaunders/appkit-forms-core` is the framework-neutral form contract shared by the
-production reference applications. It accepts both plain-string authoring copy and locale-keyed
+production applications. It accepts both plain-string authoring copy and locale-keyed
 copy, with or without a workflow. Its field registry is the union of the source
 products: finance fields (`currency`, `percentage`, `gl_account`, `party`) sit
 beside the full safety/field-operations vocabulary. The dependency-light root
@@ -817,7 +817,7 @@ for embedded use. Applications inject permission decisions, record catalogues,
 labels, roles, and routing. Import
 `@braedonsaunders/appkit-customization/styles.css` wherever the React editors are used so
 Tailwind scans the optional package. The database-free `/customization`
-reference connects that same studio to a working source-derived record list and
+playground connects that same studio to a working record list and
 browser-local persistence.
 
 The working references are `/workflows`, `/admin/integrations`,

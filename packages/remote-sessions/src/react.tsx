@@ -282,8 +282,8 @@ function TerminalEmulator({ entries, emptyLabel }: { entries: readonly TerminalS
 /**
  * A provider-neutral, human-observable terminal. Hosts feed it their durable
  * command/output ledger; it never owns execution or keeps a second history.
- * The presentation is extracted from Steward's remote terminal and adapted to
- * AppKit's semantic tokens and read-only observer role.
+ * The presentation uses AppKit's semantic tokens and a read-only observer
+ * role.
  */
 export function TerminalSurface({
   title,

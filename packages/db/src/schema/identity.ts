@@ -65,8 +65,8 @@ export const users = pgTable('users', {
 /**
  * Durable authentication sessions. The core columns are the persisted session
  * contract used by Better Auth; the optional tenant and impersonation columns
- * are the complete administrative session overlay extracted from the reference
- * runtime. They remain inert unless an application supplies that policy.
+ * form the optional administrative session overlay. They remain inert unless
+ * an application supplies that policy.
  */
 export const authSessions = pgTable(
   'sessions',

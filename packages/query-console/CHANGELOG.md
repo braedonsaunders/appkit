@@ -4,11 +4,11 @@
 
 ### Major Changes
 
-- 0bb5ff0: Extract OpenBooks' governed raw-SQL workbench into an optional AppKit package with host-owned execution and a live playground proof.
+- 0bb5ff0: Add a governed raw-SQL workbench as an optional AppKit package with host-owned execution and a live playground proof.
 
 ## 1.0.0
 
-- Extract the OpenBooks raw-SQL workbench behind host-owned execution, schema,
+- Add the raw-SQL workbench behind host-owned execution, schema,
   authorization, and persistence adapters.
 - Preserve schema discovery, snippets, history, selection execution, result
   filtering/sorting, CSV copy/download, row caps, and the resizable workbench.

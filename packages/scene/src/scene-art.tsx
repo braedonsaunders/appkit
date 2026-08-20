@@ -2,8 +2,8 @@
 
 /**
  * Scene art — six fully drawn stages (beach, campfire, forest, studio, space,
- * rooftop), each with a day and a night take, ported whole from the OpenStudio
- * homepage world. Everything is inline SVG and CSS gradients: no image assets,
+ * rooftop), each with a day and a night take. Everything is inline SVG and CSS
+ * gradients: no image assets,
  * sharp at any size, and themed by the `isDark` flag alone.
  *
  * The art is deliberately self-contained — the walking, depth-scaling, and
@@ -3503,7 +3503,7 @@ export { StarField, CloudLayer, Particles };
 
 import type { SceneGroundConfig } from './config'
 
-/** Walk geometry per stage — the same numbers the OpenStudio world used. */
+/** Walk geometry per stage. */
 const SCENE_WALK_GEOMETRY: Record<
   SceneKind,
   Pick<SceneGroundConfig, 'walkableArea' | 'scaleRange'>
@@ -3522,8 +3522,8 @@ const SCENE_WALK_GEOMETRY: Record<
 }
 
 /**
- * The full ground config for a painted stage: OpenStudio's walk geometry with
- * the stage's own day-or-night gradients. Pass to `CharacterScene`'s `ground`
+ * The full ground config for a painted stage, including walk geometry and the
+ * stage's own day-or-night gradients. Pass to `CharacterScene`'s `ground`
  * alongside `art={<SceneArt kind={...} isDark={...} />}`.
  */
 export function sceneGround(kind: SceneKind, isDark: boolean): SceneGroundConfig {
