@@ -65,8 +65,8 @@ const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frida
 const TIMEZONES = ['UTC', 'America/Toronto', 'America/Vancouver', 'America/Edmonton', 'America/Winnipeg', 'America/Halifax', 'America/St_Johns', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'Europe/London', 'Europe/Paris', 'Asia/Tokyo', 'Australia/Sydney']
 
 /**
- * Complete create/edit schedule form extracted from the production reporting
- * surface. It posts through the same bounded parser as server adapters and
+ * Complete create/edit schedule form. It posts through the same bounded parser
+ * as server adapters and
  * retains member recipients, external emails, nth-weekday cadence, date bounds,
  * delivery copy, and compiler-native runtime filters.
  */

@@ -20,7 +20,7 @@ export function outboundDispatchJobId(
 }
 
 /**
- * Production event publisher extracted from the reference worker boundary.
+ * Production event publisher.
  * The application supplies its durable queue, keeping this package independent
  * of any particular jobs implementation.
  */

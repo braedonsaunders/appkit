@@ -1,5 +1,4 @@
-// Faithfully extracted from the production notification cockpit's shared
-// schedule module. It intentionally has no React, database, or framework
+// This shared schedule module intentionally has no React, database, or framework
 // dependency so the same validation runs in clients and persistence adapters.
 
 export const DEFAULT_SCAN_CRON = '0 6 * * *'

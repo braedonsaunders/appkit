@@ -8,8 +8,8 @@ import { resolvePartUrl, type AvatarPart, type AvatarPartCategory } from '../com
 /**
  * The parts library — the composer's left rail.
  *
- * Ported from OpenStudio's `AssetLibraryPanel`: search across names and tags,
- * collapsible category groups with a count, and a thumbnail grid where a click
+ * Search across names and tags, browse collapsible category groups with a
+ * count, and use a thumbnail grid where a click
  * places the part. The lock/rarity overlay went with the unlock economy; what
  * replaces it is a "placed" marker, because a category holds one part and
  * clicking a second one replaces the first.

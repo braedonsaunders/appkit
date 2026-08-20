@@ -23,9 +23,7 @@ import { useCompositionState } from './use-composition-state'
  * The avatar composer — library on the left, stage in the middle, layer stack
  * and transform on the right.
  *
- * Ported from OpenStudio's `AvatarCanvasEditor`, which owned its own data
- * fetching, its own save endpoint, and a Konva export step. Here the component
- * is pure: it takes the library and the composition, and reports every edit
+ * The component is pure: it takes the library and the composition, and reports every edit
  * through `onChange`. Persistence, generation, and authorization belong to the
  * application.
  */

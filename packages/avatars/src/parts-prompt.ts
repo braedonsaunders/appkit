@@ -1,12 +1,9 @@
 // Art direction for generating library parts.
 //
-// Ported from OpenStudio's `src/lib/avatar/generator.ts` (`ASSET_PROMPT_SUFFIX`
-// / `ASSET_NEGATIVE_PROMPT`) and adjusted for one difference that matters: our
-// parts are composited as DOM layers, so they must arrive **alpha-cut**.
-// OpenStudio asked for a pure white background and cut it out afterwards with
-// an image processor; asking for transparency directly removes a whole
-// post-processing step, and the white-background wording is kept as the
-// fallback instruction for models that cannot emit alpha.
+// Parts are composited as DOM layers, so they must arrive **alpha-cut**. Asking
+// for transparency directly removes an image-processing step; the
+// white-background wording remains a fallback for models that cannot emit
+// alpha.
 //
 // Pure strings and string-building — no provider, no network. Safe to import
 // from a client bundle.
@@ -22,7 +19,7 @@ export const PART_STYLE_SUFFIX =
   'uniform consistent art style, consistent scale with other parts of the same set, ' +
   'crisp clean cut-out edges, professional character art quality'
 
-/** What a part must never contain. Kept verbatim in spirit from OpenStudio. */
+/** What a part must never contain. */
 export const PART_NEGATIVE_PROMPT =
   'photorealistic, photograph, photo, realistic, hyperrealistic, 3D render, 3D, CGI, ' +
   'background scenery, complex background, colored background, gradient background, ' +
@@ -45,10 +42,9 @@ export type PartPromptRequest = {
 }
 
 /**
- * Build the full prompt for one library part. Mirrors OpenStudio's
- * `buildPromptFromPreset`: description, then category rules, then the shared
- * style, then the negative prompt folded in for models that take only one
- * string.
+ * Build the full prompt for one library part: description, category rules,
+ * shared style, then the negative prompt folded in for models that take only
+ * one string.
  */
 export function buildPartPrompt(request: PartPromptRequest): { prompt: string; negativePrompt: string } {
   const segments = [

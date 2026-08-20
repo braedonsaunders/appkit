@@ -1,7 +1,6 @@
 /**
- * Scene geometry and motion constants — extracted from the OpenStudio
- * homepage world and generalized: no product data, no data fetching, all
- * numbers overridable by the consuming application.
+ * Scene geometry and motion constants. There is no product data or data
+ * fetching, and every number is overridable by the consuming application.
  *
  * The scene is a shallow stage seen from the front. Y (in percent of the
  * container height) doubles as depth: characters near the horizon are small

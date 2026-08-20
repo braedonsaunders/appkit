@@ -4,7 +4,7 @@
 
 ### Minor Changes
 
-- 0eff9e0: Production report-engine upgrades ported from the source platform.
+- 0eff9e0: Add production report-engine upgrades.
 
   - New `money` column kind: flows through the compiler as `currency` semantics
     (right-aligned, currency-formatted on the paper, numeric filter operators and

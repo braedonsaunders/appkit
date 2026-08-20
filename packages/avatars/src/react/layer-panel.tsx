@@ -8,8 +8,8 @@ import { resolvePartUrl, type AvatarComposition, type AvatarPart, type AvatarPar
 /**
  * The layer stack — the composer's right rail.
  *
- * Ported from OpenStudio's `LayerPanel`: top layer first, thumbnail, name and
- * slot, a colour-variant tray with an opacity slider, and per-layer remove.
+ * Top layer first, with thumbnail, name and slot, a colour-variant tray, an
+ * opacity slider, and per-layer remove.
  * Drag-to-reorder is replaced by explicit up/down controls — the same
  * operation, but keyboard-reachable and unambiguous on touch, which HTML5
  * drag-and-drop reordering is not.

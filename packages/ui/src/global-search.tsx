@@ -49,7 +49,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
   return <>{text.slice(0, index)}<mark className="bg-transparent font-semibold text-primary">{text.slice(index, index + query.length)}</mark>{text.slice(index + query.length)}</>
 }
 
-/** Production sibling search interaction with app-owned querying and navigation. */
+/** Shared search interaction with app-owned querying and navigation. */
 export function GlobalSearch({
   search,
   onNavigate,

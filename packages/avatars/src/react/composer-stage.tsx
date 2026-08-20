@@ -18,9 +18,8 @@ import {
 /**
  * The stage — direct manipulation of the composition.
  *
- * Ported from OpenStudio's `CanvasWorkspace`, which drove a Konva `<Stage>`
- * with a `<Transformer>`: drag the part to move, corner anchors to resize, a
- * handle to rotate. This is the same interaction on DOM nodes and pointer
+ * Drag the part to move, use corner anchors to resize, or use the handle to
+ * rotate. The interaction runs on DOM nodes and pointer
  * events, for the reason the renderer is DOM too — one code path paints the
  * composition in the editor, in a list row, and on a call, so what an operator
  * arranges is exactly what ships.

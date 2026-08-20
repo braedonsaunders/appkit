@@ -5,8 +5,8 @@ import { Button, Input, Slider } from '@braedonsaunders/appkit-ui'
 import type { AvatarPartCategory, AvatarPartPlacement, AvatarPartTransform } from '../composition'
 
 /**
- * Numeric transform entry for the selected layer — ported from OpenStudio's
- * `TransformControls`. X/Y/rotation carry over; width and height are replaced
+ * Numeric transform entry for the selected layer. X/Y/rotation are direct;
+ * width and height are replaced
  * by a single `scale`, because a part's aspect ratio is a property of the
  * artwork and letting an operator stretch it independently is how a library
  * stops looking like one set.

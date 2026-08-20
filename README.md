@@ -274,7 +274,7 @@ cycles, forbidden foundation dependencies, missing feature migrations, and an
 optional peer imported by a package root. Server-only adapters cannot silently
 inflate a client bundle.
 
-## Running reference app
+## Running the playground
 
 `apps/playground` is a real Next.js 16 application, not a static component
 catalogue. Authentication is intentionally disabled throughout the public demo;

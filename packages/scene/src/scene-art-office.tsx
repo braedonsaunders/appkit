@@ -1,8 +1,8 @@
 'use client'
 
 /**
- * Office stages — five drawn work environments in the same visual language as
- * the OpenStudio stages: open-plan office, executive corner office, warehouse,
+ * Office stages — five drawn work environments in one visual language:
+ * open-plan office, executive corner office, warehouse,
  * server room, and break room. Everything is inline SVG and CSS gradients with
  * a day and a night take, themed by `isDark` alone.
  *
