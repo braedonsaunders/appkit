@@ -1,5 +1,12 @@
 # @braedonsaunders/appkit-ai
 
+## 1.1.6
+
+### Patch Changes
+
+- 3689232: Vertically center the one-line AgentPanel composer text and allow applications
+  to render an employee avatar in the assistant-message marker slot.
+
 ## 1.1.5
 
 ### Patch Changes
