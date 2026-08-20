@@ -13,7 +13,9 @@ markdown renderer, generic tool-use cards, abort control, composer, welcome and
 disabled states. Conversation persistence and the HTTP transport stay app-owned.
 Hosts can place contextual controls in the panel's fixed header with the optional
 `headerActions` prop and replace the stock first-message card with a full-height
-application stage through `emptyContent`. Consecutive tool calls collapse into
+application stage through `emptyContent`. `assistantAvatar` places an
+application-owned employee identity in the existing 28px assistant-message slot,
+with the stock Sparkles marker retained as the fallback. Consecutive tool calls collapse into
 one quiet activity line showing the newest action and total step count; operators can expand it to
 inspect every input and result without letting a long run overwhelm the thread.
 
@@ -22,7 +24,8 @@ controls beside the text input, `composerContent` renders application-owned
 draft state above it, and `composerDraft` supplies a file-only fallback prompt
 plus parts for the optimistic user turn. Persisted user messages can include
 `{ type: 'file', filename, url? }` parts, which render as compact attachment
-links.
+links. Its one-line textarea shares the icon buttons' 40px geometry and explicit
+line height, keeping typed and placeholder text vertically centered.
 
 While the first assistant parts are streaming, `AgentPanel` renders a subtle
 three-dot typing cadence through the exported `AgentTypingIndicator`. Its pure

@@ -58,7 +58,19 @@ test('AgentPanel renders application-owned attachment composer content', () => {
 
   assert.match(markup, /data-draft-file="true"/)
   assert.match(markup, />Attach files</)
+  assert.match(markup, /<textarea[^>]*class="[^"]*h-10[^"]*py-2[^"]*leading-6[^"]*"/)
   assert.doesNotMatch(markup, /aria-label="Send"[^>]*disabled/)
+})
+
+test('AgentPanel renders an injected assistant avatar in the existing message slot', () => {
+  const markup = renderToStaticMarkup(React.createElement(AgentPanel, {
+    enabled: false,
+    assistantAvatar: React.createElement('span', { 'data-employee-avatar': 'marla' }, 'M'),
+    initialMessages: [{ id: 'assistant-avatar', role: 'assistant', parts: [{ type: 'text', text: 'Ready.' }] }],
+  } satisfies AgentPanelProps))
+
+  assert.match(markup, /size-7[^>]*><span data-employee-avatar="marla">M<\/span>/)
+  assert.equal(markup.match(/lucide-sparkles/g)?.length, 1)
 })
 
 test('AgentPanel renders file parts on a user turn', () => {
