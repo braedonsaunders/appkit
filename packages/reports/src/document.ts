@@ -50,9 +50,8 @@ export function createReportDocument(
   result: ReportRunResult,
   options: { subtitle?: string; generatedAt?: Date } = {},
 ): ReportDocument {
-  if (!title.trim()) throw new Error('A report document requires a title')
   return {
-    title,
+    title: title.trim() || 'Untitled report',
     subtitle: options.subtitle,
     generatedAt: options.generatedAt ?? new Date(),
     groups: result.groups,

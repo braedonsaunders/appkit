@@ -1,11 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { CalendarClock, CheckCircle2, ChevronDown, ChevronUp, Columns3, FileText, Filter, GripVertical, LayoutTemplate, Loader2, Play, Plus, Save, Search, Settings2, Sigma, Table2, Trash2, X } from 'lucide-react'
+import { CalendarClock, CheckCircle2, ChevronDown, ChevronUp, Columns3, Copy, FileText, Filter, GripVertical, LayoutTemplate, Loader2, Play, Plus, Save, Search, Settings2, Sigma, Table2, Trash2, X } from 'lucide-react'
 import { Button, Checkbox, Input, Label, SearchSelect, Textarea, cn } from '@braedonsaunders/appkit-ui'
 import type { ReportCustomQuery, ReportAggFn } from './custom-query'
 import { REPORT_AGG_FNS, REPORT_TEMPORAL_BINS } from './custom-query'
-import type { CustomReportDefinition } from './definitions'
+import { reportDisplayName, type CustomReportDefinition } from './definitions'
 import type { ReportEntityCatalog } from './entities'
 import { defaultColumnsFor, reportColumn, reportEntity, visibleReportColumns } from './entities'
 import { ReportFilterTree } from './filter-tree'
@@ -27,7 +27,7 @@ export type ReportStudioDeleteResult =
 export type ReportStudioTemplate = { id: string; label: string; description: string; query: ReportCustomQuery }
 type StudioTab = 'data' | 'filter' | 'format'
 
-export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRecord = ReportDrillRecord>({ value, catalog, result, onChange, onPreview, onSave, onSaved, onDelete, onDeleted, organization = 'Organization', logoUrl, primaryColor, currency = '', drill, exports: exportOptions, printHref, pdfHref, templates, autoPreviewMs = 500, autoSaveMs = 700, className }: {
+export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRecord = ReportDrillRecord>({ value, catalog, result, onChange, onPreview, onSave, onSaved, onDelete, onDeleted, onDuplicate, organization = 'Organization', logoUrl, primaryColor, currency = '', drill, exports: exportOptions, printHref, pdfHref, templates, autoPreviewMs = 500, autoSaveMs = 700, className }: {
   value: ReportStudioValue
   catalog: ReportEntityCatalog
   result: ReportRunResult | null
@@ -40,6 +40,8 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
   onDelete?: (value: ReportStudioValue) => Promise<ReportStudioDeleteResult>
   /** Called only after deletion succeeds. Framework navigation remains host-owned. */
   onDeleted?: (value: ReportStudioValue) => void
+  /** Persist a copy of the current definition. Hosts typically create a new id and navigate. */
+  onDuplicate?: (value: ReportStudioValue) => Promise<ReportStudioSaveResult>
   organization?: string
   logoUrl?: string | null
   primaryColor?: string | null
@@ -118,6 +120,36 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
     }
     finally { setDeleting(false) }
   }
+  function copiedDefinition(): CustomReportDefinition {
+    const name = `${reportDisplayName(definition.name)} (copy)`
+    return {
+      ...definition,
+      id: 'new',
+      name,
+      slug: slug(name),
+      state: 'draft',
+      builtIn: false,
+    }
+  }
+  async function saveAs() {
+    const next = { definition: copiedDefinition(), schedule: null }
+    setSaving(true); setError(null)
+    try {
+      const response = await (onDuplicate ?? onSave)(next)
+      if (!response.ok) {
+        setError(response.error)
+        return
+      }
+      const persisted = response.value ?? next
+      lastSavedKey.current = reportStudioPersistenceKey(persisted)
+      onChange(persisted)
+      onSaved?.(persisted, response)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'The report could not be copied.')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const previewKey = reportStudioPersistenceKey(value)
   const lastSavedKey = React.useRef(previewKey)
@@ -177,13 +209,13 @@ export function ReportStudio<TDrillTarget = never, TRecord extends ReportDrillRe
     <main className="flex min-h-0 flex-col bg-bg-subtle lg:col-span-2">
       <header className="flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border bg-surface px-4">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="min-w-0"><h2 className="truncate text-sm font-semibold text-fg">{definition.name || 'Untitled report'}</h2><p className="truncate text-xs text-fg-muted">{entity?.label ?? 'Choose a source'} · {query.mode === 'summarize' ? 'Summary' : 'Detail rows'}</p></div>
+          <div className="min-w-0"><h2 className="truncate text-sm font-semibold text-fg">{reportDisplayName(definition.name)}</h2><p className="truncate text-xs text-fg-muted">{entity?.label ?? 'Choose a source'} · {query.mode === 'summarize' ? 'Summary' : 'Detail rows'}</p></div>
         </div>
-        <div className="flex items-center gap-2">{exportOptions?.length ? <ReportExportMenu options={exportOptions} printHref={printHref} onError={(cause) => setError(cause.message)} /> : null}{onDelete ? <Button type="button" variant="destructive" size="sm" onClick={() => void remove()} disabled={deleting}>{deleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 size={14} />}Delete</Button> : null}<Button type="button" variant="outline" size="sm" onClick={() => void run()} disabled={running}>{running ? <Loader2 className="size-4 animate-spin" /> : <Play size={14} />}Run</Button>{pdfHref ? <Button type="button" variant="outline" size="sm" onClick={() => void exportPdf()} disabled={saving}><FileText size={14} />PDF</Button> : null}<Button type="button" size="sm" onClick={() => void save()} disabled={saving}>{saving ? <Loader2 className="size-4 animate-spin" /> : <Save size={14} />}Save</Button></div>
+        <div className="flex items-center gap-2">{exportOptions?.length ? <ReportExportMenu options={exportOptions} printHref={printHref} onError={(cause) => setError(cause.message)} /> : null}{onDelete ? <Button type="button" variant="destructive" size="sm" onClick={() => void remove()} disabled={deleting}>{deleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 size={14} />}Delete</Button> : null}<Button type="button" variant="outline" size="sm" onClick={() => void saveAs()} disabled={saving}><Copy size={14} />Save as</Button><Button type="button" variant="outline" size="sm" onClick={() => void run()} disabled={running}>{running ? <Loader2 className="size-4 animate-spin" /> : <Play size={14} />}Run</Button>{pdfHref ? <Button type="button" variant="outline" size="sm" onClick={() => void exportPdf()} disabled={saving}><FileText size={14} />PDF</Button> : null}<Button type="button" size="sm" onClick={() => void save()} disabled={saving}>{saving ? <Loader2 className="size-4 animate-spin" /> : <Save size={14} />}Save</Button></div>
       </header>
       <div className="app-scroll min-h-0 flex-1 overflow-auto p-4 lg:p-6">
         {error ? <div role="alert" className="mb-4 rounded-lg border border-danger/30 bg-danger-subtle px-3 py-2 text-sm text-danger">{error}</div> : null}
-        {preview ? <div className="rounded-xl bg-bg p-3 sm:p-5">{drill ? <PaperView organization={organization} data={reportRunResultToPaper(definition.name, preview, { periodPhrase: definition.description, layout: definition.layout, drillTarget: drill.target })} emptyLabel="No rows match this report." currency={currency} onDrill={setDrillTarget} /> : <ReportDocumentView organization={organization} logoUrl={logoUrl} primaryColor={primaryColor} title={definition.name} description={definition.description} layout={definition.layout} result={preview} />}</div> : <div className="grid min-h-96 place-items-center rounded-xl border border-dashed border-border bg-surface text-sm text-fg-subtle">Run the report to preview it.</div>}
+        {preview ? <div className="rounded-xl bg-bg p-3 sm:p-5">{drill ? <PaperView organization={organization} data={reportRunResultToPaper(reportDisplayName(definition.name), preview, { periodPhrase: definition.description, layout: definition.layout, drillTarget: drill.target })} emptyLabel="No rows match this report." currency={currency} onDrill={setDrillTarget} /> : <ReportDocumentView organization={organization} logoUrl={logoUrl} primaryColor={primaryColor} title={reportDisplayName(definition.name)} description={definition.description} layout={definition.layout} result={preview} />}</div> : <div className="grid min-h-96 place-items-center rounded-xl border border-dashed border-border bg-surface text-sm text-fg-subtle">Run the report to preview it.</div>}
       </div>
     </main>
     {drill ? <ReportDrillDrawer target={drillTarget} load={drill.load} onClose={() => setDrillTarget(null)} onOpenRecord={drill.onOpenRecord} /> : null}

@@ -110,15 +110,23 @@ export function SearchSelect({
       const below = window.innerHeight - r.bottom - margin
       const above = r.top - margin
       const desired = 320
+      const width = Math.min(Math.max(r.width, 208), window.innerWidth - margin * 2)
+      const left = Math.min(Math.max(margin, r.left), Math.max(margin, window.innerWidth - width - margin))
       if (below >= Math.min(desired, 180) || below >= above) {
-        setPos({ edge: 'top', offset: r.bottom + 6, left: r.left, width: r.width, maxHeight: Math.min(desired, below) })
+        setPos({
+          edge: 'top',
+          offset: r.bottom + 6,
+          left,
+          width,
+          maxHeight: Math.max(160, Math.min(desired, Math.max(below, 160))),
+        })
       } else {
         setPos({
           edge: 'bottom',
           offset: Math.max(margin, window.innerHeight - r.top + 6),
-          left: r.left,
-          width: r.width,
-          maxHeight: Math.min(desired, above),
+          left,
+          width,
+          maxHeight: Math.max(160, Math.min(desired, Math.max(above, 160))),
         })
       }
     }

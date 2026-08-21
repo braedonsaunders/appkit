@@ -31,6 +31,10 @@ test('document refinement drops JSON and resolves related UUIDs to readable labe
   const owner = refined?.columns.find((column) => column.key === 'owner_id')
   assert.equal(owner?.label, 'Owner')
   assert.match(owner?.expression ?? '', /last_name/)
+  assert.equal(owner?.filterExpression, '"records"."owner_id"')
+  assert.deepEqual(owner?.filterOptions, [{ value: 'person-1', label: 'Ada Lovelace' }])
+  assert.equal(refined?.columns.some((column) => column.key === 'owner_id.status'), false)
+  assert.ok(refined?.columns.some((column) => column.key === 'owner_id.first_name'))
 })
 
 test('reference-backed filter options preserve host values and display labels', () => {

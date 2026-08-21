@@ -1,4 +1,4 @@
-import { reportColumnExpression, type ReportEntity } from './entities'
+import { reportFilterExpression, type ReportEntity } from './entities'
 import { resolvePreset } from './period-presets'
 
 export const REPORT_FILTER_OPERATORS = [
@@ -48,7 +48,7 @@ export function compileReportRule(
   now = new Date(),
   fiscalStartMonth = 1,
 ): string | null {
-  const column = reportColumnExpression(entity, rule.field)
+  const column = reportFilterExpression(entity, rule.field)
   if (!column) return null
   const columnMeta = entity.columns.find((candidate) => candidate.key === rule.field)
   const value = rule.value

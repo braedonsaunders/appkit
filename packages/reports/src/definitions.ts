@@ -34,9 +34,15 @@ export function createReportDefinitionRegistry(definitions: CustomReportDefiniti
   }
 }
 
+export const UNTITLED_REPORT_NAME = 'Untitled report'
+
+export function reportDisplayName(name: string | null | undefined): string {
+  return name?.trim() || UNTITLED_REPORT_NAME
+}
+
 export function assertCustomReportDefinition(value: CustomReportDefinition): void {
   if (value.schemaVersion !== 1) throw new Error('Unsupported report definition version')
-  if (!value.id.trim() || !value.name.trim()) throw new Error('Report id and name are required')
+  if (!value.id.trim()) throw new Error('Report id is required')
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.slug)) throw new Error('Report slug must use kebab case')
   if (!value.query.entity.trim()) throw new Error('Report query entity is required')
   if ((value.query.mode ?? 'rows') === 'rows' && !value.query.columns.length) throw new Error('A row report requires at least one column')

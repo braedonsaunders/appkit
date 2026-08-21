@@ -13,6 +13,12 @@ export type ReportEntityColumn = {
   expression?: string
   /** Source-compatible expression key used by the production catalogues. */
   expr?: string
+  /**
+   * Expression used only by the filter compiler. Display columns that resolve a
+   * foreign key to a name still filter against the physical identifier so
+   * pick-list UUIDs keep matching.
+   */
+  filterExpression?: string
   /** Physical column override for schema-discovered catalogues. */
   sql?: string
   /** Synthetic JSON/array columns are omitted from printable documents. */
@@ -82,6 +88,13 @@ export function reportColumnExpression(entity: ReportEntity, key: string): strin
   if (column.expr) return column.expr
   if (entity.table && IDENTIFIER.test(entity.table)) return `"${entity.table}"."${column.sql ?? column.key}"`
   return null
+}
+
+/** Filter predicate expression — prefers a physical identifier over a display name. */
+export function reportFilterExpression(entity: ReportEntity, key: string): string | null {
+  const column = reportColumn(entity, key)
+  if (column?.filterExpression) return column.filterExpression
+  return reportColumnExpression(entity, key)
 }
 
 const IDENTIFIER = /^[a-z_][a-z0-9_]*$/i

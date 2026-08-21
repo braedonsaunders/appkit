@@ -8,6 +8,11 @@
 //     target's display column via a scalar subselect (e.g. site_org_unit_id →
 //     the org unit's name). Same column key, so saved plans keep working;
 //     label loses the "ID" suffix and the kind becomes text.
+//   • Filters on those resolved columns still hit the physical identifier so
+//     pick-list UUIDs keep matching after the display expression changes.
+//   • Related table fields (status, employee number, …) are exposed as
+//     `via.column` expressions so a report can filter a PPE item by its
+//     holder's employment status without a hand-built view.
 //
 // Injection safety: every identifier comes from the schema-discovered
 // catalog (table names, physical column names, single-column FKs) — never
@@ -47,10 +52,43 @@ const DISPLAY_PREFERENCE = [
   'email',
 ] as const
 
+const RELATED_SKIP = new Set([
+  'id',
+  'tenant_id',
+  'deleted_at',
+  'created_at',
+  'updated_at',
+  'metadata',
+])
+
 const IDENT_RE = /^[a-z_][a-z0-9_]*$/i
 
 function q(ident: string): string {
   return `"${ident}"`
+}
+
+function physicalTable(entity: ReportEntity | undefined): string | null {
+  const table = entity?.table ?? entity?.from
+  return table && IDENT_RE.test(table) ? table : null
+}
+
+function physicalColumn(column: ReportEntityColumn): string | null {
+  const name = column.sql ?? column.key
+  return IDENT_RE.test(name) ? name : null
+}
+
+function physicalRef(table: string, column: string): string {
+  return `${q(table)}.${q(column)}`
+}
+
+function relatedSubselect(
+  targetTable: string,
+  foreignColumn: string,
+  sourceTable: string,
+  via: string,
+  display: string,
+): string {
+  return `(SELECT ${display} FROM ${q(targetTable)} "_ref" WHERE "_ref".${q(foreignColumn)} = ${physicalRef(sourceTable, via)})`
 }
 
 /** SQL expression (against alias `_ref`) that best names one row of `target`,
@@ -75,6 +113,35 @@ function displayExprFor(target: ReportEntity): string | null {
   return null
 }
 
+function relatedColumnsFor(
+  rel: RelationLike,
+  sourceTable: string,
+  target: ReportEntity,
+  targetTable: string,
+  existingKeys: Set<string>,
+): ReportEntityColumn[] {
+  const extras: ReportEntityColumn[] = []
+  for (const column of target.columns) {
+    if (column.hidden || column.arrayUnnest) continue
+    if (RELATED_SKIP.has(column.key) || column.kind === 'uuid') continue
+    if (column.key.endsWith('_id')) continue
+    const name = physicalColumn(column)
+    if (!name) continue
+    const key = `${rel.via}.${column.key}`
+    if (existingKeys.has(key)) continue
+    extras.push({
+      key,
+      label: `${rel.label} · ${column.label}`,
+      kind: column.kind,
+      expression: relatedSubselect(targetTable, rel.foreignColumn, sourceTable, rel.via, `"_ref".${q(name)}`),
+      filterOptions: column.filterOptions,
+    })
+    existingKeys.add(key)
+    if (extras.length >= 16) break
+  }
+  return extras
+}
+
 /** Refine one entity: drop jsonb/array columns, resolve FK uuid columns whose
  *  relation target (looked up in `resolveTarget`) has a display column. */
 export function refineReportEntityForDocuments(
@@ -82,37 +149,63 @@ export function refineReportEntityForDocuments(
   resolveTarget: (key: string) => ReportEntity | undefined,
 ): ReportEntity {
   const e = entity as RefinableEntity
-  const sourceTable = e.table ?? e.from
+  const sourceTable = physicalTable(e)
   const relationByVia = new Map<string, RelationLike>()
   for (const r of e.relations ?? []) relationByVia.set(r.via, r)
 
   let changed = false
   const columns: ReportEntityColumn[] = []
+  const existingKeys = new Set<string>()
   for (const col of e.columns) {
     if (col.arrayUnnest) {
       changed = true
       continue
     }
     const rel = col.kind === 'uuid' ? relationByVia.get(col.sql ?? col.key) : undefined
-    if (!rel || !sourceTable || !IDENT_RE.test(rel.via) || !IDENT_RE.test(rel.foreignColumn) || !IDENT_RE.test(sourceTable)) {
+    if (
+      !rel ||
+      !sourceTable ||
+      !IDENT_RE.test(rel.via) ||
+      !IDENT_RE.test(rel.foreignColumn)
+    ) {
       columns.push(col)
+      existingKeys.add(col.key)
       continue
     }
     const target = resolveTarget(rel.target)
-    const targetTable = target?.table ?? target?.from
-    const display = target && targetTable && IDENT_RE.test(targetTable) ? displayExprFor(target) : null
-    if (!display) {
+    const targetTable = physicalTable(target)
+    const display = target && targetTable ? displayExprFor(target) : null
+    if (!display || !target || !targetTable) {
       columns.push(col)
+      existingKeys.add(col.key)
       continue
     }
     changed = true
+    existingKeys.add(col.key)
     columns.push({
-      key: col.key,
+      ...col,
       label: rel.label,
       kind: 'text',
-      expression: `(SELECT ${display} FROM ${q(targetTable!)} "_ref" WHERE "_ref".${q(rel.foreignColumn)} = ${q(sourceTable)}.${q(rel.via)})`,
+      expression: relatedSubselect(targetTable, rel.foreignColumn, sourceTable, rel.via, display),
+      filterExpression: physicalRef(sourceTable, rel.via),
+      sql: col.sql ?? col.key,
     })
   }
+
+  if (sourceTable) {
+    for (const rel of e.relations ?? []) {
+      if (!IDENT_RE.test(rel.via) || !IDENT_RE.test(rel.foreignColumn)) continue
+      const target = resolveTarget(rel.target)
+      const targetTable = physicalTable(target)
+      if (!target || !targetTable) continue
+      const extras = relatedColumnsFor(rel, sourceTable, target, targetTable, existingKeys)
+      if (extras.length) {
+        changed = true
+        columns.push(...extras)
+      }
+    }
+  }
+
   return changed ? { ...entity, columns } : entity
 }
 

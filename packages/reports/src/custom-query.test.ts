@@ -290,6 +290,43 @@ test('exact number display keeps true integers intact and normalizes decimal str
   assert.deepEqual(result.groups[0]?.rows, [{ tax_year: '2026', amount: '3115.38' }])
 })
 
+test('resolved relation columns filter against the physical identifier', () => {
+  const refined: ReportEntityCatalog = {
+    entities: [
+      {
+        key: 'ppe_items',
+        label: 'PPE',
+        category: 'ppe',
+        table: 'report_ppe_items',
+        columns: [
+          { key: 'serial_number', label: 'Serial', kind: 'text' },
+          {
+            key: 'type_id',
+            label: 'PPE type',
+            kind: 'text',
+            expression: '(SELECT "_ref"."name" FROM "ppe_types" "_ref" WHERE "_ref"."id" = "report_ppe_items"."type_id")',
+            filterExpression: '"report_ppe_items"."type_id"',
+            filterOptions: [{ value: 'type-1', label: 'Harness' }],
+          },
+        ],
+      },
+    ],
+  }
+  const compiled = compileCustomReport(
+    {
+      entity: 'ppe_items',
+      mode: 'rows',
+      columns: ['serial_number', 'type_id'],
+      filters: { combinator: 'and', rules: [{ field: 'type_id', op: 'in', value: ['type-1'] }] },
+    },
+    'tenant-1',
+    refined,
+  )
+  assert.match(compiled.sql, /"report_ppe_items"\."type_id" IN \(\$2\)/)
+  assert.doesNotMatch(compiled.sql, /SELECT "_ref"\."name".*IN/)
+  assert.deepEqual(compiled.params, ['tenant-1', 'type-1'])
+})
+
 test('definition registry rejects duplicates and filters published reports', () => {
   const definition = { schemaVersion: 1 as const, id: 'one', slug: 'report-one', name: 'Report one', query: { entity: 'records', mode: 'rows' as const, columns: ['status'] }, layout: resolveReportLayout(), state: 'published' as const, tags: ['operations'] }
   const registry = createReportDefinitionRegistry([definition])

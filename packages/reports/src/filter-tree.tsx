@@ -2,12 +2,11 @@
 
 import { useState } from 'react'
 import { Plus, Trash2, X } from 'lucide-react'
-import { Button, Input, SearchSelect, Select, type SelectOption } from '@braedonsaunders/appkit-ui'
+import { Button, Input, SearchSelect, type SelectOption } from '@braedonsaunders/appkit-ui'
 import { operatorsForKind, type ReportFilterOperator, type ReportRule, type ReportRuleGroup } from './filters'
 import { PERIOD_PRESETS, PERIOD_PRESET_GROUP_LABELS, type PeriodPresetGroup } from './period-presets'
 import { reportColumnOptions, visibleReportColumns, type ReportEntity } from './entities'
 
-const GROUP_ORDER: PeriodPresetGroup[] = ['fiscal_year', 'fiscal_quarter', 'fiscal_half', 'period', 'calendar', 'rolling', 'days']
 type Node = ReportRule | ReportRuleGroup
 function isGroup(node: Node): node is ReportRuleGroup { return 'rules' in node }
 
@@ -31,7 +30,7 @@ export function ReportFilterTree({ entity, group, onChange, depth = 0 }: { entit
     }
   }
   return <div className={depth === 0 ? 'space-y-2 rounded-lg border border-border p-3' : 'space-y-2 rounded-lg border border-border bg-bg-subtle p-3'}>
-    <div className="flex items-center gap-2"><span className="text-xs text-fg-muted">Match</span><Select className="h-8 w-48" value={group.combinator} onChange={(event) => onChange({ ...group, combinator: event.target.value as 'and' | 'or' })}><option value="and">all conditions</option><option value="or">any condition</option></Select></div>
+    <div className="flex items-center gap-2"><span className="text-xs text-fg-muted">Match</span><SearchSelect className="w-48" triggerClassName="h-8" value={group.combinator} onChange={(combinator) => onChange({ ...group, combinator: combinator as 'and' | 'or' })} options={[{ value: 'and', label: 'all conditions' }, { value: 'or', label: 'any condition' }]} ariaLabel="Match" /></div>
     <div className="space-y-2">{group.rules.map((rule, index) => isGroup(rule) ? <ReportFilterTree key={index} entity={entity} group={rule} depth={depth + 1} onChange={(next) => setRule(index, next)} /> : <RuleRow key={index} entity={entity} rule={rule} onChange={(next) => setRule(index, next)} onRemove={() => remove(index)} />)}{group.rules.length === 0 ? <p className="text-xs text-fg-subtle">No conditions.</p> : null}</div>
     <div className="flex gap-2"><Button type="button" variant="outline" size="sm" onClick={addRule}><Plus size={14} />Add condition</Button>{depth < 3 ? <Button type="button" variant="ghost" size="sm" onClick={() => onChange({ ...group, rules: [...group.rules, { combinator: 'and', rules: [] }] })}><Plus size={14} />Add group</Button> : null}</div>
   </div>
@@ -50,13 +49,13 @@ function RuleRow({ entity, rule, onChange, onRemove }: { entity: ReportEntity; r
     onChange({ field, op: nextOperator, value: nextOperator === 'in' ? [] : '' })
   }
   return <div className="flex flex-wrap items-center gap-2">
-    <Select className="h-8 min-w-40" value={rule.field} onChange={(event) => changeField(event.target.value)}>{columns.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</Select>
-    <Select className="h-8 min-w-36" value={rule.op} onChange={(event) => {
-      const op = event.target.value as ReportFilterOperator
+    <SearchSelect className="min-w-40 flex-1" triggerClassName="h-8" value={rule.field} onChange={changeField} options={columns.map((item) => ({ value: item.key, label: item.label }))} ariaLabel="Filter field" />
+    <SearchSelect className="w-44" triggerClassName="h-8" value={rule.op} onChange={(next) => {
+      const op = next as ReportFilterOperator
       const needsList = operators.find((item) => item.key === op)?.needsValue === 'list'
       onChange({ ...rule, op, value: needsList ? (Array.isArray(rule.value) ? rule.value : []) : (Array.isArray(rule.value) ? '' : rule.value) })
-    }}>{operators.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</Select>
-    {rule.op === 'period_preset' ? <Select className="h-8 w-52" value={typeof rule.value === 'string' ? rule.value : 'this_fiscal_year'} onChange={(event) => onChange({ ...rule, value: event.target.value })}>{GROUP_ORDER.map((group) => <optgroup key={group} label={PERIOD_PRESET_GROUP_LABELS[group]}>{PERIOD_PRESETS.filter((preset) => preset.group === group).map((preset) => <option key={preset.id} value={preset.id}>{preset.label}</option>)}</optgroup>)}</Select>
+    }} options={operators.map((item) => ({ value: item.key, label: item.label }))} ariaLabel="Filter operator" />
+    {rule.op === 'period_preset' ? <SearchSelect className="w-56" triggerClassName="h-8" value={typeof rule.value === 'string' ? rule.value : 'this_fiscal_year'} onChange={(value) => onChange({ ...rule, value })} options={PERIOD_PRESETS.map((preset) => ({ value: preset.id, label: preset.label, group: PERIOD_PRESET_GROUP_LABELS[preset.group as PeriodPresetGroup] }))} ariaLabel="Period" />
       : operator?.needsValue === 'one' && options.length ? <SearchSelect className="w-52" triggerClassName="h-8" value={typeof rule.value === 'string' ? rule.value : ''} onChange={(value) => onChange({ ...rule, value })} options={options} clearable placeholder="Choose a value" ariaLabel="Filter value" />
       : operator?.needsValue === 'one' ? <Input className="h-8 w-40" type={column?.kind === 'date' ? 'date' : column?.kind === 'number' || column?.kind === 'money' ? 'number' : 'text'} value={typeof rule.value === 'string' || typeof rule.value === 'number' ? String(rule.value) : ''} placeholder="Value" onChange={(event) => onChange({ ...rule, value: event.target.value })} />
       : operator?.needsValue === 'list' && options.length ? <MultiSelect value={Array.isArray(rule.value) ? rule.value.map(String) : []} options={options} onChange={(next) => onChange({ ...rule, value: next })} />
