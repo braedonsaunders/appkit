@@ -1,6 +1,6 @@
 {
   "name": "@braedonsaunders/appkit-forms-pdf",
-  "version": "2.0.1",
+  "version": "3.0.0",
   "description": "Composable form-summary HTML with optional PDF, template, and design-document adapters.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -30,7 +30,7 @@
   "peerDependencies": {
     "@braedonsaunders/appkit-design-studio": "^1.0.0",
     "@braedonsaunders/appkit-pdf": "^0.1.1",
-    "@braedonsaunders/appkit-reports": "^1.0.0",
+    "@braedonsaunders/appkit-reports": "^1.1.0",
     "@braedonsaunders/appkit-sync": "^1.1.0",
     "puppeteer-core": "^25.3.0"
   },

@@ -38,7 +38,7 @@
     "@braedonsaunders/appkit-db": "^0.2.0",
     "@braedonsaunders/appkit-sync": "^1.1.0",
     "drizzle-orm": "^0.45.2",
-    "@braedonsaunders/appkit-ui": "^0.2.0",
+    "@braedonsaunders/appkit-ui": "^0.2.1",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

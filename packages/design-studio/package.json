@@ -29,7 +29,7 @@
     "@braedonsaunders/appkit-tokens": "workspace:*"
   },
   "peerDependencies": {
-    "@braedonsaunders/appkit-ui": "^0.2.0",
+    "@braedonsaunders/appkit-ui": "^0.2.1",
     "fabric": "^7.0.0",
     "lucide-react": "^1.24.0",
     "react": "^19.0.0",
