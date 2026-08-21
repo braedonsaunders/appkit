@@ -39,7 +39,7 @@
     "provenance": true
   },
   "name": "@braedonsaunders/appkit-scene",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Animated character scene: characters walk, idle, and scale with depth over a configurable ground.",
   "dependencies": {
     "@braedonsaunders/appkit-ui": "workspace:*",

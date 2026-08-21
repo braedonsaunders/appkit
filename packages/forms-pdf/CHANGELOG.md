@@ -1,5 +1,13 @@
 # @braedonsaunders/appkit-forms-pdf
 
+## 3.0.0
+
+### Patch Changes
+
+- Updated dependencies [a923c9b]
+  - @braedonsaunders/appkit-reports@1.1.0
+  - @braedonsaunders/appkit-design-studio@1.0.0
+
 ## 2.0.1
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # @braedonsaunders/appkit-reports
 
+## 1.1.0
+
+### Minor Changes
+
+- a923c9b: Keep report studio usable while a name is blank, add Save as, keep relation filters on the physical identifier, expose related-table columns, and stop SearchSelect menus from running off the page.
+
+### Patch Changes
+
+- Updated dependencies [a923c9b]
+  - @braedonsaunders/appkit-ui@0.2.1
+
 ## 1.0.0
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 {
   "name": "@braedonsaunders/appkit-auth",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Production authentication: durable sessions, passwords, magic links, invitation grants, reset flows, React UI, and Postgres adapters.",
   "license": "AGPL-3.0-or-later",
   "type": "module",

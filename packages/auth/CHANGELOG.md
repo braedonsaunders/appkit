@@ -1,5 +1,12 @@
 # @braedonsaunders/appkit-auth
 
+## 0.1.4
+
+### Patch Changes
+
+- Updated dependencies [a923c9b]
+  - @braedonsaunders/appkit-ui@0.2.1
+
 ## 0.1.3
 
 ### Patch Changes

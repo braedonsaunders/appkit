@@ -1,6 +1,6 @@
 {
   "name": "@braedonsaunders/appkit-editor",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Optional TipTap rich-text authoring for AppKit forms and documents.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
