@@ -248,6 +248,55 @@ export type AgentPanelProps = {
  * owns persistence and the HTTP transport; appkit owns UI-message decoding,
  * cancellation, ordered part rendering, and tool cards.
  */
+/**
+ * The composer owns the draft input, so typing only re-renders this subtree.
+ * Before, the input lived in AgentPanel state: every keystroke re-rendered the
+ * whole panel, including every transcript row. On a long thread that meant
+ * re-rendering hundreds of markdown/tool-card subtrees per keystroke — typing
+ * lag that grew with the conversation. Rows are memoed too, so while a turn
+ * streams only the tail row re-renders.
+ */
+const AgentComposer = React.memo(function AgentComposer({
+  composerContent,
+  composerActions,
+  composerDraft,
+  queueMode,
+  enqueueing,
+  canSend,
+  canEnqueue,
+  streaming,
+  stopLabel,
+  sendLabel,
+  queueLabel,
+  placeholder,
+  maxPromptCharacters,
+  onSubmit,
+  onAbort,
+}: {
+  composerContent?: React.ReactNode
+  composerActions?: React.ReactNode
+  composerDraft?: { fallbackPrompt?: string; parts?: readonly unknown[] }
+  queueMode: boolean
+  enqueueing: boolean
+  canSend: boolean
+  canEnqueue: boolean
+  streaming: boolean
+  stopLabel: string
+  sendLabel: string
+  queueLabel: string
+  placeholder: string
+  maxPromptCharacters: number
+  onSubmit: (raw: string) => void
+  onAbort: () => void
+}) {
+  const [input, setInput] = React.useState('')
+  const fallback = composerDraft?.fallbackPrompt
+  const sendable = Boolean(input.trim() || fallback?.trim())
+  return (
+    <div className="shrink-0 border-t border-border bg-surface px-4 py-3"><div className="mx-auto w-full max-w-3xl">{composerContent != null ? <div className="mb-2">{composerContent}</div> : null}<div className="flex items-end gap-2 rounded-2xl border border-border-strong bg-surface p-2 shadow-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/20">{composerActions}<textarea value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); onSubmit(input); setInput('') } }} maxLength={maxPromptCharacters} rows={1} placeholder={placeholder} className="h-10 max-h-40 flex-1 resize-none overflow-y-auto border-0 bg-transparent px-2 py-2 text-base leading-6 text-fg outline-none placeholder:text-fg-subtle sm:text-sm" />{streaming ? <Button type="button" variant="outline" size="icon" onClick={onAbort} aria-label={stopLabel}><Square size={16} /></Button> : null}<Button type="button" size="icon" onClick={() => { onSubmit(input); setInput('') }} disabled={!sendable || (queueMode ? !canEnqueue || enqueueing : !canSend)} aria-label={queueMode ? queueLabel : sendLabel}>{enqueueing ? <Loader2 size={16} className="animate-spin" /> : queueMode ? <ListPlus size={16} /> : <Send size={16} />}</Button></div></div></div>
+  )
+})
+
 export function AgentPanel({
   enabled,
   initialMessages = [],
@@ -274,9 +323,8 @@ export function AgentPanel({
   maxPromptCharacters = 32_000,
   toolLabels,
 }: AgentPanelProps) {
-  const labels = { ...DEFAULT_LABELS, ...labelOverrides }
+  const labels = React.useMemo(() => ({ ...DEFAULT_LABELS, ...labelOverrides }), [labelOverrides])
   const [messages, setMessages] = React.useState(initialMessages)
-  const [input, setInput] = React.useState('')
   const [streaming, setStreaming] = React.useState(false)
   const [enqueueing, setEnqueueing] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -297,8 +345,11 @@ export function AgentPanel({
     scrollToBottom()
   }, [scrollToBottom])
 
+  const composerDraftParts = composerDraft?.parts
+  const composerDraftFallback = composerDraft?.fallbackPrompt
+
   const submit = React.useCallback(async (raw: string) => {
-    const prompt = raw.trim() || composerDraft?.fallbackPrompt?.trim() || ''
+    const prompt = raw.trim() || composerDraftFallback?.trim() || ''
     if (!enabled || !prompt || prompt.length > maxPromptCharacters) return
     const shouldEnqueue = dispatchState !== 'idle' || abortRef.current !== null || queuedMessages.length > 0
     if (shouldEnqueue) {
@@ -307,7 +358,6 @@ export function AgentPanel({
       setError(null)
       try {
         await enqueue(prompt)
-        setInput('')
       } catch {
         setError(labels.queueFailed)
       } finally {
@@ -319,9 +369,8 @@ export function AgentPanel({
     const controller = new AbortController()
     abortRef.current = controller
     const stamp = Date.now()
-    setInput('')
     setError(null)
-    setMessages((current) => [...current, { id: `user-${stamp}`, role: 'user', parts: [{ type: 'text', text: prompt }, ...(composerDraft?.parts ?? [])] }, { id: `assistant-${stamp}`, role: 'assistant', parts: [] }])
+    setMessages((current) => [...current, { id: `user-${stamp}`, role: 'user', parts: [{ type: 'text', text: prompt }, ...(composerDraftParts ?? [])] }, { id: `assistant-${stamp}`, role: 'assistant', parts: [] }])
     setStreaming(true)
     scrollToBottom()
     let producedParts = false
@@ -346,9 +395,15 @@ export function AgentPanel({
       setStreaming(false)
       if (abortRef.current === controller) abortRef.current = null
     }
-  }, [composerDraft, dispatchState, enabled, enqueue, enqueueing, labels.failed, labels.queueFailed, maxPromptCharacters, queuedMessages.length, scrollToBottom, send])
+  }, [composerDraftFallback, composerDraftParts, dispatchState, enabled, enqueue, enqueueing, labels.failed, labels.queueFailed, maxPromptCharacters, queuedMessages.length, scrollToBottom, send])
 
   const queueMode = dispatchState !== 'idle' || streaming || queuedMessages.length > 0
+  const abort = React.useCallback(() => abortRef.current?.abort(), [])
+  // Stable identity so the memoed composer (and its textarea) is not
+  // re-rendered by transcript updates such as streamed tokens.
+  const submitToComposer = React.useCallback((value: string) => {
+    void submit(value)
+  }, [submit])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-bg-subtle">
@@ -358,12 +413,33 @@ export function AgentPanel({
           <div className="flex min-h-full flex-col">{emptyContent}</div>
         ) : (
           <div className="mx-auto w-full max-w-3xl px-4 py-6">
-            {messages.length === 0 ? <AgentWelcome enabled={enabled} title={enabled ? labels.welcomeTitle : labels.disabledTitle} description={enabled ? labels.welcomeDescription : labels.disabledDescription} suggestions={suggestions} onPick={(value) => void submit(value)} /> : <div className="space-y-6">{messages.map((message) => message.role === 'system' ? null : <AgentMessageRow key={message.id} message={message} streaming={streaming} labels={labels} toolLabels={toolLabels} assistantAvatar={assistantAvatar} onSubmitSecretRequest={onSubmitSecretRequest} onCancelSecretRequest={onCancelSecretRequest} secretRequestLabels={secretRequestLabels} onDecideApprovalRequest={onDecideApprovalRequest} approvalRequestLabels={approvalRequestLabels} />)}</div>}
+            {messages.length === 0 ? <AgentWelcome enabled={enabled} title={enabled ? labels.welcomeTitle : labels.disabledTitle} description={enabled ? labels.welcomeDescription : labels.disabledDescription} suggestions={suggestions} onPick={(value) => void submit(value)} /> : <div className="space-y-6">{messages.map((message) => message.role === 'system' ? null : <MemoAgentMessageRow key={message.id} message={message} streaming={streaming} labels={labels} toolLabels={toolLabels} assistantAvatar={assistantAvatar} onSubmitSecretRequest={onSubmitSecretRequest} onCancelSecretRequest={onCancelSecretRequest} secretRequestLabels={secretRequestLabels} onDecideApprovalRequest={onDecideApprovalRequest} approvalRequestLabels={approvalRequestLabels} />)}</div>}
           </div>
         )}
         {error ? <div role="alert" className="mx-auto mb-5 w-[calc(100%-2rem)] max-w-3xl rounded-lg border border-danger/25 bg-danger-subtle px-3 py-2 text-sm text-danger">{error}</div> : null}
       </div>
-      {enabled ? <div className="shrink-0 border-t border-border bg-surface px-4 py-3"><div className="mx-auto w-full max-w-3xl">{queuedMessages.length > 0 ? <AgentMessageQueue messages={queuedMessages} labels={labels} onEdit={onEditQueuedMessage} onRemove={onRemoveQueuedMessage} onRetry={onRetryQueuedMessage} /> : null}{composerContent != null ? <div className="mb-2">{composerContent}</div> : null}<div className="flex items-end gap-2 rounded-2xl border border-border-strong bg-surface p-2 shadow-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/20">{composerActions}<textarea value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void submit(input) } }} maxLength={maxPromptCharacters} rows={1} placeholder={labels.placeholder} className="h-10 max-h-40 flex-1 resize-none overflow-y-auto border-0 bg-transparent px-2 py-2 text-base leading-6 text-fg outline-none placeholder:text-fg-subtle sm:text-sm" />{streaming ? <Button type="button" variant="outline" size="icon" onClick={() => abortRef.current?.abort()} aria-label={labels.stop}><Square size={16} /></Button> : null}<Button type="button" size="icon" onClick={() => void submit(input)} disabled={!(input.trim() || composerDraft?.fallbackPrompt?.trim()) || (queueMode ? !enqueue || enqueueing : !send)} aria-label={queueMode ? labels.queue : labels.send}>{enqueueing ? <Loader2 size={16} className="animate-spin" /> : queueMode ? <ListPlus size={16} /> : <Send size={16} />}</Button></div></div></div> : null}
+      {enabled ? (
+        <>
+          {queuedMessages.length > 0 ? <div className="shrink-0 border-t border-border bg-surface px-4 pt-3"><div className="mx-auto w-full max-w-3xl"><AgentMessageQueue messages={queuedMessages} labels={labels} onEdit={onEditQueuedMessage} onRemove={onRemoveQueuedMessage} onRetry={onRetryQueuedMessage} /></div></div> : null}
+          <AgentComposer
+            composerActions={composerActions}
+            composerDraft={composerDraft}
+            queueMode={queueMode}
+            enqueueing={enqueueing}
+            canSend={send !== undefined}
+            canEnqueue={enqueue !== undefined}
+            streaming={streaming}
+            stopLabel={labels.stop}
+            sendLabel={labels.send}
+            queueLabel={labels.queue}
+            placeholder={labels.placeholder}
+            maxPromptCharacters={maxPromptCharacters}
+            onSubmit={submitToComposer}
+            onAbort={abort}
+            composerContent={composerContent}
+          />
+        </>
+      ) : null}
     </div>
   )
 }
@@ -420,14 +496,20 @@ function AgentWelcome({ enabled, title, description, suggestions, onPick }: { en
   return <div className="pt-10"><EmptyState icon={<Sparkles />} title={title} description={description} />{enabled && suggestions.length ? <div className="mx-auto mt-6 grid max-w-2xl gap-2 sm:grid-cols-2">{suggestions.map((suggestion) => <button key={suggestion} type="button" onClick={() => onPick(suggestion)} className="rounded-xl border border-border bg-surface px-4 py-3 text-left text-sm text-fg-muted shadow-sm transition-colors hover:border-primary/40 hover:bg-primary-subtle hover:text-fg">{suggestion}</button>)}</div> : null}</div>
 }
 
-function AgentMessageRow({ message, streaming, labels, toolLabels, assistantAvatar, onSubmitSecretRequest, onCancelSecretRequest, secretRequestLabels, onDecideApprovalRequest, approvalRequestLabels }: { message: AgentMessage; streaming: boolean; labels: AgentPanelLabels; toolLabels?: Record<string, string>; assistantAvatar?: React.ReactNode; onSubmitSecretRequest?: AgentPanelProps['onSubmitSecretRequest']; onCancelSecretRequest?: AgentPanelProps['onCancelSecretRequest']; secretRequestLabels?: Partial<AgentSecretRequestLabels>; onDecideApprovalRequest?: AgentPanelProps['onDecideApprovalRequest']; approvalRequestLabels?: Partial<AgentApprovalRequestLabels> }) {
+/**
+ * Memoed so transcript growth only re-renders the row whose parts changed.
+ * `parts` is replaced (never mutated) on every update, so referential
+ * comparison on the message object is a reliable change signal; handler
+ * identity comes from the panel, which passes stable callbacks.
+ */
+const MemoAgentMessageRow = React.memo(function AgentMessageRow({ message, streaming, labels, toolLabels, assistantAvatar, onSubmitSecretRequest, onCancelSecretRequest, secretRequestLabels, onDecideApprovalRequest, approvalRequestLabels }: { message: AgentMessage; streaming: boolean; labels: AgentPanelLabels; toolLabels?: Record<string, string>; assistantAvatar?: React.ReactNode; onSubmitSecretRequest?: AgentPanelProps['onSubmitSecretRequest']; onCancelSecretRequest?: AgentPanelProps['onCancelSecretRequest']; secretRequestLabels?: Partial<AgentSecretRequestLabels>; onDecideApprovalRequest?: AgentPanelProps['onDecideApprovalRequest']; approvalRequestLabels?: Partial<AgentApprovalRequestLabels> }) {
   if (message.role === 'user') {
     const text = (message.parts.find((part) => (part as { type?: string }).type === 'text') as { text?: string } | undefined)?.text
     const files = message.parts.filter(isAgentFilePart)
     return <div className="flex justify-end"><div className="max-w-[85%] space-y-2 rounded-2xl rounded-br-md bg-primary px-4 py-2 text-sm whitespace-pre-wrap text-primary-fg">{text ? <div>{text}</div> : null}{files.length > 0 ? <div className="flex flex-wrap justify-end gap-1.5">{files.map((file, index) => file.url ? <a key={`${file.filename}-${index}`} href={file.url} className="rounded-md border border-primary-fg/25 bg-primary-fg/10 px-2 py-1 text-xs font-medium hover:bg-primary-fg/15" download>{file.filename}</a> : <span key={`${file.filename}-${index}`} className="rounded-md border border-primary-fg/25 bg-primary-fg/10 px-2 py-1 text-xs font-medium">{file.filename}</span>)}</div> : null}</div></div>
   }
   return <div className="flex gap-3"><span className={cn('mt-0.5 flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full', assistantAvatar == null && 'bg-primary text-primary-fg shadow-sm')}>{assistantAvatar ?? <Sparkles size={16} />}</span><div className="min-w-0 flex-1 pt-0.5">{message.parts.length === 0 && streaming ? <AgentTypingIndicator label={labels.responding} /> : <AgentMessageParts parts={message.parts} labels={labels} toolLabels={toolLabels} onSubmitSecretRequest={onSubmitSecretRequest} onCancelSecretRequest={onCancelSecretRequest} secretRequestLabels={secretRequestLabels} onDecideApprovalRequest={onDecideApprovalRequest} approvalRequestLabels={approvalRequestLabels} />}</div></div>
-}
+})
 
 const TYPING_DOT_DELAYS = [
   '0ms',

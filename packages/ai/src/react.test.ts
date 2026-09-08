@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import * as React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -257,4 +258,54 @@ test('AgentMessageQueue renders durable position, state, and available recovery 
   assert.match(markup, /aria-label="Retry queued message"/)
   assert.match(markup, /aria-label="Edit queued message"/)
   assert.match(markup, /aria-label="Remove queued message"/)
+})
+
+test('AgentPanel keeps the draft input outside the transcript render path', () => {
+  // Typing lag on long threads came from the composer input living in panel
+  // state: every keystroke re-rendered every transcript row. The composer is
+  // a separate memoed component owning its own input state, and rows are
+  // memoed so a turn streams into the tail row alone.
+  const source = readFileSync(new URL('./react.tsx', import.meta.url), 'utf8')
+
+  // The draft input lives in the memoed composer, not in AgentPanel state.
+  assert.match(source, /const AgentComposer = React\.memo\(function AgentComposer/)
+  const composerHead = source.slice(
+    source.indexOf('const AgentComposer = React.memo('),
+    source.indexOf('export function AgentPanel('),
+  )
+  assert.match(composerHead, /const \[input, setInput\] = React\.useState\(''\)/)
+  const panelBody = source.slice(source.indexOf('export function AgentPanel('))
+  assert.doesNotMatch(panelBody, /const \[input, setInput\]/)
+
+  // Transcript rows skip re-render when their message object is unchanged.
+  assert.match(source, /const MemoAgentMessageRow = React\.memo\(function AgentMessageRow/)
+
+  // The composer receives a stable submit callback: an inline arrow here
+  // would re-render the memoed composer (and its textarea) on every panel
+  // render, including each streamed token.
+  assert.match(panelBody, /const submitToComposer = React\.useCallback\(\(value: string\)/)
+  assert.match(panelBody, /onSubmit=\{submitToComposer\}/)
+
+  // Rendered markup is unchanged: queue above the composer row, textarea with
+  // the same classes, send button enabled by the file-only draft fallback.
+  const markup = renderToStaticMarkup(React.createElement(AgentPanel, {
+    enabled: true,
+    initialMessages: [{ id: 'assistant-1', role: 'assistant', parts: [{ type: 'text', text: 'Ready.' }] }],
+    composerContent: React.createElement('span', { 'data-draft-file': true }, 'budget.xlsx'),
+    composerDraft: {
+      fallbackPrompt: 'Review the attached file.',
+      parts: [{ type: 'file', filename: 'budget.xlsx', url: '/files/budget' }],
+    },
+    queuedMessages: [{
+      id: 'queued-1',
+      text: 'Queued follow-up',
+      position: 1,
+      status: 'queued' as const,
+    }],
+  } satisfies AgentPanelProps))
+
+  assert.match(markup, /Ready\./)
+  assert.match(markup, /data-draft-file="true"/)
+  assert.match(markup, /Queued follow-up/)
+  assert.match(markup, /<textarea[^>]*placeholder="Ask the assistant…"/)
 })
