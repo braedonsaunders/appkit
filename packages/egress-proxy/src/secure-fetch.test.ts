@@ -124,3 +124,57 @@ test('a transport failure after the headers is reported through `fail`', async (
   await assert.rejects(() => reader.read(), /timed out after 600000 ms/)
   assert.equal(upstream.destroyed, true)
 })
+
+// --- the ceiling times silence, not length ----------------------------------
+//
+// Streaming the body moved the moment the exchange settles from "headers
+// arrived" to "body ended", which silently turned one armed timer into a hard
+// cap on the whole transfer. A healthy model answer is slow by nature: a live
+// agent step was destroyed at exactly 600000 ms with tokens still arriving and
+// the reply half-written, and it was reported to the reader as a timeout.
+//
+// So `onProgress` is the contract the timer hangs off: every chunk refreshes it.
+test('a body that keeps arriving refreshes the idle ceiling', async () => {
+  const upstream = source()
+  const WINDOW = 40
+  let expired = false
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const touch = () => {
+    clearTimeout(timer)
+    timer = setTimeout(() => {
+      expired = true
+    }, WINDOW)
+  }
+
+  const { body } = createBoundedBodyStream(upstream, 1024, () => clearTimeout(timer), touch)
+  const reader = body.getReader()
+  touch()
+
+  // Four windows' worth of elapsed time, never more than one window of silence.
+  for (const token of ['a', 'b', 'c', 'd', 'e']) {
+    await sleep(WINDOW * 0.6)
+    upstream.write(token)
+    await reader.read()
+  }
+  assert.equal(expired, false, 'a response that is still delivering is not a timeout')
+
+  // And silence still ends it.
+  await sleep(WINDOW * 2)
+  assert.equal(expired, true, 'a body that stops mid-transfer still trips the ceiling')
+})
+
+test('the transport arms that ceiling from the body, not once per request', async () => {
+  const { readFileSync } = await import('node:fs')
+  const { fileURLToPath } = await import('node:url')
+  const src = readFileSync(fileURLToPath(new URL('./secure-fetch.ts', import.meta.url)), 'utf8')
+  const once = src.slice(src.indexOf('function requestOnce'))
+
+  assert.match(once, /createBoundedBodyStream\([\s\S]*?settle,\s*touch,/, 'the stream refreshes the timer')
+  assert.match(
+    once,
+    /timed out after \$\{timeoutMs\} ms without progress/,
+    'and the message says what actually expired',
+  )
+  // A second `setTimeout` here would be a second, unrefreshed deadline.
+  assert.equal((once.match(/setTimeout\(/g) ?? []).length, 1, 'exactly one timer, and it is the refreshed one')
+})

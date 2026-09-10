@@ -473,6 +473,8 @@ export function createBoundedBodyStream(
   source: Readable,
   maxResponseBytes: number,
   onSettled: () => void,
+  /** Called for every chunk that arrives, so a caller can time SILENCE. */
+  onProgress: () => void = () => {},
 ): { body: ReadableStream<Uint8Array>; fail: (error: Error) => void } {
   let bytes = 0
   let failure: Error | null = null
@@ -495,6 +497,7 @@ export function createBoundedBodyStream(
       controller = streamController
       source.on('data', (chunk: Buffer | Uint8Array | string) => {
         if (failure) return
+        onProgress()
         const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
         bytes += buffer.length
         if (bytes > maxResponseBytes) {
@@ -577,6 +580,29 @@ function requestOnce(
       fail(error)
     }
 
+    // The ceiling measures SILENCE, not total elapsed time.
+    //
+    // It was a single timer armed at the request and cleared only when the
+    // exchange settled, which — once the body became a stream rather than a
+    // buffer — turned it into a hard cap on the whole transfer. A model writing
+    // a long answer is a response that is healthy and slow: an agent step died
+    // at exactly 600000 ms with its reply half-written and tokens still
+    // arriving, reported as a timeout.
+    //
+    // Refreshing it on every chunk keeps both failures it exists for — a server
+    // that never answers, and a body that stops mid-transfer — while a response
+    // that is still delivering is never cut off for being long.
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const touch = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => {
+        request.destroy(
+          new Error(`Outbound request timed out after ${timeoutMs} ms without progress.`),
+        )
+      }, timeoutMs)
+      timer.unref?.()
+    }
+
     const requestHeaders: Record<string, string> = {
       ...headers,
       connection: 'close',
@@ -654,18 +680,14 @@ function requestOnce(
           response,
           maxResponseBytes,
           settle,
+          touch,
         )
         failBody = failStream
         finish({ ...head, body, dispose })
       },
     )
 
-    const timer = setTimeout(() => {
-      request.destroy(
-        new Error(`Outbound request timed out after ${timeoutMs} ms.`),
-      )
-    }, timeoutMs)
-    timer.unref?.()
+    touch()
     if (signal?.aborted) {
       onAbort()
       return
