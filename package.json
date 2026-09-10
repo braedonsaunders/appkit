@@ -27,7 +27,7 @@
     "dev": "turbo run dev",
     "clean": "turbo run clean && rm -rf node_modules",
     "changeset": "changeset",
-    "version-packages": "changeset version",
+    "version-packages": "changeset version && pnpm install --lockfile-only",
     "release": "pnpm build:packages && pnpm test:packages && pnpm test:consumers && node scripts/publish-packages-sequentially.mjs && pnpm test:registry-consumers && changeset tag"
   },
   "devDependencies": {

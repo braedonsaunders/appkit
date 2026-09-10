@@ -1575,7 +1575,7 @@ importers:
   packages/sync:
     dependencies:
       '@braedonsaunders/appkit-egress-proxy':
-        specifier: workspace:^0.1.0
+        specifier: workspace:^0.2.0
         version: link:../egress-proxy
     devDependencies:
       '@braedonsaunders/appkit-db':
