@@ -3,6 +3,7 @@ import { lookup as dnsLookup } from 'node:dns/promises'
 import type { IncomingHttpHeaders } from 'node:http'
 import { request as httpsRequest } from 'node:https'
 import { BlockList, isIP } from 'node:net'
+import type { Readable } from 'node:stream'
 import { checkServerIdentity } from 'node:tls'
 import { domainToASCII } from 'node:url'
 
@@ -445,7 +446,89 @@ interface RawResponse {
   status: number
   statusMessage: string
   headers: Headers
-  body: Buffer
+  /** Null for a status or method that cannot carry a body. */
+  body: ReadableStream<Uint8Array> | null
+  /** Abandon a response nobody will read — a redirect hop, or a rejected status. */
+  dispose: () => void
+}
+
+/**
+ * A readable body that is still bounded.
+ *
+ * Buffering the whole response was simpler, and for a webhook or a JSON API it
+ * cost nothing. It is fatal for the one response shape that is worth reading as
+ * it arrives: a model's token stream. Draining server-sent events to completion
+ * before the caller sees a byte makes incremental delivery impossible, so every
+ * token of a minutes-long answer landed at once at the end.
+ *
+ * The ceiling is unchanged, only its enforcement point: bytes are counted as
+ * they pass, and passing `maxResponseBytes` errors the stream and destroys the
+ * socket exactly as the buffered form refused to return an oversized body. A
+ * caller therefore sees a failure part-way through a body it has begun reading,
+ * which is the necessary cost of not holding the whole thing in memory first.
+ *
+ * Exported for tests: it is the part worth driving directly, with no TLS.
+ */
+export function createBoundedBodyStream(
+  source: Readable,
+  maxResponseBytes: number,
+  onSettled: () => void,
+): { body: ReadableStream<Uint8Array>; fail: (error: Error) => void } {
+  let bytes = 0
+  let failure: Error | null = null
+  let controller: ReadableStreamDefaultController<Uint8Array> | null = null
+
+  const fail = (error: Error): void => {
+    if (failure) return
+    failure = error
+    onSettled()
+    source.destroy(error)
+    try {
+      controller?.error(error)
+    } catch {
+      // Already errored or closed; the caller's read has the failure either way.
+    }
+  }
+
+  const body = new ReadableStream<Uint8Array>({
+    start(streamController) {
+      controller = streamController
+      source.on('data', (chunk: Buffer | Uint8Array | string) => {
+        if (failure) return
+        const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+        bytes += buffer.length
+        if (bytes > maxResponseBytes) {
+          fail(new Error(`Outbound response exceeded ${maxResponseBytes} bytes.`))
+          return
+        }
+        // Copied rather than viewed: a chunk handed over by Node may sit in a
+        // pooled allocation that is reused once this listener returns.
+        streamController.enqueue(new Uint8Array(buffer))
+        if ((streamController.desiredSize ?? 1) <= 0) source.pause()
+      })
+      source.on('error', (error: Error) => fail(error))
+      source.on('end', () => {
+        if (failure) return
+        onSettled()
+        try {
+          streamController.close()
+        } catch {
+          // A cancelled reader closes the stream first; nothing left to do.
+        }
+      })
+    },
+    pull() {
+      if (!failure) source.resume()
+    },
+    cancel() {
+      // The reader walked away. Stop the transfer rather than paying for the
+      // rest of a body nobody is going to look at.
+      onSettled()
+      source.destroy()
+    },
+  })
+
+  return { body, fail }
 }
 
 function requestOnce(
@@ -460,24 +543,38 @@ function requestOnce(
 ): Promise<RawResponse> {
   return new Promise<RawResponse>((resolve, reject) => {
     let settled = false
-    const finishError = (error: Error) => {
-      if (settled) return
-      settled = true
+    let failBody: ((error: Error) => void) | null = null
+    // The timeout and the abort listener now have to outlive the headers: the
+    // promise settles when they arrive, but the exchange is not over until the
+    // body is. Releasing them at resolve time would leave a stalled body with
+    // nothing to stop it — exactly the wedge the ceiling exists to prevent.
+    const settle = () => {
       clearTimeout(timer)
       signal?.removeEventListener('abort', onAbort)
+    }
+    const finishError = (error: Error) => {
+      settle()
+      if (settled) return
+      settled = true
       reject(error)
     }
     const finish = (value: RawResponse) => {
       if (settled) return
       settled = true
-      clearTimeout(timer)
-      signal?.removeEventListener('abort', onAbort)
       resolve(value)
+    }
+    /** One failure path, whichever side of the headers the exchange is on. */
+    const fail = (error: Error) => {
+      if (settled) {
+        failBody?.(error)
+        return
+      }
+      finishError(error)
     }
     const onAbort = () => {
       const error = abortError(signal!)
       request.destroy(error)
-      finishError(error)
+      fail(error)
     }
 
     const requestHeaders: Record<string, string> = {
@@ -504,8 +601,6 @@ function requestOnce(
           checkServerIdentity(resolved.hostname, cert),
       },
       (response) => {
-        const chunks: Buffer[] = []
-        let bytes = 0
         const contentEncoding = String(
           response.headers['content-encoding'] ?? '',
         )
@@ -534,28 +629,34 @@ function requestOnce(
           return
         }
 
-        response.on('data', (chunk: Buffer | Uint8Array | string) => {
-          const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
-          bytes += buffer.length
-          if (bytes > maxResponseBytes) {
-            const error = new Error(
-              `Outbound response exceeded ${maxResponseBytes} bytes.`,
-            )
-            response.destroy(error)
-            finishError(error)
-            return
-          }
-          chunks.push(buffer)
-        })
-        response.on('error', (error) => finishError(error))
-        response.on('end', () => {
-          finish({
-            status: response.statusCode ?? 0,
-            statusMessage: response.statusMessage ?? '',
-            headers: responseHeaders(response.headers),
-            body: Buffer.concat(chunks, bytes),
-          })
-        })
+        const status = response.statusCode ?? 0
+        const head = {
+          status,
+          statusMessage: response.statusMessage ?? '',
+          headers: responseHeaders(response.headers),
+        }
+        const dispose = () => {
+          settle()
+          response.destroy()
+          request.destroy()
+        }
+
+        // Nothing to stream: settle the exchange here rather than waiting on a
+        // body that is not coming.
+        if (method === 'HEAD' || status === 204 || status === 205 || status === 304) {
+          response.resume()
+          settle()
+          finish({ ...head, body: null, dispose })
+          return
+        }
+
+        const { body, fail: failStream } = createBoundedBodyStream(
+          response,
+          maxResponseBytes,
+          settle,
+        )
+        failBody = failStream
+        finish({ ...head, body, dispose })
       },
     )
 
@@ -570,7 +671,9 @@ function requestOnce(
       return
     }
     signal?.addEventListener('abort', onAbort, { once: true })
-    request.on('error', (error) => finishError(error))
+    // `fail`, not `finishError`: once the headers are out the door this is how a
+    // timeout or a dead socket reaches the body the caller is already reading.
+    request.on('error', (error) => fail(error))
     if (body) request.write(body)
     request.end()
   })
@@ -588,13 +691,12 @@ function isRedirect(status: number): boolean {
 
 function responseFromRaw(raw: RawResponse): Response {
   if (raw.status < 200 || raw.status > 599) {
+    raw.dispose()
     throw new Error(
       `Outbound server returned unsupported HTTP status ${raw.status}.`,
     )
   }
-  const noBody = raw.status === 204 || raw.status === 205 || raw.status === 304
-  const body = noBody ? null : Uint8Array.from(raw.body).buffer
-  return new Response(body, {
+  return new Response(raw.body, {
     status: raw.status,
     statusText: raw.statusMessage,
     headers: raw.headers,
@@ -682,6 +784,10 @@ export async function secureFetch(
       options.signal,
     )
     if (!isRedirect(raw.status)) return responseFromRaw(raw)
+
+    // A redirect's own body is never handed on, so it is never read. Drop it
+    // before the next hop instead of leaving a socket open behind the loop.
+    raw.dispose()
 
     const location = raw.headers.get('location')
     if (!location)
