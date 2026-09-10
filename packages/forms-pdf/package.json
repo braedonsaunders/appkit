@@ -31,7 +31,7 @@
     "@braedonsaunders/appkit-design-studio": "^1.0.0",
     "@braedonsaunders/appkit-pdf": "^0.1.1",
     "@braedonsaunders/appkit-reports": "^1.1.0",
-    "@braedonsaunders/appkit-sync": "^1.1.0",
+    "@braedonsaunders/appkit-sync": "^1.1.1",
     "puppeteer-core": "^25.3.0"
   },
   "peerDependenciesMeta": {
