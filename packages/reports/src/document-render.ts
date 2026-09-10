@@ -11,6 +11,8 @@
 
 import {
   REPORT_PAPER_SIZES,
+  resolveCellTone,
+  type ReportCellTone,
   type ReportDensity,
   type ReportLayout as ReportLayoutConfig,
   type ReportPaperSize,
@@ -224,6 +226,26 @@ export function buildReportDocumentCss(
   .appkit-report-doc .a-right { text-align: right; }
   .appkit-report-doc .a-center { text-align: center; }
   .appkit-report-doc tbody td em { color: #9ca3af; font-style: italic; }
+  /* Conditional cell tones. Colour is carried on the TEXT with a weight bump,
+     not on a background fill: browsers drop backgrounds when printing unless
+     print-color-adjust is honoured, and a status has to stay readable on a
+     black-and-white office printer and for anyone who cannot separate red from
+     green. The tint is a hint, the weight is the signal. */
+  .appkit-report-doc td.tone-critical { color: #b42318; font-weight: 600; }
+  .appkit-report-doc td.tone-warning  { color: #b54708; font-weight: 600; }
+  .appkit-report-doc td.tone-positive { color: #027a48; font-weight: 600; }
+  .appkit-report-doc td.tone-info     { color: #175cd3; font-weight: 600; }
+  .appkit-report-doc td.tone-muted    { color: #667085; }
+  @media print {
+    .appkit-report-doc td.tone-critical,
+    .appkit-report-doc td.tone-warning,
+    .appkit-report-doc td.tone-positive,
+    .appkit-report-doc td.tone-info,
+    .appkit-report-doc td.tone-muted {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
   .appkit-report-doc .empty { color: #9ca3af; font-style: italic; text-align: center; padding: 24px 0; }
   .appkit-report-doc img { max-width: 100%; height: auto; }
 `
@@ -264,6 +286,15 @@ function isNumericValue(value: unknown): boolean {
 
 function alignClass(align: 'left' | 'center' | 'right'): string {
   return align === 'right' ? ' class="a-right"' : align === 'center' ? ' class="a-center"' : ''
+}
+
+/** One class attribute for a body cell: alignment plus any conditional tone. */
+function cellClass(align: 'left' | 'center' | 'right', tone: ReportCellTone | null): string {
+  const names = [
+    align === 'right' ? 'a-right' : align === 'center' ? 'a-center' : '',
+    tone ? `tone-${tone}` : '',
+  ].filter(Boolean)
+  return names.length > 0 ? ` class="${names.join(' ')}"` : ''
 }
 
 /** The document body fragment: cover header + summary band + one section per
@@ -310,7 +341,9 @@ export function renderReportDocumentBodyHtml(input: ReportDocumentInput): string
             .map((value, index) => {
               const declared = columnAlign[index] ?? 'left'
               const align = declared === 'left' && isNumericValue(value) ? 'right' : declared
-              return `<td${alignClass(align)}>${value === null || value === undefined || value === '' ? '<em>—</em>' : escapeHtml(String(value))}</td>`
+              const column = g.columns[index]
+              const tone = column ? resolveCellTone(column, value) : null
+              return `<td${cellClass(align, tone)}>${value === null || value === undefined || value === '' ? '<em>—</em>' : escapeHtml(String(value))}</td>`
             })
             .join('')}</tr>`
         })

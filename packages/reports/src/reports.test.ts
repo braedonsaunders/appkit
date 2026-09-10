@@ -4,6 +4,7 @@ import { computeNextReportRun, DEFAULT_REPORT_LAYOUT, queryResultToReport, resol
 import {
   buildReportDocumentCss,
   buildReportDocumentFontCss,
+  renderReportDocumentBodyHtml,
   REPORT_DOCUMENT_FONT_FAMILY,
 } from './document-render'
 
@@ -46,4 +47,71 @@ test('runReport uses the injected tenant-scoped executor', async () => {
   const definition: ReportDefinition = { schemaVersion: 1, id: 'r', slug: 'sales', name: 'Sales', query: { source: 'sales' }, layout: resolveReportLayout(), state: 'published' }
   const result = await runReport(definition, async (query) => ({ columns: [], rows: [], rowCount: query.source === 'sales' ? 0 : 1, truncated: false, durationMs: 1 }))
   assert.equal(result.groups[0]?.title, 'Sales')
+})
+
+test('conditional cell tones colour the value, not the whole row', () => {
+  const html = renderReportDocumentBodyHtml({
+    tenantName: 'Acme',
+    reportName: 'Training — Missing',
+    dateRangeLabel: '',
+    groups: [
+      {
+        title: 'Crew',
+        columns: [
+          { key: 'person', label: 'Person', semanticType: 'category' },
+          {
+            key: 'coverage',
+            label: 'Coverage',
+            semanticType: 'category',
+            // Matched case-insensitively, so a humanised value still hits.
+            tones: { expired: 'critical', Expiring: 'warning', valid: 'positive' },
+          },
+        ],
+        rows: [
+          { person: 'Ann', coverage: 'EXPIRED' },
+          { person: 'Bo', coverage: 'expiring' },
+          { person: 'Cy', coverage: 'valid' },
+          { person: 'Di', coverage: 'missing' },
+        ],
+      },
+    ],
+  })
+
+  assert.match(html, /<td class="tone-critical">EXPIRED<\/td>/)
+  assert.match(html, /<td class="tone-warning">expiring<\/td>/)
+  assert.match(html, /<td class="tone-positive">valid<\/td>/)
+  // A value with no rule stays untouched, and the person column never gains one.
+  assert.match(html, /<td>missing<\/td>/)
+  assert.match(html, /<td>Ann<\/td>/)
+})
+
+test('a toned cell keeps its alignment class', () => {
+  const html = renderReportDocumentBodyHtml({
+    tenantName: 'Acme',
+    reportName: 'R',
+    dateRangeLabel: '',
+    groups: [
+      {
+        title: 'G',
+        columns: [
+          {
+            key: 'amount',
+            label: 'Amount',
+            semanticType: 'currency',
+            align: 'right',
+            tones: { '0': 'muted' },
+          },
+        ],
+        rows: [{ amount: '0' }],
+      },
+    ],
+  })
+  assert.match(html, /<td class="a-right tone-muted">0<\/td>/)
+})
+
+test('tone styles are emitted for print as well as screen', () => {
+  const css = buildReportDocumentCss(null)
+  assert.match(css, /td\.tone-critical/)
+  // Colour must survive printing, where backgrounds are dropped by default.
+  assert.match(css, /print-color-adjust: exact/)
 })

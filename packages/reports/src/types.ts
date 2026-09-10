@@ -2,11 +2,44 @@ import type { InsightQuery, SemanticType } from '@braedonsaunders/appkit-analyti
 
 export type ReportQuery = InsightQuery
 
+/**
+ * Conditional cell tones. Deliberately a small named set rather than free
+ * colours: a report is printed as well as viewed, the palette has to stay
+ * legible in greyscale, and a stored definition must keep its meaning when the
+ * theme changes.
+ */
+export const REPORT_CELL_TONES = ['critical', 'warning', 'positive', 'info', 'muted'] as const
+export type ReportCellTone = (typeof REPORT_CELL_TONES)[number]
+
 export type ReportColumn = {
   key: string
   label: string
   semanticType: SemanticType
   align?: 'left' | 'center' | 'right'
+  /**
+   * Value → tone, matched case-insensitively against the cell's rendered text.
+   * Lets a status column read at a glance ("expired" red, "expiring" amber)
+   * without inventing an expression language inside a stored report definition.
+   *
+   * Screen and PDF apply it identically because both render through
+   * renderReportDocumentBodyHtml.
+   */
+  tones?: Record<string, ReportCellTone>
+}
+
+/** The tone for a cell value, or null when the column declares none. */
+export function resolveCellTone(
+  column: string | ReportColumn,
+  value: unknown,
+): ReportCellTone | null {
+  if (typeof column === 'string' || !column.tones) return null
+  if (value === null || value === undefined) return null
+  const key = String(value).trim().toLowerCase()
+  if (!key) return null
+  for (const [match, tone] of Object.entries(column.tones)) {
+    if (match.trim().toLowerCase() === key) return tone
+  }
+  return null
 }
 
 export type ReportGroup = {
