@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import * as React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { AgentApprovalRequestCard, AgentMessageQueue, AgentPanel, AgentSecretRequestCard, AgentTypingIndicator, type AgentPanelProps } from './react'
+import { AgentApprovalRequestCard, AgentMessageQueue, AgentPanel, AgentSecretRequestCard, AgentTypingIndicator, __sameTranscriptForTests as sameTranscript, type AgentMessage, type AgentPanelProps } from './react'
 
 test('AgentTypingIndicator renders a tokenized stagger and a reduced-motion fallback', () => {
   const markup = renderToStaticMarkup(React.createElement(AgentTypingIndicator))
@@ -308,4 +308,58 @@ test('AgentPanel keeps the draft input outside the transcript render path', () =
   assert.match(markup, /data-draft-file="true"/)
   assert.match(markup, /Queued follow-up/)
   assert.match(markup, /<textarea[^>]*placeholder="Ask the assistant…"/)
+})
+
+test('AgentPanel takes a newer transcript from its host, except while it is streaming one', () => {
+  const base = (): AgentMessage[] => [
+    { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'check the invoice' }] },
+    {
+      id: 'live:r1',
+      role: 'assistant',
+      parts: [{ type: 'dynamic-tool', toolName: 'run_shell', toolCallId: 'c1', state: 'input-available', input: { cmd: 'ls' } }],
+    },
+  ]
+
+  assert.equal(sameTranscript(base(), base()), true, 'an unchanged transcript is not reapplied')
+
+  // Every way a transcript moves forward has to be noticed, or a reader watching
+  // work in progress sits on a stale snapshot.
+  const returned = base()
+  returned[1]!.parts = [
+    { type: 'dynamic-tool', toolName: 'run_shell', toolCallId: 'c1', state: 'output-available', input: { cmd: 'ls' }, output: 'a b' },
+  ]
+  assert.equal(sameTranscript(base(), returned), false, 'a call that returned is a change')
+
+  const extraPart = base()
+  extraPart[1]!.parts = [...extraPart[1]!.parts, { type: 'text', text: 'Looking at it' }]
+  assert.equal(sameTranscript(base(), extraPart), false, 'a new part is a change')
+
+  const short = base()
+  short[1]!.parts = [{ type: 'text', text: 'Looking' }]
+  const longer = base()
+  longer[1]!.parts = [{ type: 'text', text: 'Looking at the invoice' }]
+  assert.equal(sameTranscript(short, longer), false, 'prose growing is a change')
+
+  assert.equal(
+    sameTranscript(base(), [...base(), { id: 'a2', role: 'assistant', parts: [] }]),
+    false,
+    'a new message is a change',
+  )
+  assert.equal(sameTranscript(base(), []), false, 'an emptied transcript is a change')
+
+  // Deliberately NOT deep: these parts carry whole tool inputs and outputs, and
+  // this runs on every render of the host.
+  const sameShape = base()
+  sameShape[1]!.parts = [{ type: 'dynamic-tool', toolName: 'run_shell', toolCallId: 'c1', state: 'input-available', input: { cmd: 'pwd' } }]
+  assert.equal(sameTranscript(base(), sameShape), true, 'an unchanged shape is treated as unchanged')
+
+  // The guard matters as much as the comparison: while this panel owns the turn,
+  // its streamed parts are richer than anything the host has persisted.
+  const source = readFileSync(new URL('./react.tsx', import.meta.url), 'utf8')
+  const effect = source.slice(source.indexOf('Take a newer transcript from the host'))
+  assert.match(
+    effect.slice(0, effect.indexOf('}, [initialMessages, streaming])')),
+    /if \(streaming \|\| abortRef\.current !== null\) return/,
+    'a streaming panel is never overwritten by the host snapshot',
+  )
 })
