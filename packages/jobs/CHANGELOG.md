@@ -1,5 +1,12 @@
 # @braedonsaunders/appkit-jobs
 
+## 0.2.4
+
+### Patch Changes
+
+- Updated dependencies [e67bb83]
+  - @braedonsaunders/appkit-egress-proxy@0.2.1
+
 ## 0.2.3
 
 ### Patch Changes
