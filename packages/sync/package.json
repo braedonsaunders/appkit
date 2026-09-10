@@ -1,6 +1,6 @@
 {
   "name": "@braedonsaunders/appkit-sync",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Production data synchronization with transactional batches, per-record ledgers, fail-closed snapshots, connector families, and durable cursors.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -37,7 +37,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@braedonsaunders/appkit-egress-proxy": "workspace:^0.1.0"
+    "@braedonsaunders/appkit-egress-proxy": "workspace:^0.2.0"
   },
   "peerDependencies": {
     "@braedonsaunders/appkit-db": "^0.2.0",

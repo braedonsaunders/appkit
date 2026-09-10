@@ -1,5 +1,12 @@
 # @braedonsaunders/appkit-sync
 
+## 1.1.1
+
+### Patch Changes
+
+- Updated dependencies [52ac979]
+  - @braedonsaunders/appkit-egress-proxy@0.2.0
+
 ## 1.1.0
 
 ### Minor Changes

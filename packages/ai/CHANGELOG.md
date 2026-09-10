@@ -1,5 +1,12 @@
 # @braedonsaunders/appkit-ai
 
+## 1.2.2
+
+### Patch Changes
+
+- Updated dependencies [52ac979]
+  - @braedonsaunders/appkit-egress-proxy@0.2.0
+
 ## 1.2.1
 
 ### Patch Changes
