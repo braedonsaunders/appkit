@@ -363,3 +363,43 @@ test('AgentPanel takes a newer transcript from its host, except while it is stre
     'a streaming panel is never overwritten by the host snapshot',
   )
 })
+
+test('a turn in flight shows the thinking indicator even when this panel is not streaming it', () => {
+  // Work running in a worker, or a turn the reader reloaded into the middle of:
+  // the host can see it, the panel is not producing it. Keyed off `streaming`
+  // alone it had no sign of life in the transcript at all, which left the host
+  // explaining in a banner beside the conversation that something was happening
+  // elsewhere — not where anyone looks, and it reads as an apology.
+  const inFlight = {
+    enabled: true,
+    working: true,
+    initialMessages: [
+      { id: 'u1', role: 'user' as const, parts: [{ type: 'text', text: 'make a new coin' }] },
+      {
+        id: 'live:r1',
+        role: 'assistant' as const,
+        parts: [{ type: 'dynamic-tool', toolName: 'run_shell', toolCallId: 'c1', state: 'input-available', input: {} }],
+      },
+    ],
+  } satisfies AgentPanelProps
+
+  const markup = renderToStaticMarkup(React.createElement(AgentPanel, inFlight))
+  assert.match(markup, /aria-label="Assistant is responding"/, 'the indicator rides along with work in progress')
+  assert.match(markup, /run_shell|run shell/, 'and the work itself is still rendered')
+
+  // Same transcript, nothing in flight: no indicator, just the recorded work.
+  const settled = renderToStaticMarkup(
+    React.createElement(AgentPanel, { ...inFlight, working: false } satisfies AgentPanelProps),
+  )
+  assert.doesNotMatch(settled, /aria-label="Assistant is responding"/, 'a finished turn does not keep thinking')
+
+  // An assistant turn with nothing yet is the indicator alone.
+  const empty = renderToStaticMarkup(
+    React.createElement(AgentPanel, {
+      enabled: true,
+      working: true,
+      initialMessages: [{ id: 'a1', role: 'assistant' as const, parts: [] }],
+    } satisfies AgentPanelProps),
+  )
+  assert.match(empty, /aria-label="Assistant is responding"/)
+})
