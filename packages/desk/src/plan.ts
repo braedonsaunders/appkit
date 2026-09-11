@@ -63,6 +63,22 @@ export interface DeskLaunchPlanOptions {
   macAddress?: string
   kernelCmdline?: string
   launcherIdentity?: DeskLauncherIdentity
+  /**
+   * Where this desk's memory snapshot lives. Defaults beside the overlay, which
+   * is the volume sized for desk state — a snapshot is roughly `memoryMb` of
+   * guest RAM, so it does not belong on a runtime tmpfs.
+   */
+  snapshotDir?: string
+  /**
+   * Resume from that snapshot instead of booting the kernel.
+   *
+   * A restored VM continues with its process tree intact, which is the whole
+   * point of parking with memory rather than shutting down: an agent's in-guest
+   * daemon survives. Refused when the snapshot is not there, rather than falling
+   * back to a cold boot — a silent cold boot is how a desk loses the state it
+   * was promised to have kept.
+   */
+  restore?: boolean
 }
 
 /**
@@ -82,6 +98,8 @@ export interface DeskLaunchPlan {
   vsock: { cid: number; socketPath: string }
   api: { socketPath: string }
   tap: { device: string; mac: string }
+  /** Where a memory snapshot of this desk is written, and read back from. */
+  snapshot: { dir: string; restoring: boolean }
   memoryMb: number
   vcpus: number
   kernelPath: string
@@ -180,6 +198,19 @@ export function buildDeskLaunchPlan(
   const launcherIdentity = cleanLauncherIdentity(options.launcherIdentity)
   const vsockSocketPath = join(runtimeDir, `desk-${deskId}.vsock`)
   const apiSocketPath = join(runtimeDir, `desk-${deskId}.api.sock`)
+  // Beside the overlay by default: a snapshot is the guest's RAM, so it belongs
+  // on the volume provisioned for desk state rather than on a runtime tmpfs.
+  const snapshotDir = options.snapshotDir
+    ? absolutePath(options.snapshotDir, 'snapshotDir')
+    : join(overlayDirectory, `${deskId}.snapshot`)
+  const restoring = options.restore === true
+  if (restoring && !pathExists(snapshotDir)) {
+    // Refused rather than silently cold-booted. A caller asking to restore has
+    // been told this desk kept its memory; quietly booting a fresh kernel would
+    // lose the process tree it was relying on and look like a crash inside the
+    // guest instead of a missing snapshot out here.
+    throw new DeskError(`Desk ${deskId} has no snapshot to restore at ${snapshotDir}`)
+  }
 
   const create = pathExists(overlayPath)
     ? null
@@ -194,23 +225,50 @@ export function buildDeskLaunchPlan(
         args: ['--reflink=auto', baseImagePath, overlayPath],
       }
 
-  const args = [
-    '--api-socket', apiSocketPath,
-    '--kernel', kernelPath,
-    // A modular distro kernel needs its initramfs to bring up virtio_blk and
-    // mount root; omitted only for a kernel with those drivers built in.
-    ...(initramfsPath === null ? [] : ['--initramfs', initramfsPath]),
-    '--cmdline', kernelCmdline,
-    // Be explicit that the disk is raw: CH deprecated image-format auto-detection
-    // and warns without image_type; there is never a qcow2 overlay here.
-    '--disk', `path=${overlayPath},image_type=raw`,
-    '--memory', `size=${memoryMb}M`,
-    '--cpus', `boot=${vcpus}`,
-    '--vsock', `cid=${vsockCid},socket=${vsockSocketPath}`,
-    '--net', `tap=${tapDevice},mac=${macAddress}`,
-    '--serial', 'off',
-    '--console', 'off',
-  ]
+  // A restoring VMM is handed the snapshot and nothing else.
+  //
+  // The snapshot carries the whole machine config — memory size, cpus, disk,
+  // vsock, net — so passing `--kernel`/`--disk` alongside `--restore` is not
+  // redundant, it is rejected.
+  //
+  // `resume=false` is deliberate, and it is the difference between this being
+  // safe and being a data-loss bug. A memory snapshot is only valid against the
+  // disk as it stood when the snapshot was taken. Resume the guest in this same
+  // spawn and it starts writing immediately, so for as long as the snapshot
+  // still exists there are two valid-looking pasts for one desk — and a host
+  // that died in that window would, on the next start, replay this memory
+  // against a disk that had moved on. That is corruption, not a stale cache.
+  //
+  // So the guest comes back PAUSED, the caller destroys the snapshot while
+  // nothing can write, and only then is the VM resumed.
+  //
+  // The tap is reopened BY NAME from the snapshotted config. That is the detail
+  // that makes this possible at all: Cloud Hypervisor's `net_fds` restore
+  // parameter exists for VMs whose tap was passed as a file descriptor, and
+  // producing one from Node would mean an ioctl(TUNSETIFF) it cannot make.
+  // Because `deskPlan` configures `--net tap=<name>`, there is nothing to pass.
+  const args = restoring
+    ? [
+        '--api-socket', apiSocketPath,
+        '--restore', `source_url=file://${snapshotDir},resume=false`,
+      ]
+    : [
+        '--api-socket', apiSocketPath,
+        '--kernel', kernelPath,
+        // A modular distro kernel needs its initramfs to bring up virtio_blk and
+        // mount root; omitted only for a kernel with those drivers built in.
+        ...(initramfsPath === null ? [] : ['--initramfs', initramfsPath]),
+        '--cmdline', kernelCmdline,
+        // Be explicit that the disk is raw: CH deprecated image-format auto-detection
+        // and warns without image_type; there is never a qcow2 overlay here.
+        '--disk', `path=${overlayPath},image_type=raw`,
+        '--memory', `size=${memoryMb}M`,
+        '--cpus', `boot=${vcpus}`,
+        '--vsock', `cid=${vsockCid},socket=${vsockSocketPath}`,
+        '--net', `tap=${tapDevice},mac=${macAddress}`,
+        '--serial', 'off',
+        '--console', 'off',
+      ]
 
   return {
     deskId,
@@ -219,6 +277,7 @@ export function buildDeskLaunchPlan(
     vsock: { cid: vsockCid, socketPath: vsockSocketPath },
     api: { socketPath: apiSocketPath },
     tap: { device: tapDevice, mac: macAddress },
+    snapshot: { dir: snapshotDir, restoring },
     memoryMb,
     vcpus,
     kernelPath,

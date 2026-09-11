@@ -10,7 +10,7 @@
  */
 import { existsSync } from 'node:fs'
 import { execFile } from 'node:child_process'
-import { rm, statfs, writeFile } from 'node:fs/promises'
+import { mkdir, rm, statfs, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -124,6 +124,31 @@ export interface DeskHostOptions {
    * testable without a filesystem; defaults to `rm(path, { force: true })`.
    */
   removeOverlay?: (path: string) => Promise<void>
+  /**
+   * Park a desk by snapshotting its memory instead of shutting it down, so
+   * resuming continues the guest's process tree rather than cold booting it.
+   *
+   * Off by default, because turning it on is a real operational change and not
+   * only a behavioural one: each parked desk holds a snapshot roughly the size
+   * of its guest RAM on the overlay volume, and the backend must offer `park`.
+   * A deployment opts in once it has sized for that.
+   *
+   * What it buys is the difference between a desk that is "parked" and one that
+   * was switched off. Shutdown parking means nothing inside the guest survives
+   * between runs: an agent that installs a daemon and believes it is watching
+   * something continuously is wrong, and the cold boot on every scheduled
+   * occurrence is indistinguishable, from inside the guest, from a failing host.
+   */
+  parkWithMemory?: boolean
+  /** Create a snapshot directory; defaults to `mkdir(path, { recursive: true })`. */
+  makeSnapshotDir?: (path: string) => Promise<void>
+  /**
+   * Destroy a snapshot; defaults to `rm(path, { recursive: true, force: true })`.
+   *
+   * Called at the one moment it is safe to — a restored guest still paused — so
+   * a failure here is not cosmetic. It is the reason the restore is abandoned.
+   */
+  removeSnapshot?: (path: string) => Promise<void>
   /**
    * Bytes that must remain free on the overlay filesystem AFTER admitting a
    * desk. A desk whose overlay cannot be grown fails deep inside the guest —
@@ -440,6 +465,10 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
   const pathExists = options.pathExists ?? existsSync
   const deviceExists = options.deviceExists ?? existsSync
   const removeOverlay = options.removeOverlay ?? ((path: string) => rm(path, { force: true }))
+  const parkWithMemory = options.parkWithMemory ?? false
+  const makeSnapshotDir = options.makeSnapshotDir ?? ((path: string) => mkdir(path, { recursive: true }).then(() => undefined))
+  const removeSnapshot =
+    options.removeSnapshot ?? ((path: string) => rm(path, { recursive: true, force: true }))
   const freeBytes = options.freeBytes ?? defaultFreeBytes
   const minFreeBytes = nonNegativeInteger(options.minFreeBytes ?? 0, 'minFreeBytes')
   const trimOnSuspend = options.trimOnSuspend ?? true
@@ -644,6 +673,29 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     }
   }
 
+  /**
+   * Flush the guest's filesystem, immediately before it stops.
+   *
+   * Only needed when parking keeps memory. A snapshot always matches the disk it
+   * was taken with, so the pair is consistent either way — but the disk ON ITS
+   * OWN is not, and that is what remains every time a snapshot has to be
+   * discarded. Without this, discarding one leaves a filesystem mid-transaction
+   * and the next cold boot recovers a journal and loses the last writes. Best
+   * effort and bounded: a guest too wedged to sync must still be parked.
+   */
+  async function syncGuest(record: DeskRecord, machine: DeskMachine): Promise<void> {
+    try {
+      await machine.request({ op: 'exec', command: 'sync', args: [], timeoutMs: trimTimeoutMs })
+    } catch (error) {
+      lastError = `Sync before park failed for ${record.deskId}: ${errorMessage(error)}`
+    }
+  }
+
+  /** Where this desk's memory snapshot lives; must agree with the launch plan. */
+  function snapshotDirFor(overlayPath: string, deskId: string): string {
+    return join(dirname(overlayPath), `${deskId}.snapshot`)
+  }
+
   async function teardown(record: DeskRecord): Promise<boolean> {
     if (record.status !== 'resident') return false
     await endHandover(record, 'revoked')
@@ -675,10 +727,33 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     record.handle = null
     if (machine) {
       await trimGuest(record, machine)
+      // Flush the guest's filesystem before anything stops.
+      //
+      // A paused guest still holds dirty pages that exist only in its memory, so
+      // a snapshot is consistent with the disk but the DISK ALONE is not — and
+      // the disk alone is exactly what is left whenever a snapshot is discarded,
+      // which happens on every failed restore. Syncing first makes discarding a
+      // snapshot always safe instead of usually safe.
+      const parking = parkWithMemory && typeof machine.park === 'function'
+      if (parking) await syncGuest(record, machine)
       try {
-        await machine.shutdown()
+        if (parking) {
+          const snapshotDir = snapshotDirFor(record.startOptions.overlayPath, record.deskId)
+          await makeSnapshotDir(snapshotDir)
+          await machine.park!(snapshotDir)
+        } else {
+          await machine.shutdown()
+        }
       } catch (error) {
+        // `park` stops the VMM on its own way out, so the desk is down either
+        // way; what is lost is the memory, not the desk. Leave nothing behind
+        // that a later boot would try to restore from.
         lastError = errorMessage(error)
+        if (parking) {
+          await removeSnapshot(snapshotDirFor(record.startOptions.overlayPath, record.deskId)).catch(
+            () => undefined,
+          )
+        }
       }
     }
     lastSuspendedAt = iso(now())
@@ -747,36 +822,66 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     // Before the plan, so a full disk is reported as a full disk rather than
     // as whatever the overlay copy fails with.
     await admitDisk(startOptions.overlayPath)
-    const plan = buildDeskLaunchPlan(
-      {
-        deskId,
-        vmmPath: options.vmmPath,
-        kvmPath: options.kvmPath,
-        kernelPath,
-        ...(initramfsPath === undefined ? {} : { initramfsPath }),
-        baseImagePath: startOptions.baseImage,
-        overlayPath: startOptions.overlayPath,
-        memoryMb: startOptions.memoryMb,
-        vcpus: startOptions.vcpus,
-        vsockCid: nextCid++,
-        runtimeDir: options.runtimeDir,
-        tapDevice: startOptions.network?.tapDevice,
-        macAddress: startOptions.network?.macAddress,
-        // Forward the host's cmdline only when set; otherwise the plan falls
-        // back to DEFAULT_KERNEL_CMDLINE.
-        ...(kernelCmdline === undefined ? {} : { kernelCmdline }),
-        launcherIdentity: options.launcherIdentity,
-      },
-      { pathExists, deviceExists },
-    )
+    const snapshotDir = snapshotDirFor(startOptions.overlayPath, deskId)
+    // The SAME cid for both attempts below. A restored VM's snapshotted config
+    // names its vsock and tap, and a cold-boot retry that renumbered them would
+    // come up on a different tap than the one the egress rules were put on.
+    const cid = nextCid++
+    const planFor = (restore: boolean) =>
+      buildDeskLaunchPlan(
+        {
+          deskId,
+          vmmPath: options.vmmPath,
+          kvmPath: options.kvmPath,
+          kernelPath,
+          ...(initramfsPath === undefined ? {} : { initramfsPath }),
+          baseImagePath: startOptions.baseImage,
+          overlayPath: startOptions.overlayPath,
+          memoryMb: startOptions.memoryMb,
+          vcpus: startOptions.vcpus,
+          vsockCid: cid,
+          runtimeDir: options.runtimeDir,
+          tapDevice: startOptions.network?.tapDevice,
+          macAddress: startOptions.network?.macAddress,
+          // Forward the host's cmdline only when set; otherwise the plan falls
+          // back to DEFAULT_KERNEL_CMDLINE.
+          ...(kernelCmdline === undefined ? {} : { kernelCmdline }),
+          launcherIdentity: options.launcherIdentity,
+          snapshotDir,
+          ...(restore ? { restore: true as const } : {}),
+        },
+        { pathExists, deviceExists },
+      )
+
+    const resuming = parkWithMemory && pathExists(snapshotDir)
     let machine: DeskMachine
     try {
-      machine = await backend.boot(plan)
+      machine = resuming
+        ? await backend.boot(planFor(true), {
+            // The guest is restored and PAUSED here. Destroying the snapshot in
+            // this window is what stops a memory image ever outliving the disk
+            // state it belongs to. If it fails the restore is abandoned rather
+            // than resumed, because resuming would leave both alive at once.
+            onRestored: () => removeSnapshot(snapshotDir),
+          })
+        : await backend.boot(planFor(false))
     } catch (error) {
-      lastError = errorMessage(error)
-      throw error instanceof DeskError
-        ? error
-        : new DeskError(`Desk ${deskId} failed to boot: ${errorMessage(error)}`)
+      if (resuming) {
+        // A snapshot that will not come back is worse than no snapshot: it makes
+        // the desk unbootable for as long as it sits there. Drop it and cold
+        // boot. Safe by construction — the guest never ran, so the disk is
+        // exactly as the pre-park sync left it.
+        const why = errorMessage(error)
+        await removeSnapshot(snapshotDir).catch(() => undefined)
+        lastError = `Desk ${deskId} could not resume from its snapshot and was cold booted: ${why}`
+        // Falls through to the shared record path below with a cold machine.
+        machine = await backend.boot(planFor(false))
+      } else {
+        lastError = errorMessage(error)
+        throw error instanceof DeskError
+          ? error
+          : new DeskError(`Desk ${deskId} failed to boot: ${errorMessage(error)}`)
+      }
     }
 
     let record = records.get(deskId)
@@ -1445,6 +1550,18 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       await removeOverlay(record.startOptions.overlayPath)
     } catch (error) {
       lastError = `Overlay was not reclaimed for ${record.deskId}: ${errorMessage(error)}`
+    }
+    // The snapshot goes with the disk, always — not only when parking is on.
+    //
+    // A snapshot outliving its overlay is the worst state this feature can
+    // produce: the next desk created under the same id gets a FRESH overlay and
+    // would restore a previous desk's memory on top of it. That is not stale
+    // state, it is one machine's RAM over another machine's disk. Teardown just
+    // ran, so nothing holds it open.
+    try {
+      await removeSnapshot(snapshotDirFor(record.startOptions.overlayPath, record.deskId))
+    } catch (error) {
+      lastError = `Snapshot was not reclaimed for ${record.deskId}: ${errorMessage(error)}`
     }
   }
 
