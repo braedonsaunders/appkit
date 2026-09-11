@@ -1218,3 +1218,187 @@ test('trimming can be turned off for a guest that has no fstrim', async () => {
 
   assert.equal(machine.requests.some((request) => request.op === 'exec'), false)
 })
+
+// --- parking with memory, and the one rule that makes it safe ----------------
+//
+// Parking used to mean `machine.shutdown()`: the VM stopped and only the disk
+// survived. Nothing inside the guest lived between runs, so an agent that
+// installed a daemon and believed it was watching something continuously was
+// wrong about its own machine, and the cold boot on every scheduled occurrence
+// was — from inside the guest — indistinguishable from a failing host.
+//
+// A memory snapshot fixes that and introduces one hazard: the image is valid
+// only against the disk it was taken with. Every test below exists to pin the
+// handling of that hazard rather than the happy path.
+
+/** A host with snapshot parking on, and full visibility of the snapshot files. */
+function makeParkingHost(options: { snapshotExists?: boolean; park?: () => Promise<void> } = {}) {
+  const made: string[] = []
+  const removedSnapshots: string[] = []
+  const parked: string[] = []
+  const synced: string[] = []
+  const plans: DeskLaunchPlan[] = []
+  const audits: DeskAuditEntry[] = []
+  let snapshotExists = options.snapshotExists ?? false
+
+  const backend: DeskBackend = {
+    async boot(plan, hooks) {
+      plans.push(plan)
+      if (plan.snapshot.restoring) {
+        // The real backend calls this while the guest is restored and PAUSED.
+        await hooks?.onRestored?.()
+      }
+      const fake = fakeMachine(plan.deskId, () => Promise.resolve())
+      const machine = fake.machine
+      return {
+        ...machine,
+        async request(command: Parameters<typeof machine.request>[0]) {
+          if ((command as { command?: string }).command === 'sync') synced.push(plan.deskId)
+          return machine.request(command)
+        },
+        async park(dir: string) {
+          if (options.park) await options.park()
+          parked.push(dir)
+        },
+      }
+    },
+  }
+
+  const clock = { value: 1_000_000 }
+  const host = createDeskHost({
+    imageRoot: '/images',
+    backend,
+    parkWithMemory: true,
+    ports: { onEvent: () => {}, audit: (entry) => audits.push(entry) },
+    now: () => clock.value,
+    // Everything exists except the snapshot, which the test controls.
+    pathExists: (path) => (path.endsWith('.snapshot') ? snapshotExists : true),
+    deviceExists: () => true,
+    removeOverlay: async () => {},
+    makeSnapshotDir: async (path) => {
+      made.push(path)
+      snapshotExists = true
+    },
+    removeSnapshot: async (path) => {
+      removedSnapshots.push(path)
+      snapshotExists = false
+    },
+    trimOnSuspend: false,
+  })
+  return {
+    host,
+    clock,
+    plans,
+    audits,
+    made,
+    removedSnapshots,
+    parked,
+    synced,
+    hasSnapshot: () => snapshotExists,
+  }
+}
+
+test('parking a desk keeps its memory, and syncs the guest first', async () => {
+  const context = makeParkingHost()
+  await context.host.start(startOptions('agent-park'))
+  await context.host.suspend('agent-park')
+
+  assert.deepEqual(context.parked, ['/images/overlays/agent-park.snapshot'], 'the VM was parked, not shut down')
+  assert.deepEqual(context.made, ['/images/overlays/agent-park.snapshot'], 'into a directory created for it')
+  // A paused guest holds dirty pages that exist only in memory. Without this the
+  // disk alone is mid-transaction, which matters on every discarded snapshot.
+  assert.deepEqual(context.synced, ['agent-park'], 'the guest filesystem was flushed before it stopped')
+})
+
+test('resuming restores the snapshot and destroys it before the guest can write', async () => {
+  const context = makeParkingHost({ snapshotExists: true })
+  await context.host.start(startOptions('agent-resume'))
+
+  const plan = context.plans[0]
+  assert.ok(plan)
+  assert.equal(plan.snapshot.restoring, true, 'the desk resumed rather than cold booted')
+  assert.ok(plan.vmm.args.includes('--restore'), 'with a restoring argv')
+  assert.equal(plan.vmm.args.includes('--kernel'), false, 'and no kernel — the snapshot carries the config')
+  // resume=false is the whole safety property: the guest comes back paused so
+  // the snapshot can be destroyed while nothing is able to write.
+  assert.ok(
+    plan.vmm.args.some((arg) => arg.includes('resume=false')),
+    'restored paused, not running',
+  )
+  assert.deepEqual(
+    context.removedSnapshots,
+    ['/images/overlays/agent-resume.snapshot'],
+    'and the snapshot was destroyed during the boot, not after it',
+  )
+  assert.equal(context.hasSnapshot(), false, 'so no memory image outlives the disk it belongs to')
+})
+
+test('a snapshot that will not restore is discarded and the desk cold boots', async () => {
+  // A snapshot that cannot come back is worse than none: it would make the desk
+  // unbootable for as long as it sat there.
+  const context = makeParkingHost({ snapshotExists: true })
+  let attempt = 0
+  const failing: DeskBackend = {
+    async boot(plan, hooks) {
+      attempt += 1
+      context.plans.push(plan)
+      if (plan.snapshot.restoring) throw new Error('snapshot is corrupt')
+      await hooks?.onRestored?.()
+      return fakeMachine(plan.deskId, () => Promise.resolve()).machine
+    },
+  }
+  const host = createDeskHost({
+    imageRoot: '/images',
+    backend: failing,
+    parkWithMemory: true,
+    ports: { onEvent: () => {}, audit: () => {} },
+    pathExists: () => true,
+    deviceExists: () => true,
+    removeOverlay: async () => {},
+    removeSnapshot: async (path) => {
+      context.removedSnapshots.push(path)
+    },
+    trimOnSuspend: false,
+  })
+
+  const handle = await host.start(startOptions('agent-bad-snap'))
+  assert.equal(attempt, 2, 'the restore was tried, then a cold boot')
+  assert.ok(
+    context.removedSnapshots.includes('/images/overlays/agent-bad-snap.snapshot'),
+    'the unusable snapshot was removed rather than left to fail again',
+  )
+  // The desk is genuinely usable, not merely booted.
+  const ran = await handle.exec({ command: '/bin/true', args: [] })
+  assert.equal(ran.exitCode, 0)
+  // Discarding is safe precisely because a failed restore never ran the guest,
+  // so the disk is still as the pre-park sync left it.
+  assert.equal(host.stats().lastError?.includes('cold booted'), true, 'and it said so')
+})
+
+test('a destroyed desk takes its snapshot with it', async () => {
+  // The worst state this feature can produce: a snapshot outliving its overlay.
+  // The next desk under that id gets a FRESH disk and would restore a previous
+  // desk's RAM on top of it.
+  const context = makeParkingHost()
+  await context.host.start(startOptions('agent-gone'))
+  await context.host.destroy('agent-gone')
+
+  assert.ok(
+    context.removedSnapshots.includes('/images/overlays/agent-gone.snapshot'),
+    'destroy reclaims the snapshot alongside the overlay',
+  )
+})
+
+test('parking stays off unless a deployment asks for it', async () => {
+  // Turning it on costs a snapshot the size of guest RAM per parked desk, so the
+  // library default must not change behaviour for a host that has not sized for
+  // it — the old shutdown path is still exactly what happens.
+  const factory = fakeBackendFactory()
+  const context = makeHost({ backend: factory.backend })
+  await context.host.start(startOptions('agent-plain'))
+  await context.host.suspend('agent-plain')
+
+  const machine = factory.machines[0]
+  assert.ok(machine)
+  assert.equal(machine.shutdowns, 1, 'the default is still a shutdown')
+})

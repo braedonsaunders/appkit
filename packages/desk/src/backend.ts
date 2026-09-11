@@ -11,6 +11,7 @@
  */
 import { spawn, type ChildProcess } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
+import { request as httpRequest } from 'node:http'
 import { createConnection } from 'node:net'
 import { Buffer } from 'node:buffer'
 import type { Duplex } from 'node:stream'
@@ -104,10 +105,42 @@ export interface DeskMachine {
   onConnectionChange?(listener: (change: DeskConnectionChange) => void): () => void
   /** Stop the VM. Idempotent; resolves once the VMM process has exited. */
   shutdown(): Promise<void>
+  /**
+   * Park the VM with its memory, so resuming continues the process tree.
+   *
+   * Optional: a backend with no snapshot facility simply does not offer it, and
+   * the host falls back to `shutdown()`. Pauses the guest, writes a snapshot to
+   * `snapshotDir`, then stops the VMM — and resolves only once all three have
+   * happened, because a caller that believed a snapshot exists when it does not
+   * would later refuse to boot the desk at all.
+   *
+   * The caller is responsible for quiescing the guest filesystem first. A paused
+   * guest still holds dirty pages that exist only in the snapshot, so a disk
+   * parked without a prior `sync` is consistent only *with that snapshot* —
+   * which matters the moment the snapshot is discarded.
+   */
+  park?(snapshotDir: string): Promise<void>
+}
+
+export interface DeskBootHooks {
+  /**
+   * Called on a restore, after the snapshot has been read back and before the
+   * guest is allowed to run.
+   *
+   * This is the window in which the snapshot must be destroyed. A memory image
+   * is valid only against the disk it was taken with, so once the guest resumes
+   * and writes, any surviving snapshot describes a past that no longer matches —
+   * and replaying it later would corrupt the desk. Restoring paused and
+   * invalidating here is what makes that impossible rather than unlikely.
+   *
+   * Throwing aborts the restore: the VM is stopped and the caller is free to
+   * cold boot, which is safe because a paused guest has written nothing.
+   */
+  onRestored?: () => Promise<void>
 }
 
 export interface DeskBackend {
-  boot(plan: DeskLaunchPlan): Promise<DeskMachine>
+  boot(plan: DeskLaunchPlan, hooks?: DeskBootHooks): Promise<DeskMachine>
 }
 
 export type DeskProcessLauncher = (
@@ -186,7 +219,7 @@ export function createCloudHypervisorBackend(
   const killGraceMs = options.killGraceMs ?? DEFAULT_KILL_GRACE_MS
   const guestAgentPort = options.guestAgentPort ?? GUEST_AGENT_VSOCK_PORT
 
-  async function boot(plan: DeskLaunchPlan): Promise<DeskMachine> {
+  async function boot(plan: DeskLaunchPlan, hooks?: DeskBootHooks): Promise<DeskMachine> {
     if (platform !== 'linux') {
       throw new DeskError(`The AppKit desk requires Linux; received ${platform}.`)
     }
@@ -202,6 +235,26 @@ export function createCloudHypervisorBackend(
     const child = launcher(plan.vmm.command, plan.vmm.args, { identity: plan.launcherIdentity })
     const log = drainOutput(child)
     const exit = watchExit(child)
+
+    // A restored guest comes back PAUSED (see the `resume=false` reasoning in
+    // the plan). Three things have to happen in this order and nowhere else:
+    // prove the restore finished, let the caller destroy the snapshot while the
+    // guest still cannot write, then start it.
+    if (plan.snapshot.restoring) {
+      try {
+        await waitForVmm(vmmApi, plan.api.socketPath, { now, exited: exit, timeoutMs: connectTimeoutMs })
+        await hooks?.onRestored?.()
+        await vmmApi(plan.api.socketPath, '/api/v1/vm.resume')
+      } catch (error) {
+        await terminate(child, exit, killGraceMs)
+        const said = log.tail()
+        const detail = said === '' ? '' : ` The VMM said: ${said}`
+        throw new DeskError(
+          `Desk ${plan.deskId} could not be restored from ${plan.snapshot.dir}: ${errorMessage(error)}${detail}`,
+        )
+      }
+    }
+
     let stream: Duplex
     try {
       stream = await connectWithRetry({
@@ -251,10 +304,96 @@ export function createCloudHypervisorBackend(
       idFactory,
       requestTimeoutMs,
       killGraceMs,
+      apiSocketPath: plan.api.socketPath,
+      vmmApi,
     })
   }
 
   return { boot }
+}
+
+/**
+ * Cloud Hypervisor's control plane: HTTP/1.1 over the `--api-socket` Unix
+ * socket. The plan has always created that socket; until now nothing spoke to
+ * it, because stopping a VM needed nothing more than killing the process.
+ *
+ * Pausing and snapshotting do need it, and `ch-remote` — the tool that usually
+ * does this — is not in the runner image. Writing the two requests by hand is a
+ * smaller change than adding a binary to the image, and keeps the whole
+ * lifecycle inside one process that already owns the socket path.
+ */
+export type VmmApiCall = (
+  socketPath: string,
+  path: string,
+  body?: Record<string, unknown>,
+  method?: 'PUT' | 'GET',
+) => Promise<void>
+
+const vmmApi: VmmApiCall = async (socketPath, path, body, method = 'PUT') => {
+  const payload = body === undefined ? undefined : Buffer.from(JSON.stringify(body), 'utf8')
+  await new Promise<void>((resolve, reject) => {
+    const request = httpRequest(
+      {
+        socketPath,
+        path,
+        method,
+        headers: {
+          ...(payload ? { 'content-type': 'application/json', 'content-length': String(payload.length) } : {}),
+        },
+      },
+      (response) => {
+        // CH answers 204 with no body on success. Drain regardless: an unread
+        // response keeps the socket open and the next call queues behind it.
+        const chunks: Buffer[] = []
+        response.on('data', (chunk: Buffer) => chunks.push(chunk))
+        response.on('end', () => {
+          const status = response.statusCode ?? 0
+          if (status >= 200 && status < 300) {
+            resolve()
+            return
+          }
+          const said = Buffer.concat(chunks).toString('utf8').trim().slice(0, 400)
+          reject(new DeskError(`${path} returned ${status}${said === '' ? '' : `: ${said}`}`))
+        })
+      },
+    )
+    request.on('error', (error) => reject(new DeskError(`${path} failed: ${errorMessage(error)}`)))
+    if (payload) request.write(payload)
+    request.end()
+  })
+}
+
+/**
+ * Wait until the VMM answers its control socket.
+ *
+ * On a restore this is also the only honest signal that the snapshot was read
+ * back: Cloud Hypervisor creates the API socket early but does not serve
+ * `vm.info` until it holds a VM, so a successful call means the restore
+ * completed rather than merely that the process started. A VMM that exits
+ * instead — a corrupt snapshot, a config the host can no longer satisfy — stops
+ * the wait immediately rather than burning the whole timeout.
+ */
+async function waitForVmm(
+  call: VmmApiCall,
+  socketPath: string,
+  options: { now: () => number; exited: ExitWatcher; timeoutMs: number; retryDelayMs?: number },
+): Promise<void> {
+  const deadline = options.now() + options.timeoutMs
+  const retryDelayMs = options.retryDelayMs ?? 50
+  let lastFailure = 'it never answered'
+  for (;;) {
+    if (options.exited.done) throw new DeskError(`the VMM exited before it served its control socket`)
+    try {
+      await call(socketPath, '/api/v1/vm.info', undefined, 'GET')
+      return
+    } catch (error) {
+      lastFailure = errorMessage(error)
+    }
+    if (options.now() >= deadline) {
+      throw new DeskError(`the VMM did not answer ${socketPath} in ${options.timeoutMs}ms: ${lastFailure}`)
+    }
+    await new Promise((resolve) => setTimeout(resolve, retryDelayMs))
+  }
 }
 
 /** The default backend: real Cloud Hypervisor over a real vsock socket. */
@@ -292,6 +431,9 @@ function createMachine(options: {
   idFactory: () => string
   requestTimeoutMs: number
   killGraceMs: number
+  /** Cloud Hypervisor's control socket, for pause and snapshot. */
+  apiSocketPath: string
+  vmmApi: VmmApiCall
 }): DeskMachine {
   const { deskId, child, exit, now, idFactory, requestTimeoutMs, killGraceMs, reconnectWindowMs } =
     options
@@ -483,6 +625,33 @@ function createMachine(options: {
       // Terminal by construction: `closed` is the state the reconnect loop
       // checks, so an explicit shutdown can never be followed by a reconnect.
       close(new DeskError(`Desk ${deskId} is shutting down.`), true)
+      await terminate(child, exit, killGraceMs)
+    },
+    async park(snapshotDir: string) {
+      // Close the guest channel FIRST. Pausing a VM strands whatever was in
+      // flight on the vsock, and a reconnect attempt against a paused guest
+      // would burn the whole reconnect window before giving up — so the channel
+      // is made terminal before the VM stops answering, exactly as shutdown
+      // does it.
+      close(new DeskError(`Desk ${deskId} is being parked.`), true)
+      try {
+        await options.vmmApi(options.apiSocketPath, '/api/v1/vm.pause')
+        await options.vmmApi(options.apiSocketPath, '/api/v1/vm.snapshot', {
+          // Three slashes: `file://` plus an absolute path. CH rejects a
+          // destination_url it cannot parse, and the directory must already
+          // exist — it writes the config and memory files into it.
+          destination_url: `file://${snapshotDir}`,
+        })
+      } catch (error) {
+        // The VM is paused and there is no usable snapshot, which is the one
+        // state nothing downstream can interpret. Stop the VMM so the desk is
+        // plainly off, and say why — the caller falls back to a cold boot, and
+        // the disk is still consistent because the guest was synced before this.
+        await terminate(child, exit, killGraceMs)
+        throw error instanceof DeskError
+          ? new DeskError(`Desk ${deskId} could not be parked with its memory: ${error.message}`)
+          : new DeskError(`Desk ${deskId} could not be parked with its memory: ${errorMessage(error)}`)
+      }
       await terminate(child, exit, killGraceMs)
     },
   }

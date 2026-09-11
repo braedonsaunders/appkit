@@ -193,3 +193,52 @@ test('support detection requires Linux, KVM, and the VMM binary, and fails close
   )
   assert.equal(isDeskSupported({ platform: 'linux', pathExists: () => false }), false)
 })
+
+// --- restoring from a memory snapshot ---------------------------------------
+test('a restoring plan is handed the snapshot and nothing else', () => {
+  const plan = buildDeskLaunchPlan(
+    { ...baseOptions, snapshotDir: '/data/agent-disks/overlays/agent-7.snapshot', restore: true },
+    { pathExists: () => true, deviceExists: () => true },
+  )
+  assert.equal(plan.snapshot.restoring, true)
+  assert.equal(plan.snapshot.dir, '/data/agent-disks/overlays/agent-7.snapshot')
+  // The snapshot carries the whole machine config, so these are not redundant,
+  // they are rejected by Cloud Hypervisor.
+  for (const flag of ['--kernel', '--disk', '--memory', '--cpus', '--vsock', '--net', '--cmdline']) {
+    assert.equal(plan.vmm.args.includes(flag), false, `${flag} must not accompany --restore`)
+  }
+  assert.ok(plan.vmm.args.includes('--api-socket'), 'but the control socket is still needed, to resume')
+  const restore = plan.vmm.args[plan.vmm.args.indexOf('--restore') + 1]
+  assert.match(restore ?? '', /^source_url=file:\/\//, 'a file:// source url')
+  // The safety property: paused on arrival, so the caller can destroy the
+  // snapshot before anything is able to write to the disk it belongs to.
+  assert.match(restore ?? '', /resume=false/, 'restored paused')
+  // net_fds is for VMs whose tap was passed as a descriptor. Ours is named, so
+  // Cloud Hypervisor reopens it itself — which is the only reason this is
+  // possible from Node at all, since producing a tap fd needs an ioctl.
+  assert.equal(restore?.includes('net_fds'), false)
+})
+
+test('a cold plan defaults its snapshot beside the overlay and says it is not restoring', () => {
+  const plan = buildDeskLaunchPlan(baseOptions, { pathExists: () => true, deviceExists: () => true })
+  assert.equal(plan.snapshot.restoring, false)
+  // Beside the overlay, not in the runtime dir: a snapshot is guest RAM and
+  // belongs on the volume provisioned for desk state, never on a tmpfs.
+  assert.match(plan.snapshot.dir, /^\/data\/agent-disks\/overlays\//)
+  assert.ok(plan.vmm.args.includes('--kernel'), 'and it boots a kernel')
+  assert.equal(plan.vmm.args.includes('--restore'), false)
+})
+
+test('restoring without a snapshot is refused rather than quietly cold booted', () => {
+  // A caller asking to restore has been told this desk kept its memory. Booting
+  // a fresh kernel instead would lose the process tree it was relying on, and
+  // look like a crash inside the guest rather than a missing file out here.
+  assert.throws(
+    () =>
+      buildDeskLaunchPlan(
+        { ...baseOptions, restore: true },
+        { pathExists: (path: string) => !path.endsWith('.snapshot'), deviceExists: () => true },
+      ),
+    /no snapshot to restore/,
+  )
+})
