@@ -1,6 +1,6 @@
 {
   "name": "@braedonsaunders/appkit-viewspec",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A closed, declarative page-composition language: pages are data that names blocks and binds already-resolved fields, so a tenant- or agent-authored layout can be stored and rendered without becoming an execution surface.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
