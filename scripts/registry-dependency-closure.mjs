@@ -38,16 +38,50 @@ export async function auditRegistryDependencyClosure(roots, loadManifest) {
   return visited
 }
 
-export async function loadNpmManifest(name, range) {
+/**
+ * How long to keep asking the registry for a version we have just published.
+ *
+ * This audit runs immediately after `npm publish`, and a version is not
+ * queryable the instant publish returns — the registry needs a moment to make it
+ * visible. Twice now a release has published every package successfully and then
+ * failed its own verification with E404 on the package it had just pushed, which
+ * reports a healthy release as a broken one and teaches everyone to ignore a red
+ * Release run.
+ *
+ * A 404 here means "not yet" far more often than "never", so it is retried. Any
+ * other failure is not.
+ */
+const PROPAGATION_TIMEOUT_MS = 120_000
+const PROPAGATION_RETRY_MS = 3_000
+
+const missingFromRegistry = (output) => /E404|is not in this registry|No match(ing version)? found/i.test(output)
+
+export async function loadNpmManifest(name, range, options = {}) {
   const request = packageRequest(name, range)
+  const timeoutMs = options.timeoutMs ?? PROPAGATION_TIMEOUT_MS
+  const retryMs = options.retryMs ?? PROPAGATION_RETRY_MS
+  const sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)))
+  const now = options.now ?? Date.now
+  // Injectable so the retry is driven by a test rather than by a real registry
+  // and a real two-minute wall clock.
+  const exec = options.run ?? run
+  const deadline = now() + timeoutMs
   let stdout
-  try {
-    ;({ stdout } = await run('npm', ['view', request, 'name', 'version', 'dependencies', '--json'], {
-      maxBuffer: 10 * 1024 * 1024,
-    }))
-  } catch (error) {
-    const output = [error?.stdout, error?.stderr].filter(Boolean).join('\n').trim()
-    throw new Error(output || `npm view failed for ${request}`)
+  for (;;) {
+    try {
+      ;({ stdout } = await exec('npm', ['view', request, 'name', 'version', 'dependencies', '--json'], {
+        maxBuffer: 10 * 1024 * 1024,
+      }))
+      break
+    } catch (error) {
+      const output = [error?.stdout, error?.stderr].filter(Boolean).join('\n').trim()
+      // Only absence is retried, and only while there is time left. A malformed
+      // range, an auth failure or a network refusal fails on the first attempt.
+      if (!missingFromRegistry(output) || now() >= deadline) {
+        throw new Error(output || `npm view failed for ${request}`)
+      }
+      await sleep(retryMs)
+    }
   }
 
   const result = JSON.parse(stdout)
