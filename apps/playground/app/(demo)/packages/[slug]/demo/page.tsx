@@ -34,6 +34,7 @@ import {
   sanitizeOfficeHtml,
   type WorkbookSpec,
 } from '@braedonsaunders/appkit-office'
+import { page, ref, textBlock, heading, widgetBlock, validateSpec } from '@braedonsaunders/appkit-viewspec'
 import {
   DEFAULT_AGENT_TOOL_POLICY,
   agentToolScope,
@@ -115,6 +116,7 @@ const PACKAGE_DEMOS = {
   superadmin: 'Instance administration',
   sms: 'SMS delivery',
   telephony: 'Carrier numbers',
+  viewspec: 'Pages as data',
   voice: 'Voice providers',
 } as const
 
@@ -197,6 +199,8 @@ function renderPackageDemo(
       return <SuperadminDemo />
     case 'sms':
       return <SmsDemo provider={queryValue(query.provider, 'twilio')} />
+    case 'viewspec':
+      return <ViewSpecDemo />
     case 'telephony':
       return <TelephonyDemo carrier={queryValue(query.carrier, 'twilio')} />
     case 'voice':
@@ -364,6 +368,66 @@ function JobsDemo({ recipients }: { recipients: number }) {
         </Card>
       </div>
     </>
+  )
+}
+
+/**
+ * What the language is FOR, shown rather than described: the same page as a
+ * JSON document, and what happens to a document that tries to do more than
+ * describe a page.
+ */
+function ViewSpecDemo() {
+  const f = ref<{ title: string; invoice: { customer: string; total: string } }>()
+  const spec = page({
+    route: '/invoices/[id]',
+    layout: 'detail',
+    header: [heading(2, f('title'))],
+    body: [textBlock(f('invoice.customer')), widgetBlock('invoice-lines', { id: f('invoice.total') })],
+  })
+
+  // Each of these is a thing a template language would happily run.
+  const refused = [
+    { label: 'A script block', spec: { ...spec, body: [{ kind: 'script', src: 'evil.js' }] } },
+    { label: 'An event handler', spec: { ...spec, body: [{ kind: 'heading', level: 2, content: 'x', onClick: 'drop()' }] } },
+    { label: 'A tenant id in the document', spec: { ...spec, body: [{ kind: 'text', content: 'x', tenantId: 'someone-else' }] } },
+    { label: 'A prototype-polluting field path', spec: { ...spec, body: [textBlock({ $: '__proto__.polluted' })] } },
+  ].map((candidate) => ({ label: candidate.label, result: validateSpec(candidate.spec) }))
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <Card>
+        <CardHeader>
+          <CardTitle>A page, as data</CardTitle>
+          <CardDescription>
+            Blocks name what to draw; <code>{'{ "$": "path" }'}</code> binds a value the loader already
+            resolved. There is nothing here to evaluate.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <pre className="max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs">
+            {JSON.stringify(spec, null, 2)}
+          </pre>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>What it refuses</CardTitle>
+          <CardDescription>
+            The schema is closed, so a document cannot carry behaviour — the reason a layout somebody
+            else wrote can be stored and rendered at all.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {refused.map((candidate) => (
+            <DemoRow
+              key={candidate.label}
+              label={candidate.label}
+              value={candidate.result.ok ? 'ACCEPTED' : (candidate.result.errors[0] ?? 'rejected')}
+            />
+          ))}
+        </CardContent>
+      </Card>
+    </div>
   )
 }
 

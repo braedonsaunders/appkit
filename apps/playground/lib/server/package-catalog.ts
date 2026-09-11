@@ -49,6 +49,7 @@ import telephony from '../../../../packages/telephony/package.json'
 import tenant from '../../../../packages/tenant/package.json'
 import tokens from '../../../../packages/tokens/package.json'
 import ui from '../../../../packages/ui/package.json'
+import viewspec from '../../../../packages/viewspec/package.json'
 import voice from '../../../../packages/voice/package.json'
 import workflows from '../../../../packages/workflows/package.json'
 
@@ -118,6 +119,7 @@ export const PACKAGE_CATEGORIES: readonly {
       '@braedonsaunders/appkit-analytics', '@braedonsaunders/appkit-dashboard', '@braedonsaunders/appkit-customization', '@braedonsaunders/appkit-forms-core',
       '@braedonsaunders/appkit-forms', '@braedonsaunders/appkit-forms-documents', '@braedonsaunders/appkit-forms-pdf', '@braedonsaunders/appkit-reports',
       '@braedonsaunders/appkit-office', '@braedonsaunders/appkit-pdf', '@braedonsaunders/appkit-design-studio', '@braedonsaunders/appkit-scheduling',
+      '@braedonsaunders/appkit-viewspec',
     ],
   },
   {
@@ -195,6 +197,7 @@ const MANIFESTS: WorkspacePackageManifest[] = [
   tenant,
   tokens,
   ui,
+  viewspec,
   voice,
   workflows,
 ]
@@ -244,6 +247,7 @@ const DEMO_ROUTES: Record<string, string> = {
   '@braedonsaunders/appkit-mailbox': '/packages/mailbox/demo',
   '@braedonsaunders/appkit-sms': '/packages/sms/demo',
   '@braedonsaunders/appkit-telephony': '/packages/telephony/demo',
+  '@braedonsaunders/appkit-viewspec': '/packages/viewspec/demo',
   '@braedonsaunders/appkit-voice': '/packages/voice/demo',
   '@braedonsaunders/appkit-ai': '/packages/ai/demo',
   '@braedonsaunders/appkit-sandbox': '/admin/scripts',
