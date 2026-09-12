@@ -1,5 +1,11 @@
 # @braedonsaunders/appkit-apps
 
+## 3.0.1
+
+### Patch Changes
+
+- 69fbb2a: Resolve standard document-relative frontend asset references when inlining opaque-origin app bundles, and let apps declare exact public data origins for separately granted backend requests.
+
 ## 3.0.0
 
 ### Patch Changes
