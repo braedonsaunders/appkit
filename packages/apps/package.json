@@ -1,6 +1,6 @@
 {
   "name": "@braedonsaunders/appkit-apps",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Installable application bundles with immutable versions, governed QuickJS backends, opaque-origin frontends, capabilities, authoring, and distribution.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
