@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import * as React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { AgentApprovalRequestCard, AgentMessageQueue, AgentPanel, AgentSecretRequestCard, AgentTypingIndicator, __sameTranscriptForTests as sameTranscript, type AgentMessage, type AgentPanelProps } from './react'
+import { AgentApprovalRequestCard, AgentMessageQueue, AgentPanel, AgentSecretRequestCard, AgentTypingIndicator, __sameTranscriptForTests as sameTranscript, __withHostUserTurnsForTests as withHostUserTurns, type AgentMessage, type AgentPanelProps } from './react'
 
 test('AgentTypingIndicator renders a tokenized stagger and a reduced-motion fallback', () => {
   const markup = renderToStaticMarkup(React.createElement(AgentTypingIndicator))
@@ -355,13 +355,29 @@ test('AgentPanel takes a newer transcript from its host, except while it is stre
 
   // The guard matters as much as the comparison: while this panel owns the turn,
   // its streamed parts are richer than anything the host has persisted.
+  //
+  // Asserted as intent rather than as one line of source, because the guard grew
+  // a branch: a streaming panel still takes the person's OWN turns, which are
+  // additive and cannot conflict with the answer. What it must never do is adopt
+  // the host snapshot wholesale while streaming, which would replace a
+  // part-written answer with whatever had been persisted.
   const source = readFileSync(new URL('./react.tsx', import.meta.url), 'utf8')
-  const effect = source.slice(source.indexOf('Take a newer transcript from the host'))
-  assert.match(
-    effect.slice(0, effect.indexOf('}, [initialMessages, streaming])')),
-    /if \(streaming \|\| abortRef\.current !== null\) return/,
+  const effect = source.slice(
+    source.indexOf('Take a newer transcript from the host'),
+  )
+  const body = effect.slice(0, effect.indexOf('}, [initialMessages, streaming])'))
+  const streamingBranch = body.slice(
+    body.indexOf('if (streaming || abortRef.current !== null)'),
+    body.indexOf('sameTranscript('),
+  )
+  assert.ok(streamingBranch.length > 0, 'the streaming case is still handled first')
+  assert.equal(
+    /setMessages\(\s*\(current\)\s*=>\s*\(?sameTranscript/.test(streamingBranch),
+    false,
     'a streaming panel is never overwritten by the host snapshot',
   )
+  assert.match(streamingBranch, /withHostUserTurns/, 'it takes the person’s turns and nothing else')
+  assert.match(streamingBranch, /return/, 'and stops before the wholesale adoption')
 })
 
 test('a turn in flight shows the thinking indicator even when this panel is not streaming it', () => {
@@ -402,4 +418,71 @@ test('a turn in flight shows the thinking indicator even when this panel is not 
     } satisfies AgentPanelProps),
   )
   assert.match(empty, /aria-label="Assistant is responding"/)
+})
+
+// --- a person can speak into a turn that is already streaming ----------------
+//
+// The reconciliation stands down during a stream, because the parts this panel is
+// receiving are richer than anything the host has persisted. Right about the
+// assistant, wrong about the person: a reader steering a running turn, or
+// releasing a queued message into it, has their words appended to the transcript
+// by the host immediately — and standing down meant those words appeared nowhere.
+// The message was recorded, the agent was already acting on it, and the screen
+// showed no trace of it.
+test('a user turn appended by the host lands even while the panel is streaming', () => {
+  const user = (id: string, text: string): AgentMessage =>
+    ({ id, role: 'user', parts: [{ type: 'text', text }] }) as AgentMessage
+  const assistant = (id: string, text: string): AgentMessage =>
+    ({ id, role: 'assistant', parts: [{ type: 'text', text }] }) as AgentMessage
+  const ids = (messages: AgentMessage[]) => messages.map((message) => message.id)
+
+  // Mid-stream: the panel owns a partial answer, the host has the steered message.
+  const current = [user('m1', 'look at stonk'), assistant('live', 'Checking…')]
+  const host = [user('m1', 'look at stonk'), user('m2', 'so why did we sell stonk')]
+  const merged = withHostUserTurns(current, host, new Set(['m1']))
+
+  assert.deepEqual(ids(merged), ['m1', 'm2', 'live'], 'inserted before the streaming answer')
+  // That is the order the finished transcript has, so nothing jumps when the run
+  // ends and the whole thing is adopted.
+  assert.equal((merged[2] as { parts: { text?: string }[] }).parts[0]?.text, 'Checking…', 'the stream is untouched')
+
+  // Idempotent: a refresh bringing nothing new returns the same array, so this
+  // cannot loop a render.
+  assert.equal(withHostUserTurns(merged, host, new Set(['m1', 'm2'])), merged, 'no change, same reference')
+
+  // The assistant is never taken from the host, so a host-side provisional answer
+  // cannot duplicate the one being streamed.
+  assert.deepEqual(
+    ids(withHostUserTurns(current, [...host, assistant('live:run', 'partial')], new Set(['m1']))),
+    ['m1', 'm2', 'live'],
+    'no second assistant bubble',
+  )
+
+  // A provisional turn the host WITHDRAWS is dropped rather than left beside its
+  // replacement. This is the queued-message case: shown from the queue as
+  // `queued:d1`, then delivered as a real turn under a real id. Holding both would
+  // print the same sentence twice.
+  const holding = [user('m1', 'a'), user('queued:d1', 'send this now'), assistant('live', '…')]
+  const delivered = withHostUserTurns(
+    holding,
+    [user('m1', 'a'), user('m9', 'send this now')],
+    new Set(['m1', 'queued:d1']),
+  )
+  assert.deepEqual(ids(delivered), ['m1', 'm9', 'live'], 'the provisional turn gave way to the real one')
+
+  // But a turn the PANEL owns is never dropped for being absent from the host: a
+  // submit appends `user-<stamp>` optimistically and the host has not persisted it
+  // yet. It was never a host id, so it is not a withdrawal.
+  const optimistic = [user('m1', 'a'), user('user-1731', 'just typed'), assistant('live', '…')]
+  assert.deepEqual(
+    ids(withHostUserTurns(optimistic, [user('m1', 'a')], new Set(['m1']))),
+    ['m1', 'user-1731', 'live'],
+    'the optimistic turn survives',
+  )
+
+  // With no assistant in flight the new turns simply append.
+  assert.deepEqual(
+    ids(withHostUserTurns([user('m1', 'a')], [user('m1', 'a'), user('m2', 'b')], new Set(['m1']))),
+    ['m1', 'm2'],
+  )
 })
