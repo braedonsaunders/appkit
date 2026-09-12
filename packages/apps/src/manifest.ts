@@ -3,6 +3,18 @@ import { z } from 'zod'
 const SLUG = /^[a-z][a-z0-9-]*$/
 const VERSION = /^\d+(\.\d+){0,2}(-[0-9a-z.-]+)?$/i
 const BUNDLE_PATH = /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$))[a-z0-9._\-/]+$/i
+const httpsOriginSchema = z.string().trim().max(500).superRefine((value, context) => {
+  let url: URL
+  try {
+    url = new URL(value)
+  } catch {
+    context.addIssue({ code: 'custom', message: 'data source must be a valid HTTPS origin' })
+    return
+  }
+  if (url.protocol !== 'https:' || url.username || url.password || (url.pathname !== '/' && url.pathname !== '') || url.search || url.hash) {
+    context.addIssue({ code: 'custom', message: 'data source must be an HTTPS origin without credentials, a path, query, or fragment' })
+  }
+})
 
 export const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'ANY'] as const
 export type AppHttpMethod = (typeof HTTP_METHODS)[number]
@@ -20,6 +32,7 @@ export const manifestSchema = z.object({
   description: z.string().max(2_000).optional(),
   icon: z.string().max(80).optional(),
   permissions: z.array(z.string().trim().min(1).max(120)).max(100).default([]),
+  network: z.object({ origins: z.array(httpsOriginSchema).max(20).default([]) }).optional(),
   frontend: z.object({ entry: z.string().regex(BUNDLE_PATH, 'invalid frontend entry path').max(240) }),
   endpoints: z.array(endpointSchema).max(100).default([]),
   nav: z.object({

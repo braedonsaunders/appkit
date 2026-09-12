@@ -22,6 +22,9 @@ test('validates manifests, unique endpoints, and every referenced file', () => {
   const files = (bundle().files).map((file) => file.path)
   assert.equal(validateBundle(valid.manifest!, files).ok, true)
   assert.equal(validateBundle(valid.manifest!, files.filter((path) => path !== 'backend/hello.js')).ok, false)
+  assert.equal(parseManifest({ ...valid.manifest!, network: { origins: ['https://api.example.com'] } }).ok, true)
+  assert.equal(parseManifest({ ...valid.manifest!, network: { origins: ['http://api.example.com'] } }).ok, false)
+  assert.equal(parseManifest({ ...valid.manifest!, network: { origins: ['https://api.example.com/private'] } }).ok, false)
 })
 
 test('parses real zip uploads with a shared top-level folder and binary assets', () => {
@@ -45,6 +48,22 @@ test('preserves the opaque-origin bridge trust contract', () => {
   const html = inlineDocument('<html><head></head><body><script src="frontend/app.js"></script></body></html>', { 'frontend/app.js': 'data:text/javascript;base64,QQ==' }, '<meta name="safe">')
   assert.match(html, /data:text\/javascript/)
   assert.match(html, /name="safe"/)
+})
+
+test('resolves standard document-relative frontend assets inside the sandbox', () => {
+  const html = inlineDocument(
+    '<html><head><link rel="stylesheet" href="styles.css"></head><body><script src="./app.js"></script><img src="../assets/logo.png"></body></html>',
+    {
+      'frontend/styles.css': 'data:text/css;base64,YQ==',
+      'frontend/app.js': 'data:text/javascript;base64,Yg==',
+      'assets/logo.png': 'data:image/png;base64,Yw==',
+    },
+    '<meta name="safe">',
+    'frontend/index.html',
+  )
+  assert.match(html, /href="data:text\/css;base64,YQ=="/)
+  assert.match(html, /src="data:text\/javascript;base64,Yg=="/)
+  assert.match(html, /src="data:image\/png;base64,Yw=="/)
 })
 
 test('installs immutable versions, narrows grants, provisions objects, and builds a self-contained frontend', async () => {
@@ -96,6 +115,8 @@ test('authors requested capabilities separately from administrator grants', asyn
   const updated = await store.getApp(tenantId, app.key)
   assert.deepEqual(updated?.manifest?.permissions, ['records.read', 'records.write'])
   assert.deepEqual(updated?.grantedPermissions, ['records.read'])
+  await updateApp({ store, tenantId, actorId, key: app.key, capabilityKeys: capabilities, update: { networkOrigins: ['https://api.example.com'] } })
+  assert.deepEqual((await store.getApp(tenantId, app.key))?.manifest?.network?.origins, ['https://api.example.com'])
   await assert.rejects(() => updateApp({ store, tenantId, actorId, key: app.key, capabilityKeys: capabilities, update: { requestedPermissions: ['ambient.network'] } }), /unknown capabilities/)
 })
 

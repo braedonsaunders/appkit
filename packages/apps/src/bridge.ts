@@ -71,10 +71,16 @@ export function bridgeClientSource(context: BridgeContext, globalName = 'appkit'
 })();`
 }
 
-export function inlineDocument(entryHtml: string, replacements: Record<string, string>, headHtml: string): string {
+export function inlineDocument(entryHtml: string, replacements: Record<string, string>, headHtml: string, entryPath?: string): string {
   let html = entryHtml
   for (const [path, url] of Object.entries(replacements)) {
-    for (const variant of [path, `./${path}`, `/${path}`]) {
+    const variants = new Set([path, `./${path}`, `/${path}`])
+    if (entryPath) {
+      const relative = relativeReference(entryPath, path)
+      variants.add(relative)
+      if (!relative.startsWith('.')) variants.add(`./${relative}`)
+    }
+    for (const variant of variants) {
       html = html.split(`"${variant}"`).join(`"${url}"`)
       html = html.split(`'${variant}'`).join(`'${url}'`)
     }
@@ -82,6 +88,18 @@ export function inlineDocument(entryHtml: string, replacements: Record<string, s
   if (/<head[^>]*>/i.test(html)) return html.replace(/<head[^>]*>/i, (match) => match + headHtml)
   if (/<html[^>]*>/i.test(html)) return html.replace(/<html[^>]*>/i, (match) => `${match}<head>${headHtml}</head>`)
   return headHtml + html
+}
+
+/** Resolve a bundle file the same way a browser resolves it from the entry
+ * document. Bundle paths are already validated as relative POSIX paths. */
+function relativeReference(entryPath: string, assetPath: string): string {
+  const from = entryPath.split('/').slice(0, -1)
+  const to = assetPath.split('/')
+  while (from.length && to.length && from[0] === to[0]) {
+    from.shift()
+    to.shift()
+  }
+  return [...from.map(() => '..'), ...to].join('/')
 }
 
 function safeJson(value: unknown): string {
