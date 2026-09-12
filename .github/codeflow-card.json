@@ -2,108 +2,6 @@
   "version": 1,
   "runs": [
     {
-      "at": "2026-08-19T23:38:33.462Z",
-      "sha": "9a2b53a6475a5c2cdd10ba28c7703e397c81ad47",
-      "pr": null,
-      "actor": "braedonsaunders",
-      "files": 1056,
-      "functions": 3788,
-      "loc": 186799,
-      "languages": 12,
-      "topLanguages": [
-        {
-          "ext": "ts",
-          "pct": 46,
-          "lines": 86683
-        },
-        {
-          "ext": "tsx",
-          "pct": 35,
-          "lines": 65405
-        },
-        {
-          "ext": "yaml",
-          "pct": 8,
-          "lines": 14493
-        },
-        {
-          "ext": "json",
-          "pct": 6,
-          "lines": 10687
-        },
-        {
-          "ext": "md",
-          "pct": 3,
-          "lines": 5381
-        }
-      ],
-      "dead": 135,
-      "deadPct": 3.6,
-      "circular": 1,
-      "godObjects": 1,
-      "avgCoupling": 3.9,
-      "securityIssues": 78,
-      "patterns": 8,
-      "duplicates": 25,
-      "layerViolations": 377,
-      "connections": 4145,
-      "avgFnLines": 15,
-      "longestFn": 16,
-      "testFiles": 146,
-      "testRatio": 13.8,
-      "topFolders": [
-        {
-          "name": "packages",
-          "count": 929
-        },
-        {
-          "name": "apps",
-          "count": 99
-        },
-        {
-          "name": "scripts",
-          "count": 14
-        },
-        {
-          "name": "root",
-          "count": 8
-        },
-        {
-          "name": "docs",
-          "count": 5
-        }
-      ],
-      "folders": 5,
-      "grade": "D",
-      "score": 67,
-      "topBlast": {
-        "path": "packages/analytics/src/chart-spec.ts",
-        "direct": 280,
-        "transitive": 722,
-        "total": 1002
-      },
-      "fragility": [
-        {
-          "path": "packages/analytics/src/chart-spec.ts",
-          "direct": 280,
-          "transitive": 722,
-          "total": 1002
-        },
-        {
-          "path": "packages/apps/src/memory.ts",
-          "direct": 125,
-          "transitive": 586,
-          "total": 711
-        },
-        {
-          "path": "packages/desk/src/host.ts",
-          "direct": 112,
-          "transitive": 533,
-          "total": 645
-        }
-      ]
-    },
-    {
       "at": "2026-08-19T23:54:17.270Z",
       "sha": "dea15374af42b92dc99129833aeba7f91d4728d8",
       "pr": null,
@@ -3013,6 +2911,108 @@
         {
           "name": "packages",
           "count": 939
+        },
+        {
+          "name": "apps",
+          "count": 99
+        },
+        {
+          "name": "scripts",
+          "count": 14
+        },
+        {
+          "name": "root",
+          "count": 8
+        },
+        {
+          "name": "docs",
+          "count": 4
+        }
+      ],
+      "folders": 5,
+      "grade": "D",
+      "score": 66,
+      "topBlast": {
+        "path": "packages/viewspec/src/builder.ts",
+        "direct": 175,
+        "transitive": 634,
+        "total": 809
+      },
+      "fragility": [
+        {
+          "path": "packages/viewspec/src/builder.ts",
+          "direct": 175,
+          "transitive": 634,
+          "total": 809
+        },
+        {
+          "path": "packages/apps/src/memory.ts",
+          "direct": 131,
+          "transitive": 629,
+          "total": 760
+        },
+        {
+          "path": "packages/desk/src/host.ts",
+          "direct": 113,
+          "transitive": 534,
+          "total": 647
+        }
+      ]
+    },
+    {
+      "at": "2026-09-12T02:54:21.678Z",
+      "sha": "22722eab45f113a4dfaf162af80ef87e500c6310",
+      "pr": null,
+      "actor": "braedonsaunders",
+      "files": 1067,
+      "functions": 3858,
+      "loc": 190677,
+      "languages": 12,
+      "topLanguages": [
+        {
+          "ext": "ts",
+          "pct": 47,
+          "lines": 89785
+        },
+        {
+          "ext": "tsx",
+          "pct": 35,
+          "lines": 65832
+        },
+        {
+          "ext": "yaml",
+          "pct": 8,
+          "lines": 14513
+        },
+        {
+          "ext": "json",
+          "pct": 6,
+          "lines": 10753
+        },
+        {
+          "ext": "md",
+          "pct": 3,
+          "lines": 5489
+        }
+      ],
+      "dead": 152,
+      "deadPct": 3.9,
+      "circular": 1,
+      "godObjects": 1,
+      "avgCoupling": 3.8,
+      "securityIssues": 78,
+      "patterns": 8,
+      "duplicates": 25,
+      "layerViolations": 354,
+      "connections": 4069,
+      "avgFnLines": 15,
+      "longestFn": 16,
+      "testFiles": 149,
+      "testRatio": 14,
+      "topFolders": [
+        {
+          "name": "packages",
+          "count": 940
         },
         {
           "name": "apps",
