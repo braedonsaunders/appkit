@@ -457,6 +457,9 @@ controls, endpoint authoring, live opaque-origin preview, run inspector, and lib
 adapters. The iframe must retain `sandbox="allow-scripts"` without
 `allow-same-origin`, and its CSP must keep `connect-src 'none'`. Effective
 capabilities are always `(administrator grants ∩ invoking user permissions)`.
+Frontend entry documents may use standard document-relative asset references
+such as `styles.css`, `./app.js`, and `../assets/logo.png`; the frame resolves
+them against the manifest entry before enforcing the networkless CSP.
 `@braedonsaunders/appkit-apps/service` similarly binds the complete positional lifecycle API to
 an application store and permission/runtime adapters, while
 `createAppEndpointRuntime` preserves an existing authored backend global and

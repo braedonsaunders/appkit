@@ -47,6 +47,22 @@ test('preserves the opaque-origin bridge trust contract', () => {
   assert.match(html, /name="safe"/)
 })
 
+test('resolves standard document-relative frontend assets inside the sandbox', () => {
+  const html = inlineDocument(
+    '<html><head><link rel="stylesheet" href="styles.css"></head><body><script src="./app.js"></script><img src="../assets/logo.png"></body></html>',
+    {
+      'frontend/styles.css': 'data:text/css;base64,YQ==',
+      'frontend/app.js': 'data:text/javascript;base64,Yg==',
+      'assets/logo.png': 'data:image/png;base64,Yw==',
+    },
+    '<meta name="safe">',
+    'frontend/index.html',
+  )
+  assert.match(html, /href="data:text\/css;base64,YQ=="/)
+  assert.match(html, /src="data:text\/javascript;base64,Yg=="/)
+  assert.match(html, /src="data:image\/png;base64,Yw=="/)
+})
+
 test('installs immutable versions, narrows grants, provisions objects, and builds a self-contained frontend', async () => {
   const store = createMemoryAppStore()
   const seen: string[] = []

@@ -19,7 +19,7 @@ export function AppFrame({ appKey, context, bundle, onBridgeCall, className, tit
   const iframeRef = React.useRef<HTMLIFrameElement>(null)
   const srcDoc = React.useMemo(() => {
     const head = `<meta http-equiv="Content-Security-Policy" content="${APP_CSP}"><script>${bridgeClientSource(context, globalName)}</script>`
-    return inlineDocument(bundle.entryHtml, bundle.replacements, head)
+    return inlineDocument(bundle.entryHtml, bundle.replacements, head, bundle.entry)
   }, [bundle, context, globalName])
 
   React.useEffect(() => {
