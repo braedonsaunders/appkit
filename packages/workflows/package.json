@@ -1,6 +1,6 @@
 {
   "name": "@braedonsaunders/appkit-workflows",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Durable workflow graphs, replay-safe actions, approval gates, and optional React and Drizzle adapters.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -30,9 +30,9 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
-    "@braedonsaunders/appkit-forms": "^0.2.3",
+    "@braedonsaunders/appkit-forms": "^0.2.4",
     "@braedonsaunders/appkit-forms-core": "^0.1.1",
-    "@braedonsaunders/appkit-ui": "^0.2.1",
+    "@braedonsaunders/appkit-ui": "^0.3.0",
     "@braedonsaunders/appkit-db": "^0.2.0",
     "drizzle-orm": "^0.45.2",
     "@xyflow/react": "^12.10.0",
