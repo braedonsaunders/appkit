@@ -1,5 +1,12 @@
 # @braedonsaunders/appkit-ai
 
+## 2.0.0
+
+### Patch Changes
+
+- Updated dependencies [22722ea]
+  - @braedonsaunders/appkit-ui@0.3.0
+
 ## 1.4.2
 
 ### Patch Changes

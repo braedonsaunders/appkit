@@ -1,5 +1,12 @@
 # @braedonsaunders/appkit-forms-pdf
 
+## 5.0.0
+
+### Patch Changes
+
+- @braedonsaunders/appkit-design-studio@2.0.0
+- @braedonsaunders/appkit-reports@2.0.0
+
 ## 4.0.0
 
 ### Patch Changes

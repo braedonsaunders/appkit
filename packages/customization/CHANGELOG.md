@@ -1,5 +1,12 @@
 # @braedonsaunders/appkit-customization
 
+## 3.0.0
+
+### Patch Changes
+
+- Updated dependencies [22722ea]
+  - @braedonsaunders/appkit-ui@0.3.0
+
 ## 2.0.0
 
 ### Patch Changes
