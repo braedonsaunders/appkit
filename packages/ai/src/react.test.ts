@@ -499,6 +499,45 @@ test('a user turn appended by the host lands even while the panel is streaming',
     'the optimistic turn survives',
   )
 
+  // And when the host DOES persist it mid-stream, the persisted turn adopts the
+  // optimistic one's place instead of joining it: same sentence, one bubble.
+  // Without this, hitting enter once printed the message twice — the optimistic
+  // `user-<stamp>` beside its persisted twin — until the turn ended and the
+  // whole transcript was adopted.
+  const persisted = withHostUserTurns(
+    optimistic,
+    [user('m1', 'a'), user('m9', 'just typed')],
+    new Set(['m1']),
+  )
+  assert.deepEqual(ids(persisted), ['m1', 'm9', 'live'], 'the persisted turn takes the optimistic seat')
+  assert.equal(
+    (persisted[2] as { parts: { text?: string }[] }).parts[0]?.text,
+    '…',
+    'the stream is untouched',
+  )
+
+  // Same text steered twice is two turns: the first adopts, the second appends.
+  assert.deepEqual(
+    ids(withHostUserTurns(
+      optimistic,
+      [user('m1', 'a'), user('m9', 'just typed'), user('m10', 'just typed')],
+      new Set(['m1']),
+    )),
+    ['m1', 'm9', 'm10', 'live'],
+    'a genuine repeat still lands',
+  )
+
+  // Different text is a different turn: a steered correction never eats the send.
+  assert.deepEqual(
+    ids(withHostUserTurns(
+      optimistic,
+      [user('m1', 'a'), user('m9', 'wait, stop')],
+      new Set(['m1']),
+    )),
+    ['m1', 'user-1731', 'm9', 'live'],
+    'the optimistic send and the steered correction stand side by side',
+  )
+
   // With no assistant in flight the new turns simply append.
   assert.deepEqual(
     ids(withHostUserTurns([user('m1', 'a')], [user('m1', 'a'), user('m2', 'b')], new Set(['m1']))),

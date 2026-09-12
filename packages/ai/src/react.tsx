@@ -110,6 +110,30 @@ export const __sameTranscriptForTests = sameTranscript
  * when it does. Assistant messages are never taken from the host here, so this
  * cannot duplicate or truncate the answer being streamed.
  */
+/** A submit's optimistic turn: `user-<Date.now()>` — panel-owned, never a host id. */
+function isOptimisticUserTurn(message: AgentMessage): boolean {
+  return message.role === 'user' && /^user-\d+$/.test(message.id)
+}
+
+/** The match key for adoption: the turn's prose plus its attachment count, so
+ *  the same sentence sent once bare and once with a file are different turns. */
+function userTextSignature(message: AgentMessage): string {
+  const prose = message.parts
+    .filter((part): part is { type: 'text'; text: string } =>
+      typeof part === 'object' && part !== null && (part as { type?: unknown }).type === 'text',
+    )
+    .map((part) => part.text)
+    .join('\u0000')
+  const attachments = message.parts.filter((part) =>
+    typeof part === 'object' && part !== null && (part as { type?: unknown }).type === 'file',
+  ).length
+  return `${prose}\u0000${attachments}`
+}
+
+function sameUserText(left: AgentMessage, right: AgentMessage): boolean {
+  return userTextSignature(left) === userTextSignature(right)
+}
+
 function withHostUserTurns(
   current: AgentMessage[],
   host: AgentMessage[],
@@ -130,14 +154,39 @@ function withHostUserTurns(
   const kept = current.some((message) => withdrawn(message.id))
     ? current.filter((message) => !withdrawn(message.id))
     : current
-  const present = new Set(kept.map((message) => message.id))
-  const added = host.filter((message) => message.role === 'user' && !present.has(message.id))
-  if (added.length === 0) return kept
-  const last = kept[kept.length - 1]
-  if (last && last.role === 'assistant') {
-    return [...kept.slice(0, -1), ...added, last]
+  // The panel's own optimistic turns (`user-<stamp>`, appended by a submit the
+  // host has not persisted yet) meet their persisted twins here. The host
+  // reports the same sentence under its durable id, and matching by id alone
+  // would read it as a second, steered turn — printing the message twice until
+  // the run ends. So an optimistic turn whose exact text the host now carries
+  // is adopted in place: the durable turn takes the optimistic seat, and the
+  // seat keeps its position. Anything the host carries that matches nothing is
+  // still a genuinely new turn and appends as before.
+  let adopted = kept
+  if (kept.some(isOptimisticUserTurn)) {
+    const claimed = new Set<string>()
+    let changed = false
+    adopted = kept.map((message) => {
+      if (!isOptimisticUserTurn(message)) return message
+      const twin = host.find(
+        (candidate) =>
+          candidate.role === 'user' && !claimed.has(candidate.id) && sameUserText(candidate, message),
+      )
+      if (!twin) return message
+      claimed.add(twin.id)
+      changed = true
+      return twin
+    })
+    if (!changed) adopted = kept
   }
-  return [...kept, ...added]
+  const present = new Set(adopted.map((message) => message.id))
+  const added = host.filter((message) => message.role === 'user' && !present.has(message.id))
+  if (added.length === 0) return adopted
+  const last = adopted[adopted.length - 1]
+  if (last && last.role === 'assistant') {
+    return [...adopted.slice(0, -1), ...added, last]
+  }
+  return [...adopted, ...added]
 }
 
 /** Exported for the suite: the streaming case is the one that was broken. */
@@ -461,6 +510,15 @@ export function AgentPanel({
   const [error, setError] = React.useState<string | null>(null)
   const abortRef = React.useRef<AbortController | null>(null)
   const messageViewportRef = React.useRef<HTMLDivElement>(null)
+  /** Whether the reader is pinned to the live edge. Streaming output follows
+   *  them down only while they are — someone scrolled up reading history is
+   *  never yanked back by the next token. */
+  const nearBottomRef = React.useRef(true)
+  const noteViewportScroll = React.useCallback(() => {
+    const viewport = messageViewportRef.current
+    if (!viewport) return
+    nearBottomRef.current = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 96
+  }, [])
   /** Ids the host supplied last time, so a withdrawn turn can be told from a panel-owned one. */
   const hostIdsRef = React.useRef<ReadonlySet<string>>(new Set(initialMessages.map((message) => message.id)))
 
@@ -503,6 +561,14 @@ export function AgentPanel({
       if (viewport) viewport.scrollTop = viewport.scrollHeight
     })
   }, [])
+
+  /** The chunk loop's scroll: follows new arrivals only while the reader is
+   *  already at the live edge (see `nearBottomRef`). A fresh submit and the
+   *  initial open still go straight to the bottom — those are the reader's
+   *  own movement, not the stream moving them. */
+  const scrollNewArrivals = React.useCallback(() => {
+    if (nearBottomRef.current) scrollToBottom()
+  }, [scrollToBottom])
 
   // An existing conversation opens where work most recently happened. Keep
   // this scoped to the panel's own viewport: scrollIntoView also moves every
@@ -549,7 +615,7 @@ export function AgentPanel({
         lastParts = message.parts as unknown[]
         producedParts = lastParts.length > 0
         setMessages((current) => replaceLastAssistantParts(current, lastParts))
-        scrollToBottom()
+        scrollNewArrivals()
       }
       if (lastParts.length === 0 && !controller.signal.aborted) setError(labels.failed)
     } catch (reason) {
@@ -574,7 +640,7 @@ export function AgentPanel({
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-bg-subtle">
       <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border bg-surface px-4"><Sparkles size={16} className="text-primary" /><span className="text-sm font-medium text-fg">{labels.title}</span>{headerActions != null ? <div className="ml-auto flex items-center gap-2">{headerActions}</div> : null}</header>
-      <div ref={messageViewportRef} className="app-scroll min-h-0 flex-1 overflow-y-auto">
+      <div ref={messageViewportRef} onScroll={noteViewportScroll} className="app-scroll min-h-0 flex-1 overflow-y-auto">
         {messages.length === 0 && emptyContent != null ? (
           <div className="flex min-h-full flex-col">{emptyContent}</div>
         ) : (
