@@ -22,6 +22,9 @@ test('validates manifests, unique endpoints, and every referenced file', () => {
   const files = (bundle().files).map((file) => file.path)
   assert.equal(validateBundle(valid.manifest!, files).ok, true)
   assert.equal(validateBundle(valid.manifest!, files.filter((path) => path !== 'backend/hello.js')).ok, false)
+  assert.equal(parseManifest({ ...valid.manifest!, network: { origins: ['https://api.example.com'] } }).ok, true)
+  assert.equal(parseManifest({ ...valid.manifest!, network: { origins: ['http://api.example.com'] } }).ok, false)
+  assert.equal(parseManifest({ ...valid.manifest!, network: { origins: ['https://api.example.com/private'] } }).ok, false)
 })
 
 test('parses real zip uploads with a shared top-level folder and binary assets', () => {
@@ -112,6 +115,8 @@ test('authors requested capabilities separately from administrator grants', asyn
   const updated = await store.getApp(tenantId, app.key)
   assert.deepEqual(updated?.manifest?.permissions, ['records.read', 'records.write'])
   assert.deepEqual(updated?.grantedPermissions, ['records.read'])
+  await updateApp({ store, tenantId, actorId, key: app.key, capabilityKeys: capabilities, update: { networkOrigins: ['https://api.example.com'] } })
+  assert.deepEqual((await store.getApp(tenantId, app.key))?.manifest?.network?.origins, ['https://api.example.com'])
   await assert.rejects(() => updateApp({ store, tenantId, actorId, key: app.key, capabilityKeys: capabilities, update: { requestedPermissions: ['ambient.network'] } }), /unknown capabilities/)
 })
 

@@ -460,6 +460,10 @@ capabilities are always `(administrator grants ∩ invoking user permissions)`.
 Frontend entry documents may use standard document-relative asset references
 such as `styles.css`, `./app.js`, and `../assets/logo.png`; the frame resolves
 them against the manifest entry before enforcing the networkless CSP.
+Apps that need live public data declare exact HTTPS origins in
+`manifest.network.origins`. The iframe still has no ambient network; a host may
+offer a separately granted backend capability that checks those origins before
+performing bounded requests.
 `@braedonsaunders/appkit-apps/service` similarly binds the complete positional lifecycle API to
 an application store and permission/runtime adapters, while
 `createAppEndpointRuntime` preserves an existing authored backend global and

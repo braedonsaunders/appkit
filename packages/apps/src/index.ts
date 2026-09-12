@@ -88,6 +88,8 @@ export interface AppMetaUpdate {
   version?: string
   frontendEntry?: string
   endpoints?: AppEndpoint[]
+  /** Public origins the authored backend may request when the host grants its network capability. */
+  networkOrigins?: string[]
 }
 
 /**

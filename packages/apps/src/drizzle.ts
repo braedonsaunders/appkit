@@ -138,6 +138,7 @@ async function updateMeta(db: Db, tenantId: string, actorId: string, key: string
   if (update.sortOrder !== undefined) appSet.sortOrder = update.sortOrder
   if (update.frontendEntry !== undefined) manifest.frontend.entry = update.frontendEntry
   if (update.endpoints !== undefined) manifest.endpoints = update.endpoints
+  if (update.networkOrigins !== undefined) manifest.network = update.networkOrigins.length ? { origins: update.networkOrigins } : undefined
   if (update.version !== undefined) manifest.version = update.version
   const parsed = parseManifest(manifest)
   if (!parsed.ok || !parsed.manifest) throw new AppError(`invalid manifest: ${parsed.errors.join('; ')}`)

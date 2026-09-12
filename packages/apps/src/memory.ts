@@ -150,6 +150,7 @@ function updateMemoryMeta(state: MemoryState, tenantId: string, key: string, upd
   if (update.version !== undefined) { version.version = update.version; manifest.version = update.version; app.version = update.version }
   if (update.frontendEntry !== undefined) manifest.frontend.entry = update.frontendEntry
   if (update.endpoints !== undefined) manifest.endpoints = clone(update.endpoints)
+  if (update.networkOrigins !== undefined) manifest.network = update.networkOrigins.length ? { origins: [...update.networkOrigins] } : undefined
   const parsed = parseManifest(manifest)
   if (!parsed.ok || !parsed.manifest) throw new AppError(`invalid manifest: ${parsed.errors.join('; ')}`)
   version.manifest = parsed.manifest
