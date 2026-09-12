@@ -353,6 +353,25 @@ test('AgentPanel takes a newer transcript from its host, except while it is stre
   sameShape[1]!.parts = [{ type: 'dynamic-tool', toolName: 'run_shell', toolCallId: 'c1', state: 'input-available', input: { cmd: 'pwd' } }]
   assert.equal(sameTranscript(base(), sameShape), true, 'an unchanged shape is treated as unchanged')
 
+  // A separator a value can carry: joining with a space let a value holding
+  // whitespace absorb it, so two different parts could produce one signature
+  // and a real change would be read as "nothing moved". Hosts mint their own
+  // ids and statuses and are not obliged to trim them the same way twice, and
+  // `ok ` + `c1` spaces-joins to exactly what `ok` + ` c1` does.
+  const absorbedSeparator = base()
+  absorbedSeparator[1]!.parts = [
+    { type: 'dynamic-tool', toolName: 'run_shell', toolCallId: 'c1', state: 'input-available', status: 'ok ' },
+  ]
+  const splitAcrossFields = base()
+  splitAcrossFields[1]!.parts = [
+    { type: 'dynamic-tool', toolName: 'run_shell', toolCallId: ' c1', state: 'input-available', status: 'ok' },
+  ]
+  assert.equal(
+    sameTranscript(absorbedSeparator, splitAcrossFields),
+    false,
+    'a value carrying the separator cannot impersonate two fields',
+  )
+
   // The guard matters as much as the comparison: while this panel owns the turn,
   // its streamed parts are richer than anything the host has persisted.
   //
