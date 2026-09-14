@@ -1,5 +1,11 @@
 # @braedonsaunders/appkit-ai
 
+## 2.0.2
+
+### Patch Changes
+
+- 742dd90: Keep a completed streamed assistant response visible while the host transcript is briefly behind persistence, then reconcile to the durable messages once they arrive.
+
 ## 2.0.1
 
 ### Patch Changes
