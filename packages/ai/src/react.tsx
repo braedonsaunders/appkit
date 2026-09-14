@@ -192,6 +192,36 @@ function withHostUserTurns(
 /** Exported for the suite: the streaming case is the one that was broken. */
 export const __withHostUserTurnsForTests = withHostUserTurns
 
+function assistantTurnCount(messages: AgentMessage[]): number {
+  return messages.reduce((count, message) => count + (message.role === 'assistant' ? 1 : 0), 0)
+}
+
+/**
+ * Reconcile a settled panel with its host without crossing a persistence gap.
+ *
+ * A response stream can finish before the host's durable transcript is visible
+ * to its next read. Adopting that briefly older snapshot removes the completed
+ * answer, then puts it back on a later poll. Each successfully streamed answer
+ * raises the minimum number of assistant turns this mounted panel has already
+ * witnessed. Until the host reaches that floor, keep the richer local transcript
+ * and take only additive user turns. The host remains authoritative as soon as
+ * it catches up, including for durable ids, tool state, and later corrections.
+ */
+function reconcileHostTranscript(
+  current: AgentMessage[],
+  host: AgentMessage[],
+  hostIdsBefore: ReadonlySet<string>,
+  completedAssistantFloor: number,
+): AgentMessage[] {
+  if (assistantTurnCount(host) < completedAssistantFloor) {
+    return withHostUserTurns(current, host, hostIdsBefore)
+  }
+  return sameTranscript(current, host) ? current : host
+}
+
+/** Exported for the suite: this is the stream-finished persistence seam. */
+export const __reconcileHostTranscriptForTests = reconcileHostTranscript
+
 export type AgentQueuedMessage = {
   id: string
   text: string
@@ -521,6 +551,10 @@ export function AgentPanel({
   }, [])
   /** Ids the host supplied last time, so a withdrawn turn can be told from a panel-owned one. */
   const hostIdsRef = React.useRef<ReadonlySet<string>>(new Set(initialMessages.map((message) => message.id)))
+  /** Number of completed assistant turns this mounted panel has already shown. */
+  const completedAssistantFloorRef = React.useRef(assistantTurnCount(initialMessages))
+  /** Latest host count, read by submit without making the callback follow array identity. */
+  const hostAssistantCountRef = React.useRef(assistantTurnCount(initialMessages))
 
   /**
    * Take a newer transcript from the host while this panel is not the one
@@ -544,6 +578,7 @@ export function AgentPanel({
     // this has to observe the previous host set exactly once per reconciliation.
     const hostIdsBefore = hostIdsRef.current
     hostIdsRef.current = new Set(initialMessages.map((message) => message.id))
+    hostAssistantCountRef.current = assistantTurnCount(initialMessages)
     if (streaming || abortRef.current !== null) {
       // Not a full adoption, but not nothing either: the person's own turns are
       // additive and cannot conflict with the answer being streamed. See
@@ -552,7 +587,12 @@ export function AgentPanel({
       setMessages((current) => withHostUserTurns(current, initialMessages, hostIdsBefore))
       return
     }
-    setMessages((current) => (sameTranscript(current, initialMessages) ? current : initialMessages))
+    setMessages((current) => reconcileHostTranscript(
+      current,
+      initialMessages,
+      hostIdsBefore,
+      completedAssistantFloorRef.current,
+    ))
   }, [initialMessages, streaming])
 
   const scrollToBottom = React.useCallback(() => {
@@ -601,11 +641,16 @@ export function AgentPanel({
     const controller = new AbortController()
     abortRef.current = controller
     const stamp = Date.now()
+    const assistantFloorForTurn = Math.max(
+      completedAssistantFloorRef.current + 1,
+      hostAssistantCountRef.current + 1,
+    )
     setError(null)
     setMessages((current) => [...current, { id: `user-${stamp}`, role: 'user', parts: [{ type: 'text', text: prompt }, ...(composerDraftParts ?? [])] }, { id: `assistant-${stamp}`, role: 'assistant', parts: [] }])
     setStreaming(true)
     scrollToBottom()
     let producedParts = false
+    let completedNormally = false
     try {
       const response = await send(prompt, controller.signal)
       if (!response.ok || !response.body) throw new Error('agent request failed')
@@ -618,9 +663,16 @@ export function AgentPanel({
         scrollNewArrivals()
       }
       if (lastParts.length === 0 && !controller.signal.aborted) setError(labels.failed)
+      completedNormally = true
     } catch (reason) {
       if ((reason as Error).name !== 'AbortError') setError(labels.failed)
     } finally {
+      if (producedParts && completedNormally && !controller.signal.aborted) {
+        completedAssistantFloorRef.current = Math.max(
+          completedAssistantFloorRef.current,
+          assistantFloorForTurn,
+        )
+      }
       if (!producedParts) {
         setMessages((current) => current.filter((message) => message.id !== `assistant-${stamp}`))
       }
