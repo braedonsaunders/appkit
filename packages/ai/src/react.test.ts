@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import * as React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { AgentApprovalRequestCard, AgentMessageQueue, AgentPanel, AgentSecretRequestCard, AgentTypingIndicator, __reconcileHostTranscriptForTests as reconcileHostTranscript, __sameTranscriptForTests as sameTranscript, __withHostUserTurnsForTests as withHostUserTurns, type AgentMessage, type AgentPanelProps } from './react'
+import { AgentApprovalRequestCard, AgentMessageQueue, AgentMessageTimestamp, AgentPanel, AgentSecretRequestCard, AgentTypingIndicator, __reconcileHostTranscriptForTests as reconcileHostTranscript, __sameTranscriptForTests as sameTranscript, __withHostUserTurnsForTests as withHostUserTurns, type AgentMessage, type AgentPanelProps } from './react'
 
 test('AgentTypingIndicator renders a tokenized stagger and a reduced-motion fallback', () => {
   const markup = renderToStaticMarkup(React.createElement(AgentTypingIndicator))
@@ -72,6 +72,26 @@ test('AgentPanel renders an injected assistant avatar in the existing message sl
 
   assert.match(markup, /size-7[^>]*><span data-employee-avatar="marla">M<\/span>/)
   assert.equal(markup.match(/lucide-sparkles/g)?.length, 1)
+})
+
+test('AgentPanel renders a subtle semantic timestamp for a completed assistant turn', () => {
+  const value = '2026-09-12T15:02:00.000Z'
+  const timestamp = renderToStaticMarkup(React.createElement(AgentMessageTimestamp, { value }))
+  const panel = renderToStaticMarkup(React.createElement(AgentPanel, {
+    enabled: false,
+    initialMessages: [{ id: 'assistant-time', role: 'assistant', createdAt: value, parts: [{ type: 'text', text: 'Ready.' }] }],
+  } satisfies AgentPanelProps))
+
+  assert.match(timestamp, /<time/)
+  assert.match(timestamp, /dateTime="2026-09-12T15:02:00\.000Z"|datetime="2026-09-12T15:02:00\.000Z"/)
+  assert.match(timestamp, /tabindex="0"/)
+  assert.match(timestamp, /text-fg-subtle/)
+  assert.match(timestamp, /appkit-agent-message-timestamp/)
+  assert.match(panel, /appkit-agent-message-row/)
+  assert.match(panel, /@media \(min-width: 640px\)/)
+  assert.match(panel, /appkit-agent-message-row:hover/)
+  assert.match(panel, /prefers-reduced-motion: reduce/)
+  assert.match(panel, /<time/)
 })
 
 test('AgentPanel renders file parts on a user turn', () => {

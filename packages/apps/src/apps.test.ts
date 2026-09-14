@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { strToU8, zipSync } from 'fflate'
 import { createMemoryAppStore } from './memory'
-import { APP_CSP, BRIDGE_MARKER, bridgeClientSource, inlineDocument, parseBridgeRequest } from './bridge'
+import { APP_CSP, APP_THEME_EVENT, BRIDGE_MARKER, bridgeClientSource, inlineDocument, makeThemeMessage, parseBridgeRequest } from './bridge'
 import { parseZipBundle } from './bundle'
 import { createAppScaffold, getFrontendBundle, installApp, installFromListing, runBridgeMethod, updateApp, type AppBundle, type AppObjectProvisioner } from './index'
 import { parseManifest, validateBundle } from './manifest'
@@ -43,6 +43,10 @@ test('preserves the opaque-origin bridge trust contract', () => {
   assert.match(APP_CSP, /connect-src 'none'/)
   const source = bridgeClientSource({ app: { id: '1', key: 'sample', name: 'Sample', version: '1.0.0' }, user: null })
   assert.match(source, /window\.appkit/)
+  assert.match(source, /classList\.toggle\('dark'/)
+  assert.match(source, /MutationObserver/)
+  assert.match(source, new RegExp(APP_THEME_EVENT))
+  assert.deepEqual(makeThemeMessage('dark'), { [BRIDGE_MARKER]: true, type: 'theme', theme: 'dark' })
   assert.equal(parseBridgeRequest({ [BRIDGE_MARKER]: true, type: 'call', id: '1', method: 'callBackend', payload: null })?.method, 'callBackend')
   assert.equal(parseBridgeRequest({ type: 'call', id: '1', method: 'callBackend' }), null)
   const html = inlineDocument('<html><head></head><body><script src="frontend/app.js"></script></body></html>', { 'frontend/app.js': 'data:text/javascript;base64,QQ==' }, '<meta name="safe">')

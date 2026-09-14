@@ -34,7 +34,25 @@ export type AgentMessage = {
   id: string
   role: 'user' | 'assistant' | 'system'
   parts: unknown[]
+  /** ISO timestamp from the host's durable message ledger. */
+  createdAt?: string
 }
+
+const AGENT_MESSAGE_TIMESTAMP_STYLES = `
+  .appkit-agent-message-timestamp {
+    opacity: 1;
+    transition: opacity var(--duration-fast) var(--ease-out);
+  }
+  @media (min-width: 640px) {
+    .appkit-agent-message-timestamp { opacity: 0; }
+    .appkit-agent-message-row:hover .appkit-agent-message-timestamp,
+    .appkit-agent-message-row:focus-within .appkit-agent-message-timestamp,
+    .appkit-agent-message-timestamp:focus { opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .appkit-agent-message-timestamp { transition: none; }
+  }
+`
 
 /**
  * Whether two transcripts say the same thing.
@@ -76,7 +94,7 @@ function sameTranscript(left: AgentMessage[], right: AgentMessage[]): boolean {
     const before = left[index]
     const after = right[index]
     if (!before || !after) return false
-    if (before.id !== after.id || before.role !== after.role) return false
+    if (before.id !== after.id || before.role !== after.role || before.createdAt !== after.createdAt) return false
     if (before.parts.length !== after.parts.length) return false
     for (let part = 0; part < before.parts.length; part += 1) {
       if (partSignature(before.parts[part]) !== partSignature(after.parts[part])) return false
@@ -691,6 +709,7 @@ export function AgentPanel({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-bg-subtle">
+      <style>{AGENT_MESSAGE_TIMESTAMP_STYLES}</style>
       <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border bg-surface px-4"><Sparkles size={16} className="text-primary" /><span className="text-sm font-medium text-fg">{labels.title}</span>{headerActions != null ? <div className="ml-auto flex items-center gap-2">{headerActions}</div> : null}</header>
       <div ref={messageViewportRef} onScroll={noteViewportScroll} className="app-scroll min-h-0 flex-1 overflow-y-auto">
         {messages.length === 0 && emptyContent != null ? (
@@ -809,8 +828,58 @@ const MemoAgentMessageRow = React.memo(function AgentMessageRow({ message, pendi
     const files = message.parts.filter(isAgentFilePart)
     return <div className="flex justify-end"><div className="max-w-[85%] space-y-2 rounded-2xl rounded-br-md bg-primary px-4 py-2 text-sm whitespace-pre-wrap text-primary-fg">{text ? <div>{text}</div> : null}{files.length > 0 ? <div className="flex flex-wrap justify-end gap-1.5">{files.map((file, index) => file.url ? <a key={`${file.filename}-${index}`} href={file.url} className="rounded-md border border-primary-fg/25 bg-primary-fg/10 px-2 py-1 text-xs font-medium hover:bg-primary-fg/15" download>{file.filename}</a> : <span key={`${file.filename}-${index}`} className="rounded-md border border-primary-fg/25 bg-primary-fg/10 px-2 py-1 text-xs font-medium">{file.filename}</span>)}</div> : null}</div></div>
   }
-  return <div className="flex gap-3"><span className={cn('mt-0.5 flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full', assistantAvatar == null && 'bg-primary text-primary-fg shadow-sm')}>{assistantAvatar ?? <Sparkles size={16} />}</span><div className="min-w-0 flex-1 pt-0.5">{message.parts.length === 0 && pending ? <AgentTypingIndicator label={labels.responding} /> : <AgentMessageParts parts={message.parts} labels={labels} toolLabels={toolLabels} onSubmitSecretRequest={onSubmitSecretRequest} onCancelSecretRequest={onCancelSecretRequest} secretRequestLabels={secretRequestLabels} onDecideApprovalRequest={onDecideApprovalRequest} approvalRequestLabels={approvalRequestLabels} />}{message.parts.length > 0 && pending ? <div className="mt-2"><AgentTypingIndicator label={labels.responding} /></div> : null}</div></div>
+  return <div className="appkit-agent-message-row flex gap-3"><span className={cn('mt-0.5 flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full', assistantAvatar == null && 'bg-primary text-primary-fg shadow-sm')}>{assistantAvatar ?? <Sparkles size={16} />}</span><div className="min-w-0 flex-1 pt-0.5">{message.parts.length === 0 && pending ? <AgentTypingIndicator label={labels.responding} /> : <AgentMessageParts parts={message.parts} labels={labels} toolLabels={toolLabels} onSubmitSecretRequest={onSubmitSecretRequest} onCancelSecretRequest={onCancelSecretRequest} secretRequestLabels={secretRequestLabels} onDecideApprovalRequest={onDecideApprovalRequest} approvalRequestLabels={approvalRequestLabels} />}{message.parts.length > 0 && pending ? <div className="mt-2"><AgentTypingIndicator label={labels.responding} /></div> : null}{message.createdAt && !pending ? <AgentMessageTimestamp value={message.createdAt} /> : null}</div></div>
 })
+
+function timestampLabels(value: string, now = new Date()): { compact: string; full: string } | null {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  const sameDay = date.getFullYear() === now.getFullYear()
+    && date.getMonth() === now.getMonth()
+    && date.getDate() === now.getDate()
+  const time = date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+  const compact = sameDay
+    ? time
+    : `${date.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        ...(date.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' as const }),
+      })} · ${time}`
+  const full = date.toLocaleString(undefined, {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  })
+  return { compact, full }
+}
+
+/**
+ * Quiet chronology for a completed assistant turn.
+ *
+ * It stays in the accessibility tree and carries the exact machine-readable
+ * instant, while the compact label appears on row hover or keyboard focus.
+ * Small screens keep it visible because touch has no dependable hover state.
+ */
+export function AgentMessageTimestamp({ value }: { value: string }) {
+  const labels = timestampLabels(value)
+  if (!labels) return null
+  return (
+    <time
+      dateTime={value}
+      title={labels.full}
+      aria-label={labels.full}
+      tabIndex={0}
+      suppressHydrationWarning
+      className="appkit-agent-message-timestamp mt-1 block w-fit rounded-sm text-[0.6875rem] leading-4 tabular-nums text-fg-subtle"
+    >
+      {labels.compact}
+    </time>
+  )
+}
 
 const TYPING_DOT_DELAYS = [
   '0ms',
