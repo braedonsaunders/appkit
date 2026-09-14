@@ -214,6 +214,14 @@ function assistantTurnCount(messages: AgentMessage[]): number {
   return messages.reduce((count, message) => count + (message.role === 'assistant' ? 1 : 0), 0)
 }
 
+function prependedAssistantCount(previousFirstId: string | undefined, messages: AgentMessage[]): number {
+  if (previousFirstId === undefined) return 0
+  const previousStart = messages.findIndex((message) => message.id === previousFirstId)
+  return previousStart > 0 ? assistantTurnCount(messages.slice(0, previousStart)) : 0
+}
+
+export const __prependedAssistantCountForTests = prependedAssistantCount
+
 /**
  * Reconcile a settled panel with its host without crossing a persistence gap.
  *
@@ -579,13 +587,14 @@ export function AgentPanel({
     scrollHeight: number
     scrollTop: number
   } | null>(null)
+  const hostFirstMessageIdRef = React.useRef(initialMessages[0]?.id)
   /** Whether the reader is pinned to the live edge. Streaming output follows
    *  them down only while they are — someone scrolled up reading history is
    *  never yanked back by the next token. */
   const nearBottomRef = React.useRef(true)
   const loadOlder = React.useCallback(() => {
     const viewport = messageViewportRef.current
-    if (!viewport || loadingOlder || prependAnchorRef.current || !hasOlderMessages || !onLoadOlderMessages) return
+    if (!viewport || streaming || loadingOlder || prependAnchorRef.current || !hasOlderMessages || !onLoadOlderMessages) return
     prependAnchorRef.current = {
       firstMessageId: messages[0]?.id,
       scrollHeight: viewport.scrollHeight,
@@ -599,7 +608,7 @@ export function AgentPanel({
         setError(labels.loadEarlierFailed)
       })
       .finally(() => setLoadingOlder(false))
-  }, [hasOlderMessages, labels.loadEarlierFailed, loadingOlder, messages, onLoadOlderMessages])
+  }, [hasOlderMessages, labels.loadEarlierFailed, loadingOlder, messages, onLoadOlderMessages, streaming])
 
   const noteViewportScroll = React.useCallback(() => {
     const viewport = messageViewportRef.current
@@ -632,6 +641,14 @@ export function AgentPanel({
    * `AgentComposer`, which this does not touch.
    */
   React.useEffect(() => {
+    // A history page can add assistant rows before the old first message. They
+    // are unrelated to whether a newly streamed answer reached persistence, so
+    // move the floor by the same amount before comparing total turn counts.
+    completedAssistantFloorRef.current += prependedAssistantCount(
+      hostFirstMessageIdRef.current,
+      initialMessages,
+    )
+    hostFirstMessageIdRef.current = initialMessages[0]?.id
     // Read and advance outside the updater: a state updater may run twice, and
     // this has to observe the previous host set exactly once per reconciliation.
     const hostIdsBefore = hostIdsRef.current
@@ -771,7 +788,7 @@ export function AgentPanel({
           <div className="flex min-h-full flex-col">{emptyContent}</div>
         ) : (
           <div className="mx-auto w-full min-w-0 max-w-3xl px-4 py-6">
-            {hasOlderMessages && onLoadOlderMessages ? <div className="mb-4 flex justify-center"><button type="button" disabled={loadingOlder} onClick={loadOlder} className="rounded-md px-2.5 py-1 text-xs font-medium text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg disabled:cursor-wait disabled:text-fg-subtle">{loadingOlder ? labels.loadingEarlier : labels.loadEarlier}</button></div> : null}
+            {hasOlderMessages && onLoadOlderMessages ? <div className="mb-4 flex justify-center"><button type="button" disabled={loadingOlder || streaming} onClick={loadOlder} className="rounded-md px-2.5 py-1 text-xs font-medium text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg disabled:cursor-wait disabled:text-fg-subtle">{loadingOlder ? labels.loadingEarlier : labels.loadEarlier}</button></div> : null}
             {messages.length === 0 ? <AgentWelcome enabled={enabled} title={enabled ? labels.welcomeTitle : labels.disabledTitle} description={enabled ? labels.welcomeDescription : labels.disabledDescription} suggestions={suggestions} onPick={(value) => void submit(value)} /> : <div className="min-w-0 space-y-6">{messages.map((message, index) => message.role === 'system' ? null : <MemoAgentMessageRow key={message.id} message={message} pending={(streaming || working) && index === messages.length - 1 && message.role === 'assistant'} labels={labels} toolLabels={toolLabels} assistantAvatar={assistantAvatar} onSubmitSecretRequest={onSubmitSecretRequest} onCancelSecretRequest={onCancelSecretRequest} secretRequestLabels={secretRequestLabels} onDecideApprovalRequest={onDecideApprovalRequest} approvalRequestLabels={approvalRequestLabels} />)}</div>}
           </div>
         )}

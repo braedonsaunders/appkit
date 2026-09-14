@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import * as React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { AgentApprovalRequestCard, AgentMessageQueue, AgentMessageTimestamp, AgentPanel, AgentSecretRequestCard, AgentTypingIndicator, ChatMarkdown, __reconcileHostTranscriptForTests as reconcileHostTranscript, __sameTranscriptForTests as sameTranscript, __withHostUserTurnsForTests as withHostUserTurns, type AgentMessage, type AgentPanelProps } from './react'
+import { AgentApprovalRequestCard, AgentMessageQueue, AgentMessageTimestamp, AgentPanel, AgentSecretRequestCard, AgentTypingIndicator, ChatMarkdown, __prependedAssistantCountForTests as prependedAssistantCount, __reconcileHostTranscriptForTests as reconcileHostTranscript, __sameTranscriptForTests as sameTranscript, __withHostUserTurnsForTests as withHostUserTurns, type AgentMessage, type AgentPanelProps } from './react'
 
 test('AgentTypingIndicator renders a tokenized stagger and a reduced-motion fallback', () => {
   const markup = renderToStaticMarkup(React.createElement(AgentTypingIndicator))
@@ -47,6 +47,29 @@ test('AgentPanel exposes earlier history without allowing horizontal transcript 
   assert.match(markdown, /table-fixed/)
   assert.match(markdown, /overflow-wrap:anywhere/)
   assert.doesNotMatch(markdown, /overflow-x-auto/)
+})
+
+test('prepended history cannot satisfy the persistence floor for a newly streamed answer', () => {
+  const before = [
+    { id: 'user-new', role: 'user' as const, parts: [{ type: 'text', text: 'Build it.' }] },
+    { id: 'agent-recorded', role: 'assistant' as const, parts: [{ type: 'text', text: 'Starting.' }] },
+  ] satisfies AgentMessage[]
+  const local = [
+    ...before,
+    { id: 'agent-streamed', role: 'assistant' as const, parts: [{ type: 'text', text: 'It is ready.' }] },
+  ] satisfies AgentMessage[]
+  const staleWithHistory = [
+    { id: 'agent-old-1', role: 'assistant' as const, parts: [{ type: 'text', text: 'Older.' }] },
+    { id: 'agent-old-2', role: 'assistant' as const, parts: [{ type: 'text', text: 'Older still.' }] },
+    ...before,
+  ] satisfies AgentMessage[]
+  const floor = 2 + prependedAssistantCount(before[0]?.id, staleWithHistory)
+
+  assert.equal(floor, 4)
+  assert.equal(
+    reconcileHostTranscript(local, staleWithHistory, new Set(before.map((message) => message.id)), floor),
+    local,
+  )
 })
 
 test('AgentPanel accepts an application-owned full empty stage', () => {
