@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import * as React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { AgentApprovalRequestCard, AgentMessageQueue, AgentPanel, AgentSecretRequestCard, AgentTypingIndicator, __sameTranscriptForTests as sameTranscript, __withHostUserTurnsForTests as withHostUserTurns, type AgentMessage, type AgentPanelProps } from './react'
+import { AgentApprovalRequestCard, AgentMessageQueue, AgentPanel, AgentSecretRequestCard, AgentTypingIndicator, __reconcileHostTranscriptForTests as reconcileHostTranscript, __sameTranscriptForTests as sameTranscript, __withHostUserTurnsForTests as withHostUserTurns, type AgentMessage, type AgentPanelProps } from './react'
 
 test('AgentTypingIndicator renders a tokenized stagger and a reduced-motion fallback', () => {
   const markup = renderToStaticMarkup(React.createElement(AgentTypingIndicator))
@@ -387,7 +387,7 @@ test('AgentPanel takes a newer transcript from its host, except while it is stre
   const body = effect.slice(0, effect.indexOf('}, [initialMessages, streaming])'))
   const streamingBranch = body.slice(
     body.indexOf('if (streaming || abortRef.current !== null)'),
-    body.indexOf('sameTranscript('),
+    body.indexOf('reconcileHostTranscript('),
   )
   assert.ok(streamingBranch.length > 0, 'the streaming case is still handled first')
   assert.equal(
@@ -397,6 +397,37 @@ test('AgentPanel takes a newer transcript from its host, except while it is stre
   )
   assert.match(streamingBranch, /withHostUserTurns/, 'it takes the person’s turns and nothing else')
   assert.match(streamingBranch, /return/, 'and stops before the wholesale adoption')
+})
+
+test('a completed streamed answer stays visible until the durable transcript catches up', () => {
+  const user = (id: string, text: string): AgentMessage =>
+    ({ id, role: 'user', parts: [{ type: 'text', text }] }) as AgentMessage
+  const assistant = (id: string, text: string): AgentMessage =>
+    ({ id, role: 'assistant', parts: [{ type: 'text', text }] }) as AgentMessage
+
+  const streamed = [user('user-1731', 'What changed?'), assistant('assistant-1731', 'The dashboard updates itself.')]
+  const staleHost = [user('m10', 'What changed?')]
+  const held = reconcileHostTranscript(streamed, staleHost, new Set<string>(), 1)
+
+  assert.deepEqual(
+    held.map((message) => message.id),
+    ['m10', 'assistant-1731'],
+    'the persisted user turn is adopted without removing the completed answer',
+  )
+  assert.equal(held[1]?.parts[0] && (held[1].parts[0] as { text?: string }).text, 'The dashboard updates itself.')
+
+  const durable = [...staleHost, assistant('m11', 'The dashboard updates itself.')]
+  assert.equal(
+    reconcileHostTranscript(held, durable, new Set(['m10']), 1),
+    durable,
+    'the host becomes authoritative as soon as it carries the completed assistant turn',
+  )
+
+  assert.equal(
+    reconcileHostTranscript(streamed, staleHost, new Set<string>(), 0),
+    staleHost,
+    'an empty or failed stream does not establish a floor that would retain optimistic state',
+  )
 })
 
 test('a turn in flight shows the thinking indicator even when this panel is not streaming it', () => {
