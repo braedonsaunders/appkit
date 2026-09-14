@@ -1,6 +1,8 @@
 export const BRIDGE_MARKER = '__appkit' as const
+export const APP_THEME_EVENT = 'appkit:themechange' as const
 export const BRIDGE_METHODS = ['callBackend', 'records.list', 'records.get'] as const
 export type BridgeMethod = (typeof BRIDGE_METHODS)[number]
+export type AppTheme = 'light' | 'dark'
 
 export interface BridgeContext {
   app: { id: string; key: string; name: string; version: string }
@@ -40,6 +42,10 @@ export function makeBridgeResult(id: string, ok: boolean, value: unknown): Bridg
     : { [BRIDGE_MARKER]: true, type: 'result', id, ok, error: String(value) }
 }
 
+export function makeThemeMessage(theme: AppTheme) {
+  return { [BRIDGE_MARKER]: true, type: 'theme' as const, theme }
+}
+
 export function isBridgeMethod(method: string): method is BridgeMethod {
   return (BRIDGE_METHODS as readonly string[]).includes(method)
 }
@@ -48,10 +54,20 @@ export function isBridgeMethod(method: string): method is BridgeMethod {
 export function bridgeClientSource(context: BridgeContext, globalName = 'appkit'): string {
   if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(globalName)) throw new Error('bridge global name must be an identifier')
   return `(function(){
-  var CTX=${safeJson(context)}, pending={}, seq=0;
+  var CTX=${safeJson(context)}, pending={}, seq=0, currentTheme='light';
+  function applyTheme(theme){
+    if(theme!=='light'&&theme!=='dark')return;
+    currentTheme=theme;
+    var root=document.documentElement;
+    root.classList.toggle('light',theme==='light');root.classList.toggle('dark',theme==='dark');
+    root.setAttribute('data-theme',theme);root.style.colorScheme=theme;
+    window.${globalName}.theme=theme;
+    window.dispatchEvent(new CustomEvent('${APP_THEME_EVENT}',{detail:{theme:theme}}));
+  }
   window.addEventListener('message',function(e){
     if(e.source!==window.parent)return;
-    var d=e.data;if(!d||d['${BRIDGE_MARKER}']!==true||d.type!=='result')return;
+    var d=e.data;if(!d||d['${BRIDGE_MARKER}']!==true)return;
+    if(d.type==='theme'){applyTheme(d.theme);return;}if(d.type!=='result')return;
     var p=pending[d.id];if(!p)return;delete pending[d.id];
     if(d.ok)p.resolve(d.result);else p.reject(new Error(d.error||'bridge error'));
   });
@@ -60,13 +76,17 @@ export function bridgeClientSource(context: BridgeContext, globalName = 'appkit'
     window.parent.postMessage({'${BRIDGE_MARKER}':true,type:'call',id:id,method:method,payload:payload},'*');
   });}
   window.${globalName}={
-    context:CTX,getContext:function(){return Promise.resolve(CTX);},
+    context:CTX,theme:currentTheme,getContext:function(){return Promise.resolve(CTX);},
     callBackend:function(endpoint,payload){return call('callBackend',{endpoint:endpoint,payload:payload});},
     records:{
       list:function(typeKey,filters){return call('records.list',{typeKey:typeKey,filters:filters||{}});},
       get:function(typeKey,id){return call('records.get',{typeKey:typeKey,id:id});}
     }
   };
+  new MutationObserver(function(){
+    var root=document.documentElement;
+    if(root.getAttribute('data-theme')!==currentTheme||!root.classList.contains(currentTheme)||root.style.colorScheme!==currentTheme)applyTheme(currentTheme);
+  }).observe(document.documentElement,{attributes:true,attributeFilter:['class','data-theme','style']});
   window.parent.postMessage({'${BRIDGE_MARKER}':true,type:'ready'},'*');
 })();`
 }

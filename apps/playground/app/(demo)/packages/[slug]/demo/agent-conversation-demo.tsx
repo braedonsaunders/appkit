@@ -25,6 +25,7 @@ export function AgentConversationDemo() {
             {
               id: 'assistant-1',
               role: 'assistant',
+              createdAt: '2026-09-14T13:42:00.000Z',
               parts: [
                 { type: 'text', text: 'I can send the carrier update once you connect the delivery provider.' },
                 { type: 'secret-request', requestId: 'delivery-provider-demo', providerLabel: 'Delivery provider', credentialLabel: 'API key', purpose: 'Authorize the approved carrier status update.', helpUrl: 'https://example.com/docs/api-keys', status: secretStatus },
@@ -34,6 +35,7 @@ export function AgentConversationDemo() {
             {
               id: 'assistant-2',
               role: 'assistant',
+              createdAt: '2026-09-14T14:08:00.000Z',
               parts: [
                 { type: 'text', text: 'It’s ready for your approval. Once you approve it, I’ll continue automatically.' },
                 {
