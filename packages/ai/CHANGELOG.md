@@ -1,5 +1,13 @@
 # @braedonsaunders/appkit-ai
 
+## 2.1.0
+
+### Minor Changes
+
+- ee93dc0: Add optional, accessible timestamps to completed assistant messages in `AgentPanel`.
+
+  Make sandboxed app frontends inherit the host application theme automatically and announce live theme changes through the `appkit:themechange` browser event.
+
 ## 2.0.2
 
 ### Patch Changes
