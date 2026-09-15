@@ -1,5 +1,11 @@
 # @braedonsaunders/appkit-ai
 
+## 2.2.0
+
+### Minor Changes
+
+- 798946c: Keep long conversation content within the panel width and add anchored older-message pagination to `AgentPanel`.
+
 ## 2.1.0
 
 ### Minor Changes
