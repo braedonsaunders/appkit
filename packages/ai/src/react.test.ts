@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import * as React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { AgentApprovalRequestCard, AgentMessageQueue, AgentMessageTimestamp, AgentPanel, AgentSecretRequestCard, AgentTypingIndicator, __reconcileHostTranscriptForTests as reconcileHostTranscript, __sameTranscriptForTests as sameTranscript, __withHostUserTurnsForTests as withHostUserTurns, type AgentMessage, type AgentPanelProps } from './react'
+import { AgentApprovalRequestCard, AgentMessageQueue, AgentMessageTimestamp, AgentPanel, AgentSecretRequestCard, AgentTypingIndicator, ChatMarkdown, __prependedAssistantCountForTests as prependedAssistantCount, __reconcileHostTranscriptForTests as reconcileHostTranscript, __sameTranscriptForTests as sameTranscript, __withHostUserTurnsForTests as withHostUserTurns, type AgentMessage, type AgentPanelProps } from './react'
 
 test('AgentTypingIndicator renders a tokenized stagger and a reduced-motion fallback', () => {
   const markup = renderToStaticMarkup(React.createElement(AgentTypingIndicator))
@@ -29,6 +29,47 @@ test('AgentPanel renders optional actions in its main header', () => {
 
   assert.match(markup, /<header[^>]*h-12[^>]*>/)
   assert.match(markup, /<div class="ml-auto flex items-center gap-2"><button type="button">Hide work<\/button><\/div>/)
+})
+
+test('AgentPanel exposes earlier history without allowing horizontal transcript overflow', () => {
+  const panel = renderToStaticMarkup(React.createElement(AgentPanel, {
+    enabled: false,
+    initialMessages: [{ id: 'latest', role: 'assistant', parts: [{ type: 'text', text: 'Latest answer.' }] }],
+    hasOlderMessages: true,
+    onLoadOlderMessages: async () => undefined,
+  } satisfies AgentPanelProps))
+  const markdown = renderToStaticMarkup(React.createElement(ChatMarkdown, {
+    children: '| Reference | Result |\n| --- | --- |\n| https://example.com/a-very-long-unbroken-reference-that-must-stay-inside-the-chat | `an_unbroken_identifier_that_must_wrap` |\n\n```txt\nan_unbroken_code_line_that_must_wrap_inside_the_panel\n```',
+  }))
+
+  assert.match(panel, />Load earlier messages</)
+  assert.match(panel, /overflow-x-hidden/)
+  assert.match(markdown, /table-fixed/)
+  assert.match(markdown, /overflow-wrap:anywhere/)
+  assert.doesNotMatch(markdown, /overflow-x-auto/)
+})
+
+test('prepended history cannot satisfy the persistence floor for a newly streamed answer', () => {
+  const before = [
+    { id: 'user-new', role: 'user' as const, parts: [{ type: 'text', text: 'Build it.' }] },
+    { id: 'agent-recorded', role: 'assistant' as const, parts: [{ type: 'text', text: 'Starting.' }] },
+  ] satisfies AgentMessage[]
+  const local = [
+    ...before,
+    { id: 'agent-streamed', role: 'assistant' as const, parts: [{ type: 'text', text: 'It is ready.' }] },
+  ] satisfies AgentMessage[]
+  const staleWithHistory = [
+    { id: 'agent-old-1', role: 'assistant' as const, parts: [{ type: 'text', text: 'Older.' }] },
+    { id: 'agent-old-2', role: 'assistant' as const, parts: [{ type: 'text', text: 'Older still.' }] },
+    ...before,
+  ] satisfies AgentMessage[]
+  const floor = 2 + prependedAssistantCount(before[0]?.id, staleWithHistory)
+
+  assert.equal(floor, 4)
+  assert.equal(
+    reconcileHostTranscript(local, staleWithHistory, new Set(before.map((message) => message.id)), floor),
+    local,
+  )
 })
 
 test('AgentPanel accepts an application-owned full empty stage', () => {

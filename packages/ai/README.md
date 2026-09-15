@@ -18,6 +18,14 @@ application-owned employee identity in the existing 28px assistant-message slot,
 with the stock Sparkles marker retained as the fallback. Consecutive tool calls collapse into
 one quiet activity line showing the newest action and total step count; operators can expand it to
 inspect every input and result without letting a long run overwhelm the thread.
+Long links, identifiers, code blocks, and markdown tables wrap within the
+conversation width instead of creating a second horizontal scroll area.
+
+For long histories, pass only the newest page in `initialMessages` together
+with `hasOlderMessages` and `onLoadOlderMessages`. Reaching the top requests
+the next page automatically, while the button remains available for keyboard
+and assistive-technology users. After the host prepends that page, the panel
+keeps the message being read at the same visual position.
 
 The composer remains extensible without being replaced. `composerActions` adds
 controls beside the text input, `composerContent` renders application-owned

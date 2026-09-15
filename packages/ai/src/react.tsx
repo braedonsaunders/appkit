@@ -214,6 +214,14 @@ function assistantTurnCount(messages: AgentMessage[]): number {
   return messages.reduce((count, message) => count + (message.role === 'assistant' ? 1 : 0), 0)
 }
 
+function prependedAssistantCount(previousFirstId: string | undefined, messages: AgentMessage[]): number {
+  if (previousFirstId === undefined) return 0
+  const previousStart = messages.findIndex((message) => message.id === previousFirstId)
+  return previousStart > 0 ? assistantTurnCount(messages.slice(0, previousStart)) : 0
+}
+
+export const __prependedAssistantCountForTests = prependedAssistantCount
+
 /**
  * Reconcile a settled panel with its host without crossing a persistence gap.
  *
@@ -384,6 +392,9 @@ export type AgentPanelLabels = {
   retryQueued: string
   sendQueuedNow: string
   responding: string
+  loadEarlier: string
+  loadingEarlier: string
+  loadEarlierFailed: string
 }
 
 const DEFAULT_LABELS: AgentPanelLabels = {
@@ -413,6 +424,9 @@ const DEFAULT_LABELS: AgentPanelLabels = {
   retryQueued: 'Retry queued message',
   sendQueuedNow: 'Send now',
   responding: 'Assistant is responding',
+  loadEarlier: 'Load earlier messages',
+  loadingEarlier: 'Loading earlier messages',
+  loadEarlierFailed: 'Earlier messages could not be loaded. Please retry.',
 }
 
 export type AgentPanelProps = {
@@ -467,6 +481,13 @@ export type AgentPanelProps = {
   approvalRequestLabels?: Partial<AgentApprovalRequestLabels>
   maxPromptCharacters?: number
   toolLabels?: Record<string, string>
+  /** Whether the host has a page before `initialMessages`. */
+  hasOlderMessages?: boolean
+  /**
+   * Loads the next older page into `initialMessages`. The panel keeps the
+   * reader's current message anchored while the new rows are prepended.
+   */
+  onLoadOlderMessages?: () => Promise<void>
 }
 
 /**
@@ -550,23 +571,51 @@ export function AgentPanel({
   approvalRequestLabels,
   maxPromptCharacters = 32_000,
   toolLabels,
+  hasOlderMessages = false,
+  onLoadOlderMessages,
 }: AgentPanelProps) {
   const labels = React.useMemo(() => ({ ...DEFAULT_LABELS, ...labelOverrides }), [labelOverrides])
   const [messages, setMessages] = React.useState(initialMessages)
   const [streaming, setStreaming] = React.useState(false)
   const [enqueueing, setEnqueueing] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [loadingOlder, setLoadingOlder] = React.useState(false)
   const abortRef = React.useRef<AbortController | null>(null)
   const messageViewportRef = React.useRef<HTMLDivElement>(null)
+  const prependAnchorRef = React.useRef<{
+    firstMessageId: string | undefined
+    scrollHeight: number
+    scrollTop: number
+  } | null>(null)
+  const hostFirstMessageIdRef = React.useRef(initialMessages[0]?.id)
   /** Whether the reader is pinned to the live edge. Streaming output follows
    *  them down only while they are — someone scrolled up reading history is
    *  never yanked back by the next token. */
   const nearBottomRef = React.useRef(true)
+  const loadOlder = React.useCallback(() => {
+    const viewport = messageViewportRef.current
+    if (!viewport || streaming || loadingOlder || prependAnchorRef.current || !hasOlderMessages || !onLoadOlderMessages) return
+    prependAnchorRef.current = {
+      firstMessageId: messages[0]?.id,
+      scrollHeight: viewport.scrollHeight,
+      scrollTop: viewport.scrollTop,
+    }
+    setLoadingOlder(true)
+    setError(null)
+    void onLoadOlderMessages()
+      .catch(() => {
+        prependAnchorRef.current = null
+        setError(labels.loadEarlierFailed)
+      })
+      .finally(() => setLoadingOlder(false))
+  }, [hasOlderMessages, labels.loadEarlierFailed, loadingOlder, messages, onLoadOlderMessages, streaming])
+
   const noteViewportScroll = React.useCallback(() => {
     const viewport = messageViewportRef.current
     if (!viewport) return
     nearBottomRef.current = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 96
-  }, [])
+    if (viewport.scrollTop < 96) loadOlder()
+  }, [loadOlder])
   /** Ids the host supplied last time, so a withdrawn turn can be told from a panel-owned one. */
   const hostIdsRef = React.useRef<ReadonlySet<string>>(new Set(initialMessages.map((message) => message.id)))
   /** Number of completed assistant turns this mounted panel has already shown. */
@@ -592,6 +641,14 @@ export function AgentPanel({
    * `AgentComposer`, which this does not touch.
    */
   React.useEffect(() => {
+    // A history page can add assistant rows before the old first message. They
+    // are unrelated to whether a newly streamed answer reached persistence, so
+    // move the floor by the same amount before comparing total turn counts.
+    completedAssistantFloorRef.current += prependedAssistantCount(
+      hostFirstMessageIdRef.current,
+      initialMessages,
+    )
+    hostFirstMessageIdRef.current = initialMessages[0]?.id
     // Read and advance outside the updater: a state updater may run twice, and
     // this has to observe the previous host set exactly once per reconciliation.
     const hostIdsBefore = hostIdsRef.current
@@ -634,6 +691,21 @@ export function AgentPanel({
   React.useLayoutEffect(() => {
     scrollToBottom()
   }, [scrollToBottom])
+
+  // Prepending history must not move the message the reader was looking at.
+  // Preserve the distance from the old content by adding exactly the height
+  // of the rows that appeared above it.
+  React.useLayoutEffect(() => {
+    const anchor = prependAnchorRef.current
+    const viewport = messageViewportRef.current
+    if (!anchor || !viewport || messages[0]?.id === anchor.firstMessageId) return
+    viewport.scrollTop = anchor.scrollTop + (viewport.scrollHeight - anchor.scrollHeight)
+    prependAnchorRef.current = null
+  }, [messages])
+
+  React.useEffect(() => {
+    if (!hasOlderMessages) prependAnchorRef.current = null
+  }, [hasOlderMessages])
 
   const composerDraftParts = composerDraft?.parts
   const composerDraftFallback = composerDraft?.fallbackPrompt
@@ -708,15 +780,16 @@ export function AgentPanel({
   }, [submit])
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-bg-subtle">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden bg-bg-subtle">
       <style>{AGENT_MESSAGE_TIMESTAMP_STYLES}</style>
       <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border bg-surface px-4"><Sparkles size={16} className="text-primary" /><span className="text-sm font-medium text-fg">{labels.title}</span>{headerActions != null ? <div className="ml-auto flex items-center gap-2">{headerActions}</div> : null}</header>
-      <div ref={messageViewportRef} onScroll={noteViewportScroll} className="app-scroll min-h-0 flex-1 overflow-y-auto">
+      <div ref={messageViewportRef} onScroll={noteViewportScroll} className="app-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
         {messages.length === 0 && emptyContent != null ? (
           <div className="flex min-h-full flex-col">{emptyContent}</div>
         ) : (
-          <div className="mx-auto w-full max-w-3xl px-4 py-6">
-            {messages.length === 0 ? <AgentWelcome enabled={enabled} title={enabled ? labels.welcomeTitle : labels.disabledTitle} description={enabled ? labels.welcomeDescription : labels.disabledDescription} suggestions={suggestions} onPick={(value) => void submit(value)} /> : <div className="space-y-6">{messages.map((message, index) => message.role === 'system' ? null : <MemoAgentMessageRow key={message.id} message={message} pending={(streaming || working) && index === messages.length - 1 && message.role === 'assistant'} labels={labels} toolLabels={toolLabels} assistantAvatar={assistantAvatar} onSubmitSecretRequest={onSubmitSecretRequest} onCancelSecretRequest={onCancelSecretRequest} secretRequestLabels={secretRequestLabels} onDecideApprovalRequest={onDecideApprovalRequest} approvalRequestLabels={approvalRequestLabels} />)}</div>}
+          <div className="mx-auto w-full min-w-0 max-w-3xl px-4 py-6">
+            {hasOlderMessages && onLoadOlderMessages ? <div className="mb-4 flex justify-center"><button type="button" disabled={loadingOlder || streaming} onClick={loadOlder} className="rounded-md px-2.5 py-1 text-xs font-medium text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg disabled:cursor-wait disabled:text-fg-subtle">{loadingOlder ? labels.loadingEarlier : labels.loadEarlier}</button></div> : null}
+            {messages.length === 0 ? <AgentWelcome enabled={enabled} title={enabled ? labels.welcomeTitle : labels.disabledTitle} description={enabled ? labels.welcomeDescription : labels.disabledDescription} suggestions={suggestions} onPick={(value) => void submit(value)} /> : <div className="min-w-0 space-y-6">{messages.map((message, index) => message.role === 'system' ? null : <MemoAgentMessageRow key={message.id} message={message} pending={(streaming || working) && index === messages.length - 1 && message.role === 'assistant'} labels={labels} toolLabels={toolLabels} assistantAvatar={assistantAvatar} onSubmitSecretRequest={onSubmitSecretRequest} onCancelSecretRequest={onCancelSecretRequest} secretRequestLabels={secretRequestLabels} onDecideApprovalRequest={onDecideApprovalRequest} approvalRequestLabels={approvalRequestLabels} />)}</div>}
           </div>
         )}
         {error ? <div role="alert" className="mx-auto mb-5 w-[calc(100%-2rem)] max-w-3xl rounded-lg border border-danger/25 bg-danger-subtle px-3 py-2 text-sm text-danger">{error}</div> : null}
@@ -826,9 +899,9 @@ const MemoAgentMessageRow = React.memo(function AgentMessageRow({ message, pendi
   if (message.role === 'user') {
     const text = (message.parts.find((part) => (part as { type?: string }).type === 'text') as { text?: string } | undefined)?.text
     const files = message.parts.filter(isAgentFilePart)
-    return <div className="flex justify-end"><div className="max-w-[85%] space-y-2 rounded-2xl rounded-br-md bg-primary px-4 py-2 text-sm whitespace-pre-wrap text-primary-fg">{text ? <div>{text}</div> : null}{files.length > 0 ? <div className="flex flex-wrap justify-end gap-1.5">{files.map((file, index) => file.url ? <a key={`${file.filename}-${index}`} href={file.url} className="rounded-md border border-primary-fg/25 bg-primary-fg/10 px-2 py-1 text-xs font-medium hover:bg-primary-fg/15" download>{file.filename}</a> : <span key={`${file.filename}-${index}`} className="rounded-md border border-primary-fg/25 bg-primary-fg/10 px-2 py-1 text-xs font-medium">{file.filename}</span>)}</div> : null}</div></div>
+    return <div className="flex min-w-0 justify-end overflow-hidden"><div className="max-w-[85%] min-w-0 space-y-2 overflow-hidden rounded-2xl rounded-br-md bg-primary px-4 py-2 text-sm whitespace-pre-wrap text-primary-fg [overflow-wrap:anywhere]">{text ? <div>{text}</div> : null}{files.length > 0 ? <div className="flex min-w-0 flex-wrap justify-end gap-1.5">{files.map((file, index) => file.url ? <a key={`${file.filename}-${index}`} href={file.url} className="max-w-full break-words rounded-md border border-primary-fg/25 bg-primary-fg/10 px-2 py-1 text-xs font-medium [overflow-wrap:anywhere] hover:bg-primary-fg/15" download>{file.filename}</a> : <span key={`${file.filename}-${index}`} className="max-w-full break-words rounded-md border border-primary-fg/25 bg-primary-fg/10 px-2 py-1 text-xs font-medium [overflow-wrap:anywhere]">{file.filename}</span>)}</div> : null}</div></div>
   }
-  return <div className="appkit-agent-message-row flex gap-3"><span className={cn('mt-0.5 flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full', assistantAvatar == null && 'bg-primary text-primary-fg shadow-sm')}>{assistantAvatar ?? <Sparkles size={16} />}</span><div className="min-w-0 flex-1 pt-0.5">{message.parts.length === 0 && pending ? <AgentTypingIndicator label={labels.responding} /> : <AgentMessageParts parts={message.parts} labels={labels} toolLabels={toolLabels} onSubmitSecretRequest={onSubmitSecretRequest} onCancelSecretRequest={onCancelSecretRequest} secretRequestLabels={secretRequestLabels} onDecideApprovalRequest={onDecideApprovalRequest} approvalRequestLabels={approvalRequestLabels} />}{message.parts.length > 0 && pending ? <div className="mt-2"><AgentTypingIndicator label={labels.responding} /></div> : null}{message.createdAt && !pending ? <AgentMessageTimestamp value={message.createdAt} /> : null}</div></div>
+  return <div className="appkit-agent-message-row flex min-w-0 max-w-full gap-3 overflow-hidden"><span className={cn('mt-0.5 flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full', assistantAvatar == null && 'bg-primary text-primary-fg shadow-sm')}>{assistantAvatar ?? <Sparkles size={16} />}</span><div className="min-w-0 max-w-full flex-1 overflow-hidden pt-0.5">{message.parts.length === 0 && pending ? <AgentTypingIndicator label={labels.responding} /> : <AgentMessageParts parts={message.parts} labels={labels} toolLabels={toolLabels} onSubmitSecretRequest={onSubmitSecretRequest} onCancelSecretRequest={onCancelSecretRequest} secretRequestLabels={secretRequestLabels} onDecideApprovalRequest={onDecideApprovalRequest} approvalRequestLabels={approvalRequestLabels} />}{message.parts.length > 0 && pending ? <div className="mt-2"><AgentTypingIndicator label={labels.responding} /></div> : null}{message.createdAt && !pending ? <AgentMessageTimestamp value={message.createdAt} /> : null}</div></div>
 })
 
 function timestampLabels(value: string, now = new Date()): { compact: string; full: string } | null {
@@ -1250,7 +1323,7 @@ function AgentToolActivity({ parts, labels, toolLabels }: { parts: AgentToolPart
 }
 
 export function ChatMarkdown({ children }: { children: string }) {
-  return <div className="space-y-2 text-sm leading-relaxed text-fg"><Markdown remarkPlugins={[remarkGfm]} components={{ p: ({ children: content }) => <p className="whitespace-pre-wrap">{content}</p>, h1: ({ children: content }) => <h1 className="text-lg font-semibold">{content}</h1>, h2: ({ children: content }) => <h2 className="text-base font-semibold">{content}</h2>, ul: ({ children: content }) => <ul className="list-disc space-y-1 pl-5">{content}</ul>, ol: ({ children: content }) => <ol className="list-decimal space-y-1 pl-5">{content}</ol>, code: ({ children: content }) => <code className="rounded bg-bg-subtle px-1 py-0.5 font-mono text-[0.85em] text-primary">{content}</code>, pre: ({ children: content }) => <pre className="overflow-auto rounded-lg bg-overlay p-3 text-sm whitespace-pre-wrap text-white">{content}</pre>, table: ({ children: content }) => <div className="overflow-x-auto"><table className="w-full border-collapse text-sm">{content}</table></div>, th: ({ children: content }) => <th className="border-b border-border px-2 py-1 text-left">{content}</th>, td: ({ children: content }) => <td className="border-b border-border-subtle px-2 py-1">{content}</td>, a: ({ href, children: content }) => href?.startsWith('/') ? <UiLink href={href} className="font-medium text-primary underline-offset-2 hover:underline">{content}</UiLink> : <a href={href} target="_blank" rel="noreferrer" className="font-medium text-primary underline-offset-2 hover:underline">{content}</a> }}>{children}</Markdown></div>
+  return <div className="min-w-0 max-w-full space-y-2 overflow-hidden text-sm leading-relaxed text-fg [overflow-wrap:anywhere]"><Markdown remarkPlugins={[remarkGfm]} components={{ p: ({ children: content }) => <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{content}</p>, h1: ({ children: content }) => <h1 className="break-words text-lg font-semibold [overflow-wrap:anywhere]">{content}</h1>, h2: ({ children: content }) => <h2 className="break-words text-base font-semibold [overflow-wrap:anywhere]">{content}</h2>, ul: ({ children: content }) => <ul className="min-w-0 list-disc space-y-1 pl-5">{content}</ul>, ol: ({ children: content }) => <ol className="min-w-0 list-decimal space-y-1 pl-5">{content}</ol>, code: ({ children: content }) => <code className="break-words rounded bg-bg-subtle px-1 py-0.5 font-mono text-[0.85em] text-primary [overflow-wrap:anywhere]">{content}</code>, pre: ({ children: content }) => <pre className="max-w-full overflow-x-hidden rounded-lg bg-overlay p-3 text-sm whitespace-pre-wrap break-words text-white [overflow-wrap:anywhere]">{content}</pre>, table: ({ children: content }) => <div className="max-w-full overflow-hidden"><table className="w-full table-fixed border-collapse text-sm">{content}</table></div>, th: ({ children: content }) => <th className="break-words border-b border-border px-2 py-1 text-left [overflow-wrap:anywhere]">{content}</th>, td: ({ children: content }) => <td className="break-words border-b border-border-subtle px-2 py-1 align-top [overflow-wrap:anywhere]">{content}</td>, a: ({ href, children: content }) => href?.startsWith('/') ? <UiLink href={href} className="break-words font-medium text-primary underline-offset-2 [overflow-wrap:anywhere] hover:underline">{content}</UiLink> : <a href={href} target="_blank" rel="noreferrer" className="break-words font-medium text-primary underline-offset-2 [overflow-wrap:anywhere] hover:underline">{content}</a> }}>{children}</Markdown></div>
 }
 
 export function AgentToolCard({ name, label, state, input, output, inputLabel = 'Input', resultLabel = 'Result' }: { name: string; label?: string; state: string; input?: unknown; output?: unknown; inputLabel?: string; resultLabel?: string }) {
@@ -1263,5 +1336,5 @@ export function AgentToolCard({ name, label, state, input, output, inputLabel = 
 function AgentToolDetail({ label, value }: { label: string; value: unknown }) {
   let text: string
   try { text = JSON.stringify(value, null, 2) } catch { text = String(value) }
-  return <div><div className="mb-1 text-[11px] font-semibold tracking-wide text-fg-subtle uppercase">{label}</div><pre className="max-h-60 overflow-auto rounded-md bg-surface p-2 text-xs leading-relaxed text-fg ring-1 ring-border">{text}</pre></div>
+  return <div className="min-w-0 max-w-full overflow-hidden"><div className="mb-1 text-[11px] font-semibold tracking-wide text-fg-subtle uppercase">{label}</div><pre className="max-h-60 max-w-full overflow-x-hidden overflow-y-auto rounded-md bg-surface p-2 text-xs leading-relaxed whitespace-pre-wrap break-words text-fg [overflow-wrap:anywhere] ring-1 ring-border">{text}</pre></div>
 }
