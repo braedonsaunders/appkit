@@ -76,48 +76,71 @@ export async function imposePages(
   }
 
   indices.forEach((index) => {
-    const page = embeddedByIndex.get(index)
-    if (!page || blank.has(index)) {
-      out.addPage([geometry.width, geometry.height])
-      return
-    }
-    const rotation = normalizeAngle(src.getPage(index).getRotation().angle)
-    const quarterTurned = rotation === 90 || rotation === 270
-    // Visual dimensions after the viewer applies /Rotate.
-    const visualWidth = quarterTurned ? page.height : page.width
-    const visualHeight = quarterTurned ? page.width : page.height
-
-    const fit = Math.min(geometry.width / visualWidth, geometry.height / visualHeight)
-    const scale = options.allowUpscale ? fit : Math.min(fit, 1)
-    const drawnWidth = visualWidth * scale
-    const drawnHeight = visualHeight * scale
-    const left = (geometry.width - drawnWidth) / 2
-    const bottom = (geometry.height - drawnHeight) / 2
-
-    // drawPage rotates about the anchor point, which moves the box out of the
-    // slot we just measured. Shift the anchor to the corner the rotation sweeps
-    // the content away from.
-    const anchor =
-      rotation === 90
-        ? { x: left + drawnWidth, y: bottom }
-        : rotation === 180
-          ? { x: left + drawnWidth, y: bottom + drawnHeight }
-          : rotation === 270
-            ? { x: left, y: bottom + drawnHeight }
-            : { x: left, y: bottom }
-
-    out
-      .addPage([geometry.width, geometry.height])
-      .drawPage(page, {
-        xScale: scale,
-        yScale: scale,
-        x: anchor.x,
-        y: anchor.y,
-        rotate: degrees(rotation),
-      })
+    drawImposed(
+      out,
+      src,
+      blank.has(index) ? undefined : embeddedByIndex.get(index),
+      index,
+      geometry,
+      options,
+    )
   })
 
   return indices.length
+}
+
+type EmbeddedPage = Awaited<ReturnType<PDFDocument['embedPdf']>>[number]
+
+/**
+ * Place one already-embedded page onto a fresh page of `geometry`.
+ *
+ * Shared by both entry points so the fit, the rotation handling and the
+ * blank-page fallback cannot drift apart between them.
+ */
+function drawImposed(
+  out: PDFDocument,
+  src: PDFDocument,
+  page: EmbeddedPage | undefined,
+  index: number,
+  geometry: PageGeometry,
+  options: { allowUpscale?: boolean },
+): void {
+  if (!page) {
+    out.addPage([geometry.width, geometry.height])
+    return
+  }
+  const rotation = normalizeAngle(src.getPage(index).getRotation().angle)
+  const quarterTurned = rotation === 90 || rotation === 270
+  // Visual dimensions after the viewer applies /Rotate.
+  const visualWidth = quarterTurned ? page.height : page.width
+  const visualHeight = quarterTurned ? page.width : page.height
+
+  const fit = Math.min(geometry.width / visualWidth, geometry.height / visualHeight)
+  const scale = options.allowUpscale ? fit : Math.min(fit, 1)
+  const drawnWidth = visualWidth * scale
+  const drawnHeight = visualHeight * scale
+  const left = (geometry.width - drawnWidth) / 2
+  const bottom = (geometry.height - drawnHeight) / 2
+
+  // drawPage rotates about the anchor point, which moves the box out of the
+  // slot just measured. Shift the anchor to the corner the rotation sweeps the
+  // content away from.
+  const anchor =
+    rotation === 90
+      ? { x: left + drawnWidth, y: bottom }
+      : rotation === 180
+        ? { x: left + drawnWidth, y: bottom + drawnHeight }
+        : rotation === 270
+          ? { x: left, y: bottom + drawnHeight }
+          : { x: left, y: bottom }
+
+  out.addPage([geometry.width, geometry.height]).drawPage(page, {
+    xScale: scale,
+    yScale: scale,
+    x: anchor.x,
+    y: anchor.y,
+    rotate: degrees(rotation),
+  })
 }
 
 export type FooterCell = { left: string; center: string; right: string }
@@ -224,12 +247,50 @@ export async function composePdf(input: ComposePdfInput): Promise<Buffer> {
   const out = await PDFDocument.create()
   const numbered: boolean[] = []
 
+  // Parts frequently share a source: one multi-page document of generated
+  // sheets contributes a single page to each member. Parsing and embedding that
+  // source once per part is quadratic — on a 196-document book it turned a 12
+  // second render into 35 and inflated the output by 5 MB through duplicated
+  // resources. Each distinct source is loaded once and every page it
+  // contributes is embedded in a single call.
+  const sources = new Map<Uint8Array, { doc: PDFDocument; embedded: Map<number, EmbeddedPage> }>()
   for (const part of input.parts) {
-    const added = await imposePages(out, part.bytes, input.geometry, {
-      allowUpscale: input.allowUpscale,
-      pages: part.pages,
+    if (sources.has(part.bytes)) continue
+    sources.set(part.bytes, {
+      doc: await PDFDocument.load(part.bytes, { ignoreEncryption: true }),
+      embedded: new Map(),
     })
-    for (let i = 0; i < added; i++) numbered.push(!part.unnumbered)
+  }
+  for (const [bytes, source] of sources) {
+    const available = source.doc.getPageIndices()
+    const wanted = new Set<number>()
+    for (const part of input.parts) {
+      if (part.bytes !== bytes) continue
+      const indices = part.pages
+        ? part.pages.filter((i) => Number.isInteger(i) && i >= 0 && i < available.length)
+        : available
+      for (const index of indices) {
+        if (source.doc.getPage(index).node.Contents()) wanted.add(index)
+      }
+    }
+    const order = [...wanted]
+    if (order.length === 0) continue
+    const embeds = await out.embedPdf(source.doc, order)
+    order.forEach((index, i) => source.embedded.set(index, embeds[i]!))
+  }
+
+  for (const part of input.parts) {
+    const source = sources.get(part.bytes)!
+    const available = source.doc.getPageIndices()
+    const indices = part.pages
+      ? part.pages.filter((i) => Number.isInteger(i) && i >= 0 && i < available.length)
+      : available
+    for (const index of indices) {
+      drawImposed(out, source.doc, source.embedded.get(index), index, input.geometry, {
+        allowUpscale: input.allowUpscale,
+      })
+      numbered.push(!part.unnumbered)
+    }
   }
 
   if (input.footer) {

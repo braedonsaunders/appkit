@@ -204,3 +204,31 @@ test('imposePages ignores out-of-range page requests rather than throwing', asyn
   })
   assert.equal(count, 1)
 })
+
+test('composePdf embeds a shared source once, not once per part', async () => {
+  // A book with one generated sheet per member passes the SAME multi-page
+  // source many times, taking one page from each. Parsing and embedding it per
+  // part is quadratic: on a 196-member document it turned a 3.5s compose into
+  // 27s and inflated the output from 7MB to 19MB through duplicated resources.
+  // Size is the observable proxy for "embedded once".
+  const shared = await makePdf(
+    Array.from({ length: 40 }, () => ({ width: 612, height: 792 })),
+  )
+  const oneEach = await composePdf({
+    geometry: LETTER,
+    parts: Array.from({ length: 40 }, (_, i) => ({ bytes: shared, pages: [i] })),
+  })
+  const wholeThing = await composePdf({
+    geometry: LETTER,
+    parts: [{ bytes: shared }],
+  })
+
+  assert.equal(await countPages(oneEach), 40)
+  assert.equal(await countPages(wholeThing), 40)
+  // Taking 40 single pages from one source must not cost dramatically more
+  // than taking all 40 at once.
+  assert.ok(
+    oneEach.length < wholeThing.length * 2,
+    `page-at-a-time composition ballooned: ${oneEach.length} vs ${wholeThing.length}`,
+  )
+})
