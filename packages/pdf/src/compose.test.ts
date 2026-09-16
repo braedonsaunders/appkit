@@ -284,3 +284,51 @@ test('a letterhead with a missing page degrades to a plain page', async () => {
   })
   assert.equal(await countPages(pdf), 1)
 })
+
+test('a content box normalises where text lands, regardless of source margins', async () => {
+  // The failure this exists for: assembled books inherit each source's own
+  // margins, so one document's text column sits at 52% of the page in small
+  // type beside another's at 80% in larger type. Fitting the CONTENT box puts
+  // both in the same place at a comparable size.
+  const narrow = await PDFDocument.create()
+  const n = narrow.addPage([612, 792])
+  n.drawRectangle({ x: 250, y: 380, width: 110, height: 40 }) // small, centred
+  const narrowBytes = await narrow.save()
+
+  const pdf = await composePdf({
+    geometry: LETTER,
+    parts: [{ bytes: narrowBytes, contentBoxes: [{ left: 250, bottom: 380, right: 360, top: 420 }] }],
+    marginPt: 36,
+  })
+
+  // One page out, same sheet size; the crop is what changed, not the paper.
+  assert.equal(await countPages(pdf), 1)
+  assert.deepEqual((await sizesOf(pdf))[0], { width: 612, height: 792 })
+})
+
+test('a degenerate content box falls back to the whole page', async () => {
+  // An inverted or empty box (a page with no extractable text) must not blank
+  // the page — it renders whole, as it would have before.
+  const bytes = await makePdf([{ width: 612, height: 792 }])
+  for (const box of [
+    { left: 100, bottom: 100, right: 100, top: 400 },
+    { left: 400, bottom: 400, right: 100, top: 100 },
+  ]) {
+    const pdf = await composePdf({ geometry: LETTER, parts: [{ bytes, contentBoxes: [box] }] })
+    assert.equal(await countPages(pdf), 1)
+  }
+})
+
+test('content boxes index against the selected pages, not the source order', async () => {
+  const bytes = await makePdf([
+    { width: 612, height: 792 },
+    { width: 612, height: 792 },
+    { width: 612, height: 792 },
+  ])
+  // Selecting pages [2, 0] means box[0] applies to source page 2.
+  const pdf = await composePdf({
+    geometry: LETTER,
+    parts: [{ bytes, pages: [2, 0], contentBoxes: [{ left: 0, bottom: 0, right: 300, top: 300 }, null] }],
+  })
+  assert.equal(await countPages(pdf), 2)
+})

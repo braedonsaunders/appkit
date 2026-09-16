@@ -13,6 +13,9 @@ import type { PdfPaperSize } from './types'
 
 export type PageGeometry = { width: number; height: number }
 
+/** A region in a page's user space, origin bottom-left. */
+export type ContentBox = { left: number; bottom: number; right: number; top: number }
+
 /**
  * Geometry for a paper size, in points. Reuses the renderer's own paper table
  * so a composed book and a generated page cannot disagree about what "letter"
@@ -91,6 +94,10 @@ export async function imposePages(
 
 type EmbeddedPage = Awaited<ReturnType<PDFDocument['embedPdf']>>[number]
 
+function cropKey(index: number, box: ContentBox): string {
+  return `${index}:${box.left}:${box.bottom}:${box.right}:${box.top}`
+}
+
 /**
  * Place one already-embedded page onto a fresh page of `geometry`.
  *
@@ -103,7 +110,12 @@ function drawImposed(
   page: EmbeddedPage | undefined,
   index: number,
   geometry: PageGeometry,
-  options: { allowUpscale?: boolean; margin?: number; reserveTopPt?: number },
+  options: {
+    allowUpscale?: boolean
+    allowUpscaleOverride?: boolean
+    margin?: number
+    reserveTopPt?: number
+  },
 ): void {
   if (!page) {
     out.addPage([geometry.width, geometry.height])
@@ -123,7 +135,8 @@ function drawImposed(
   const visualHeight = quarterTurned ? page.width : page.height
 
   const fit = Math.min(boxWidth / visualWidth, boxHeight / visualHeight)
-  const scale = options.allowUpscale ? fit : Math.min(fit, 1)
+  const upscale = options.allowUpscaleOverride ?? options.allowUpscale
+  const scale = upscale ? fit : Math.min(fit, 1)
   const drawnWidth = visualWidth * scale
   const drawnHeight = visualHeight * scale
   const left = margin + (boxWidth - drawnWidth) / 2
@@ -224,6 +237,18 @@ export type ComposePart = {
   unnumbered?: boolean
   /** Zero-based subset of the source's pages, in the order given. */
   pages?: readonly number[]
+  /**
+   * Per-page region of the source to fit, in the source's own user space
+   * (origin bottom-left). Indexed to match `pages` when given, otherwise to the
+   * source's page order. A null entry fits that page whole.
+   *
+   * This is what makes an assembled book read as one document. Sources carry
+   * whatever margins their author chose, so fitting whole PAGES preserves that
+   * variance: one policy lands a 52%-wide text column in small type beside
+   * another at 80% in larger type. Fitting the CONTENT box instead puts every
+   * document's text in the same place at a comparable size.
+   */
+  contentBoxes?: readonly (ContentBox | null)[]
   /** Inset for this part's content, overriding the document default. */
   marginPt?: number
   /**
@@ -280,12 +305,16 @@ export async function composePdf(input: ComposePdfInput): Promise<Buffer> {
   // second render into 35 and inflated the output by 5 MB through duplicated
   // resources. Each distinct source is loaded once and every page it
   // contributes is embedded in a single call.
-  const sources = new Map<Uint8Array, { doc: PDFDocument; embedded: Map<number, EmbeddedPage> }>()
+  const sources = new Map<
+    Uint8Array,
+    { doc: PDFDocument; embedded: Map<number, EmbeddedPage>; cropped: Map<string, EmbeddedPage> }
+  >()
   const register = async (bytes: Uint8Array) => {
     if (sources.has(bytes)) return
     sources.set(bytes, {
       doc: await PDFDocument.load(bytes, { ignoreEncryption: true }),
       embedded: new Map(),
+      cropped: new Map(),
     })
   }
   for (const part of input.parts) {
@@ -294,24 +323,36 @@ export async function composePdf(input: ComposePdfInput): Promise<Buffer> {
   }
   for (const [bytes, source] of sources) {
     const available = source.doc.getPageIndices()
-    const wanted = new Set<number>()
+    const whole = new Set<number>()
+    // A cropped page is embedded separately: the clip region is baked into the
+    // embedded object, so two crops of one page are two objects.
+    const cropped: { index: number; box: ContentBox }[] = []
     for (const part of input.parts) {
       if (part.letterhead?.bytes === bytes) {
         const page = part.letterhead.page ?? 0
-        if (page < available.length && source.doc.getPage(page).node.Contents()) wanted.add(page)
+        if (page < available.length && source.doc.getPage(page).node.Contents()) whole.add(page)
       }
       if (part.bytes !== bytes) continue
       const indices = part.pages
         ? part.pages.filter((i) => Number.isInteger(i) && i >= 0 && i < available.length)
         : available
-      for (const index of indices) {
-        if (source.doc.getPage(index).node.Contents()) wanted.add(index)
-      }
+      indices.forEach((index, position) => {
+        if (!source.doc.getPage(index).node.Contents()) return
+        const box = part.contentBoxes?.[position] ?? null
+        if (box && box.right > box.left && box.top > box.bottom) cropped.push({ index, box })
+        else whole.add(index)
+      })
     }
-    const order = [...wanted]
-    if (order.length === 0) continue
-    const embeds = await out.embedPdf(source.doc, order)
-    order.forEach((index, i) => source.embedded.set(index, embeds[i]!))
+    const order = [...whole]
+    if (order.length > 0) {
+      const embeds = await out.embedPdf(source.doc, order)
+      order.forEach((index, i) => source.embedded.set(index, embeds[i]!))
+    }
+    for (const { index, box } of cropped) {
+      if (source.cropped.has(cropKey(index, box))) continue
+      const embedded = await out.embedPage(source.doc.getPage(index), box)
+      source.cropped.set(cropKey(index, box), embedded)
+    }
   }
 
   for (const part of input.parts) {
@@ -327,10 +368,18 @@ export async function composePdf(input: ComposePdfInput): Promise<Buffer> {
       // would waste a strip on every sheet.
       const band = position === 0 ? part.letterhead : undefined
       const reserved = band ? Math.max(0, band.heightPt) : 0
-      drawImposed(out, source.doc, source.embedded.get(index), index, input.geometry, {
+      const box = part.contentBoxes?.[position] ?? null
+      const page =
+        box && box.right > box.left && box.top > box.bottom
+          ? source.cropped.get(cropKey(index, box))
+          : source.embedded.get(index)
+      drawImposed(out, source.doc, page, index, input.geometry, {
         allowUpscale: input.allowUpscale,
         margin,
         reserveTopPt: reserved,
+        // A cropped page is already just its content, so it may fill the box —
+        // holding it to 1:1 would defeat the normalisation.
+        allowUpscaleOverride: box ? true : undefined,
       })
       if (band) {
         const bandSource = sources.get(band.bytes)!
