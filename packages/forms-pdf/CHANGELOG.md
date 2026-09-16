@@ -1,5 +1,12 @@
 # @braedonsaunders/appkit-forms-pdf
 
+## 7.0.0
+
+### Patch Changes
+
+- Updated dependencies [9246120]
+  - @braedonsaunders/appkit-pdf@0.3.0
+
 ## 6.0.0
 
 ### Patch Changes
