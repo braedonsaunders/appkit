@@ -1224,6 +1224,9 @@ importers:
       '@braedonsaunders/appkit-tokens':
         specifier: workspace:*
         version: link:../tokens
+      pdf-lib:
+        specifier: ^1.17
+        version: 1.17.1
       pdfkit:
         specifier: ^0.17.1
         version: 0.17.2
@@ -1237,9 +1240,6 @@ importers:
       isomorphic-dompurify:
         specifier: ^3.18.0
         version: 3.19.0(@noble/hashes@2.2.0)(canvas@3.2.3)
-      pdf-lib:
-        specifier: ^1.17.1
-        version: 1.17.1
       puppeteer-core:
         specifier: ^25.3.0
         version: 25.3.0

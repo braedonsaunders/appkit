@@ -7,6 +7,20 @@ export * from './page'
 export { drawTable, computeColumnWidths } from './table'
 export { renderPdfDocument } from './document'
 export { renderStatementPdf } from './statement'
+export {
+  composePdf,
+  countPages,
+  imposePages,
+  pageGeometry,
+  stampFooter,
+} from './compose'
+export type {
+  ComposePart,
+  ComposePdfInput,
+  FooterCell,
+  PageGeometry,
+  StampFooterOptions,
+} from './compose'
 export type {
   StatementPdfInput,
   StatementPdfColumn,
