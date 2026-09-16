@@ -182,3 +182,25 @@ test('pageGeometry swaps the axes for landscape', () => {
   assert.deepEqual(pageGeometry('letter', 'portrait'), { width: 612, height: 792 })
   assert.deepEqual(pageGeometry('letter', 'landscape'), { width: 792, height: 612 })
 })
+
+test('imposePages can take a subset of a source, in the order given', async () => {
+  // Rendering N small sheets as one multi-page document and slicing it avoids
+  // paying browser startup N times, which dominates a large assembly.
+  const source = await makePdf([
+    { width: 612, height: 792 },
+    { width: 612, height: 792 },
+    { width: 612, height: 792 },
+  ])
+  const out = await PDFDocument.create()
+  const count = await imposePages(out, source, LETTER, { pages: [2, 0] })
+  assert.equal(count, 2)
+  assert.equal(out.getPageCount(), 2)
+})
+
+test('imposePages ignores out-of-range page requests rather than throwing', async () => {
+  const out = await PDFDocument.create()
+  const count = await imposePages(out, await makePdf([{ width: 612, height: 792 }]), LETTER, {
+    pages: [0, 5, -1],
+  })
+  assert.equal(count, 1)
+})

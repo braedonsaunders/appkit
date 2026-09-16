@@ -28,3 +28,7 @@ and a generated one cannot disagree about what "letter" means.
 A source page with no content stream — a genuinely blank sheet, which scanners
 do emit — is reproduced as a blank page rather than throwing, so one empty sheet
 cannot fail an entire manual.
+
+`imposePages` and `ComposePart` also accept a `pages` subset, so many small
+sheets can be rendered once as a single multi-page document and sliced into
+place rather than paying browser startup per sheet.

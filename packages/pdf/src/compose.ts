@@ -48,10 +48,16 @@ export async function imposePages(
   out: PDFDocument,
   sourceBytes: Uint8Array,
   geometry: PageGeometry,
-  options: { allowUpscale?: boolean } = {},
+  options: { allowUpscale?: boolean; pages?: readonly number[] } = {},
 ): Promise<number> {
   const src = await PDFDocument.load(sourceBytes, { ignoreEncryption: true })
-  const indices = src.getPageIndices()
+  const available = src.getPageIndices()
+  // A caller may want specific pages: rendering many small sheets as ONE
+  // multi-page document and slicing it is dramatically cheaper than paying
+  // browser startup per sheet.
+  const indices = options.pages
+    ? options.pages.filter((i) => Number.isInteger(i) && i >= 0 && i < available.length)
+    : available
   if (indices.length === 0) return 0
 
   // A page with no content stream — a truly blank sheet, which scanners do
@@ -186,6 +192,8 @@ export type ComposePart = {
   bytes: Uint8Array
   /** Excluded from footer stamping — used for covers and section dividers. */
   unnumbered?: boolean
+  /** Zero-based subset of the source's pages, in the order given. */
+  pages?: readonly number[]
 }
 
 export type ComposePdfInput = {
@@ -197,6 +205,8 @@ export type ComposePdfInput = {
   allowUpscale?: boolean
   title?: string
   author?: string
+  /** Written to the PDF's Producer field; defaults to the package name. */
+  producer?: string
 }
 
 /**
@@ -217,6 +227,7 @@ export async function composePdf(input: ComposePdfInput): Promise<Buffer> {
   for (const part of input.parts) {
     const added = await imposePages(out, part.bytes, input.geometry, {
       allowUpscale: input.allowUpscale,
+      pages: part.pages,
     })
     for (let i = 0; i < added; i++) numbered.push(!part.unnumbered)
   }
@@ -237,7 +248,7 @@ export async function composePdf(input: ComposePdfInput): Promise<Buffer> {
 
   if (input.title) out.setTitle(input.title)
   if (input.author) out.setAuthor(input.author)
-  out.setProducer('BeaconHS')
+  out.setProducer(input.producer?.trim() || 'appkit-pdf')
   out.setCreationDate(new Date())
 
   return Buffer.from(await out.save())
