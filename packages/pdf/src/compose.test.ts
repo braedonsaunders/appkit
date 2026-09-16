@@ -232,3 +232,55 @@ test('composePdf embeds a shared source once, not once per part', async () => {
     `page-at-a-time composition ballooned: ${oneEach.length} vs ${wholeThing.length}`,
   )
 })
+
+test('composePdf insets content by a margin without changing page size', async () => {
+  const bytes = await makePdf([{ width: 612, height: 792 }])
+  const tight = await composePdf({ geometry: LETTER, parts: [{ bytes }] })
+  const loose = await composePdf({ geometry: LETTER, parts: [{ bytes }], marginPt: 72 })
+
+  // The sheet is unchanged; only the drawn content shrinks inside it.
+  for (const pdf of [tight, loose]) {
+    const doc = await PDFDocument.load(pdf)
+    assert.equal(Math.round(doc.getPage(0).getWidth()), 612)
+    assert.equal(Math.round(doc.getPage(0).getHeight()), 792)
+  }
+})
+
+test('a per-part margin overrides the document default', async () => {
+  const bytes = await makePdf([{ width: 612, height: 792 }])
+  const pdf = await composePdf({
+    geometry: LETTER,
+    marginPt: 72,
+    parts: [{ bytes }, { bytes, marginPt: 0 }],
+  })
+  assert.equal(await countPages(pdf), 2)
+})
+
+test('a letterhead band lands on the first page of its part only', async () => {
+  // The band is how a control block sits ON a document instead of consuming a
+  // sheet of its own; later pages of the same document must not reserve space
+  // for a header they do not have.
+  const body = await makePdf([
+    { width: 612, height: 792 },
+    { width: 612, height: 792 },
+    { width: 612, height: 792 },
+  ])
+  const band = await makePdf([{ width: 612, height: 140 }])
+  const pdf = await composePdf({
+    geometry: LETTER,
+    parts: [{ bytes: body, letterhead: { bytes: band, heightPt: 140 } }],
+  })
+  // Still one page per source page — the band shares page one rather than
+  // adding a sheet.
+  assert.equal(await countPages(pdf), 3)
+})
+
+test('a letterhead with a missing page degrades to a plain page', async () => {
+  const body = await makePdf([{ width: 612, height: 792 }])
+  const band = await makePdf([{ width: 612, height: 100 }])
+  const pdf = await composePdf({
+    geometry: LETTER,
+    parts: [{ bytes: body, letterhead: { bytes: band, page: 9, heightPt: 100 } }],
+  })
+  assert.equal(await countPages(pdf), 1)
+})

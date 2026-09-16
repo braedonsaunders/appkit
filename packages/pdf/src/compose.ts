@@ -48,7 +48,7 @@ export async function imposePages(
   out: PDFDocument,
   sourceBytes: Uint8Array,
   geometry: PageGeometry,
-  options: { allowUpscale?: boolean; pages?: readonly number[] } = {},
+  options: { allowUpscale?: boolean; pages?: readonly number[]; margin?: number } = {},
 ): Promise<number> {
   const src = await PDFDocument.load(sourceBytes, { ignoreEncryption: true })
   const available = src.getPageIndices()
@@ -103,24 +103,31 @@ function drawImposed(
   page: EmbeddedPage | undefined,
   index: number,
   geometry: PageGeometry,
-  options: { allowUpscale?: boolean },
+  options: { allowUpscale?: boolean; margin?: number; reserveTopPt?: number },
 ): void {
   if (!page) {
     out.addPage([geometry.width, geometry.height])
     return
   }
+  // The box the content may occupy: the sheet, less a uniform inset, less any
+  // band reserved at the top for a letterhead.
+  const margin = Math.max(0, options.margin ?? 0)
+  const reserveTop = Math.max(0, options.reserveTopPt ?? 0)
+  const boxWidth = Math.max(1, geometry.width - margin * 2)
+  const boxHeight = Math.max(1, geometry.height - margin * 2 - reserveTop)
+  const boxBottom = margin
   const rotation = normalizeAngle(src.getPage(index).getRotation().angle)
   const quarterTurned = rotation === 90 || rotation === 270
   // Visual dimensions after the viewer applies /Rotate.
   const visualWidth = quarterTurned ? page.height : page.width
   const visualHeight = quarterTurned ? page.width : page.height
 
-  const fit = Math.min(geometry.width / visualWidth, geometry.height / visualHeight)
+  const fit = Math.min(boxWidth / visualWidth, boxHeight / visualHeight)
   const scale = options.allowUpscale ? fit : Math.min(fit, 1)
   const drawnWidth = visualWidth * scale
   const drawnHeight = visualHeight * scale
-  const left = (geometry.width - drawnWidth) / 2
-  const bottom = (geometry.height - drawnHeight) / 2
+  const left = margin + (boxWidth - drawnWidth) / 2
+  const bottom = boxBottom + (boxHeight - drawnHeight) / 2
 
   // drawPage rotates about the anchor point, which moves the box out of the
   // slot just measured. Shift the anchor to the corner the rotation sweeps the
@@ -217,11 +224,31 @@ export type ComposePart = {
   unnumbered?: boolean
   /** Zero-based subset of the source's pages, in the order given. */
   pages?: readonly number[]
+  /** Inset for this part's content, overriding the document default. */
+  marginPt?: number
+  /**
+   * A band drawn across the top of this part's FIRST page, with the page's own
+   * content fitted beneath it.
+   *
+   * This is how a control block or letterhead sits ON a document rather than
+   * consuming a sheet of its own. The source page here is already rendered, so
+   * its content cannot reflow to make room — it is scaled to the reduced box
+   * instead, which is why only the first page carries the band.
+   */
+  letterhead?: {
+    bytes: Uint8Array
+    /** Page within `bytes`. Defaults to 0. */
+    page?: number
+    /** Height of the band, in points. */
+    heightPt: number
+  }
 }
 
 export type ComposePdfInput = {
   geometry: PageGeometry
   parts: ComposePart[]
+  /** Inset applied to every part's content, in points. Defaults to 0. */
+  marginPt?: number
   footer?: Omit<StampFooterOptions, 'cells'> & {
     cells: (pageNumber: number, pageCount: number) => FooterCell | null
   }
@@ -254,17 +281,25 @@ export async function composePdf(input: ComposePdfInput): Promise<Buffer> {
   // resources. Each distinct source is loaded once and every page it
   // contributes is embedded in a single call.
   const sources = new Map<Uint8Array, { doc: PDFDocument; embedded: Map<number, EmbeddedPage> }>()
-  for (const part of input.parts) {
-    if (sources.has(part.bytes)) continue
-    sources.set(part.bytes, {
-      doc: await PDFDocument.load(part.bytes, { ignoreEncryption: true }),
+  const register = async (bytes: Uint8Array) => {
+    if (sources.has(bytes)) return
+    sources.set(bytes, {
+      doc: await PDFDocument.load(bytes, { ignoreEncryption: true }),
       embedded: new Map(),
     })
+  }
+  for (const part of input.parts) {
+    await register(part.bytes)
+    if (part.letterhead) await register(part.letterhead.bytes)
   }
   for (const [bytes, source] of sources) {
     const available = source.doc.getPageIndices()
     const wanted = new Set<number>()
     for (const part of input.parts) {
+      if (part.letterhead?.bytes === bytes) {
+        const page = part.letterhead.page ?? 0
+        if (page < available.length && source.doc.getPage(page).node.Contents()) wanted.add(page)
+      }
       if (part.bytes !== bytes) continue
       const indices = part.pages
         ? part.pages.filter((i) => Number.isInteger(i) && i >= 0 && i < available.length)
@@ -285,12 +320,35 @@ export async function composePdf(input: ComposePdfInput): Promise<Buffer> {
     const indices = part.pages
       ? part.pages.filter((i) => Number.isInteger(i) && i >= 0 && i < available.length)
       : available
-    for (const index of indices) {
+    const margin = Math.max(0, part.marginPt ?? input.marginPt ?? 0)
+    indices.forEach((index, position) => {
+      // The band belongs to the first page of the part only: later pages have
+      // no header in a controlled document, and reserving space on all of them
+      // would waste a strip on every sheet.
+      const band = position === 0 ? part.letterhead : undefined
+      const reserved = band ? Math.max(0, band.heightPt) : 0
       drawImposed(out, source.doc, source.embedded.get(index), index, input.geometry, {
         allowUpscale: input.allowUpscale,
+        margin,
+        reserveTopPt: reserved,
       })
+      if (band) {
+        const bandSource = sources.get(band.bytes)!
+        const bandPage = bandSource.embedded.get(band.page ?? 0)
+        if (bandPage) {
+          const page = out.getPage(out.getPageCount() - 1)
+          const usable = input.geometry.width - margin * 2
+          const scale = Math.min(usable / bandPage.width, reserved / bandPage.height, 1)
+          page.drawPage(bandPage, {
+            xScale: scale,
+            yScale: scale,
+            x: margin + (usable - bandPage.width * scale) / 2,
+            y: input.geometry.height - margin - bandPage.height * scale,
+          })
+        }
+      }
       numbered.push(!part.unnumbered)
-    }
+    })
   }
 
   if (input.footer) {
