@@ -16,6 +16,7 @@ export {
 } from './compose'
 export type {
   ComposePart,
+  ContentBox,
   ComposePdfInput,
   FooterCell,
   PageGeometry,
