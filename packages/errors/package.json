@@ -1,6 +1,6 @@
 {
   "name": "@braedonsaunders/appkit-errors",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Universal action-error handling: a typed refusal taxonomy, a response read path that cannot throw, a persistent alert, and a busy lifecycle that always releases.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
