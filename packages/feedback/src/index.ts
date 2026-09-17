@@ -29,7 +29,12 @@ export { formatIssueBody, normalizeIssueSeverity, prepareIssueDraft } from './is
 export { composeFeedbackUserMessage, feedbackSystemPrompt } from './prompt'
 export { asKnowledgeHits, createFeedbackTools, type FeedbackToolDeps } from './tools'
 export { interpretFeedbackTurn, latestFeedbackToolName } from './interpret'
-export { createGithubIssuePublisher, githubIssueBody, type GithubIssuePublisherOptions } from './github'
+export {
+  createGithubIssuePublisher,
+  githubIssueBody,
+  verifyGithubIssueAccess,
+  type GithubIssuePublisherOptions,
+} from './github'
 export { createScriptedFeedbackClient, type ScriptedFeedbackOptions } from './scripted'
 export { createHttpFeedbackClient } from './http'
 export { createMemoryIssuePublisher, type MemoryIssueRecord } from './memory'

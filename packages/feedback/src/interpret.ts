@@ -7,9 +7,10 @@ import {
   type PublishedIssue,
 } from './types'
 
+const UNAVAILABLE_MESSAGE = 'The report could not be completed. Try again in a moment.'
 const UNAVAILABLE: FeedbackTurnResult = {
   kind: 'unavailable',
-  message: 'The report could not be completed. Try again in a moment.',
+  message: UNAVAILABLE_MESSAGE,
 }
 
 export function interpretFeedbackTurn(parts: readonly FeedbackToolPart[]): FeedbackTurnResult {
@@ -47,11 +48,16 @@ function toolName(part: FeedbackToolPart): string | undefined {
   return undefined
 }
 
-function isTerminalTool(name: string | undefined): name is (typeof FEEDBACK_TERMINAL_TOOLS)[number] {
+function isTerminalTool(
+  name: string | undefined,
+): name is (typeof FEEDBACK_TERMINAL_TOOLS)[number] {
   return name !== undefined && (FEEDBACK_TERMINAL_TOOLS as readonly string[]).includes(name)
 }
 
-function readTerminalOutput(name: (typeof FEEDBACK_TERMINAL_TOOLS)[number], output: unknown): FeedbackTurnResult | null {
+function readTerminalOutput(
+  name: (typeof FEEDBACK_TERMINAL_TOOLS)[number],
+  output: unknown,
+): FeedbackTurnResult | null {
   const record = asRecord(output)
   if (!record) return null
   if (name === 'resolve_as_guidance') {
@@ -64,6 +70,10 @@ function readTerminalOutput(name: (typeof FEEDBACK_TERMINAL_TOOLS)[number], outp
     const questions = asQuestions(record.questions)
     if (questions.length === 0) return null
     return { kind: 'questions', questions: questions.slice(0, 2) }
+  }
+  if (name === 'submit_issue' && record.kind === 'unavailable') {
+    const message = asString(record.message)
+    return { kind: 'unavailable', message: message ?? UNAVAILABLE_MESSAGE }
   }
   const issue = asPublishedIssue(record.issue ?? record)
   if (!issue) return null
@@ -84,7 +94,9 @@ function asQuestions(value: unknown): FeedbackQuestion[] {
     const prompt = asString(record?.prompt)
     if (!id || !prompt) return []
     const choices = Array.isArray(record?.choices)
-      ? record.choices.filter((choice): choice is string => typeof choice === 'string' && choice.trim().length > 0)
+      ? record.choices.filter(
+          (choice): choice is string => typeof choice === 'string' && choice.trim().length > 0,
+        )
       : undefined
     return [{ id, prompt, choices: choices && choices.length > 0 ? choices : undefined }]
   })
@@ -102,7 +114,9 @@ function asPublishedIssue(value: unknown): PublishedIssue | null {
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null
 }
 
 function asString(value: unknown): string | undefined {

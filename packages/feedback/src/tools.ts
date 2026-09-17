@@ -85,11 +85,19 @@ export function createFeedbackTools(deps: FeedbackToolDeps): ToolSet {
           },
           deps.redact,
         )
-        const issue = await deps.publisher.create(prepared.draft)
-        return {
-          kind: 'filed' as const,
-          issue: { ...issue, title: issue.title || prepared.draft.title },
-          stripped: prepared.stripped,
+        try {
+          const issue = await deps.publisher.create(prepared.draft)
+          return {
+            kind: 'filed' as const,
+            issue: { ...issue, title: issue.title || prepared.draft.title },
+            stripped: prepared.stripped,
+          }
+        } catch (error) {
+          const message =
+            error instanceof Error && error.message.trim()
+              ? error.message
+              : 'GitHub could not create the issue.'
+          return { kind: 'unavailable' as const, message }
         }
       },
     }),
@@ -136,14 +144,20 @@ export function asKnowledgeHits(value: unknown): KnowledgeHit[] {
   return value.flatMap((item) => {
     if (!item || typeof item !== 'object') return []
     const record = item as Record<string, unknown>
-    if (typeof record.id !== 'string' || typeof record.title !== 'string' || typeof record.url !== 'string') {
+    if (
+      typeof record.id !== 'string' ||
+      typeof record.title !== 'string' ||
+      typeof record.url !== 'string'
+    ) {
       return []
     }
-    return [{
-      id: record.id,
-      title: record.title,
-      url: record.url,
-      excerpt: typeof record.excerpt === 'string' ? record.excerpt : undefined,
-    }]
+    return [
+      {
+        id: record.id,
+        title: record.title,
+        url: record.url,
+        excerpt: typeof record.excerpt === 'string' ? record.excerpt : undefined,
+      },
+    ]
   })
 }
