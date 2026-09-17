@@ -49,10 +49,12 @@ export async function auditRegistryDependencyClosure(roots, loadManifest) {
  * Release run.
  *
  * A 404 here means "not yet" far more often than "never", so it is retried. Any
- * other failure is not.
+ * other failure is not. A first-time package name is slower than a new version
+ * of an existing name — two minutes was enough for the latter and not the
+ * former — so the window is ten minutes.
  */
-const PROPAGATION_TIMEOUT_MS = 120_000
-const PROPAGATION_RETRY_MS = 3_000
+const PROPAGATION_TIMEOUT_MS = 600_000
+const PROPAGATION_RETRY_MS = 5_000
 
 const missingFromRegistry = (output) => /E404|is not in this registry|No match(ing version)? found/i.test(output)
 
@@ -63,7 +65,7 @@ export async function loadNpmManifest(name, range, options = {}) {
   const sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)))
   const now = options.now ?? Date.now
   // Injectable so the retry is driven by a test rather than by a real registry
-  // and a real two-minute wall clock.
+  // and a real ten-minute wall clock.
   const exec = options.run ?? run
   const deadline = now() + timeoutMs
   let stdout

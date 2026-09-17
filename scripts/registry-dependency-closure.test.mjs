@@ -106,7 +106,7 @@ test('a package missing only because it was just published is retried', async ()
 
 test('a failure that is not absence is not retried, and neither is a timeout', async () => {
   // An auth failure or a malformed range will never come good by waiting, so
-  // retrying one only delays a real error by two minutes.
+  // retrying one only delays a real error by ten minutes.
   let attempts = 0
   await assert.rejects(
     () =>
