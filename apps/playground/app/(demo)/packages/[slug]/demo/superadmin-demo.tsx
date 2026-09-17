@@ -1,9 +1,19 @@
 'use client'
 
 import * as React from 'react'
-import type { PlatformUserRecord } from '@braedonsaunders/appkit-superadmin'
+import { Tabs } from '@braedonsaunders/appkit-ui'
+import type { PlatformTenantRecord, PlatformUserRecord } from '@braedonsaunders/appkit-superadmin'
+import { createPlatformNav } from '@braedonsaunders/appkit-superadmin'
 import {
+  DatabaseMaintenanceAdmin,
+  DeliveryLogAdmin,
+  PlatformHub,
+  PlatformMenu,
+  PlatformTenantsAdmin,
   PlatformUsersAdmin,
+  ProviderSettingsForm,
+  type DeliveryLogRecord,
+  type PlatformTenantsActions,
   type PlatformUsersActions,
 } from '@braedonsaunders/appkit-superadmin/react'
 
@@ -58,10 +68,59 @@ const seedUsers: PlatformUserRecord[] = [
   },
 ]
 
-export function SuperadminDemo() {
-  const [users, setUsers] = React.useState(seedUsers)
+const seedTenants: PlatformTenantRecord[] = [
+  {
+    id: 'workspace-main',
+    name: 'Main workspace',
+    slug: 'main',
+    status: 'active',
+    memberCount: 2,
+    createdAt: new Date('2025-01-01T00:00:00.000Z'),
+    updatedAt: now,
+  },
+  {
+    id: 'workspace-field',
+    name: 'Field operations',
+    slug: 'field',
+    status: 'active',
+    memberCount: 1,
+    createdAt: new Date('2025-06-01T00:00:00.000Z'),
+    updatedAt: now,
+  },
+]
 
-  const actions = React.useMemo<PlatformUsersActions>(() => ({
+const seedLogs: DeliveryLogRecord[] = [
+  {
+    id: 'mail-1',
+    createdAt: now,
+    tenantName: 'Main workspace',
+    recipient: 'jordan@example.com',
+    subject: 'Welcome',
+    status: 'sent',
+    provider: 'resend',
+    category: 'auth',
+  },
+  {
+    id: 'mail-2',
+    createdAt: now,
+    tenantName: 'Field operations',
+    recipient: 'ops@example.com',
+    subject: 'Digest failed',
+    status: 'failed',
+    provider: 'resend',
+    errorMessage: '550 mailbox unavailable',
+  },
+]
+
+const nav = createPlatformNav()
+
+export function SuperadminDemo() {
+  const [tab, setTab] = React.useState('overview')
+  const [users, setUsers] = React.useState(seedUsers)
+  const [tenants, setTenants] = React.useState(seedTenants)
+  const [pathname, setPathname] = React.useState('/platform')
+
+  const userActions = React.useMemo<PlatformUsersActions>(() => ({
     async createUser(input) {
       setUsers((current) => [
         ...current,
@@ -102,15 +161,114 @@ export function SuperadminDemo() {
     },
   }), [])
 
+  const tenantActions = React.useMemo<PlatformTenantsActions>(() => ({
+    async createTenant(input) {
+      setTenants((current) => [
+        ...current,
+        {
+          id: `tenant-${current.length + 1}`,
+          name: input.name,
+          slug: input.slug,
+          status: 'active',
+          memberCount: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ])
+      return { ok: true, message: `${input.name} created.` }
+    },
+    async setTenantStatus(tenantId, status) {
+      setTenants((current) => current.map((tenant) => (
+        tenant.id === tenantId ? { ...tenant, status, updatedAt: new Date() } : tenant
+      )))
+      return { ok: true }
+    },
+    async addMember() {
+      return { ok: true, message: 'Demo member added.' }
+    },
+    async setMemberStatus() {
+      return { ok: true }
+    },
+    async removeMember() {
+      return { ok: true }
+    },
+  }), [])
+
   return (
-    <PlatformUsersAdmin
-      users={users}
-      currentUserId="operator"
-      tenants={demoTenants}
-      defaultTenantId="workspace-main"
-      actions={actions}
-      title="Platform users"
-      description="A live package demo of installation-wide identity administration."
-    />
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <PlatformMenu pathname={pathname} />
+      </div>
+      <Tabs
+        value={tab}
+        onValueChange={(value) => {
+          setTab(value)
+          setPathname(value === 'overview' ? '/platform' : `/platform/${value}`)
+        }}
+        tabs={[
+          { value: 'overview', label: 'Overview' },
+          { value: 'users', label: 'Users' },
+          { value: 'tenants', label: 'Tenants' },
+          { value: 'email', label: 'Email' },
+          { value: 'log', label: 'Email log' },
+          { value: 'database', label: 'Database' },
+        ]}
+      />
+      {tab === 'overview' ? <PlatformHub tiles={nav.tiles} /> : null}
+      {tab === 'users' ? (
+        <PlatformUsersAdmin
+          users={users}
+          currentUserId="operator"
+          tenants={demoTenants}
+          defaultTenantId="workspace-main"
+          actions={userActions}
+          title="Platform users"
+          description="A live package demo of installation-wide identity administration."
+        />
+      ) : null}
+      {tab === 'tenants' ? (
+        <PlatformTenantsAdmin
+          tenants={tenants}
+          members={{}}
+          currentTenantId="workspace-main"
+          actions={tenantActions}
+        />
+      ) : null}
+      {tab === 'email' ? (
+        <ProviderSettingsForm
+          kind="email"
+          scope="platform"
+          specs={[
+            { value: 'resend', label: 'Resend', hasSecret: true, secretLabel: 'API key', keyHint: 're_…', secretRequired: true, fields: [] },
+            { value: 'smtp', label: 'SMTP', hasSecret: true, secretLabel: 'Password', keyHint: 'optional', secretRequired: false, fields: [
+              { key: 'smtpHost', kind: 'text', label: 'Host', required: true },
+            ] },
+          ]}
+          initial={{ enabled: true, provider: 'resend', hasKey: true, mode: 'tenant_optional', fromName: 'AppKit', fromEmail: 'ops@example.com' }}
+          onSubmit={async () => ({ ok: true, message: 'Demo settings saved.' })}
+        />
+      ) : null}
+      {tab === 'log' ? <DeliveryLogAdmin kind="email" rows={seedLogs} /> : null}
+      {tab === 'database' ? (
+        <DatabaseMaintenanceAdmin
+          tables={[
+            { table: 'email_log', label: 'Email log', prettySize: '12 MB', rows: 18420, retentionDays: 365 },
+            { table: 'audit_log', label: 'Audit log', prettySize: '80 MB', rows: 210_004, retentionDays: 730 },
+          ]}
+          lastRun={{
+            ok: true,
+            at: now,
+            trigger: 'scheduled',
+            durationMs: 1820,
+            perTable: [
+              { table: 'email_log', deleted: 12, retentionDays: 365, analyzed: true },
+              { table: 'audit_log', deleted: 0, retentionDays: 730, analyzed: true },
+            ],
+          }}
+          onSave={async () => ({ ok: true, message: 'Demo retention saved.' })}
+          onRun={async () => ({ ok: true, message: 'Demo maintenance queued.' })}
+        />
+      ) : null}
+    </div>
   )
 }

@@ -1,12 +1,31 @@
 # @braedonsaunders/appkit-superadmin
 
-Installation-wide identity administration for platform operators. This package
-is separate from tenant IAM: it manages the accounts that can sign in to the
-installation, their active state, super-admin standing, password credentials,
-and live sessions.
+Installation-operator console for platform administrators. This package is
+separate from tenant IAM: it owns the `/platform` workspace — the sidebar
+catalog, overview hub, workspace switcher, identity and tenant administration,
+provider settings, delivery logs, and database maintenance — so every app
+renders the same operator UI.
 
-The root exports the guarded service contract. Optional subpaths provide memory
-and Drizzle persistence plus the production React user/session surfaces.
+The root exports the guarded identity/tenant service and the nav catalog.
+Optional subpaths provide memory and Drizzle persistence plus the production
+React surfaces.
+
+```ts
+import { createPlatformNav, selectPlatformNav } from '@braedonsaunders/appkit-superadmin'
+import {
+  PlatformHub,
+  PlatformMenu,
+  PlatformUsersAdmin,
+  PlatformTenantsAdmin,
+} from '@braedonsaunders/appkit-superadmin/react'
+
+const nav = createPlatformNav({
+  modules: ['overview', 'tenants', 'users', 'email', 'emailLog'],
+  extras: [{ id: 'access', href: '/platform/access', label: 'Access', description: 'Grants', iconKey: 'key' }],
+})
+
+const groups = selectPlatformNav(pathname, tenantGroups, nav.groups)
+```
 
 ```ts
 import { createSuperadminService } from '@braedonsaunders/appkit-superadmin'
@@ -21,6 +40,9 @@ const service = createSuperadminService({
 ```
 
 Applications own authentication middleware, operator authorization, password
-hashing, routing, and revalidation. The package owns validation, last-active-
-super-admin protection, current-session reporting, list mechanics, persistence
-ports, and the reusable operator UI.
+hashing, routing, persistence adapters, and revalidation. The package owns the
+operator chrome, validation, last-active-super-admin protection, current-session
+reporting, list mechanics, and the reusable screens.
+
+Omit a module when the host has no backend for it. Extra nav items stay
+application-specific (for example acting-user grants).

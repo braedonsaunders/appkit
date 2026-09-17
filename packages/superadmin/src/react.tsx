@@ -16,14 +16,21 @@ import {
   type RecordColumn,
 } from '@braedonsaunders/appkit-ui'
 import { Building2, KeyRound, MonitorSmartphone, ShieldCheck, UserPlus, Users } from 'lucide-react'
-import type { PlatformSessionRecord, PlatformTenantRecord, PlatformUserRecord, TenantMemberRecord } from './types'
+import type {
+  PlatformSessionRecord,
+  PlatformTenantRecord,
+  PlatformUserRecord,
+  SuperadminActionResult,
+  TenantMemberRecord,
+} from './types'
 
-/**
- * Server-action friendly result contract: the application owns the actions
- * (authorization, persistence, revalidation) and the components render state,
- * collect input, and surface outcomes.
- */
-export type SuperadminActionResult = { ok: true; message?: string } | { ok: false; message: string }
+export type {
+  PlatformSessionRecord,
+  PlatformTenantRecord,
+  PlatformUserRecord,
+  SuperadminActionResult,
+  TenantMemberRecord,
+}
 
 export type PlatformUsersActions = {
   createUser(input: {
@@ -47,12 +54,18 @@ export type PlatformUsersAdminProps = {
   /** The signed-in operator, so their own row is labeled and guarded in copy. */
   currentUserId?: string
   /** Workspaces a new account can join — typically the active tenants. */
-  tenants: { id: string; name: string }[]
+  tenants?: { id: string; name: string }[]
   /** Preselected workspace in the Add-user drawer — typically the operator's current tenant. */
-  defaultTenantId: string
-  actions: PlatformUsersActions
+  defaultTenantId?: string
+  actions?: PlatformUsersActions
   title?: string
   description?: string
+  canCreate?: boolean
+  showSignIn?: boolean
+  showSessions?: boolean
+  extraColumns?: RecordColumn<PlatformUserRecord>[]
+  /** When set, selecting a row navigates instead of opening the identity drawer. */
+  onSelectUser?: (user: PlatformUserRecord) => void
 }
 
 /**
@@ -63,11 +76,16 @@ export type PlatformUsersAdminProps = {
 export function PlatformUsersAdmin({
   users,
   currentUserId,
-  tenants,
-  defaultTenantId,
+  tenants = [],
+  defaultTenantId = '',
   actions,
   title = 'Users',
   description = 'Every account that can sign in to this installation. Deactivating an account blocks sign-in immediately and ends its sessions.',
+  canCreate = true,
+  showSignIn = true,
+  showSessions = true,
+  extraColumns,
+  onSelectUser,
 }: PlatformUsersAdminProps) {
   const [query, setQuery] = React.useState('')
   const [status, setStatus] = React.useState<'all' | 'active' | 'inactive'>('all')
@@ -126,23 +144,33 @@ export function PlatformUsersAdmin({
           <Badge variant={user.isActive ? 'success' : 'secondary'}>{user.isActive ? 'Active' : 'Deactivated'}</Badge>
         ),
       },
-      {
-        key: 'hasCredential',
-        label: 'Sign-in',
-        render: (user) => (
-          <div className="flex flex-wrap gap-1">
-            <Badge variant={user.hasCredential ? 'secondary' : 'outline'}>
-              {user.hasCredential ? 'Password' : 'No credential'}
-            </Badge>
-            {user.emailVerified ? null : <Badge variant="outline">Unverified</Badge>}
-          </div>
-        ),
-      },
-      {
-        key: 'activeSessionCount',
-        label: 'Sessions',
-        render: (user) => <span className="tabular-nums text-fg-muted">{user.activeSessionCount}</span>,
-      },
+      ...(showSignIn
+        ? [
+            {
+              key: 'hasCredential',
+              label: 'Sign-in',
+              render: (user: PlatformUserRecord) => (
+                <div className="flex flex-wrap gap-1">
+                  <Badge variant={user.hasCredential ? 'secondary' : 'outline'}>
+                    {user.hasCredential ? 'Password' : 'No credential'}
+                  </Badge>
+                  {user.emailVerified ? null : <Badge variant="outline">Unverified</Badge>}
+                </div>
+              ),
+            } satisfies RecordColumn<PlatformUserRecord>,
+          ]
+        : []),
+      ...(showSessions
+        ? [
+            {
+              key: 'activeSessionCount',
+              label: 'Sessions',
+              render: (user: PlatformUserRecord) => (
+                <span className="tabular-nums text-fg-muted">{user.activeSessionCount}</span>
+              ),
+            } satisfies RecordColumn<PlatformUserRecord>,
+          ]
+        : []),
       {
         key: 'lastSeenAt',
         label: 'Last seen',
@@ -150,8 +178,9 @@ export function PlatformUsersAdmin({
           <span className="whitespace-nowrap text-fg-muted">{formatDateTime(user.lastSeenAt)}</span>
         ),
       },
+      ...(extraColumns ?? []),
     ],
-    [currentUserId],
+    [currentUserId, extraColumns, showSessions, showSignIn],
   )
 
   async function run(operation: () => Promise<SuperadminActionResult>, successMessage?: string): Promise<boolean> {
@@ -225,12 +254,14 @@ export function PlatformUsersAdmin({
           </div>
         }
         toolbarActions={
-          <Button onClick={() => setCreating(true)}>
-            <UserPlus size={16} />
-            Add user
-          </Button>
+          canCreate ? (
+            <Button onClick={() => setCreating(true)}>
+              <UserPlus size={16} />
+              Add user
+            </Button>
+          ) : null
         }
-        onRowClick={(user) => setSelectedId(user.id)}
+        onRowClick={(user) => (onSelectUser ? onSelectUser(user) : setSelectedId(user.id))}
         empty={{
           icon: <Users />,
           title: 'No users found',
@@ -238,7 +269,7 @@ export function PlatformUsersAdmin({
         }}
       />
 
-      {selected ? (
+      {selected && actions && !onSelectUser ? (
         <UserDrawer
           user={selected}
           isCurrentUser={selected.id === currentUserId}
@@ -249,7 +280,7 @@ export function PlatformUsersAdmin({
         />
       ) : null}
 
-      {creating ? (
+      {creating && canCreate && actions ? (
         <CreateUserDrawer
           tenants={tenants}
           defaultTenantId={defaultTenantId}
@@ -702,12 +733,19 @@ export type PlatformTenantsActions = {
 export type PlatformTenantsAdminProps = {
   tenants: PlatformTenantRecord[]
   /** tenantId → members, preloaded by the server page and refreshed on revalidation. */
-  members: Record<string, TenantMemberRecord[]>
+  members?: Record<string, TenantMemberRecord[]>
   /** The tenant the operator is currently working in — suspending it is called out. */
   currentTenantId?: string
-  actions: PlatformTenantsActions
+  actions?: PlatformTenantsActions
   title?: string
   description?: string
+  canCreate?: boolean
+  showSlug?: boolean
+  extraColumns?: RecordColumn<PlatformTenantRecord>[]
+  onSelectTenant?: (tenant: PlatformTenantRecord) => void
+  onViewAs?: (tenant: PlatformTenantRecord) => void | Promise<void>
+  viewAsLabel?: string
+  disableDrawer?: boolean
 }
 
 /**
@@ -716,11 +754,18 @@ export type PlatformTenantsAdminProps = {
  */
 export function PlatformTenantsAdmin({
   tenants,
-  members,
+  members = {},
   currentTenantId,
   actions,
   title = 'Tenants',
   description = 'Every workspace on this installation. Suspending a tenant hides it from members immediately; its data is kept.',
+  canCreate = true,
+  showSlug = true,
+  extraColumns,
+  onSelectTenant,
+  onViewAs,
+  viewAsLabel = 'Open',
+  disableDrawer = false,
 }: PlatformTenantsAdminProps) {
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
   const [creating, setCreating] = React.useState(false)
@@ -742,12 +787,18 @@ export function PlatformTenantsAdmin({
           </div>
         ),
       },
-      {
-        key: 'slug',
-        label: 'Slug',
-        sortable: true,
-        render: (tenant) => <span className="font-mono text-xs text-fg-muted">{tenant.slug}</span>,
-      },
+      ...(showSlug
+        ? [
+            {
+              key: 'slug',
+              label: 'Slug',
+              sortable: true,
+              render: (tenant: PlatformTenantRecord) => (
+                <span className="font-mono text-xs text-fg-muted">{tenant.slug}</span>
+              ),
+            } satisfies RecordColumn<PlatformTenantRecord>,
+          ]
+        : []),
       {
         key: 'status',
         label: 'Status',
@@ -769,8 +820,31 @@ export function PlatformTenantsAdmin({
           <span className="whitespace-nowrap text-fg-muted">{formatDateTime(tenant.createdAt)}</span>
         ),
       },
+      ...(extraColumns ?? []),
+      ...(onViewAs
+        ? [
+            {
+              key: 'viewAs',
+              label: '',
+              kind: 'actions',
+              render: (tenant: PlatformTenantRecord) => (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={tenant.status !== 'active'}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    void onViewAs(tenant)
+                  }}
+                >
+                  {viewAsLabel}
+                </Button>
+              ),
+            } satisfies RecordColumn<PlatformTenantRecord>,
+          ]
+        : []),
     ],
-    [currentTenantId],
+    [currentTenantId, extraColumns, onViewAs, showSlug, viewAsLabel],
   )
 
   const sorted = React.useMemo(() => {
@@ -800,10 +874,12 @@ export function PlatformTenantsAdmin({
           <h1 className="text-2xl font-semibold tracking-tight text-fg">{title}</h1>
           <p className="mt-1 max-w-3xl text-sm text-fg-muted">{description}</p>
         </div>
-        <Button onClick={() => setCreating(true)}>
-          <Building2 size={16} />
-          Add tenant
-        </Button>
+        {canCreate ? (
+          <Button onClick={() => setCreating(true)}>
+            <Building2 size={16} />
+            Add tenant
+          </Button>
+        ) : null}
       </div>
 
       {notice ? (
@@ -830,7 +906,10 @@ export function PlatformTenantsAdmin({
         onSortChange={(key) =>
           setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }))
         }
-        onRowClick={(tenant) => setSelectedId(tenant.id)}
+        onRowClick={(tenant) => {
+          if (onSelectTenant) onSelectTenant(tenant)
+          else if (!disableDrawer) setSelectedId(tenant.id)
+        }}
         empty={{
           icon: <Building2 />,
           title: 'No tenants',
@@ -838,7 +917,7 @@ export function PlatformTenantsAdmin({
         }}
       />
 
-      {selected ? (
+      {selected && actions && !disableDrawer ? (
         <TenantDrawer
           tenant={selected}
           members={members[selected.id] ?? []}
@@ -861,7 +940,7 @@ export function PlatformTenantsAdmin({
         />
       ) : null}
 
-      {creating ? (
+      {creating && canCreate && actions ? (
         <CreateTenantDrawer
           onClose={() => setCreating(false)}
           onCreate={async (input) => {
@@ -1151,3 +1230,27 @@ function formatDateTime(value: Date | null): string {
   if (!value) return 'Never'
   return value.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
+
+export {
+  CreateTenantPage,
+  DatabaseMaintenanceAdmin,
+  DeliveryLogAdmin,
+  PLATFORM_ICONS,
+  PlatformHub,
+  PlatformMenu,
+  ProviderSettingsForm,
+  type CreateTenantPageProps,
+  type DatabaseMaintenanceAdminProps,
+  type DeliveryLogAdminProps,
+  type DeliveryLogRecord,
+  type MaintenanceLastRun,
+  type MaintenanceTableRow,
+  type PlatformHubProps,
+  type PlatformMenuProps,
+  type PolicyMode,
+  type ProviderFieldSpec,
+  type ProviderSettingsFormProps,
+  type ProviderSettingsKind,
+  type ProviderSettingsValues,
+  type ProviderSpec,
+} from './react-console'

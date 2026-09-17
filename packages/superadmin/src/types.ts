@@ -238,6 +238,13 @@ export interface SuperadminPersistence {
   deleteTenantMember(tenantId: string, membershipId: string): Promise<boolean>
 }
 
+/**
+ * Server-action friendly result contract: the application owns the actions
+ * (authorization, persistence, revalidation) and the components render state,
+ * collect input, and surface outcomes.
+ */
+export type SuperadminActionResult = { ok: true; message?: string } | { ok: false; message: string }
+
 export type SuperadminServiceOptions = {
   persistence: SuperadminPersistence
   /**

@@ -1,7 +1,7 @@
 {
   "name": "@braedonsaunders/appkit-superadmin",
-  "version": "2.0.0",
-  "description": "Instance-operator administration over the platform identity: manage the users who can sign in, their credentials, and active sessions, with guard rails and production React components.",
+  "version": "2.1.0",
+  "description": "Instance-operator console: platform nav, hub, identity, tenants, provider settings, delivery logs, and database maintenance, with guard rails and production React components.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {
