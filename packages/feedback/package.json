@@ -1,6 +1,6 @@
 {
   "name": "@braedonsaunders/appkit-feedback",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "In-app product issue reporter: header chrome, short AI triage, PII-safe generalization, and a host-owned issue publisher.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
