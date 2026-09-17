@@ -1,5 +1,12 @@
 # @braedonsaunders/appkit-pdf
 
+## 0.4.1
+
+### Patch Changes
+
+- 871811b: Export the `ContentBox` type. `ComposePart.contentBoxes` shipped without it, so
+  consumers could pass boxes but not name their type.
+
 ## 0.4.0
 
 ### Minor Changes

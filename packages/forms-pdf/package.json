@@ -29,7 +29,7 @@
   },
   "peerDependencies": {
     "@braedonsaunders/appkit-design-studio": "^2.0.0",
-    "@braedonsaunders/appkit-pdf": "^0.4.0",
+    "@braedonsaunders/appkit-pdf": "^0.4.1",
     "@braedonsaunders/appkit-reports": "^2.0.0",
     "@braedonsaunders/appkit-sync": "^1.1.1",
     "puppeteer-core": "^25.3.0"
