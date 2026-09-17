@@ -2,108 +2,6 @@
   "version": 1,
   "runs": [
     {
-      "at": "2026-09-12T03:00:25.198Z",
-      "sha": "e7f9c99806b50a90386c702ca90a9cff96017ca8",
-      "pr": null,
-      "actor": "braedonsaunders",
-      "files": 1066,
-      "functions": 3858,
-      "loc": 190833,
-      "languages": 12,
-      "topLanguages": [
-        {
-          "ext": "ts",
-          "pct": 47,
-          "lines": 89785
-        },
-        {
-          "ext": "tsx",
-          "pct": 34,
-          "lines": 65832
-        },
-        {
-          "ext": "yaml",
-          "pct": 8,
-          "lines": 14513
-        },
-        {
-          "ext": "json",
-          "pct": 6,
-          "lines": 10753
-        },
-        {
-          "ext": "md",
-          "pct": 3,
-          "lines": 5645
-        }
-      ],
-      "dead": 152,
-      "deadPct": 3.9,
-      "circular": 1,
-      "godObjects": 1,
-      "avgCoupling": 3.8,
-      "securityIssues": 78,
-      "patterns": 8,
-      "duplicates": 25,
-      "layerViolations": 354,
-      "connections": 4069,
-      "avgFnLines": 15,
-      "longestFn": 16,
-      "testFiles": 149,
-      "testRatio": 14,
-      "topFolders": [
-        {
-          "name": "packages",
-          "count": 940
-        },
-        {
-          "name": "apps",
-          "count": 99
-        },
-        {
-          "name": "scripts",
-          "count": 14
-        },
-        {
-          "name": "root",
-          "count": 8
-        },
-        {
-          "name": "docs",
-          "count": 4
-        }
-      ],
-      "folders": 5,
-      "grade": "D",
-      "score": 66,
-      "topBlast": {
-        "path": "packages/viewspec/src/builder.ts",
-        "direct": 175,
-        "transitive": 634,
-        "total": 809
-      },
-      "fragility": [
-        {
-          "path": "packages/viewspec/src/builder.ts",
-          "direct": 175,
-          "transitive": 634,
-          "total": 809
-        },
-        {
-          "path": "packages/apps/src/memory.ts",
-          "direct": 131,
-          "transitive": 629,
-          "total": 760
-        },
-        {
-          "path": "packages/desk/src/host.ts",
-          "direct": 113,
-          "transitive": 534,
-          "total": 647
-        }
-      ]
-    },
-    {
       "at": "2026-09-12T03:52:54.426Z",
       "sha": "d754d2dd02cc5f98f02bae99935a8e2ed3e1c262",
       "pr": null,
@@ -2965,6 +2863,108 @@
       "pr": null,
       "actor": "braedonsaunders",
       "files": 1100,
+      "functions": 3997,
+      "loc": 196949,
+      "languages": 12,
+      "topLanguages": [
+        {
+          "ext": "ts",
+          "pct": 47,
+          "lines": 93431
+        },
+        {
+          "ext": "tsx",
+          "pct": 34,
+          "lines": 67839
+        },
+        {
+          "ext": "yaml",
+          "pct": 7,
+          "lines": 14554
+        },
+        {
+          "ext": "json",
+          "pct": 6,
+          "lines": 10851
+        },
+        {
+          "ext": "md",
+          "pct": 3,
+          "lines": 5953
+        }
+      ],
+      "dead": 151,
+      "deadPct": 3.8,
+      "circular": 1,
+      "godObjects": 1,
+      "avgCoupling": 3.8,
+      "securityIssues": 86,
+      "patterns": 8,
+      "duplicates": 24,
+      "layerViolations": 359,
+      "connections": 4222,
+      "avgFnLines": 15,
+      "longestFn": 16,
+      "testFiles": 156,
+      "testRatio": 14.2,
+      "topFolders": [
+        {
+          "name": "packages",
+          "count": 972
+        },
+        {
+          "name": "apps",
+          "count": 100
+        },
+        {
+          "name": "scripts",
+          "count": 14
+        },
+        {
+          "name": "root",
+          "count": 8
+        },
+        {
+          "name": "docs",
+          "count": 4
+        }
+      ],
+      "folders": 5,
+      "grade": "D",
+      "score": 67,
+      "topBlast": {
+        "path": "packages/viewspec/src/builder.ts",
+        "direct": 181,
+        "transitive": 658,
+        "total": 839
+      },
+      "fragility": [
+        {
+          "path": "packages/viewspec/src/builder.ts",
+          "direct": 181,
+          "transitive": 658,
+          "total": 839
+        },
+        {
+          "path": "packages/apps/src/memory.ts",
+          "direct": 139,
+          "transitive": 654,
+          "total": 793
+        },
+        {
+          "path": "packages/desk/src/host.ts",
+          "direct": 112,
+          "transitive": 540,
+          "total": 652
+        }
+      ]
+    },
+    {
+      "at": "2026-09-17T13:12:22.103Z",
+      "sha": "69173f1c30f478cf8db4c2437d219902dfef1d46",
+      "pr": null,
+      "actor": "braedonsaunders",
+      "files": 1099,
       "functions": 3997,
       "loc": 196949,
       "languages": 12,
