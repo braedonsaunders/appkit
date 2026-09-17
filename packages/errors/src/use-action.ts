@@ -10,6 +10,20 @@ import type { ActionError, ActionResult } from './index'
 export interface UseActionOptions {
   notifyError?: (message: string) => void
   notifySuccess?: (message: string) => void
+  /**
+   * Where `unexpected` refusals and transport detail go. Defaults to
+   * `console.error` and is default-on, not opt-in: a host that forgets to
+   * wire it must still be able to find the bug. Override with the host's
+   * real error reporting (which may sample or filter routine transport
+   * failures); the package keeps its half of "detail goes to the log,
+   * never to the screen."
+   */
+  reportError?: (error: ActionError) => void
+}
+
+/** The default reporter: loud in the console a developer already has open. */
+function defaultReportError(error: ActionError): void {
+  console.error(`[appkit-errors] ${error.kind} action failure`, error.detail ?? error)
 }
 
 /** Per-execution options. `fallbackMessage` is required — a refusal with no
@@ -36,7 +50,7 @@ export interface ExecuteOptions<T> {
  * from inside `onOk`/`onRefused` itself is host code and propagates
  * untouched.
  */
-export function useAction({ notifyError, notifySuccess }: UseActionOptions = {}) {
+export function useAction({ notifyError, notifySuccess, reportError = defaultReportError }: UseActionOptions = {}) {
   const [busy, setBusy] = useState(false)
   const [refusal, setRefusal] = useState<ActionError | null>(null)
 
@@ -58,13 +72,18 @@ export function useAction({ notifyError, notifySuccess }: UseActionOptions = {})
         },
         onRefused: (error) => {
           setRefusal(error)
+          // The pin shows the user something; the report keeps the detail
+          // findable. Only the log-worthy kinds report — a refused or
+          // denied action is routine, an unexpected or transport failure
+          // is evidence.
+          if (error.kind === 'unexpected' || error.kind === 'transport') reportError(error)
           notifyError?.(error.displayMessage(options.fallbackMessage))
           options.onRefused?.(error)
         },
       })
       return succeeded
     },
-    [notifyError, notifySuccess],
+    [notifyError, notifySuccess, reportError],
   )
 
   return { busy, refusal, execute, clearRefusal, setRefusal }

@@ -200,7 +200,10 @@ test('useAction turns a throwing task into an unexpected refusal: busy releases,
   const notifications: string[] = []
   let latest: ReturnType<typeof useAction> | null = null
   function Harness() {
-    const hook = useAction({ notifyError: (message) => notifications.push(message) })
+    const hook = useAction({
+      notifyError: (message) => notifications.push(message),
+      reportError: () => undefined,
+    })
     latest = hook
     return React.createElement('div', {
       'data-busy': String(hook.busy),
@@ -224,6 +227,76 @@ test('useAction turns a throwing task into an unexpected refusal: busy releases,
     assert.equal(container.querySelector('div')?.getAttribute('data-kind'), 'unexpected')
     assert.deepEqual(notifications, ['fallback'])
   } finally {
+    dispose()
+  }
+})
+
+test('useAction reports unexpected failures to console.error by default', async () => {
+  const logged: unknown[][] = []
+  const realConsoleError = console.error
+  console.error = (...args: unknown[]) => {
+    logged.push(args)
+  }
+  let latest: ReturnType<typeof useAction> | null = null
+  function Harness() {
+    const hook = useAction({})
+    latest = hook
+    return React.createElement('div')
+  }
+  const { dispose } = render(React.createElement(Harness))
+  try {
+    await act(async () => {
+      await latest?.execute(
+        async (): Promise<ActionResult<string>> => {
+          throw new Error('host bug')
+        },
+        { fallbackMessage: 'fallback' },
+      )
+    })
+    assert.equal(logged.length, 1, 'an absorbed bug must reach a log with no host wiring')
+    assert.match(String(logged[0]?.[0]), /unexpected action failure/)
+    assert.match(String(logged[0]?.[1]), /host bug/)
+  } finally {
+    console.error = realConsoleError
+    dispose()
+  }
+})
+
+test('useAction prefers an explicit reporter and stays silent otherwise', async () => {
+  const logged: unknown[][] = []
+  const realConsoleError = console.error
+  console.error = (...args: unknown[]) => {
+    logged.push(args)
+  }
+  const reported: string[] = []
+  let latest: ReturnType<typeof useAction> | null = null
+  function Harness() {
+    const hook = useAction({
+      reportError: (error) => {
+        reported.push(`${error.kind}:${error.detail ?? ''}`)
+      },
+    })
+    latest = hook
+    return React.createElement('div')
+  }
+  const { dispose } = render(React.createElement(Harness))
+  try {
+    await act(async () => {
+      await latest?.execute(async () => refused('routine refusal'), { fallbackMessage: 'fallback' })
+    })
+    assert.deepEqual(reported, [], 'a routine refusal is not evidence and must not report')
+    await act(async () => {
+      await latest?.execute(
+        async (): Promise<ActionResult<string>> => {
+          throw new Error('host bug')
+        },
+        { fallbackMessage: 'fallback' },
+      )
+    })
+    assert.deepEqual(reported, ['unexpected:Error: host bug'])
+    assert.deepEqual(logged, [], 'an explicit reporter replaces the console default')
+  } finally {
+    console.error = realConsoleError
     dispose()
   }
 })

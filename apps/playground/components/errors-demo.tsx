@@ -61,7 +61,9 @@ export function ErrorsPackageDemo() {
           <p className="text-sm opacity-70">
             Each button runs a refused action through <code>execute</code>. The refusal pins below as a{' '}
             <code>role=&quot;alert&quot;</code> until the next action — the toast alone would dismiss, the alert does not.
-            Simulated bodies are labeled; the transport button performs a real unreachable fetch.
+            Simulated bodies are labeled; the transport button performs a real unreachable fetch against a
+            guaranteed-unresolvable name. A captive portal or intercepting proxy can answer instead of failing, so a
+            different kind there means the network answered with a page, not that the package misclassified.
           </p>
           <div className="flex flex-wrap gap-2">
             {SIMULATED.map((entry) => (

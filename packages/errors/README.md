@@ -90,3 +90,6 @@ retry; `not-found` → refresh; `transport` with `aborted` → timeout copy;
 - All user-facing copy: fallbacks, titles, notifications.
 - The notification library: `useAction` takes `notifyError`/`notifySuccess`
   callbacks and never imports one, so the core also works in workers.
+- Error reporting: `useAction` reports `unexpected` and `transport`
+  failures to `console.error` by default; override `reportError` with real
+  reporting (which may sample routine transport failures).

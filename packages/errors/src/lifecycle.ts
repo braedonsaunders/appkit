@@ -26,6 +26,12 @@ export interface ActionHandlers<T> {
  * present to, the error is rethrown: `executeAction` never swallows. An
  * unhandled refusal stays loud — after the busy state has released.
  *
+ * The principle: never swallow silently; swallow only into a presentation
+ * you can prove exists. `useAction` always has its pin, so absorbing a
+ * throw there is correct — a React event handler that rethrows produces an
+ * unhandled rejection that helps nobody. Here there may be nowhere to
+ * present, so rethrowing is the only honest option.
+ *
  * A throw from inside `onOk`/`onRefused` itself propagates untouched (the
  * inner task boundary has already closed), never looping back into
  * presentation.
