@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { PDFDocument, degrees } from 'pdf-lib'
+import { PDFArray, PDFDocument, PDFRawStream, decodePDFRawStream, degrees } from 'pdf-lib'
 import { composePdf, countPages, imposePages, pageGeometry, stampFooter } from './compose'
 
 const LETTER = pageGeometry('letter', 'portrait')
@@ -331,4 +331,141 @@ test('content boxes index against the selected pages, not the source order', asy
     parts: [{ bytes, pages: [2, 0], contentBoxes: [{ left: 0, bottom: 0, right: 300, top: 300 }, null] }],
   })
   assert.equal(await countPages(pdf), 2)
+})
+
+/**
+ * The scale and offset each page's content was drawn at.
+ *
+ * Reading the matrix back is the only way to assert WHERE imposed content
+ * landed, which is the whole subject of normalisation. pdf-lib emits the
+ * translate, rotate, scale and skew steps as SEPARATE `cm` operators, so they
+ * have to be composed — matching one of them yields the identity and every
+ * assertion passes vacuously.
+ */
+async function placementsOf(bytes: Uint8Array) {
+  const doc = await PDFDocument.load(bytes)
+  return doc.getPages().map((page) => {
+    const contents = page.node.Contents()
+    const streams =
+      contents instanceof PDFArray
+        ? contents.asArray().map((ref) => doc.context.lookup(ref))
+        : [contents]
+    const text = streams
+      .map((stream) =>
+        stream instanceof PDFRawStream
+          ? Buffer.from(decodePDFRawStream(stream).decode()).toString('latin1')
+          : '',
+      )
+      .join('\n')
+
+    const pattern = /([\d.eE+-]+) ([\d.eE+-]+) ([\d.eE+-]+) ([\d.eE+-]+) ([\d.eE+-]+) ([\d.eE+-]+) cm/g
+    let scaleX = 1
+    let scaleY = 1
+    let x = 0
+    let y = 0
+    let seen = false
+    for (let m = pattern.exec(text); m; m = pattern.exec(text)) {
+      const [a, b, c, d, e, f] = m.slice(1).map(Number) as [
+        number,
+        number,
+        number,
+        number,
+        number,
+        number,
+      ]
+      // Only axis-aligned steps appear for the unrotated pages these tests use;
+      // a skew would make a single scale meaningless.
+      if (b !== 0 || c !== 0) continue
+      x += scaleX * e
+      y += scaleY * f
+      scaleX *= a
+      scaleY *= d
+      seen = true
+    }
+    return seen ? { scaleX, scaleY, x, y } : null
+  })
+}
+
+test('normalizeContentScale gives every document one scale and one left margin', async () => {
+  // The failure this exists for, measured on a real 61-document manual: fitting
+  // each document's own text box to the sheet made the scale a property of that
+  // document. Scale ranged 0.965–1.495 and the side margin 0–126pt, which reads
+  // as the type size and the margins changing document to document.
+  const wide = await makePdf([{ width: 595, height: 842 }])
+  const narrow = await makePdf([{ width: 595, height: 842 }])
+
+  const out = await composePdf({
+    geometry: LETTER,
+    marginPt: 36,
+    normalizeContentScale: true,
+    parts: [
+      { bytes: wide, contentBoxes: [{ left: 25, bottom: 21, right: 570, top: 821 }] },
+      { bytes: narrow, contentBoxes: [{ left: 125, bottom: 177, right: 470, top: 665 }] },
+    ],
+  })
+
+  const [first, second] = await placementsOf(out)
+  assert.ok(first && second)
+  assert.equal(first.scaleX, second.scaleX)
+  assert.equal(first.scaleY, second.scaleY)
+  // Pinned to the box corner, so the left margin is the book's margin on both.
+  assert.equal(first.x, 36)
+  assert.equal(second.x, 36)
+})
+
+test('normalizeContentScale never scales a page past its own fit', async () => {
+  // An override that ignored the page's own box would cut content off the
+  // sheet, and cutting a controlled document is never acceptable.
+  const sources = [
+    { width: 300, height: 300 },
+    { width: 595, height: 842 },
+  ]
+  const out = await composePdf({
+    geometry: LETTER,
+    normalizeContentScale: true,
+    parts: await Promise.all(
+      sources.map(async (size) => ({
+        bytes: await makePdf([size]),
+        contentBoxes: [{ left: 0, bottom: 0, right: size.width, top: size.height }],
+      })),
+    ),
+  })
+  const placements = await placementsOf(out)
+  placements.forEach((placement, index) => {
+    const size = sources[index]!
+    assert.ok(placement)
+    assert.ok(placement.scaleX * size.width <= 612 + 0.01, `page ${index} overflows the width`)
+    assert.ok(placement.scaleY * size.height <= 792 + 0.01, `page ${index} overflows the height`)
+  })
+  // The tall A4 page is the binding constraint, so the small page is held back
+  // to its scale rather than blown up to fill the sheet on its own.
+  assert.equal(placements[0]!.scaleX, placements[1]!.scaleX)
+})
+
+test('footerReservePt keeps imposed content clear of the footer', async () => {
+  // With no reserve the content box ran to the sheet edge and the stamped page
+  // number was drawn straight over the document.
+  const page = await makePdf([{ width: 612, height: 792 }])
+  const out = await composePdf({
+    geometry: LETTER,
+    footerReservePt: 40,
+    parts: [{ bytes: page }],
+  })
+  const [placement] = await placementsOf(out)
+  assert.ok(placement)
+  assert.ok(placement.y >= 40, `content bottom ${placement.y} must clear the 40pt footer band`)
+})
+
+test('an unnumbered part keeps the whole sheet', async () => {
+  // A cover carries no footer, so reserving a band under it would float the
+  // artwork up the page for no reason.
+  const cover = await makePdf([{ width: 612, height: 792 }])
+  const out = await composePdf({
+    geometry: LETTER,
+    footerReservePt: 40,
+    parts: [{ bytes: cover, unnumbered: true }],
+  })
+  const [placement] = await placementsOf(out)
+  assert.ok(placement)
+  assert.equal(placement.y, 0)
 })

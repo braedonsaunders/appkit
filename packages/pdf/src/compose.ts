@@ -115,6 +115,11 @@ function drawImposed(
     allowUpscaleOverride?: boolean
     margin?: number
     reserveTopPt?: number
+    reserveBottomPt?: number
+    /** Use this scale instead of fitting, for book-wide normalisation. */
+    scaleOverride?: number
+    /** `top-left` pins content to the box corner; default centres it. */
+    align?: 'center' | 'top-left'
   },
 ): void {
   if (!page) {
@@ -122,12 +127,15 @@ function drawImposed(
     return
   }
   // The box the content may occupy: the sheet, less a uniform inset, less any
-  // band reserved at the top for a letterhead.
+  // band reserved at the top for a letterhead, less any band reserved at the
+  // bottom for the footer. Without the bottom reserve, content drawn to the
+  // sheet edge runs straight over the page number.
   const margin = Math.max(0, options.margin ?? 0)
   const reserveTop = Math.max(0, options.reserveTopPt ?? 0)
+  const reserveBottom = Math.max(0, options.reserveBottomPt ?? 0)
   const boxWidth = Math.max(1, geometry.width - margin * 2)
-  const boxHeight = Math.max(1, geometry.height - margin * 2 - reserveTop)
-  const boxBottom = margin
+  const boxHeight = Math.max(1, geometry.height - margin * 2 - reserveTop - reserveBottom)
+  const boxBottom = margin + reserveBottom
   const rotation = normalizeAngle(src.getPage(index).getRotation().angle)
   const quarterTurned = rotation === 90 || rotation === 270
   // Visual dimensions after the viewer applies /Rotate.
@@ -136,11 +144,20 @@ function drawImposed(
 
   const fit = Math.min(boxWidth / visualWidth, boxHeight / visualHeight)
   const upscale = options.allowUpscaleOverride ?? options.allowUpscale
-  const scale = upscale ? fit : Math.min(fit, 1)
+  const fitted = upscale ? fit : Math.min(fit, 1)
+  // An override still may not overflow: a page whose content is larger than the
+  // others would be cut, and cutting a controlled document is never acceptable.
+  const scale = options.scaleOverride ? Math.min(options.scaleOverride, fit) : fitted
   const drawnWidth = visualWidth * scale
   const drawnHeight = visualHeight * scale
-  const left = margin + (boxWidth - drawnWidth) / 2
-  const bottom = boxBottom + (boxHeight - drawnHeight) / 2
+  // Pinning to the corner is what makes a book's margins uniform: centring puts
+  // each document's own slack around it, so a narrow policy sits inside wide
+  // margins while a wide one runs to the edge.
+  const left = options.align === 'top-left' ? margin : margin + (boxWidth - drawnWidth) / 2
+  const bottom =
+    options.align === 'top-left'
+      ? boxBottom + boxHeight - drawnHeight
+      : boxBottom + (boxHeight - drawnHeight) / 2
 
   // drawPage rotates about the anchor point, which moves the box out of the
   // slot just measured. Shift the anchor to the corner the rotation sweeps the
@@ -274,6 +291,24 @@ export type ComposePdfInput = {
   parts: ComposePart[]
   /** Inset applied to every part's content, in points. Defaults to 0. */
   marginPt?: number
+  /**
+   * Band kept clear at the foot of every page, in points.
+   *
+   * The footer is stamped after imposition, so without reserving its band the
+   * imposed content simply runs underneath the page number.
+   */
+  footerReservePt?: number
+  /**
+   * Give every part with `contentBoxes` ONE scale, and pin it to the top-left
+   * of the content box.
+   *
+   * Fitting each document to the sheet individually makes the scale a property
+   * of that document's text block: on a real 61-document manual the scale
+   * ranged 0.965–1.495 and the side margins 0–126pt, which reads as the type
+   * size and the margins changing from document to document. One scale — the
+   * largest at which every page still fits — makes the book uniform.
+   */
+  normalizeContentScale?: boolean
   footer?: Omit<StampFooterOptions, 'cells'> & {
     cells: (pageNumber: number, pageCount: number) => FooterCell | null
   }
@@ -355,6 +390,44 @@ export async function composePdf(input: ComposePdfInput): Promise<Buffer> {
     }
   }
 
+  const footerReserve = Math.max(0, input.footerReservePt ?? 0)
+
+  /**
+   * The largest scale at which EVERY cropped page still fits its box.
+   *
+   * Taken across the whole book rather than per document, and measured against
+   * the BODY box — a first page carrying a control band is deliberately left
+   * out. Source documents run their own headers and footers close to the sheet
+   * edge, so there is almost no vertical slack to crop: letting a 132pt band
+   * bind the calculation dragged a real manual from 0.84 to 0.68, shrinking
+   * every page in the book to make room for a strip on one page in each
+   * document. Those first pages fall back to their own fit instead (see the
+   * `Math.min` in drawImposed), so only they are smaller.
+   */
+  const uniformScale = input.normalizeContentScale
+    ? input.parts.reduce((smallest, part) => {
+        const source = sources.get(part.bytes)!
+        const available = source.doc.getPageIndices()
+        const indices = part.pages
+          ? part.pages.filter((i) => Number.isInteger(i) && i >= 0 && i < available.length)
+          : available
+        const margin = Math.max(0, part.marginPt ?? input.marginPt ?? 0)
+        return indices.reduce((acc, index, position) => {
+          const box = part.contentBoxes?.[position] ?? null
+          if (!box || box.right <= box.left || box.top <= box.bottom) return acc
+          const boxWidth = Math.max(1, input.geometry.width - margin * 2)
+          const boxHeight = Math.max(1, input.geometry.height - margin * 2 - footerReserve)
+          const rotation = normalizeAngle(source.doc.getPage(index).getRotation().angle)
+          const quarterTurned = rotation === 90 || rotation === 270
+          const contentWidth = box.right - box.left
+          const contentHeight = box.top - box.bottom
+          const visualWidth = quarterTurned ? contentHeight : contentWidth
+          const visualHeight = quarterTurned ? contentWidth : contentHeight
+          return Math.min(acc, boxWidth / visualWidth, boxHeight / visualHeight)
+        }, smallest)
+      }, Number.POSITIVE_INFINITY)
+    : Number.POSITIVE_INFINITY
+
   for (const part of input.parts) {
     const source = sources.get(part.bytes)!
     const available = source.doc.getPageIndices()
@@ -373,13 +446,17 @@ export async function composePdf(input: ComposePdfInput): Promise<Buffer> {
         box && box.right > box.left && box.top > box.bottom
           ? source.cropped.get(cropKey(index, box))
           : source.embedded.get(index)
+      const normalized = Boolean(box) && Number.isFinite(uniformScale)
       drawImposed(out, source.doc, page, index, input.geometry, {
         allowUpscale: input.allowUpscale,
         margin,
         reserveTopPt: reserved,
+        // An unnumbered part carries no footer, so it keeps the full sheet.
+        reserveBottomPt: part.unnumbered ? 0 : footerReserve,
         // A cropped page is already just its content, so it may fill the box —
         // holding it to 1:1 would defeat the normalisation.
         allowUpscaleOverride: box ? true : undefined,
+        ...(normalized ? { scaleOverride: uniformScale, align: 'top-left' as const } : {}),
       })
       if (band) {
         const bandSource = sources.get(band.bytes)!
