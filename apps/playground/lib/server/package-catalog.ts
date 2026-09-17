@@ -19,6 +19,7 @@ import emailRender from '../../../../packages/email-render/package.json'
 import emails from '../../../../packages/emails/package.json'
 import endpoints from '../../../../packages/endpoints/package.json'
 import events from '../../../../packages/events/package.json'
+import errors from '../../../../packages/errors/package.json'
 import feedback from '../../../../packages/feedback/package.json'
 import forms from '../../../../packages/forms/package.json'
 import formsCore from '../../../../packages/forms-core/package.json'
@@ -110,6 +111,7 @@ export const PACKAGE_CATEGORIES: readonly {
       '@braedonsaunders/appkit-editor',
       '@braedonsaunders/appkit-avatars',
       '@braedonsaunders/appkit-scene',
+      '@braedonsaunders/appkit-errors',
     ],
   },
   {
@@ -167,6 +169,7 @@ const MANIFESTS: WorkspacePackageManifest[] = [
   emailRender,
   emails,
   endpoints,
+  errors,
   events,
   feedback,
   forms,
@@ -252,6 +255,7 @@ const DEMO_ROUTES: Record<string, string> = {
   '@braedonsaunders/appkit-viewspec': '/packages/viewspec/demo',
   '@braedonsaunders/appkit-voice': '/packages/voice/demo',
   '@braedonsaunders/appkit-ai': '/packages/ai/demo',
+  '@braedonsaunders/appkit-errors': '/packages/errors/demo',
   '@braedonsaunders/appkit-feedback': '/packages/feedback/demo',
   '@braedonsaunders/appkit-sandbox': '/admin/scripts',
   '@braedonsaunders/appkit-endpoints': '/api-docs',

@@ -99,11 +99,13 @@ import { SceneDemoStage } from './scene-demo-stage'
 import { AgentConversationDemo } from './agent-conversation-demo'
 import { SuperadminDemo } from './superadmin-demo'
 import { FeedbackPackageDemo } from '../../../../../components/feedback-demo'
+import { ErrorsPackageDemo } from '../../../../../components/errors-demo'
 
 const PACKAGE_DEMOS = {
   'agent-tools': 'Managed agent tools',
   ai: 'Agent conversations',
   feedback: 'Issue reporting',
+  errors: 'Action errors',
   crypto: 'Secret sealing',
   desk: 'Agent desks',
   'remote-sessions': 'Remote sessions',
@@ -177,6 +179,8 @@ function renderPackageDemo(
       return <AgentConversationDemo />
     case 'feedback':
       return <FeedbackPackageDemo />
+    case 'errors':
+      return <ErrorsPackageDemo />
     case 'crypto':
       return <CryptoDemo />
     case 'desk':

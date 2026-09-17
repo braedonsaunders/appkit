@@ -160,6 +160,7 @@ in npm artifacts while this repository keeps fast `workspace:*` links locally.
 | `@braedonsaunders/appkit-scheduling`    | Project scheduling: CPM critical path, calendars, resource leveling, baselines, and a Gantt/list/board authoring surface.                                                     |
 | `@braedonsaunders/appkit-avatars`       | Avatar parts library, composition model, and composer — one full-body figure per subject with portraits derived by head viewport — plus AI image generation.                  |
 | `@braedonsaunders/appkit-scene`         | Animated character scene: characters walk, idle, and scale with depth over a configurable ground.                                                                            |
+| `@braedonsaunders/appkit-errors`        | Universal action-error handling: a typed refusal taxonomy, a response read path that cannot throw, a persistent alert, and a busy lifecycle that always releases.               |
 
 Bind customization to your records once and retain key-based calls throughout
 the application:

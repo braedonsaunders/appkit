@@ -28,6 +28,7 @@
     "@braedonsaunders/appkit-email-designer": "workspace:*",
     "@braedonsaunders/appkit-email-render": "workspace:*",
     "@braedonsaunders/appkit-emails": "workspace:*",
+    "@braedonsaunders/appkit-errors": "workspace:*",
     "@braedonsaunders/appkit-events": "workspace:*",
     "@braedonsaunders/appkit-feedback": "workspace:*",
     "@braedonsaunders/appkit-forms": "workspace:*",
