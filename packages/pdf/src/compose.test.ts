@@ -386,34 +386,57 @@ async function placementsOf(bytes: Uint8Array) {
   })
 }
 
-test('normalizeContentScale gives every document one scale and one left margin', async () => {
-  // The failure this exists for, measured on a real 61-document manual: fitting
-  // each document's own text box to the sheet made the scale a property of that
-  // document. Scale ranged 0.965–1.495 and the side margin 0–126pt, which reads
-  // as the type size and the margins changing document to document.
-  const wide = await makePdf([{ width: 595, height: 842 }])
-  const narrow = await makePdf([{ width: 595, height: 842 }])
-
+test('contentScale draws a part at the scale asked for', async () => {
+  // Fitting decides the scale from geometry, which is the wrong input when the
+  // goal is even type: these sources are authored at different body sizes, so
+  // equal fit means unequal type. The caller measures the type and asks.
   const out = await composePdf({
     geometry: LETTER,
     marginPt: 36,
-    normalizeContentScale: true,
     parts: [
-      { bytes: wide, contentBoxes: [{ left: 25, bottom: 21, right: 570, top: 821 }] },
-      { bytes: narrow, contentBoxes: [{ left: 125, bottom: 177, right: 470, top: 665 }] },
+      {
+        bytes: await makePdf([{ width: 595, height: 842 }]),
+        contentBoxes: [{ left: 25, bottom: 21, right: 570, top: 821 }],
+        contentScale: 0.5,
+      },
+      {
+        bytes: await makePdf([{ width: 595, height: 842 }]),
+        contentBoxes: [{ left: 125, bottom: 177, right: 470, top: 665 }],
+        contentScale: 0.75,
+      },
     ],
   })
 
   const [first, second] = await placementsOf(out)
   assert.ok(first && second)
-  assert.equal(first.scaleX, second.scaleX)
-  assert.equal(first.scaleY, second.scaleY)
-  // Pinned to the box corner, so the left margin is the book's margin on both.
-  assert.equal(first.x, 36)
-  assert.equal(second.x, 36)
+  assert.equal(first.scaleX, 0.5)
+  assert.equal(second.scaleX, 0.75)
 })
 
-test('normalizeContentScale never scales a page past its own fit', async () => {
+test('a scaled part is centred horizontally and pinned to the top', async () => {
+  // Left-aligning a narrow document leaves all of its slack on one side, which
+  // reads as a broken right margin rather than a narrow measure.
+  const out = await composePdf({
+    geometry: LETTER,
+    marginPt: 36,
+    parts: [
+      {
+        bytes: await makePdf([{ width: 595, height: 842 }]),
+        // 200pt wide, 300pt tall.
+        contentBoxes: [{ left: 100, bottom: 100, right: 300, top: 400 }],
+        contentScale: 0.5,
+      },
+    ],
+  })
+  const [placement] = await placementsOf(out)
+  assert.ok(placement)
+  const boxWidth = 612 - 36 * 2
+  assert.equal(placement.x, 36 + (boxWidth - 200 * 0.5) / 2)
+  // Top of the drawn block meets the top of the box.
+  assert.equal(placement.y + 300 * 0.5, 36 + (792 - 36 * 2))
+})
+
+test('contentScale never scales a page past its own fit', async () => {
   // An override that ignored the page's own box would cut content off the
   // sheet, and cutting a controlled document is never acceptable.
   const sources = [
@@ -422,11 +445,13 @@ test('normalizeContentScale never scales a page past its own fit', async () => {
   ]
   const out = await composePdf({
     geometry: LETTER,
-    normalizeContentScale: true,
     parts: await Promise.all(
       sources.map(async (size) => ({
         bytes: await makePdf([size]),
         contentBoxes: [{ left: 0, bottom: 0, right: size.width, top: size.height }],
+        // Far more than either page can take; cutting a controlled document is
+        // never acceptable, so the clamp has to win.
+        contentScale: 4,
       })),
     ),
   })
@@ -437,9 +462,6 @@ test('normalizeContentScale never scales a page past its own fit', async () => {
     assert.ok(placement.scaleX * size.width <= 612 + 0.01, `page ${index} overflows the width`)
     assert.ok(placement.scaleY * size.height <= 792 + 0.01, `page ${index} overflows the height`)
   })
-  // The tall A4 page is the binding constraint, so the small page is held back
-  // to its scale rather than blown up to fill the sheet on its own.
-  assert.equal(placements[0]!.scaleX, placements[1]!.scaleX)
 })
 
 test('footerReservePt keeps imposed content clear of the footer', async () => {
