@@ -40,6 +40,9 @@ improves.
 - `packages/ai` — the app-agnostic multi-step tool-agent runtime plus the
   streamed assistant thread/tool-use UI. Apps inject the resolved model,
   system prompt, tenant/RBAC-bound tools, persistence, and HTTP transport.
+- `packages/feedback` — in-app product issue reporting. Header chrome and a
+  transforming modal; a tiny host-injected triage toolset; deterministic PII
+  redaction; a GitHub Issues adapter that uses host egress.
 - `packages/sandbox` — the shared governed QuickJS kernel: fresh WASM runtimes,
   frozen input, async host capabilities, logs, structured faults, and bounded
   memory, stack, time, and units.

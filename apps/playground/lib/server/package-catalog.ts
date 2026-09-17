@@ -19,6 +19,7 @@ import emailRender from '../../../../packages/email-render/package.json'
 import emails from '../../../../packages/emails/package.json'
 import endpoints from '../../../../packages/endpoints/package.json'
 import events from '../../../../packages/events/package.json'
+import feedback from '../../../../packages/feedback/package.json'
 import forms from '../../../../packages/forms/package.json'
 import formsCore from '../../../../packages/forms-core/package.json'
 import formsDocuments from '../../../../packages/forms-documents/package.json'
@@ -139,7 +140,7 @@ export const PACKAGE_CATEGORIES: readonly {
     label: 'Automation and extensions',
     description: 'AI, governed code, installable apps, workflows, integrations, and sync.',
     names: [
-      '@braedonsaunders/appkit-ai', '@braedonsaunders/appkit-agent-tools', '@braedonsaunders/appkit-mcp', '@braedonsaunders/appkit-sandbox', '@braedonsaunders/appkit-endpoints', '@braedonsaunders/appkit-scripts', '@braedonsaunders/appkit-apps',
+      '@braedonsaunders/appkit-ai', '@braedonsaunders/appkit-feedback', '@braedonsaunders/appkit-agent-tools', '@braedonsaunders/appkit-mcp', '@braedonsaunders/appkit-sandbox', '@braedonsaunders/appkit-endpoints', '@braedonsaunders/appkit-scripts', '@braedonsaunders/appkit-apps',
       '@braedonsaunders/appkit-query-console', '@braedonsaunders/appkit-workflows', '@braedonsaunders/appkit-integrations', '@braedonsaunders/appkit-sync',
     ],
   },
@@ -167,6 +168,7 @@ const MANIFESTS: WorkspacePackageManifest[] = [
   emails,
   endpoints,
   events,
+  feedback,
   forms,
   formsCore,
   formsDocuments,
@@ -250,6 +252,7 @@ const DEMO_ROUTES: Record<string, string> = {
   '@braedonsaunders/appkit-viewspec': '/packages/viewspec/demo',
   '@braedonsaunders/appkit-voice': '/packages/voice/demo',
   '@braedonsaunders/appkit-ai': '/packages/ai/demo',
+  '@braedonsaunders/appkit-feedback': '/packages/feedback/demo',
   '@braedonsaunders/appkit-sandbox': '/admin/scripts',
   '@braedonsaunders/appkit-endpoints': '/api-docs',
   '@braedonsaunders/appkit-apps': '/admin/apps',

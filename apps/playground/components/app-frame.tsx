@@ -24,6 +24,7 @@ import {
 } from '@braedonsaunders/appkit-ui'
 import { PageTransition } from '@braedonsaunders/appkit-ui/page-transition'
 import { AppkitLogo } from './appkit-logo'
+import { FeedbackPlaygroundLauncher } from './feedback-demo'
 
 const nextLink: LinkRender = ({
   href,
@@ -208,6 +209,7 @@ function AppFrameContent({
           header={
             <>
               <Badge variant="success" className="hidden xl:inline-flex">No auth</Badge>
+              <FeedbackPlaygroundLauncher />
               <NotificationsBell
                 items={activity}
                 onOpenItem={(item) => item.href && navigate(item.href)}

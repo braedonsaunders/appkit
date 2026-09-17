@@ -253,6 +253,12 @@ one-step default with a bounded `stepCountIs` stop condition, streams the
 UI-message protocol, redacts provider errors, supports aborts, and reports final
 parts/token usage through `onComplete`.
 
+`@braedonsaunders/appkit-feedback` is a separate product-issue reporter, not a
+second assistant. Place `FeedbackLauncher` in `AppShell`'s `header` slot. The
+modal maps terminal tools (`resolve_as_guidance`, `ask_questions`, `submit_issue`)
+to card states. The host supplies the model, help source, sealed token, and
+egress `request`. `createGithubIssuePublisher` never fetches on its own.
+
 `@braedonsaunders/appkit-ai/react` exports `AgentPanel`, `ChatMarkdown`, and `AgentToolCard`.
 `AgentPanel` owns the live/reloaded parts renderer, streaming decoder, composer,
 cancellation, and disabled state; the app injects its persistence-backed send

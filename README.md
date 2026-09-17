@@ -193,6 +193,7 @@ product’s record names, routes, queries, or permissions inside AppKit.
 | `@braedonsaunders/appkit-scripts`   | Event, scheduled, endpoint, bulk, and opaque-origin client scripts with a production CodeMirror editor, run/log inspection, vetoes, allowed mutations, cron, jobs, auditing, Drizzle storage, and a bound cutover runtime. |
 | `@braedonsaunders/appkit-apps`      | Installable app manifests and ZIPs, a nested file browser and syntax editors, immutable versions, storage, capabilities, QuickJS backends, opaque-origin preview, bridge SDK, run inspection, marketplace, memory, Drizzle, and bound lifecycle adapters. |
 | `@braedonsaunders/appkit-ai`        | Provider-neutral bounded agents, streaming React UI, and production analysis, extraction, document, vision, writing, digest, and model helpers. |
+| `@braedonsaunders/appkit-feedback`  | In-app product issue reporter: header chrome, a short help-first triage, PII-safe generalization, and a host-owned GitHub Issues publisher. |
 | `@braedonsaunders/appkit-superadmin` | Instance-operator administration over platform identity: the users who can sign in, their credentials, and active sessions, with guard rails and production React components. |
 | `@braedonsaunders/appkit-process-sandbox` | Fail-closed Linux process isolation with bubblewrap, for workspace-bound coding agents and other trusted application workers. |
 

@@ -9,6 +9,7 @@
  * order. Already-live priority versions are inspected and skipped.
  */
 export const releasePriorityPackageNames = Object.freeze([
+  '@braedonsaunders/appkit-feedback',
   '@braedonsaunders/appkit-reports',
   '@braedonsaunders/appkit-scheduling',
   '@braedonsaunders/appkit-sync',

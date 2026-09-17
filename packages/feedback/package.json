@@ -1,0 +1,89 @@
+{
+  "name": "@braedonsaunders/appkit-feedback",
+  "version": "0.1.0",
+  "description": "In-app product issue reporter: header chrome, short AI triage, PII-safe generalization, and a host-owned issue publisher.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./react": "./src/react.ts",
+    "./styles.css": "./src/styles.css",
+    "./package.json": "./package.json"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "build": "node ../../scripts/build-package.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "ai": "^6.0.224",
+    "zod": "^4.4.3"
+  },
+  "peerDependencies": {
+    "@braedonsaunders/appkit-ui": "^0.3.0",
+    "lucide-react": "^1.24.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@braedonsaunders/appkit-ui": {
+      "optional": true
+    },
+    "lucide-react": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@braedonsaunders/appkit-ui": "workspace:*",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "lucide-react": "^1.24.0",
+    "react": "^19",
+    "react-dom": "^19",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
+  },
+  "author": "Braedon Saunders",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/braedonsaunders/appkit.git",
+    "directory": "packages/feedback"
+  },
+  "homepage": "https://github.com/braedonsaunders/appkit/tree/main/packages/feedback#readme",
+  "bugs": {
+    "url": "https://github.com/braedonsaunders/appkit/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "appkit",
+    "application-framework",
+    "feedback",
+    "github",
+    "issues",
+    "typescript"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist",
+    "linkDirectory": false,
+    "provenance": true
+  }
+}
