@@ -295,6 +295,17 @@ export type ComposePart = {
     page?: number
     /** Height of the band, in points. */
     heightPt: number
+    /**
+     * Shrink the page to make room for the band. Default true.
+     *
+     * Set false when the SOURCE already leaves the strip blank — then the band
+     * lands in space the document itself reserved and the page draws at full
+     * size. Reserving here as well scales that page down against every other
+     * page in the book, which is visible the moment two of them sit side by
+     * side: measured on a real manual, the pages carrying a band rendered at
+     * 9.5pt against 11.5pt elsewhere.
+     */
+    reserveSpace?: boolean
   }
 }
 
@@ -407,6 +418,9 @@ export async function composePdf(input: ComposePdfInput): Promise<Buffer> {
       // would waste a strip on every sheet.
       const band = position === 0 ? part.letterhead : undefined
       const reserved = band ? Math.max(0, band.heightPt) : 0
+      // The band is always sized against `reserved`; whether the PAGE gives up
+      // that space is the caller's choice.
+      const reserveForPage = band?.reserveSpace === false ? 0 : reserved
       const box = part.contentBoxes?.[position] ?? null
       const page =
         box && box.right > box.left && box.top > box.bottom
@@ -416,7 +430,7 @@ export async function composePdf(input: ComposePdfInput): Promise<Buffer> {
       drawImposed(out, source.doc, page, index, input.geometry, {
         allowUpscale: input.allowUpscale,
         margin,
-        reserveTopPt: reserved,
+        reserveTopPt: reserveForPage,
         // An unnumbered part carries no footer, so it keeps the full sheet.
         reserveBottomPt: part.unnumbered ? 0 : footerReserve,
         // A cropped page is already just its content, so it may fill the box —

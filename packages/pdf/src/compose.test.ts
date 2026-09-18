@@ -491,3 +491,27 @@ test('an unnumbered part keeps the whole sheet', async () => {
   assert.ok(placement)
   assert.equal(placement.y, 0)
 })
+
+test('a letterhead can overlay space the source already left blank', async () => {
+  // The band shrinking its page is only correct when the page is full. When the
+  // document reserves the strip itself, reserving again scales that page down
+  // against every other page in the book — on a real manual the pages carrying
+  // a band came out at 9.5pt against 11.5pt elsewhere.
+  const page = await makePdf([{ width: 612, height: 792 }])
+  const band = await makePdf([{ width: 612, height: 100 }])
+
+  const reserving = await composePdf({
+    geometry: LETTER,
+    parts: [{ bytes: page, letterhead: { bytes: band, heightPt: 100 } }],
+  })
+  const overlaying = await composePdf({
+    geometry: LETTER,
+    parts: [{ bytes: page, letterhead: { bytes: band, heightPt: 100, reserveSpace: false } }],
+  })
+
+  const [shrunk] = await placementsOf(reserving)
+  const [full] = await placementsOf(overlaying)
+  assert.ok(shrunk && full)
+  assert.ok(shrunk.scaleY < 1, 'reserving should scale the page down')
+  assert.equal(full.scaleY, 1, 'overlaying should leave the page at full size')
+})
