@@ -394,7 +394,7 @@ function matches(row: typeof rows[number], rule: ReportRule): boolean | null {
   if (rule.op === 'period_preset' && typeof expected === 'string') { const range = resolvePreset(expected, { startMonth: 1, today }); return Boolean(range && String(value) >= range.from && String(value) <= range.to) }
   const valueDate = new Date(String(value)), now = new Date(`${today}T12:00:00Z`)
   if (Number.isNaN(valueDate.valueOf())) return false
-  if (rule.op === 'between_days_ago') return valueDate >= new Date(now.valueOf() - Number(expected ?? 30) * 86_400_000) && valueDate <= now
+  if (rule.op === 'between_days_ago') return valueDate >= new Date(now.valueOf() - Number(expected ?? 30) * 86_400_000)
   if (rule.op === 'due_within_days') return valueDate <= new Date(now.valueOf() + Number(expected ?? 30) * 86_400_000)
   if (rule.op === 'before_now') return valueDate < now
   if (rule.op === 'since_today') return String(value).slice(0, 10) === today

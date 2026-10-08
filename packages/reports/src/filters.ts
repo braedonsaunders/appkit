@@ -86,11 +86,13 @@ export function compileReportRule(
     case 'is_true': return `${column} IS TRUE`
     case 'is_false': return `${column} IS FALSE`
     case 'between_days_ago': {
-      const days = Number(value ?? 30)
+      if (!present) return null
+      const days = Number(value)
       return Number.isFinite(days) ? `${column} >= ${parameters.add(new Date(now.getTime() - days * 86_400_000).toISOString())}` : null
     }
     case 'due_within_days': {
-      const days = Number(value ?? 30)
+      if (!present) return null
+      const days = Number(value)
       return Number.isFinite(days) ? `${column} <= ${parameters.add(new Date(now.getTime() + days * 86_400_000).toISOString())}` : null
     }
     case 'since_today': return currentPeriod(column, 'day')

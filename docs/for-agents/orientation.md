@@ -625,7 +625,7 @@ rows, pagination, the complete compact period/date/breakout/compare/subsidiary/
 customer/dimension/basis/scale/section filter surface, PDF-backed print, and
 multi-format actions.
 The recursive filter editor keeps each condition’s field, operator, and value on one
-row at every width; selected values appear below the value picker. Screen document
+row at every width; selected values appear below the value picker. Relative-date day filters ignore blank values; an explicit zero remains a valid day count. Screen document
 previews use the host’s light/dark text, border, and status tokens, while printed
 documents retain their paper palette. The reports playground opens the canonical
 print-layout preview; **Interactive preview** enables value drill-through. The ordered/renamable columns, three-level sort, page
