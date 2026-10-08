@@ -248,6 +248,25 @@ export function buildReportDocumentCss(
   }
   .appkit-report-doc .empty { color: #9ca3af; font-style: italic; text-align: center; padding: 24px 0; }
   .appkit-report-doc img { max-width: 100%; height: auto; }
+  /* Screen paper follows the host theme; standalone PDFs retain their print palette. */
+  @media screen {
+    [data-report-paper] .appkit-report-doc { color: rgb(var(--ch-fg)); }
+    [data-report-paper] .appkit-report-doc .doc-period,
+    [data-report-paper] .appkit-report-doc .sum-label,
+    [data-report-paper] .appkit-report-doc .group-title .subtitle,
+    [data-report-paper] .appkit-report-doc thead th,
+    [data-report-paper] .appkit-report-doc td.tone-muted { color: rgb(var(--ch-fg-muted)); }
+    [data-report-paper] .appkit-report-doc tbody td em,
+    [data-report-paper] .appkit-report-doc .empty { color: rgb(var(--ch-fg-subtle)); }
+    [data-report-paper] .appkit-report-doc .summary,
+    [data-report-paper] .appkit-report-doc .sum + .sum { border-color: rgb(var(--ch-border)); }
+    [data-report-paper] .appkit-report-doc thead th { border-color: rgb(var(--ch-border-strong)); }
+    [data-report-paper] .appkit-report-doc td.tone-critical { color: rgb(var(--ch-danger)); }
+    [data-report-paper] .appkit-report-doc td.tone-warning { color: rgb(var(--ch-warning)); }
+    [data-report-paper] .appkit-report-doc td.tone-positive { color: rgb(var(--ch-success)); }
+    [data-report-paper] .appkit-report-doc td.tone-info { color: rgb(var(--ch-info)); }
+  }
+
 `
 }
 

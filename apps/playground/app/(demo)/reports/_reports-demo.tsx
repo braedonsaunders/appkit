@@ -27,8 +27,8 @@ const catalog: ReportEntityCatalog = { entities: [{
   columns: [
     { key: 'name', label: 'Project', kind: 'text', expression: 'p.name' },
     { key: 'owner', label: 'Owner', kind: 'text', expression: 'p.owner' },
-    { key: 'region', label: 'Region', kind: 'enum', expression: 'p.region' },
-    { key: 'status', label: 'Status', kind: 'enum', expression: 'p.status' },
+    { key: 'region', label: 'Region', kind: 'enum', expression: 'p.region', options: ['Central', 'East', 'West'] },
+    { key: 'status', label: 'Status', kind: 'enum', expression: 'p.status', options: ['Active', 'Bidding', 'Planning', 'Complete'] },
     { key: 'value', label: 'Contract value', kind: 'number', expression: 'p.value' },
     { key: 'margin', label: 'Margin', kind: 'number', expression: 'p.margin' },
     { key: 'start_date', label: 'Start date', kind: 'date', expression: 'p.start_date' },
@@ -95,18 +95,19 @@ export function ReportsDemo() {
 }
 
 function CustomReportDemo() {
+  const [interactive, setInteractive] = React.useState(false)
   const [value, setValue] = React.useState(initial)
   const [result, setResult] = React.useState<ReportRunResult>(() => execute(value.definition.query))
   React.useEffect(() => {
     try { const stored = window.localStorage.getItem('appkit-demo:report-studio:v2'); if (stored) { const parsed = JSON.parse(stored) as ReportStudioValue; setValue(parsed); setResult(execute(parsed.definition.query)) } } catch { /* browser persistence is optional */ }
   }, [])
-  return <div className="flex min-h-0 flex-1 overflow-hidden"><ReportStudio
+  return <div className="flex min-h-0 flex-1 flex-col overflow-hidden"><div className="flex shrink-0 items-center gap-3 border-b border-border px-3 py-2"><Button type="button" size="sm" variant={interactive ? 'default' : 'outline'} aria-pressed={interactive} onClick={() => setInteractive(!interactive)}>Interactive preview</Button><span className="text-xs text-fg-muted">Open supporting records from report values.</span></div><div className="flex min-h-0 flex-1 overflow-hidden"><ReportStudio
     value={value}
     catalog={catalog}
     result={result}
     organization="Northstar Works"
     currency="USD"
-    drill={{ target: portfolioDrillTarget, load: loadPortfolioDrill }}
+    drill={interactive ? { target: portfolioDrillTarget, load: loadPortfolioDrill } : undefined}
     exports={[
       { format: 'pdf', label: 'PDF', href: '/api/demo/pdf?kind=report' },
       { format: 'csv', label: 'CSV', onSelect: () => downloadCsv(result) },
@@ -115,7 +116,7 @@ function CustomReportDemo() {
     onChange={setValue}
     onPreview={async (next) => { const output = execute(next.definition.query); setResult(output); return output }}
     onSave={async (next) => { try { window.localStorage.setItem('appkit-demo:report-studio:v2', JSON.stringify(next)); setValue(next); return { ok: true } } catch { return { ok: false, error: 'The browser could not save this report.' } } }}
-  /></div>
+  /></div></div>
 }
 
 const scheduleDefinitions: ReportScheduleDefinitionOption[] = [
@@ -345,7 +346,7 @@ function csvCell(value: unknown): string { return `"${String(value ?? '').replac
 
 function execute(query: ReportCustomQuery): ReportRunResult {
   const entity = catalog.entities[0]!
-  let selected = rows.filter((row) => query.filters ? matchesGroup(row, query.filters) : true)
+  let selected = rows.filter((row) => query.filters ? matchesGroup(row, query.filters) !== false : true)
   for (const sort of [...(query.sorts ?? [])].reverse()) selected = [...selected].sort((left, right) => compare(left[sort.column as keyof typeof left], right[sort.column as keyof typeof right]) * (sort.direction === 'asc' ? 1 : -1))
   if (query.mode === 'summarize') return summarize(query, selected)
   const columns = query.columns.map((key): ReportColumn => { const column = entity.columns.find((item) => item.key === key)!; return { key, label: column.label, semanticType: column.kind === 'number' ? key === 'value' ? 'currency' : 'number' : column.kind === 'date' ? 'date' : column.kind === 'enum' ? 'category' : 'text', align: column.kind === 'number' ? 'right' : 'left' } })
@@ -368,12 +369,15 @@ function summarize(query: ReportCustomQuery, input: typeof rows): ReportRunResul
 
 function aggregate(input: typeof rows, aggregateName: string, column?: string): number { const values = column ? input.map((row) => Number(row[column as keyof typeof row])).filter(Number.isFinite) : []; if (aggregateName === 'count') return input.length; if (aggregateName === 'count_distinct') return new Set(input.map((row) => row[column as keyof typeof row])).size; if (!values.length) return 0; if (aggregateName === 'sum') return values.reduce((sum, value) => sum + value, 0); if (aggregateName === 'avg') return values.reduce((sum, value) => sum + value, 0) / values.length; return aggregateName === 'min' ? Math.min(...values) : Math.max(...values) }
 function bucket(value: unknown, bin?: string): unknown { if (!bin) return value; const date = new Date(String(value)); if (Number.isNaN(date.valueOf())) return value; if (bin === 'year' || bin === 'fiscal_year') return String(date.getUTCFullYear()); if (bin === 'quarter' || bin === 'fiscal_quarter') return `${date.getUTCFullYear()} Q${Math.floor(date.getUTCMonth() / 3) + 1}`; return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}` }
-function matchesGroup(row: typeof rows[number], group: ReportRuleGroup): boolean {
-  const values = group.rules.map((rule) => isRule(rule) ? matches(row, rule) : matchesGroup(row, rule))
+function matchesGroup(row: typeof rows[number], group: ReportRuleGroup): boolean | null {
+  const values = group.rules.map((rule) => isRule(rule) ? matches(row, rule) : matchesGroup(row, rule)).filter((value): value is boolean => value !== null)
+  if (!values.length) return null
   const matched = group.combinator === 'or' ? values.some(Boolean) : values.every(Boolean)
   return group.not ? !matched : matched
 }
-function matches(row: typeof rows[number], rule: ReportRule): boolean {
+function matches(row: typeof rows[number], rule: ReportRule): boolean | null {
+  const unary = ['is_null', 'is_not_null', 'is_true', 'is_false', 'before_now', 'since_today', 'this_month', 'this_year', 'this_week'].includes(rule.op)
+  if (!unary && (rule.value == null || rule.value === '' || (Array.isArray(rule.value) && !rule.value.length))) return null
   const value = row[rule.field as keyof typeof row], expected = rule.value
   if (rule.op === 'eq') return String(value) === String(expected)
   if (rule.op === 'neq') return String(value) !== String(expected)

@@ -48,28 +48,28 @@ function RuleRow({ entity, rule, onChange, onRemove }: { entity: ReportEntity; r
     const nextOperator = defaultOperatorForColumn(nextColumn)
     onChange({ field, op: nextOperator, value: nextOperator === 'in' ? [] : '' })
   }
-  return <div className="flex flex-wrap items-center gap-2">
-    <SearchSelect className="min-w-40 flex-1" triggerClassName="h-8" value={rule.field} onChange={changeField} options={columns.map((item) => ({ value: item.key, label: item.label }))} ariaLabel="Filter field" />
-    <SearchSelect className="w-44" triggerClassName="h-8" value={rule.op} onChange={(next) => {
+  return <div data-report-filter-row className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.25fr)_auto] items-start gap-1 sm:gap-2">
+    <SearchSelect className="min-w-0" triggerClassName="h-8 min-w-0 px-2" value={rule.field} onChange={changeField} options={columns.map((item) => ({ value: item.key, label: item.label }))} ariaLabel="Filter field" />
+    <SearchSelect className="min-w-0" triggerClassName="h-8 min-w-0 px-2" value={rule.op} onChange={(next) => {
       const op = next as ReportFilterOperator
       const needsList = operators.find((item) => item.key === op)?.needsValue === 'list'
       onChange({ ...rule, op, value: needsList ? (Array.isArray(rule.value) ? rule.value : []) : (Array.isArray(rule.value) ? '' : rule.value) })
     }} options={operators.map((item) => ({ value: item.key, label: item.label }))} ariaLabel="Filter operator" />
-    {rule.op === 'period_preset' ? <SearchSelect className="w-56" triggerClassName="h-8" value={typeof rule.value === 'string' ? rule.value : 'this_fiscal_year'} onChange={(value) => onChange({ ...rule, value })} options={PERIOD_PRESETS.map((preset) => ({ value: preset.id, label: preset.label, group: PERIOD_PRESET_GROUP_LABELS[preset.group as PeriodPresetGroup] }))} ariaLabel="Period" />
-      : operator?.needsValue === 'one' && options.length ? <SearchSelect className="w-52" triggerClassName="h-8" value={typeof rule.value === 'string' ? rule.value : ''} onChange={(value) => onChange({ ...rule, value })} options={options} clearable placeholder="Choose a value" ariaLabel="Filter value" />
-      : operator?.needsValue === 'one' ? <Input className="h-8 w-40" type={column?.kind === 'date' ? 'date' : column?.kind === 'number' || column?.kind === 'money' ? 'number' : 'text'} value={typeof rule.value === 'string' || typeof rule.value === 'number' ? String(rule.value) : ''} placeholder="Value" onChange={(event) => onChange({ ...rule, value: event.target.value })} />
+    {rule.op === 'period_preset' ? <SearchSelect className="min-w-0" triggerClassName="h-8" value={typeof rule.value === 'string' ? rule.value : 'this_fiscal_year'} onChange={(value) => onChange({ ...rule, value })} options={PERIOD_PRESETS.map((preset) => ({ value: preset.id, label: preset.label, group: PERIOD_PRESET_GROUP_LABELS[preset.group as PeriodPresetGroup] }))} ariaLabel="Period" />
+      : operator?.needsValue === 'one' && options.length ? <SearchSelect className="min-w-0" triggerClassName="h-8" value={typeof rule.value === 'string' ? rule.value : ''} onChange={(value) => onChange({ ...rule, value })} options={options} clearable placeholder="Choose a value" ariaLabel="Filter value" />
+      : operator?.needsValue === 'one' ? <Input className="h-8 min-w-0 w-full" type={column?.kind === 'date' ? 'date' : column?.kind === 'number' || column?.kind === 'money' ? 'number' : 'text'} value={typeof rule.value === 'string' || typeof rule.value === 'number' ? String(rule.value) : ''} placeholder="Value" onChange={(event) => onChange({ ...rule, value: event.target.value })} />
       : operator?.needsValue === 'list' && options.length ? <MultiSelect value={Array.isArray(rule.value) ? rule.value.map(String) : []} options={options} onChange={(next) => onChange({ ...rule, value: next })} />
       : operator?.needsValue === 'list' ? <TokenInput value={Array.isArray(rule.value) ? rule.value.map(String) : []} onChange={(next) => onChange({ ...rule, value: next })} />
       : <span className="text-xs text-fg-subtle">No value</span>}
-    <Button type="button" variant="ghost" size="sm" onClick={onRemove} aria-label="Remove condition"><Trash2 size={14} /></Button>
+    <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={onRemove} aria-label="Remove condition"><Trash2 size={14} /></Button>
   </div>
 }
 
 function Chip({ label, onRemove, tone = 'primary' }: { label: string; onRemove: () => void; tone?: 'primary' | 'neutral' }) {
   return <button type="button" onClick={onRemove} className={tone === 'primary'
-    ? 'inline-flex items-center gap-1 rounded-full border border-primary bg-primary-subtle px-2 py-0.5 text-xs text-primary'
-    : 'inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-fg-muted hover:border-border-strong'}>
-    <span className="max-w-52 truncate">{label}</span><X size={12} className="shrink-0" />
+    ? 'inline-flex max-w-full items-center gap-1 rounded-full border border-primary bg-primary-subtle px-2 py-0.5 text-xs text-primary'
+    : 'inline-flex max-w-full items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-fg-muted hover:border-border-strong'}>
+    <span className="min-w-0 truncate">{label}</span><X size={12} className="shrink-0" />
   </button>
 }
 
@@ -78,8 +78,8 @@ function MultiSelect({ value, options, onChange }: { value: string[]; options: {
   const selected = new Set(value)
   const remaining: SelectOption[] = options.filter((option) => !selected.has(option.value))
   const labelOf = (candidate: string) => options.find((option) => option.value === candidate)?.label ?? candidate
-  return <div className="flex max-w-md flex-col gap-1.5">
-    <SearchSelect className="w-52" triggerClassName="h-8" value="" onChange={(next) => { if (next) onChange([...value, next]) }} options={remaining} placeholder="Add value…" ariaLabel="Add filter value" />
+  return <div className="flex min-w-0 flex-col gap-1.5">
+    <SearchSelect className="min-w-0" triggerClassName="h-8" value="" onChange={(next) => { if (next) onChange([...value, next]) }} options={remaining} placeholder="Add value…" ariaLabel="Add filter value" />
     {value.length ? <div className="flex flex-wrap gap-1">{value.map((item) => <Chip key={item} label={labelOf(item)} onRemove={() => onChange(value.filter((current) => current !== item))} />)}</div> : null}
   </div>
 }
@@ -88,9 +88,9 @@ function MultiSelect({ value, options, onChange }: { value: string[]; options: {
 function TokenInput({ value, onChange }: { value: string[]; onChange: (value: string[]) => void }) {
   const [draft, setDraft] = useState('')
   const commit = () => { const trimmed = draft.trim(); if (trimmed && !value.includes(trimmed)) onChange([...value, trimmed]); setDraft('') }
-  return <div className="flex max-w-md flex-col gap-1.5">
+  return <div className="flex min-w-0 flex-col gap-1.5">
     <Input
-      className="h-8 w-52"
+      className="h-8 min-w-0 w-full"
       value={draft}
       placeholder="Type a value, press Enter"
       onChange={(event) => setDraft(event.target.value)}

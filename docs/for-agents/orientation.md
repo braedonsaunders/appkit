@@ -624,7 +624,11 @@ drill-through; and
 rows, pagination, the complete compact period/date/breakout/compare/subsidiary/
 customer/dimension/basis/scale/section filter surface, PDF-backed print, and
 multi-format actions.
-The recursive filter editor, ordered/renamable columns, three-level sort, page
+The recursive filter editor keeps each condition’s field, operator, and value on one
+row at every width; selected values appear below the value picker. Screen document
+previews use the host’s light/dark text, border, and status tokens, while printed
+documents retain their paper palette. The reports playground opens the canonical
+print-layout preview; **Interactive preview** enables value drill-through. The ordered/renamable columns, three-level sort, page
 setup, schedule, run, and save controls write the same contracts the compiler
 consumes. Schedule create and update adapters share
 `parseReportScheduleForm`, so cadence, bounded filters, recipient policy, and
