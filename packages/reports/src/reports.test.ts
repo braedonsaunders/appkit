@@ -115,3 +115,14 @@ test('tone styles are emitted for print as well as screen', () => {
   // Colour must survive printing, where backgrounds are dropped by default.
   assert.match(css, /print-color-adjust: exact/)
 })
+
+
+test('screen document colors are theme-aware without changing the standalone print palette', () => {
+  const css = buildReportDocumentCss()
+  assert.match(css, /@media screen \{[\s\S]*\[data-report-paper\] \.appkit-report-doc \{ color: rgb\(var\(--ch-fg\)\)/)
+  for (const token of ['fg-muted', 'fg-subtle', 'border', 'border-strong', 'danger', 'warning', 'success', 'info']) {
+    assert.ok(css.includes(`rgb(var(--ch-${token}))`))
+  }
+  assert.match(css, /\.appkit-report-doc \{[^}]*color: #111827/)
+  assert.match(css, /td\.tone-critical \{ color: #b42318/)
+})
