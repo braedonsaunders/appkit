@@ -2,11 +2,22 @@
  * @braedonsaunders/appkit-scheduling/react — the authoring surface.
  *
  * Client components. Wrap them in `SchedulingProvider` to supply your own
- * labels and date formatting; without it they render in English against the
- * runtime locale.
+ * labels, date formatting and date control; without it they render in English
+ * against the runtime locale with native date inputs.
  */
 
-export { SchedulingProvider, useScheduling, useSchedulingLabels, useScheduleFormatters } from './react/context'
+export {
+  SchedulingProvider,
+  useScheduling,
+  useSchedulingLabels,
+  useScheduleFormatters,
+  useScheduleComponents,
+  type SchedulingComponents,
+  type SchedulingContextValue,
+  type ScheduleDateInputComponent,
+  type ScheduleDateInputProps,
+} from './react/context'
+export { ScheduleDateInput, NativeScheduleDateInput } from './react/date-input'
 export { GanttView, type GanttViewProps } from './react/gantt-view'
 export { GanttBar, type GanttBarProps } from './react/gantt-bar'
 export { GanttDependencies, type GanttDependenciesProps } from './react/gantt-dependencies'

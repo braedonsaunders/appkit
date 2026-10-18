@@ -12,7 +12,7 @@
  *    saves as 0, and progress saves as 0.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { Badge, Button, Dialog, Input, Label, Select, Slider, Tabs, Textarea } from '@braedonsaunders/appkit-ui'
 import { diffDays, parseDate } from '../dates'
@@ -35,6 +35,7 @@ import type {
   ScheduleTaskType,
 } from '../types'
 import { useSchedulingLabels } from './context'
+import { ScheduleDateInput } from './date-input'
 
 export interface TaskEditorProps {
   task: ScheduleTask
@@ -71,6 +72,7 @@ export function TaskEditor({
   onClose,
 }: TaskEditorProps) {
   const labels = useSchedulingLabels()
+  const dateFieldId = useId()
   const [activeTab, setActiveTab] = useState('task')
   const [name, setName] = useState(task.name)
   const [description, setDescription] = useState(task.description)
@@ -461,21 +463,22 @@ export function TaskEditor({
               {activeTab === 'dates' ? (
                 <div className="space-y-4">
                   <div className="grid gap-3 md:grid-cols-2">
-                    <Field label={labels.columns.start}>
-                      <Input
-                        type="date"
+                    <Field label={labels.columns.start} htmlFor={`${dateFieldId}-start`}>
+                      <ScheduleDateInput
+                        id={`${dateFieldId}-start`}
                         value={startDate}
-                        onChange={(event) => setStartDate(event.target.value)}
+                        onChange={setStartDate}
                         disabled={isRollupLocked}
                       />
                     </Field>
-                    <Field label={isMilestoneTask ? labels.taskType.milestone : labels.columns.finish}>
-                      <Input
-                        type="date"
+                    <Field
+                      label={isMilestoneTask ? labels.taskType.milestone : labels.columns.finish}
+                      htmlFor={`${dateFieldId}-finish`}
+                    >
+                      <ScheduleDateInput
+                        id={`${dateFieldId}-finish`}
                         value={isMilestoneTask ? startDate : endDate}
-                        onChange={(event) =>
-                          isMilestoneTask ? setStartDate(event.target.value) : setEndDate(event.target.value)
-                        }
+                        onChange={isMilestoneTask ? setStartDate : setEndDate}
                         disabled={isRollupLocked}
                       />
                     </Field>
@@ -497,23 +500,23 @@ export function TaskEditor({
                         ))}
                       </Select>
                     </Field>
-                    <Field label={labels.editor.constraintDate}>
-                      <Input
+                    <Field label={labels.editor.constraintDate} htmlFor={`${dateFieldId}-constraint`}>
+                      <ScheduleDateInput
+                        id={`${dateFieldId}-constraint`}
                         data-testid="task-constraint-date"
-                        type="date"
                         value={constraintDate}
-                        onChange={(event) => setConstraintDate(event.target.value)}
+                        onChange={setConstraintDate}
                       />
                     </Field>
                   </div>
 
                   <div className="grid gap-3 md:grid-cols-2">
-                    <Field label={labels.columns.deadline}>
-                      <Input
+                    <Field label={labels.columns.deadline} htmlFor={`${dateFieldId}-deadline`}>
+                      <ScheduleDateInput
+                        id={`${dateFieldId}-deadline`}
                         data-testid="task-deadline-date"
-                        type="date"
                         value={deadlineDate}
-                        onChange={(event) => setDeadlineDate(event.target.value)}
+                        onChange={setDeadlineDate}
                       />
                     </Field>
                     <Field
@@ -532,19 +535,19 @@ export function TaskEditor({
                   </div>
 
                   <div className="grid gap-3 md:grid-cols-2">
-                    <Field label={labels.columns.actualStart}>
-                      <Input
-                        type="date"
+                    <Field label={labels.columns.actualStart} htmlFor={`${dateFieldId}-actual-start`}>
+                      <ScheduleDateInput
+                        id={`${dateFieldId}-actual-start`}
                         value={actualStart}
-                        onChange={(event) => setActualStart(event.target.value)}
+                        onChange={setActualStart}
                         disabled={isRollupLocked}
                       />
                     </Field>
-                    <Field label={labels.columns.actualFinish}>
-                      <Input
-                        type="date"
+                    <Field label={labels.columns.actualFinish} htmlFor={`${dateFieldId}-actual-finish`}>
+                      <ScheduleDateInput
+                        id={`${dateFieldId}-actual-finish`}
                         value={actualEnd}
-                        onChange={(event) => setActualEnd(event.target.value)}
+                        onChange={setActualEnd}
                         disabled={isRollupLocked}
                       />
                     </Field>
@@ -838,10 +841,10 @@ function DependencyList({
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, htmlFor, children }: { label: string; htmlFor?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <Label>{label}</Label>
+      <Label htmlFor={htmlFor}>{label}</Label>
       {children}
     </div>
   )

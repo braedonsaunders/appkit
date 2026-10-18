@@ -3,10 +3,11 @@
 /** Structured filter bar: phase, status, assignee and a date window. */
 
 import { X } from 'lucide-react'
-import { Button, Input, Select, cn } from '@braedonsaunders/appkit-ui'
+import { Button, Select, cn } from '@braedonsaunders/appkit-ui'
 import { emptyFilters } from '../types'
 import type { SchedulePhase, ScheduleFilters, ScheduleTaskStatus } from '../types'
 import { useSchedulingLabels } from './context'
+import { ScheduleDateInput } from './date-input'
 
 const ALL = '__all__'
 
@@ -109,19 +110,17 @@ export function ScheduleFiltersBar({
       )}
 
       <Field label={labels.columns.start}>
-        <Input
-          type="date"
+        <ScheduleDateInput
           value={filters.dateFrom ?? ''}
-          onChange={(e) => onChange({ ...filters, dateFrom: e.target.value || null })}
+          onChange={(value) => onChange({ ...filters, dateFrom: value || null })}
           className="h-7 w-36 text-xs"
           aria-label={labels.columns.start}
         />
       </Field>
       <Field label={labels.columns.finish}>
-        <Input
-          type="date"
+        <ScheduleDateInput
           value={filters.dateTo ?? ''}
-          onChange={(e) => onChange({ ...filters, dateTo: e.target.value || null })}
+          onChange={(value) => onChange({ ...filters, dateTo: value || null })}
           className="h-7 w-36 text-xs"
           aria-label={labels.columns.finish}
         />
