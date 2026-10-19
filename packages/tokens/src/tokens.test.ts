@@ -33,3 +33,13 @@ test('JavaScript and CSS semantic palettes cannot drift', () => {
 test('system dark defaults stay identical to the explicit dark theme', () => {
   assert.deepEqual(channels(block(':root:not(.light):not(.dark)')), channels(block('.dark')))
 })
+
+test('ships the visible-by-default motion helpers the UI shells reference', () => {
+  for (const helper of ['.reveal', '.appkit-row']) {
+    const rule = block(helper)
+    assert.match(rule, /transition/, `${helper} has no transition`)
+    assert.doesNotMatch(rule, /opacity:\s*0\b/, `${helper} hides content at rest`)
+    const starting = new RegExp(`@starting-style\\s*\\{\\s*\\${helper}\\s*\\{`)
+    assert.match(css, starting, `${helper} has no @starting-style origin`)
+  }
+})

@@ -32,3 +32,14 @@ test('fixed dashboard primitives render without builder state or controls', () =
   assert.match(markup, /Live pipeline data/)
   assert.doesNotMatch(markup, /Add widget|Customizing your dashboard|react-grid-layout/)
 })
+
+test('dashboard panels size to their content unless asked to fill', () => {
+  const panelClass = (fill?: boolean) => {
+    const markup = renderToStaticMarkup(
+      React.createElement(DashboardPanel, { title: 'Health', fill, children: React.createElement('p', null, 'ok') }),
+    )
+    return /<section class="([^"]+)"/.exec(markup)?.[1] ?? ''
+  }
+  assert.doesNotMatch(panelClass(), /\bh-full\b/)
+  assert.match(panelClass(true), /\bh-full\b/)
+})

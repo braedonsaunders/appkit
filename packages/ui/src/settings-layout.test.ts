@@ -61,3 +61,24 @@ test('renders operational counts on compact admin hub cards', () => {
   )
   if (!markup.includes('12 tenants')) throw new Error('Compact hub card badge was not rendered')
 })
+
+test('collapses the settings rail into a section strip on narrow screens', () => {
+  const markup = renderToStaticMarkup(
+    React.createElement(SettingsShell, {
+      title: 'Settings',
+      nav: [
+        { label: 'Server', items: [{ key: 'server', label: 'Server' }, { key: 'plex', label: 'Plex' }] },
+        { label: 'Media', items: [{ key: 'cache', label: 'Cache' }] },
+      ],
+      activeKey: 'plex',
+      onSelect: () => {},
+      children: React.createElement('div'),
+    }),
+  )
+  const aside = /<aside class="([^"]+)"/.exec(markup)?.[1] ?? ''
+  if (/(?:^|\s)w-\d/.test(aside)) throw new Error('Settings rail keeps a fixed width on phones')
+  if (!/\bmd:w-52\b/.test(aside)) throw new Error('Settings rail lost its desktop width')
+  if (!/\bflex-col\b/.test(markup) || !/\bmd:flex-row\b/.test(markup)) throw new Error('Settings body does not stack on phones')
+  if ((markup.match(/aria-current="page"/g) ?? []).length !== 1) throw new Error('Settings navigation renders duplicate controls')
+  if (!/<h3 class="[^"]*\bhidden md:block\b[^"]*">Server<\/h3>/.test(markup)) throw new Error('Group labels are not collapsed on phones')
+})

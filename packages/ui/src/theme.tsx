@@ -3,40 +3,47 @@
 import * as React from 'react'
 import { Monitor, Moon, Sun } from 'lucide-react'
 import { cn } from './utils'
-
-export type Theme = 'light' | 'dark' | 'system'
-export type ResolvedTheme = 'light' | 'dark'
+import {
+  resolveThemeOptions,
+  themeFromStorage,
+  type ResolvedTheme,
+  type Theme,
+  type ThemeOptions,
+} from './theme-options'
 
 type ThemeContextValue = {
   theme: Theme
   resolvedTheme: ResolvedTheme
   setTheme: (theme: Theme) => void
+  /** False for a light/dark-only app; `'system'` is then never offered. */
+  enableSystem: boolean
   mounted: boolean
 }
 
 const ThemeContext = React.createContext<ThemeContextValue | null>(null)
 const unavailableThemes = new Map<string, Theme>()
 
-function isTheme(value: string | null): value is Theme {
-  return value === 'light' || value === 'dark' || value === 'system'
-}
+export type ThemeProviderProps = ThemeOptions & { children: React.ReactNode }
 
-export function ThemeProvider({
-  children,
-  storageKey = 'theme',
-}: {
-  children: React.ReactNode
-  storageKey?: string
-}) {
+/**
+ * Live theme state. Pass the same options to `getThemeScript` so the
+ * pre-paint class matches: `<ThemeProvider defaultTheme="dark"
+ * enableSystem={false}>` for a dark-by-default, light/dark-only app.
+ */
+export function ThemeProvider({ children, ...options }: ThemeProviderProps) {
+  const { storageKey, defaultTheme, enableSystem } = resolveThemeOptions(options)
+  const config = React.useMemo(
+    () => ({ storageKey, defaultTheme, enableSystem }),
+    [storageKey, defaultTheme, enableSystem],
+  )
   const eventName = `appkit-theme-change:${storageKey}`
   const readTheme = React.useCallback((): Theme => {
     try {
-      const stored = localStorage.getItem(storageKey)
-      return isTheme(stored) ? stored : 'system'
+      return themeFromStorage(localStorage.getItem(storageKey), config)
     } catch {
-      return unavailableThemes.get(storageKey) ?? 'system'
+      return themeFromStorage(unavailableThemes.get(storageKey) ?? null, config)
     }
-  }, [storageKey])
+  }, [config, storageKey])
   const subscribeTheme = React.useCallback(
     (onChange: () => void) => {
       window.addEventListener('storage', onChange)
@@ -53,7 +60,7 @@ export function ThemeProvider({
     media.addEventListener('change', onChange)
     return () => media.removeEventListener('change', onChange)
   }, [])
-  const theme = React.useSyncExternalStore<Theme>(subscribeTheme, readTheme, () => 'system')
+  const theme = React.useSyncExternalStore<Theme>(subscribeTheme, readTheme, () => defaultTheme)
   const prefersDark = React.useSyncExternalStore(
     subscribeSystem,
     () => matchMedia('(prefers-color-scheme: dark)').matches,
@@ -70,9 +77,12 @@ export function ThemeProvider({
   }, [resolvedTheme])
 
   const setTheme = React.useCallback(
-    (next: Theme) => {
+    (requested: Theme) => {
+      const next = themeFromStorage(requested, config)
       try {
-        if (next === 'system') localStorage.removeItem(storageKey)
+        // The default is stored as "no explicit choice", so changing the
+        // app's default later moves users who never picked one.
+        if (next === defaultTheme) localStorage.removeItem(storageKey)
         else localStorage.setItem(storageKey, next)
         unavailableThemes.delete(storageKey)
       } catch {
@@ -80,11 +90,11 @@ export function ThemeProvider({
       }
       window.dispatchEvent(new Event(eventName))
     },
-    [eventName, storageKey],
+    [config, defaultTheme, eventName, storageKey],
   )
 
   return (
-    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, mounted }}>
+    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, enableSystem, mounted }}>
       {children}
     </ThemeContext.Provider>
   )
@@ -101,6 +111,7 @@ const THEME_OPTIONS = [
   { value: 'system' as const, icon: Monitor },
   { value: 'dark' as const, icon: Moon },
 ]
+const CYCLE: Theme[] = ['light', 'dark', 'system']
 
 export type ThemeToggleLabels = {
   label: string
@@ -127,13 +138,16 @@ export function ThemeToggle({
   labels?: ThemeToggleLabels
   className?: string
 }) {
-  const { theme, setTheme, mounted } = useTheme()
+  const { theme, setTheme, enableSystem, mounted } = useTheme()
+  const options = enableSystem ? THEME_OPTIONS : THEME_OPTIONS.filter((option) => option.value !== 'system')
 
   if (collapsed) {
-    const active = THEME_OPTIONS.find((option) => option.value === theme) ?? THEME_OPTIONS[1]!
+    // Cycles light → dark (→ system when enabled) → light.
+    const cycle = enableSystem ? CYCLE : CYCLE.filter((value) => value !== 'system')
+    const active = options.find((option) => option.value === theme) ?? options[0]!
     const Icon = active.icon
     const activeLabel = labels[active.value]
-    const next: Theme = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light'
+    const next = cycle[(cycle.indexOf(active.value) + 1) % cycle.length]!
     return (
       <button
         type="button"
@@ -156,7 +170,7 @@ export function ThemeToggle({
       aria-label={labels.label}
       className={cn('flex items-center gap-0.5 rounded-lg border border-border bg-bg-subtle p-0.5', className)}
     >
-      {THEME_OPTIONS.map((option) => {
+      {options.map((option) => {
         const Icon = option.icon
         const selected = mounted && theme === option.value
         return (

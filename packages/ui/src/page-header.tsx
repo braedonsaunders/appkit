@@ -22,15 +22,18 @@ export function PageHeader({ title, description, actions, back, className }: Pag
           back.render({ href: back.href, className: backClass, children: <>← {back.label}</> })
         ) : <UiBackLink href={back.href} label={back.label} className={backClass} />
       ) : null}
-      <header className="flex items-center justify-between gap-3 sm:items-end sm:gap-4">
-        <div className="min-w-0 space-y-1">
+      {/* The title keeps at least 12rem; when the actions no longer fit beside
+          it they wrap onto their own row instead of overflowing, and a crowded
+          actions row wraps its own items rather than forcing a scroll. */}
+      <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 sm:items-end sm:gap-x-4">
+        <div className="min-w-0 flex-[1_1_12rem] space-y-1">
           <h1 className="truncate text-xl font-semibold text-fg sm:text-2xl">{title}</h1>
           {description ? (
             <p className="hidden text-sm text-fg-muted sm:block">{description}</p>
           ) : null}
         </div>
         {actions ? (
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">{actions}</div>
+          <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 sm:ml-auto sm:justify-end">{actions}</div>
         ) : null}
       </header>
     </div>

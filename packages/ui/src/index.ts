@@ -49,11 +49,10 @@ export {
   ThemeProvider,
   ThemeToggle,
   useTheme,
-  type Theme,
-  type ResolvedTheme,
+  type ThemeProviderProps,
   type ThemeToggleLabels,
 } from './theme'
-export { getThemeScript } from './theme-script'
+export { getThemeScript, type Theme, type ThemeOptions, type ResolvedTheme } from './theme-script'
 export { NavigationModeProvider, useNavigationMode } from './navigation-mode'
 export {
   AccountMenu,
