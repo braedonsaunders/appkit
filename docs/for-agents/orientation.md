@@ -28,8 +28,10 @@ on `<html>`; tokens flip automatically. **Rebrand the whole suite by editing the
 `--ch-*` channel values in `packages/tokens/src/tokens.css` — one file.**
 
 Motion tokens: `--ease-out` `--ease-in-out` `--ease-spring`, `--duration-{fast,
-base,slow}`. Reveal helpers: `.reveal` (CSS `@starting-style`, visible-by-default)
-and `.appkit-row` (staggered table rows). Browser-native routed-page motion is
+base,slow}`. Reveal helpers ship in `tokens.css` for every consumer: `.reveal`
+(CSS `@starting-style`, visible-by-default; stagger siblings with
+`--reveal-delay`) — the page shells apply it to their canvas — and `.appkit-row`
+(staggered table rows). Browser-native routed-page motion is
 available through the optional `@braedonsaunders/appkit-ui/page-transition` entry point.
 
 ## 2. Primitive index
@@ -93,7 +95,9 @@ without the component barrel, from `@braedonsaunders/appkit-ui/use-element-size`
 **Dashboards & insights** — fixed product dashboards can import
 `DashboardMetricCard` and `DashboardPanel` from the dependency-light
 `@braedonsaunders/appkit-dashboard/primitives` entry (plus `primitives.css`) without installing
-the builder stack. `@braedonsaunders/appkit-dashboard/react` adds `DashboardGrid` (responsive 12-column grid, view/edit
+the builder stack. `DashboardPanel` sizes to its content, so it sits in stacks and
+CSS grids without stretching; pass `fill` when it should take its parent's
+height. `DashboardGrid` cells stretch their nodes to the cell on their own. `@braedonsaunders/appkit-dashboard/react` adds `DashboardGrid` (responsive 12-column grid, view/edit
 modes, drag/resize, remove, save/reset, categorized widget/card drawer) ·
 `InsightCard` · `InsightResultView` ·
 `AdvancedInsightResultView` (flat results plus typed pivots/heatmaps and fifteen
@@ -105,10 +109,15 @@ dashboard system, not gallery mockups. Framework-neutral types remain at
 `@braedonsaunders/appkit-dashboard`; persistence is explicitly installed from
 `@braedonsaunders/appkit-dashboard/schema`.
 
-**App shell / admin** — `PageHeader` · `AdminHub` (the settings **landing/hub** —
+**App shell / admin** — `PageHeader` (pass `actions` as a fragment of controls:
+they sit beside the title while they fit and wrap onto their own row on narrow
+screens) · `AdminHub` (the settings **landing/hub** —
 grouped accent cards, with an optional detailed layout for capability inventories)
 · `SettingsShell` (the **sidebar settings area** — fixed header + two-pane rail)
 + `SettingsNav` / `SettingsSection` / `SettingsRow`.
+Below the `md` breakpoint `SettingsShell` collapses its rail into a horizontally
+scrolling section strip above the content (one DOM — `SettingsNav
+layout="responsive"`), so phones keep the full content width.
 `SettingsShell` keeps form-heavy settings panes narrow by default; use
 `contentWidth="wide"` or `contentWidth="full"` for record-heavy platform
 administration lists without rebuilding the shell.
@@ -242,6 +251,38 @@ SQL database without privileged mutations.
   `NavigationModeProvider`, and the router callback through
   `DrawerNavigateContext`. Search results, notification data/actions, account
   preferences, and sign-out remain app-owned adapters.
+- **Theme defaults** are one options object shared by the provider and the
+  pre-paint script, so the first paint always matches the hydrated theme:
+  `ThemeProvider` and `getThemeScript` both take `{ storageKey, defaultTheme,
+  enableSystem }`. `defaultTheme` (default `'system'`) applies until the user
+  picks a theme; `enableSystem: false` makes a light/dark-only app (requires
+  `defaultTheme: 'light' | 'dark'`, and `ThemeToggle` then offers only light and
+  dark). Next.js renders the script with `next/script`
+  (`strategy="beforeInteractive"`). A static `index.html` (Vite) injects it at
+  build time from the React-free `@braedonsaunders/appkit-ui/theme-script`
+  entry:
+
+  ```ts
+  // src/theme.ts — shared by vite.config.ts and <ThemeProvider {...theme}>
+  export const theme = { storageKey: 'app-theme', defaultTheme: 'dark', enableSystem: false } as const
+
+  // vite.config.ts
+  import { getThemeScript } from '@braedonsaunders/appkit-ui/theme-script'
+  import { theme } from './src/theme'
+  const appkitTheme = {
+    name: 'appkit-theme',
+    transformIndexHtml: () => [{ tag: 'script', children: getThemeScript(theme), injectTo: 'head-prepend' as const }],
+  }
+  // plugins: [react(), tailwindcss(), appkitTheme]
+  ```
+
+- **Client directives.** Each published module is its own file, and only the
+  modules that need interactivity start with `'use client'`, so Next.js and
+  other RSC bundlers draw the client boundary per primitive. React-aware
+  bundler integrations (`@vitejs/plugin-react`, `@vitejs/plugin-react-swc`)
+  already silence Rollup's "Module level directives cause errors when bundled"
+  notice for those files; a bare Rollup build filters `MODULE_LEVEL_DIRECTIVE`
+  warnings for `'use client'` in its `onwarn`.
 
 ## 4. AI agents (`@braedonsaunders/appkit-ai`)
 

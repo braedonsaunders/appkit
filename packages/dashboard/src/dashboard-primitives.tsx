@@ -68,6 +68,12 @@ export type DashboardPanelProps = {
   children: React.ReactNode
   className?: string
   bodyClassName?: string
+  /**
+   * Fill the parent's height (the body takes the remaining space). Off by
+   * default so panels in stacks and CSS grids size to their content;
+   * `DashboardGrid` cells stretch their nodes without it.
+   */
+  fill?: boolean
 }
 
 /**
@@ -81,11 +87,13 @@ export function DashboardPanel({
   children,
   className,
   bodyClassName,
+  fill = false,
 }: DashboardPanelProps) {
   return (
     <section
       className={cn(
-        'flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-sm',
+        'flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-sm',
+        fill && 'h-full',
         className,
       )}
     >

@@ -223,8 +223,9 @@ export function AdminHub({
 // ---------------------------------------------------------------------------
 // SettingsShell — the SIDEBAR settings area: a fixed header (with a back link
 // to the hub), and a two-pane body — a grouped nav rail beside the active
-// content, each pane scrolling independently. The
-// setup/layout.tsx + SetupNav.tsx.
+// content, each pane scrolling independently. Below the `md` breakpoint the
+// rail collapses into a horizontally scrolling section strip above the
+// content, so phones keep the full content width.
 // ---------------------------------------------------------------------------
 
 export type SettingsNavItem = { key: string; label: string; icon?: React.ReactNode; badge?: React.ReactNode }
@@ -234,24 +235,48 @@ export function SettingsNav({
   groups,
   activeKey,
   onSelect,
+  layout = 'rail',
   className,
 }: {
   groups: SettingsNavGroup[]
   activeKey: string
   onSelect: (key: string) => void
+  /**
+   * `rail` is the grouped vertical sidebar list. `responsive` renders the
+   * same list as one horizontally scrolling strip below the `md` breakpoint
+   * (group labels become separators, the active section stays scrolled into
+   * view) and as the rail from `md` up — one DOM, no duplicate controls.
+   */
+  layout?: 'rail' | 'responsive'
   className?: string
 }) {
+  const responsive = layout === 'responsive'
+  const navRef = React.useRef<HTMLElement>(null)
+  React.useEffect(() => {
+    if (!responsive) return
+    const strip = navRef.current
+    const active = strip?.querySelector<HTMLElement>('[aria-current="page"]')
+    // A no-op at rail widths, where the nav never overflows horizontally.
+    if (strip && active && strip.scrollWidth > strip.clientWidth) {
+      strip.scrollLeft = Math.max(0, active.offsetLeft - (strip.clientWidth - active.offsetWidth) / 2)
+    }
+  }, [activeKey, responsive])
+
   return (
-    <nav className={cn('w-full', className)}>
-      <div className="space-y-5">
+    <nav
+      ref={navRef}
+      className={cn('w-full', responsive && 'app-scroll relative overflow-x-auto md:overflow-x-visible', className)}
+    >
+      <div className={responsive ? 'flex w-max items-center gap-1 px-3 py-2 md:block md:w-auto md:space-y-5 md:p-0' : 'space-y-5'}>
         {groups.map((group, gi) => (
-          <div key={gi} className="space-y-1">
+          <div key={gi} className={responsive ? 'flex items-center gap-1 md:block md:space-y-1' : 'space-y-1'}>
+            {responsive && gi > 0 ? <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-border md:hidden" /> : null}
             {group.label ? (
-              <h3 className="px-2 text-xs font-semibold tracking-wider text-fg-subtle uppercase">
+              <h3 className={cn('px-2 text-xs font-semibold tracking-wider text-fg-subtle uppercase', responsive && 'hidden md:block')}>
                 {group.label}
               </h3>
             ) : null}
-            <ul className="space-y-0.5">
+            <ul className={responsive ? 'flex items-center gap-1 md:block md:space-y-0.5' : 'space-y-0.5'}>
               {group.items.map((item) => {
                 const active = item.key === activeKey
                 return (
@@ -261,7 +286,8 @@ export function SettingsNav({
                       aria-current={active ? 'page' : undefined}
                       onClick={() => onSelect(item.key)}
                       className={cn(
-                        'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors',
+                        'flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors',
+                        responsive ? 'whitespace-nowrap md:w-full' : 'w-full',
                         active
                           ? 'bg-primary-subtle font-medium text-primary'
                           : 'text-fg-muted hover:bg-surface-hover hover:text-fg',
@@ -270,7 +296,7 @@ export function SettingsNav({
                       <span className={cn('shrink-0 [&_svg]:size-[15px]', active ? 'text-primary' : 'text-fg-subtle')}>
                         {item.icon}
                       </span>
-                      <span className="flex-1 truncate text-left">{item.label}</span>
+                      <span className={cn('text-left', responsive ? 'md:flex-1 md:truncate' : 'flex-1 truncate')}>{item.label}</span>
                       {item.badge}
                     </button>
                   </li>
@@ -332,9 +358,9 @@ export function SettingsShell({
           }
         />
       </div>
-      <div className="flex min-h-0 flex-1">
-        <aside className="app-scroll w-44 shrink-0 overflow-y-auto border-r border-border bg-surface p-3 sm:w-52 lg:w-60">
-          <SettingsNav groups={nav} activeKey={activeKey} onSelect={onSelect} />
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <aside className="app-scroll shrink-0 border-b border-border bg-surface md:w-52 md:overflow-y-auto md:border-r md:border-b-0 md:p-3 lg:w-60">
+          <SettingsNav groups={nav} activeKey={activeKey} onSelect={onSelect} layout="responsive" />
         </aside>
         <div className="app-scroll min-h-0 flex-1 overflow-y-auto bg-bg-subtle">
           <div className={cn('mx-auto w-full space-y-6 p-4 sm:p-6', contentWidthClass)}>
