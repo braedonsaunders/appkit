@@ -2,12 +2,11 @@ import { readdir, readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawn } from 'node:child_process'
-import { orderManifestsForPublication } from './publish-order.mjs'
+import { publishRelease } from './publish-release.mjs'
 import { loadNpmManifest } from './registry-dependency-closure.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const packagesRoot = join(root, 'packages')
-const publishSpacingMs = 3_500
 const rateLimitBackoffMs = 65_000
 
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
@@ -32,12 +31,6 @@ function run(command, args, options = {}) {
   })
 }
 
-async function waitForRegistry(name, version) {
-  process.stdout.write(`Waiting for ${name}@${version} to appear on the registry.\n`)
-  await loadNpmManifest(name, version)
-  process.stdout.write(`${name}@${version} is visible on the registry.\n`)
-}
-
 async function isPublished(name, version) {
   const result = await run('npm', ['view', `${name}@${version}`, 'version', '--json'])
   if (result.code === 0) return true
@@ -56,12 +49,10 @@ async function publish(directory, name, version) {
     const output = `${result.stdout}\n${result.stderr}`.trim()
     if (result.code === 0) {
       process.stdout.write(`${output}\n`)
-      await waitForRegistry(name, version)
       return
     }
     if (output.includes('cannot publish over the previously published version')) {
       process.stdout.write(`${name}@${version} is already published.\n`)
-      await waitForRegistry(name, version)
       return
     }
     if (output.includes('E429') && attempt < 5) {
@@ -82,17 +73,9 @@ for (const entry of await readdir(packagesRoot, { withFileTypes: true })) {
   manifests.push({ directory, name: manifest.name, version: manifest.version })
 }
 
-const orderedManifests = orderManifestsForPublication(manifests)
-
-let lastPublishAt = 0
-for (const manifest of orderedManifests) {
-  if (await isPublished(manifest.name, manifest.version)) {
-    process.stdout.write(`Skipping published ${manifest.name}@${manifest.version}.\n`)
-    continue
-  }
-  const remainingSpacing = publishSpacingMs - (Date.now() - lastPublishAt)
-  if (remainingSpacing > 0) await sleep(remainingSpacing)
-  process.stdout.write(`Publishing ${manifest.name}@${manifest.version}.\n`)
-  await publish(manifest.directory, manifest.name, manifest.version)
-  lastPublishAt = Date.now()
-}
+await publishRelease(manifests, {
+  isPublished,
+  publish,
+  loadManifest: loadNpmManifest,
+  log: (message) => process.stdout.write(`${message}\n`),
+})
