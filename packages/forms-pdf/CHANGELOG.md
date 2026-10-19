@@ -1,5 +1,15 @@
 # @braedonsaunders/appkit-forms-pdf
 
+## 12.0.0
+
+### Patch Changes
+
+- Updated dependencies [c99bcaf]
+  - @braedonsaunders/appkit-tokens@0.2.0
+  - @braedonsaunders/appkit-design-studio@3.0.0
+  - @braedonsaunders/appkit-pdf@0.7.1
+  - @braedonsaunders/appkit-reports@3.0.0
+
 ## 11.0.0
 
 ### Patch Changes
