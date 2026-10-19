@@ -1,6 +1,6 @@
 {
   "name": "@braedonsaunders/appkit-tokens",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "The design foundation — semantic color, radius, elevation, and motion tokens. Light/dark. Tailwind v4, CSS-first.",
   "license": "AGPL-3.0-or-later",
   "type": "module",

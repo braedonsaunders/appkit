@@ -1,5 +1,13 @@
 # @braedonsaunders/appkit-workflows
 
+## 4.0.0
+
+### Patch Changes
+
+- Updated dependencies [c99bcaf]
+  - @braedonsaunders/appkit-ui@0.4.0
+  - @braedonsaunders/appkit-forms@0.2.5
+
 ## 3.0.0
 
 ### Patch Changes

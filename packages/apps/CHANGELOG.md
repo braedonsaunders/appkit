@@ -1,5 +1,12 @@
 # @braedonsaunders/appkit-apps
 
+## 4.0.0
+
+### Patch Changes
+
+- Updated dependencies [c99bcaf]
+  - @braedonsaunders/appkit-ui@0.4.0
+
 ## 3.2.0
 
 ### Minor Changes

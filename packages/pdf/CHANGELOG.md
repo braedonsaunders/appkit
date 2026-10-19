@@ -1,5 +1,12 @@
 # @braedonsaunders/appkit-pdf
 
+## 0.7.1
+
+### Patch Changes
+
+- Updated dependencies [c99bcaf]
+  - @braedonsaunders/appkit-tokens@0.2.0
+
 ## 0.7.0
 
 ### Minor Changes
