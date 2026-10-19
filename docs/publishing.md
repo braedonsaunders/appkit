@@ -56,6 +56,13 @@ bursts of new package writes, while AppKit releases can contain all 51
 packages; the release command skips versions already present on npm and backs
 off on `E429` so a retry safely completes a partial publication.
 
+All package writes finish before registry visibility checks begin. Checks then
+run with at most four concurrent npm requests, validating every newly published
+exact version with bounded propagation retries. A failed check stops the release
+before registry consumer tests and tagging; it does not suppress those gates.
+This lets earlier writes propagate while later packages publish instead of
+adding a registry propagation wait to every write.
+
 Repository setup requires an npm automation/granular access token saved as the
 `NPM_TOKEN` GitHub Actions secret with publish access to the
 `@braedonsaunders` scope. The workflow grants GitHub's OIDC
