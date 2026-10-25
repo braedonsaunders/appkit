@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@braedonsaunders/appkit-crypto": "workspace:*",
-    "nodemailer": "^9.0.1"
+    "nodemailer": "^10.2.1"
   },
   "devDependencies": {
     "@types/node": "^22",
