@@ -1,6 +1,6 @@
 {
   "name": "@braedonsaunders/appkit-emails",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Email delivery — Resend, SendGrid, Mailgun, Postmark, and SMTP transports with sealed-secret config and platform→tenant policy.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
