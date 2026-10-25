@@ -788,8 +788,8 @@ importers:
         specifier: workspace:*
         version: link:../crypto
       nodemailer:
-        specifier: ^9.0.1
-        version: 9.0.3
+        specifier: ^10.2.1
+        version: 10.2.1
     devDependencies:
       '@types/node':
         specifier: ^22
@@ -1176,8 +1176,8 @@ importers:
         specifier: ^3.7.5
         version: 3.9.14
       nodemailer:
-        specifier: ^9.0.1
-        version: 9.0.3
+        specifier: ^10.2.1
+        version: 10.2.1
     devDependencies:
       '@braedonsaunders/appkit-ui':
         specifier: workspace:*
@@ -6424,6 +6424,10 @@ packages:
   node-gyp-build-optional-packages@5.2.2:
     resolution: {integrity: sha512-s+w+rBWnpTMwSFbaE0UXsRlg7hU4FjekKU4eyAih5T8nJuNZT1nNsskXpxmeqSK9UzkBl6UgRlnKc8hz8IEqOw==}
     hasBin: true
+
+  nodemailer@10.2.1:
+    resolution: {integrity: sha512-ZrDNsPFoDMwefNs7sJwrYiEJ/CG4ClJWDZv05iNJsEBWa8GRDry1QJHTJxsuTAY9eDDKjX4k+q3SxslXJOao7w==}
+    engines: {node: '>=20.0.0'}
 
   nodemailer@9.0.3:
     resolution: {integrity: sha512-n+YP+NKwR5zRWa60k3GiQ6Q3B4KXCoAw40dAKeCtYn020iNN74aWK2liXIC3ZEATeGql7we3tE3t8QwhY0eskw==}
@@ -12693,6 +12697,8 @@ snapshots:
     dependencies:
       detect-libc: 2.1.2
     optional: true
+
+  nodemailer@10.2.1: {}
 
   nodemailer@9.0.3: {}
 
