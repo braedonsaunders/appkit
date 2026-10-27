@@ -24,7 +24,7 @@ try {
   if (error instanceof Error && error.message.startsWith('Refusing')) throw error
 }
 const directory = await mkdtemp(join(tmpRoot, 'desk-check-'))
-const network = createDeskNetwork({ gateway, dns: '1.1.1.1', httpProxyPort: 3129, httpsProxyPort: 3130 })
+const network = createDeskNetwork({ gateway, dns: '1.1.1.1', egress: { mode: 'open' } })
 const host = createDeskHost({ imageRoot, parkWithMemory: true, trimOnSuspend: false,
   ports: { onEvent: (event) => console.log(event.kind), audit: () => {} },
   ...(process.env.DESK_CHECK_KERNEL_CMDLINE ? { kernelCmdline: process.env.DESK_CHECK_KERNEL_CMDLINE } : {}),

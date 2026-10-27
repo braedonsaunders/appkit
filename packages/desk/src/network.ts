@@ -10,8 +10,9 @@ export interface DeskNetworkCommandRunner {
 export interface DeskNetworkOptions {
   gateway: string
   dns: string
-  httpProxyPort: number
-  httpsProxyPort: number
+  egress: { mode: 'proxied'; httpProxyPort: number; httpsProxyPort: number } | { mode: 'open' }
+  chainPrefix?: string
+  allowHostPorts?: readonly number[]
   prefixLength?: number
   runner?: DeskNetworkCommandRunner
   enableForwarding?: () => Promise<void>
@@ -46,10 +47,17 @@ export function deskNetworkIdentity(index: number): { tap: string; macAddress: s
 }
 
 type Rule = readonly string[]
-interface Chain { table: 'nat' | 'filter'; parent: string; chain: string; jumps: Rule[]; rules: Rule[] }
-/** Point-to-point TAP with transparent HTTP/HTTPS egress and DNS-only forwarding. */
+interface Chain { table: 'nat' | 'filter'; parent: string; chain: string; jumps: Rule[]; rules: Rule[]; command?: 'ip6tables' }
+/** Point-to-point TAP with either open or transparent-proxy egress. */
 export function createDeskNetwork(options: DeskNetworkOptions) {
-  address(options.gateway); address(options.dns); port(options.httpProxyPort); port(options.httpsProxyPort)
+  address(options.gateway); address(options.dns)
+  const egress = options.egress
+  if (egress.mode === 'proxied') { port(egress.httpProxyPort); port(egress.httpsProxyPort) }
+  else if (egress.mode !== 'open') throw new Error('Invalid egress mode')
+  const chainPrefix = options.chainPrefix ?? 'desk'
+  if (!/^[A-Za-z0-9_-]+$/.test(chainPrefix)) throw new Error('Invalid iptables chain prefix')
+  const hostPorts = [...(options.allowHostPorts ?? [])]
+  hostPorts.forEach(port)
   const prefix = options.prefixLength ?? 24
   if (!Number.isInteger(prefix) || prefix < 1 || prefix > 32) throw new Error('Invalid guest prefix length')
   const runner = options.runner ?? defaultRunner
@@ -59,28 +67,46 @@ export function createDeskNetwork(options: DeskNetworkOptions) {
   const succeeds = async (command: string, args: readonly string[]) => { try { await run(command, args); return true } catch { return false } }
   function validate(value: DeskNetworkAddress) {
     if (!/^dsk[0-9]{1,9}$/.test(value.tap)) throw new Error('Invalid TAP name')
+    if (`${chainPrefix}-post-${value.tap}`.length > 28) throw new Error('iptables chain name exceeds 28 characters')
     address(value.guest)
     if (value.guest === options.gateway) throw new Error('Guest and gateway addresses must differ')
   }
   function chains({ tap, guest }: DeskNetworkAddress): Chain[] {
-    const { gateway, dns, httpProxyPort: http, httpsProxyPort: https } = options
+    const { gateway, dns } = options
+    const proxyRules: Rule[] = egress.mode === 'proxied' ? [
+      ['-p', 'tcp', '--dport', '80', '-j', 'DNAT', '--to-destination', `${gateway}:${egress.httpProxyPort}`],
+      ['-p', 'tcp', '--dport', '443', '-j', 'DNAT', '--to-destination', `${gateway}:${egress.httpsProxyPort}`],
+      ...(['udp', 'tcp'] as const).map((p) => ['-p', p, '--dport', '53', '-j', 'DNAT', '--to-destination', `${dns}:53`]),
+    ] : []
+    const proxyPorts: Rule[] = egress.mode === 'proxied'
+      ? [egress.httpProxyPort, egress.httpsProxyPort].map((p) => ['-p', 'tcp', '-d', gateway, '--dport', String(p), '-j', 'ACCEPT'])
+      : []
+    const extraPorts: Rule[] = hostPorts.flatMap((p) => (['tcp', 'udp'] as const).map((protocol) =>
+      ['-p', protocol, '-d', gateway, '--dport', String(p), '-j', 'ACCEPT']))
+    const forwardRules: Rule[] = egress.mode === 'proxied' ? [
+      ['-m', 'conntrack', '--ctstate', 'ESTABLISHED,RELATED', '-j', 'ACCEPT'],
+      ...(['udp', 'tcp'] as const).map((p) => ['-i', tap, '-p', p, '-d', dns, '--dport', '53', '-j', 'ACCEPT']),
+      ['-j', 'DROP'],
+    ] : [
+      ['-o', tap, '-d', `${guest}/32`, '-m', 'conntrack', '--ctstate', 'ESTABLISHED,RELATED', '-j', 'ACCEPT'],
+      ['-i', tap, '-s', `${guest}/32`, '-j', 'ACCEPT'],
+      ['-j', 'DROP'],
+    ]
     return [
-      { table: 'nat', parent: 'PREROUTING', chain: `bh-pre-${tap}`, jumps: [['-i', tap]], rules: [
-        ['-p', 'tcp', '--dport', '80', '-j', 'DNAT', '--to-destination', `${gateway}:${http}`],
-        ['-p', 'tcp', '--dport', '443', '-j', 'DNAT', '--to-destination', `${gateway}:${https}`],
-        ...(['udp', 'tcp'] as const).map((p) => ['-p', p, '--dport', '53', '-j', 'DNAT', '--to-destination', `${dns}:53`]),
-      ] },
-      { table: 'nat', parent: 'POSTROUTING', chain: `bh-post-${tap}`, jumps: [['-s', `${guest}/32`]], rules: [['-j', 'MASQUERADE']] },
-      { table: 'filter', parent: 'INPUT', chain: `bh-in-${tap}`, jumps: [['-i', tap]], rules: [
+      { table: 'nat', parent: 'PREROUTING', chain: `${chainPrefix}-pre-${tap}`, jumps: [['-i', tap]], rules: proxyRules },
+      { table: 'nat', parent: 'POSTROUTING', chain: `${chainPrefix}-post-${tap}`, jumps: [['-s', `${guest}/32`]], rules: [['-j', 'MASQUERADE']] },
+      { table: 'filter', parent: 'INPUT', chain: `${chainPrefix}-in-${tap}`, jumps: [['-i', tap]], rules: [
         ['-m', 'conntrack', '--ctstate', 'ESTABLISHED,RELATED', '-j', 'ACCEPT'],
-        ...[http, https].map((p) => ['-p', 'tcp', '-d', gateway, '--dport', String(p), '-j', 'ACCEPT']), ['-j', 'DROP'],
+        ...proxyPorts, ...extraPorts, ['-j', 'DROP'],
       ] },
-      { table: 'filter', parent: 'FORWARD', chain: `bh-fwd-${tap}`, jumps: [['-i', tap], ['-o', tap]], rules: [
-        ['-m', 'conntrack', '--ctstate', 'ESTABLISHED,RELATED', '-j', 'ACCEPT'],
-        ...(['udp', 'tcp'] as const).map((p) => ['-i', tap, '-p', p, '-d', dns, '--dport', '53', '-j', 'ACCEPT']), ['-j', 'DROP'],
-      ] },
+      { table: 'filter', parent: 'FORWARD', chain: `${chainPrefix}-fwd-${tap}`, jumps: [['-i', tap], ['-o', tap]], rules: forwardRules },
+      ...(egress.mode === 'open' ? [
+        { command: 'ip6tables' as const, table: 'filter' as const, parent: 'INPUT', chain: `${chainPrefix}-6in-${tap}`, jumps: [['-i', tap]], rules: [['-j', 'DROP']] },
+        { command: 'ip6tables' as const, table: 'filter' as const, parent: 'FORWARD', chain: `${chainPrefix}-6fwd-${tap}`, jumps: [['-i', tap], ['-o', tap]], rules: [['-j', 'DROP']] },
+      ] : []),
     ]
   }
+
   function serialize(tap: string, fn: () => Promise<void>): Promise<void> {
     const next = (work.get(tap) ?? Promise.resolve()).then(fn)
     const settled = next.then(() => undefined, () => undefined)
@@ -98,13 +124,13 @@ export function createDeskNetwork(options: DeskNetworkOptions) {
         await run('ip', ['link', 'set', 'dev', tap, 'up'])
         await run('ip', ['route', 'replace', `${guest}/32`, 'dev', tap])
         await enableForwarding()
-        for (const { table, parent, chain, jumps, rules } of chains(value)) {
-          await succeeds('iptables', ['-t', table, '-N', chain])
-          await run('iptables', ['-t', table, '-F', chain])
-          for (const rule of rules) await run('iptables', ['-t', table, '-A', chain, ...rule])
+        for (const { table, parent, chain, jumps, rules, command = 'iptables' } of chains(value)) {
+          await succeeds(command, ['-t', table, '-N', chain])
+          await run(command, ['-t', table, '-F', chain])
+          for (const rule of rules) await run(command, ['-t', table, '-A', chain, ...rule])
           for (const jump of jumps) {
             const target = [...jump, '-j', chain]
-            if (!(await succeeds('iptables', ['-t', table, '-C', parent, ...target]))) await run('iptables', ['-t', table, '-I', parent, '1', ...target])
+            if (!(await succeeds(command, ['-t', table, '-C', parent, ...target]))) await run(command, ['-t', table, '-I', parent, '1', ...target])
           }
         }
       })
@@ -112,11 +138,11 @@ export function createDeskNetwork(options: DeskNetworkOptions) {
     teardown(value: DeskNetworkAddress): Promise<void> {
       validate(value)
       return serialize(value.tap, async () => {
-        for (const { table, parent, chain, jumps } of chains(value)) {
-          for (const jump of jumps) while (await succeeds('iptables', ['-t', table, '-C', parent, ...jump, '-j', chain])) {
-            if (!(await succeeds('iptables', ['-t', table, '-D', parent, ...jump, '-j', chain]))) break
+        for (const { table, parent, chain, jumps, command = 'iptables' } of chains(value)) {
+          for (const jump of jumps) while (await succeeds(command, ['-t', table, '-C', parent, ...jump, '-j', chain])) {
+            if (!(await succeeds(command, ['-t', table, '-D', parent, ...jump, '-j', chain]))) break
           }
-          await succeeds('iptables', ['-t', table, '-F', chain]); await succeeds('iptables', ['-t', table, '-X', chain])
+          await succeeds(command, ['-t', table, '-F', chain]); await succeeds(command, ['-t', table, '-X', chain])
         }
         await succeeds('ip', ['link', 'del', 'dev', value.tap])
       })
