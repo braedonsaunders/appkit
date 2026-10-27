@@ -1269,6 +1269,9 @@ function makeParkingHost(options: { snapshotExists?: boolean; park?: () => Promi
     imageRoot: '/images',
     backend,
     parkWithMemory: true,
+    cpuSignature: async () => 'cpu',
+    readSnapshotSignature: async () => 'cpu',
+    writeSnapshotSignature: async () => {},
     ports: { onEvent: () => {}, audit: (entry) => audits.push(entry) },
     now: () => clock.value,
     // Everything exists except the snapshot, which the test controls.
@@ -1401,4 +1404,61 @@ test('parking stays off unless a deployment asks for it', async () => {
   const machine = factory.machines[0]
   assert.ok(machine)
   assert.equal(machine.shutdowns, 1, 'the default is still a shutdown')
+})
+
+test('CPU incompatibility detection is specific', async () => {
+  const { isIncompatibleCpuSnapshotError } = await import('./host')
+  assert.equal(isIncompatibleCpuSnapshotError(new Error('Detected incompatible CPUID entry')), true)
+  assert.equal(isIncompatibleCpuSnapshotError(new Error('CPUID unavailable')), false)
+})
+
+test('CPU signature mismatch skips restore and emits a typed fallback', async () => {
+  const factory = fakeBackendFactory()
+  const events: DeskEvent[] = []
+  const removed: string[] = []
+  const host = createDeskHost({ imageRoot: '/images', backend: factory.backend, parkWithMemory: true,
+    ports: { onEvent: (event) => events.push(event), audit: () => {} },
+    pathExists: () => true, deviceExists: () => true, trimOnSuspend: false,
+    readSnapshotSignature: async () => 'old', cpuSignature: async () => 'new',
+    removeSnapshot: async (path) => { removed.push(path) },
+  })
+  await host.start(startOptions('cpu-test'))
+  assert.equal(factory.plans.length, 1)
+  assert.equal(factory.plans[0]?.snapshot.restoring, false)
+  assert.equal(removed.length, 1)
+  assert.equal(host.stats().snapshotCpuFallbacks, 1)
+  assert.equal(host.stats().lastError, null)
+  assert.ok(events.some((event) => event.kind === 'snapshot_cpu_fallback' && event.reason === 'signature_mismatch'))
+  await host.suspend('cpu-test')
+})
+
+test('a CPUID restore failure cold boots and does not set lastError', async () => {
+  const plans: DeskLaunchPlan[] = []
+  const host = createDeskHost({ imageRoot: '/images', parkWithMemory: true,
+    ports: { onEvent: () => {}, audit: () => {} }, pathExists: () => true, deviceExists: () => true,
+    readSnapshotSignature: async () => null, removeSnapshot: async () => {}, trimOnSuspend: false,
+    backend: { async boot(plan) { plans.push(plan); if (plan.snapshot.restoring) throw new Error('Detected incompatible CPUID entry'); return fakeMachine(plan.deskId).machine } },
+  })
+  await host.start(startOptions('cpu-failure'))
+  assert.deepEqual(plans.map((plan) => plan.snapshot.restoring), [true, false])
+  assert.equal(host.stats().lastSnapshotCpuFallback?.reason, 'incompatible_cpuid')
+  assert.equal(host.stats().lastError, null)
+  await host.suspend('cpu-failure')
+})
+
+test('guest TCP streams use the assigned address and close on suspend', async () => {
+  const { PassThrough } = await import('node:stream')
+  const factory = fakeBackendFactory()
+  const stream = new PassThrough()
+  const calls: Array<[string, number]> = []
+  const host = createDeskHost({ imageRoot: '/images', backend: factory.backend, ports: { onEvent: () => {}, audit: () => {} },
+    pathExists: () => true, deviceExists: () => true, trimOnSuspend: false,
+    connectGuest: async (address, port) => { calls.push([address, port]); return stream },
+  })
+  const desk = await host.start({ ...startOptions('relay'), network: { guestAddress: '172.30.0.2' } })
+  assert.equal(await desk.connect(14500), stream)
+  assert.deepEqual(calls, [['172.30.0.2', 14500]])
+  await assert.rejects(desk.connect(65536), /port/)
+  await host.suspend('relay')
+  assert.equal(stream.destroyed, true)
 })

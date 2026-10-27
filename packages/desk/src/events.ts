@@ -85,6 +85,7 @@ export type DeskEventDetail =
   | { kind: 'drag'; from: DeskPoint; to: DeskPoint }
   | { kind: 'window_focus'; window: WindowInfo }
   | { kind: 'screen_open'; width: number; height: number }
+  | { kind: 'snapshot_cpu_fallback'; reason: 'signature_mismatch' | 'incompatible_cpuid' }
   | { kind: 'screen_close' }
   | { kind: 'handover_begin'; actor: string | null; scope: DeskHandoverScope }
   | { kind: 'handover_end'; actor: string | null; durationMs: number }
