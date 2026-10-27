@@ -10,11 +10,13 @@
  */
 import { existsSync } from 'node:fs'
 import { execFile } from 'node:child_process'
-import { mkdir, rm, statfs, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, statfs, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { Buffer } from 'node:buffer'
+import { connect as tcpConnect, isIP } from 'node:net'
+import type { Duplex } from 'node:stream'
 import {
   buildDeskLaunchPlan,
   cleanDeskId,
@@ -110,6 +112,8 @@ export interface DeskHostOptions {
   launcherIdentity?: DeskLauncherIdentity
   backend?: DeskBackend
   ports: DeskPorts
+  /** Override TCP dialing for tests or a host-specific transport. */
+  connectGuest?: (address: string, port: number) => Promise<Duplex>
   /** Hard cap on concurrently resident desks; starts beyond it queue FIFO. */
   capacity?: number
   idleSuspendMs?: number
@@ -140,6 +144,10 @@ export interface DeskHostOptions {
    * occurrence is indistinguishable, from inside the guest, from a failing host.
    */
   parkWithMemory?: boolean
+  /** Identifies the host CPU for conservative snapshot portability checks. */
+  cpuSignature?: () => Promise<string>
+  readSnapshotSignature?: (directory: string) => Promise<string | null>
+  writeSnapshotSignature?: (directory: string, signature: string) => Promise<void>
   /** Create a snapshot directory; defaults to `mkdir(path, { recursive: true })`. */
   makeSnapshotDir?: (path: string) => Promise<void>
   /**
@@ -186,7 +194,7 @@ export interface DeskStartOptions {
   memoryMb?: number
   vcpus?: number
   leaseMs?: number
-  network?: { tapDevice?: string; macAddress?: string }
+  network?: { tapDevice?: string; macAddress?: string; guestAddress?: string }
 }
 
 export interface DeskExecOptions {
@@ -371,6 +379,8 @@ export interface DeskScreenService {
 export interface DeskHandle {
   readonly deskId: string
   renewLease(ms: number): void
+  /** Open a host-to-guest TCP stream; the caller owns and closes it. */
+  connect(port: number): Promise<Duplex>
   exec(options: DeskExecOptions & { keepAlive: true }): Promise<DeskJob>
   exec(options: DeskExecOptions): Promise<DeskExecSnapshot>
   /** The keepAlive processes still running on this desk. */
@@ -398,6 +408,8 @@ export interface DeskHostStats {
   /** Which desk reconnected last: enough to go and look at the right one. */
   lastReconnectDeskId: string | null
   lastError: string | null
+  snapshotCpuFallbacks: number
+  lastSnapshotCpuFallback: { deskId: string; at: string; reason: 'signature_mismatch' | 'incompatible_cpuid' } | null
 }
 
 export interface DeskHost {
@@ -447,6 +459,7 @@ interface DeskRecord {
   handle: DeskHandle | null
   timer: NodeJS.Timeout | null
   streamStops: Set<() => void>
+  relayStops: Set<() => void>
 }
 
 interface QueueEntry {
@@ -502,6 +515,8 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
   let lastStartedAt: string | null = null
   let lastSuspendedAt: string | null = null
   let lastError: string | null = null
+  let snapshotCpuFallbacks = 0
+  let lastSnapshotCpuFallback: DeskHostStats['lastSnapshotCpuFallback'] = null
   let reconnects = 0
   let lastReconnectAt: string | null = null
   let lastReconnectDeskId: string | null = null
@@ -701,6 +716,8 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     await endHandover(record, 'revoked')
     for (const stop of [...record.streamStops]) stop()
     record.streamStops.clear()
+    for (const stop of record.relayStops) stop()
+    record.relayStops.clear()
     if (record.screen?.running) {
       record.screen.running = false
       emit(record, { kind: 'screen_close' })
@@ -741,6 +758,8 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
           const snapshotDir = snapshotDirFor(record.startOptions.overlayPath, record.deskId)
           await makeSnapshotDir(snapshotDir)
           await machine.park!(snapshotDir)
+          const signature = await (options.cpuSignature ?? hostCpuSignature)()
+          await (options.writeSnapshotSignature ?? writeSnapshotSignature)(snapshotDir, signature)
         } else {
           await machine.shutdown()
         }
@@ -853,7 +872,15 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         { pathExists, deviceExists },
       )
 
-    const resuming = parkWithMemory && pathExists(snapshotDir)
+    let resuming = parkWithMemory && pathExists(snapshotDir)
+    if (resuming) {
+      const saved = await (options.readSnapshotSignature ?? readSnapshotSignature)(snapshotDir)
+      if (saved !== null && saved !== await (options.cpuSignature ?? hostCpuSignature)()) {
+        await removeSnapshot(snapshotDir)
+        resuming = false
+        recordCpuFallback(deskId, 'signature_mismatch')
+      }
+    }
     let machine: DeskMachine
     try {
       machine = resuming
@@ -872,8 +899,9 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         // boot. Safe by construction — the guest never ran, so the disk is
         // exactly as the pre-park sync left it.
         const why = errorMessage(error)
-        await removeSnapshot(snapshotDir).catch(() => undefined)
-        lastError = `Desk ${deskId} could not resume from its snapshot and was cold booted: ${why}`
+        await removeSnapshot(snapshotDir)
+        if (isIncompatibleCpuSnapshotError(error)) recordCpuFallback(deskId, 'incompatible_cpuid')
+        else lastError = `Desk ${deskId} could not resume from its snapshot and was cold booted: ${why}`
         // Falls through to the shared record path below with a cold machine.
         machine = await backend.boot(planFor(false))
       } else {
@@ -901,6 +929,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         handle: null,
         timer: null,
         streamStops: new Set(),
+        relayStops: new Set(),
       }
       records.set(deskId, record)
     } else {
@@ -911,6 +940,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       record.jobs = new Map()
       record.screen = null
       record.streamStops = new Set()
+      record.relayStops = new Set()
     }
     const current = record
     const epoch = current.epoch
@@ -1160,6 +1190,21 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         record.leaseDeadline = now() + positiveInteger(ms, 'ms')
         touch(record)
         armTimer(record)
+      },
+      async connect(port: number): Promise<Duplex> {
+        requireMachine(record, epoch)
+        if (!Number.isInteger(port) || port < 1 || port > 65535) throw new DeskError('Guest TCP port must be between 1 and 65535.')
+        const address = record.startOptions.network?.guestAddress
+        if (!address || isIP(address) !== 4) throw new DeskError('A guest IPv4 address is required to connect to a desk port.')
+        touch(record)
+        try {
+          const stream = await (options.connectGuest ?? connectGuestTcp)(address, port)
+          try { requireMachine(record, epoch) } catch (error) { stream.destroy(); throw error }
+          const stop = () => stream.destroy()
+          record.relayStops.add(stop)
+          stream.once('close', () => record.relayStops.delete(stop))
+          return stream
+        } catch (error) { throw new DeskError(`Cannot connect to guest ${address}:${port}: ${errorMessage(error)}`) }
       },
       exec: execImplementation as DeskHandle['exec'],
       jobs(): DeskJob[] {
@@ -1605,6 +1650,12 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     return suspendedCount
   }
 
+  function recordCpuFallback(deskId: string, reason: 'signature_mismatch' | 'incompatible_cpuid'): void {
+    snapshotCpuFallbacks += 1
+    lastSnapshotCpuFallback = { deskId, reason, at: iso(now()) }
+    ports.onEvent({ kind: 'snapshot_cpu_fallback', deskId, reason, at: iso(now()) })
+  }
+
   function stats(): DeskHostStats {
     let suspended = 0
     for (const record of records.values()) {
@@ -1621,6 +1672,8 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       lastReconnectAt,
       lastReconnectDeskId,
       lastError,
+      snapshotCpuFallbacks,
+      lastSnapshotCpuFallback,
     }
   }
 
@@ -1876,4 +1929,33 @@ async function defaultFreeBytes(path: string): Promise<number> {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
+}
+
+async function connectGuestTcp(address: string, port: number): Promise<Duplex> {
+  return new Promise((resolve, reject) => {
+    const socket = tcpConnect({ host: address, port })
+    socket.setTimeout(10_000, () => socket.destroy(new Error('Guest TCP connection timed out.')))
+    socket.once('error', reject)
+    socket.once('connect', () => { socket.setTimeout(0); socket.removeListener('error', reject); resolve(socket) })
+  })
+}
+
+/** Cloud Hypervisor's specific restore error; do not classify generic CPUID mentions. */
+export function isIncompatibleCpuSnapshotError(error: unknown): boolean {
+  return /Detected incompatible CPUID entry/.test(errorMessage(error))
+}
+/** Hash the host's CPU identity and advertised feature set, excluding per-core counters. */
+export async function hostCpuSignature(): Promise<string> {
+  const cpuinfo = await readFile('/proc/cpuinfo', 'utf8')
+  const first = cpuinfo.split(/\n\s*\n/)[0] ?? ''
+  const identity = first.split('\n').filter((line) => /^(vendor_id|cpu family|model\s|model name|stepping|flags|microcode)\s*:/.test(line)).join('\n')
+  if (!identity) throw new DeskError('Cannot determine host CPU signature.')
+  return createHash('sha256').update(identity).digest('hex')
+}
+async function readSnapshotSignature(directory: string): Promise<string | null> {
+  try { return (await readFile(join(directory, 'appkit-cpu-signature'), 'utf8')).trim() }
+  catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null; throw error }
+}
+async function writeSnapshotSignature(directory: string, signature: string): Promise<void> {
+  await writeFile(join(directory, 'appkit-cpu-signature'), signature, { mode: 0o600 })
 }

@@ -179,7 +179,8 @@ append-only record that cannot be edited afterward.
 
 `onEvent` receives a closed union — `shell_command`, `app_launch`, `click`,
 `type`, `key`, `scroll`, `drag`, `window_focus`, `screen_open`,
-`screen_close`, `handover_begin`, `handover_end`, `job_start`, `job_exit` —
+`screen_close`, `handover_begin`, `handover_end`, `job_start`, `job_exit`,
+`snapshot_cpu_fallback` —
 each stamped with `deskId` and an ISO timestamp. The union is defined here so
 the consumer's ledger and this package agree on the taxonomy; persistence is
 entirely the consumer's concern.
@@ -231,3 +232,21 @@ masking boundary changes.
 Do not fall back to unconfined execution when this package reports an
 unsupported host. A deployment without KVM loses the desk ability entirely —
 the same fail-closed posture as the rest of AppKit.
+
+## Routed guest networking and TCP services
+
+`deskNetworkIdentity(index)` returns a deterministic TAP name and MAC address. `createDeskNetwork({ gateway, dns, httpProxyPort, httpsProxyPort, prefixLength?, runner?, enableForwarding? })` provides the routed point-to-point TAP setup. `ensure({ tap, guest })` must finish before boot; `teardown({ tap, guest })` removes its rules and TAP after the VM stops. It installs transparent HTTP and HTTPS DNAT to the supplied proxy listeners, pins DNS to the supplied resolver, and drops other guest egress. The proxy is responsible for destination policy. Configure Linux IPv4 forwarding, NET_ADMIN, `ip`, and `iptables` in the host namespace. `configureGuest(desk, { tap, guest })` configures the guest interface, route, and resolver through exec. `syncDeskGuestClock(desk, now?)` sets the guest clock after wake. Failures are reported to the caller. Operations on one TAP are serialized within the network instance; use one instance per namespace. Rule replacement uses multiple iptables commands and is not atomic: call `ensure` before the VM starts, and do not refresh rules on a live TAP.
+
+Supply `network: { tapDevice, macAddress, guestAddress }` to `host.start`, then `await desk.connect(port)` returns a Node `Duplex` TCP stream to the guest. The caller owns the stream; suspension closes it. A service must listen on the guest interface, and its protocol and authentication remain the application's responsibility. `connectGuest` on host options injects a dialer for testing.
+
+With `parkWithMemory`, new snapshots carry a host CPU signature. A changed signature skips restore and cold boots; Cloud Hypervisor's specific incompatible-CPUID restore error also triggers a cold boot. These outcomes increment `stats().snapshotCpuFallbacks`, set `lastSnapshotCpuFallback`, and emit `snapshot_cpu_fallback`, rather than setting `lastError`. Existing snapshots without a signature are attempted normally. Signatures are conservative CPU identity and feature fingerprints, not a guarantee of CPUID compatibility; a cold boot loses the parked process state. Keep snapshots and their overlays together.
+
+For a disposable real-host check, provide a guest image with the desk agent and Python 3, Cloud Hypervisor, KVM, and a free TAP name and IP pair. Run from the repository root in the target network namespace with privileges to manage TAP and iptables:
+
+```sh
+DESK_CHECK_TAP=dsk9001 DESK_CHECK_GUEST=172.30.0.2 DESK_CHECK_GATEWAY=172.30.0.1 \
+DESK_CHECK_IMAGE_ROOT=/data/desk-image DESK_CHECK_BASE_IMAGE=/data/desk-image/base.img \
+DESK_CHECK_TMPDIR=/data/tmp pnpm --filter @braedonsaunders/appkit-desk exec tsx scripts/check-kvm.mts
+```
+
+Set `DESK_CHECK_KERNEL_CMDLINE` for images that require a custom root device. The check creates and removes a disposable VM, overlay, snapshot, TAP and firewall rules. It verifies a guest HTTP stream before and after memory restore; it does not verify the proxy or cross-CPU migration. Choose addresses that do not overlap existing routes.
