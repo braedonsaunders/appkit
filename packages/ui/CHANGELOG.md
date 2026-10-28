@@ -1,5 +1,11 @@
 # @braedonsaunders/appkit-ui
 
+## 0.4.1
+
+### Patch Changes
+
+- e7ca735: Keep SearchSelect dropdowns and mobile sheets above dialogs so their options remain clickable. Restore trigger focus when dismissing with Escape.
+
 ## 0.4.0
 
 ### Minor Changes
