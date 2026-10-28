@@ -239,6 +239,21 @@ test('threads kernelCmdline from DeskHostOptions into the launch plan, defaultin
   assert.equal(withOverride.plans[0]?.kernelCmdline, 'root=/dev/vda3 rw quiet')
 })
 
+test('discovers a default initramfs installed after host construction', async () => {
+  let installed = false
+  const factory = fakeBackendFactory()
+  const host = createDeskHost({
+    imageRoot: '/images', backend: factory.backend,
+    ports: { onEvent: () => {}, audit: () => {} },
+    pathExists: (path) => path === '/images/initrd' ? installed : true,
+    deviceExists: () => true,
+  })
+  installed = true
+  await host.start(startOptions('agent-late-image'))
+  assert.equal(factory.plans[0]?.initramfsPath, '/images/initrd')
+  await host.shutdown('agent-late-image')
+})
+
 test('queues starts beyond the capacity cap and admits them FIFO as desks suspend', async () => {
   const context = makeHost({ capacity: 1 })
   await context.host.start(startOptions('agent-a'))
@@ -1085,7 +1100,7 @@ test('asserting reflink support throws loudly, naming the cost, on a filesystem 
             throw new Error('Operation not supported')
           },
         }),
-      /FULL-COPY the base image/,
+      process.platform === 'darwin' ? /does not support cloning/ : /FULL-COPY the base image/,
     )
   } finally {
     await rm(directory, { recursive: true, force: true })
@@ -1324,6 +1339,7 @@ test('resuming restores the snapshot and destroys it before the guest can write'
   const plan = context.plans[0]
   assert.ok(plan)
   assert.equal(plan.snapshot.restoring, true, 'the desk resumed rather than cold booted')
+  assert.equal(plan.hypervisor, 'cloud-hypervisor')
   assert.ok(plan.vmm.args.includes('--restore'), 'with a restoring argv')
   assert.equal(plan.vmm.args.includes('--kernel'), false, 'and no kernel — the snapshot carries the config')
   // resume=false is the whole safety property: the guest comes back paused so

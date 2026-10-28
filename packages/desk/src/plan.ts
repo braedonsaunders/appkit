@@ -1,4 +1,8 @@
+import { Buffer } from 'node:buffer'
+import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
+import { isIP } from 'node:net'
+import { arch as hostArch, release as hostRelease, tmpdir } from 'node:os'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 
 export const DEFAULT_VMM_PATH = '/usr/bin/cloud-hypervisor'
@@ -8,6 +12,21 @@ export const DEFAULT_RUNTIME_DIR = '/run/appkit-desk'
 export const DEFAULT_MEMORY_MB = 384
 export const DEFAULT_VCPUS = 2
 export const DEFAULT_KERNEL_CMDLINE = 'root=/dev/vda rw quiet'
+/**
+ * The guest network Virtualization.framework desks get from the helper's NAT:
+ * the same addresses QEMU's user networking uses, so they are unsurprising in
+ * a guest. Nothing outside the helper ever sees them.
+ */
+export const DEFAULT_VZ_GUEST_ADDRESS = '10.0.2.15'
+export const DEFAULT_VZ_GATEWAY_ADDRESS = '10.0.2.2'
+export const DEFAULT_VZ_PREFIX_LENGTH = 24
+export const DEFAULT_VZ_DNS: readonly string[] = ['1.1.1.1', '9.9.9.9']
+/** Virtualization.framework always gives the guest vsock context ID 3. */
+export const VZ_GUEST_CID = 3
+/** The first Darwin release with Virtualization.framework save and restore (macOS 14). */
+const MIN_DARWIN_MAJOR = 23
+/** `sun_path` holds 104 bytes on Darwin, including the terminator. */
+const DARWIN_SOCKET_PATH_LIMIT = 103
 
 const DESK_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/
 const TAP_DEVICE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,14}$/
@@ -33,9 +52,37 @@ export interface DeskLauncherIdentity {
   gid: number
 }
 
+/**
+ * Which hypervisor a plan is for: Cloud Hypervisor over KVM on Linux, or
+ * Apple's Virtualization.framework through the `appkit-desk-vz` helper on an
+ * Apple silicon Mac.
+ */
+export type DeskHypervisor = 'cloud-hypervisor' | 'virtualization'
+
+/**
+ * The guest network of a Virtualization.framework desk. The helper runs a
+ * userspace NAT: the guest reaches the public internet and nothing else unless
+ * `allowLan` is set — no RFC 1918 space, link-local, CGNAT, or the Mac itself.
+ */
+export interface DeskGuestNetworkOptions {
+  /** Let the guest reach the Mac's LAN, link-local and CGNAT space, and the Mac. */
+  allowLan?: boolean
+  /** The address the helper's DHCP server leases the guest. */
+  guestAddress?: string
+  /** The helper's own address on the link: the guest's router. */
+  gatewayAddress?: string
+  prefixLength?: number
+  /** Resolvers the guest is handed; the first also answers DNS sent to the gateway. */
+  dns?: readonly string[]
+}
+
 export interface DeskLaunchPlanOptions {
   deskId: string
+  /** Defaults to `cloud-hypervisor`. */
+  hypervisor?: DeskHypervisor
+  /** Cloud Hypervisor only: the VMM binary. */
   vmmPath?: string
+  /** Cloud Hypervisor only: the KVM device. */
   kvmPath?: string
   qemuImgPath?: string
   /** Absolute path of the kernel image the microVM boots. */
@@ -53,14 +100,27 @@ export interface DeskLaunchPlanOptions {
   overlayPath: string
   memoryMb?: number
   vcpus?: number
-  /** Guest vsock context ID; must be unique among resident desks. */
+  /**
+   * Guest vsock context ID; must be unique among resident desks. Cloud
+   * Hypervisor only — a Virtualization.framework guest is always CID 3, and
+   * its vsock is private to its helper.
+   */
   vsockCid: number
-  /** Directory holding the vsock and API control sockets. */
+  /**
+   * Directory holding the desk's control sockets. Defaults to
+   * `/run/appkit-desk` for Cloud Hypervisor and `<os tmpdir>/appkit-desk` for
+   * Virtualization.framework.
+   */
   runtimeDir?: string
-  /** Host TAP device name; derived from the CID when omitted. */
+  /** Cloud Hypervisor only: host TAP device name; derived from the CID when omitted. */
   tapDevice?: string
-  /** Guest MAC address; derived from the CID when omitted. */
+  /**
+   * Guest MAC address. Derived from the CID for Cloud Hypervisor, and from the
+   * desk ID for Virtualization.framework, whose restore needs the same NIC.
+   */
   macAddress?: string
+  /** Virtualization.framework only: the helper's NAT network and fence. */
+  guestNetwork?: DeskGuestNetworkOptions
   kernelCmdline?: string
   launcherIdentity?: DeskLauncherIdentity
   /**
@@ -81,23 +141,21 @@ export interface DeskLaunchPlanOptions {
   restore?: boolean
 }
 
-/**
- * The complete Cloud Hypervisor invocation as inspectable data. Nothing here
- * has been spawned: tests, audit logs, and readiness screens can assert on the
- * exact argv a desk would boot with.
- */
-export interface DeskLaunchPlan {
+/** What every plan carries, whichever hypervisor runs it. */
+export interface DeskLaunchPlanBase {
   deskId: string
-  vmm: { command: string; args: string[] }
   overlay: {
     path: string
     basePath: string
     /** The overlay-creation step, or `null` when the overlay already exists. */
     create: { command: string; args: string[] } | null
   }
+  /**
+   * The host Unix socket the guest's vsock is reached through, with Cloud
+   * Hypervisor's hybrid-vsock preamble: write `CONNECT <port>\n`, read
+   * `OK <n>\n`, then the stream is the guest connection.
+   */
   vsock: { cid: number; socketPath: string }
-  api: { socketPath: string }
-  tap: { device: string; mac: string }
   /** Where a memory snapshot of this desk is written, and read back from. */
   snapshot: { dir: string; restoring: boolean }
   memoryMb: number
@@ -110,19 +168,74 @@ export interface DeskLaunchPlan {
 }
 
 /**
- * Whether this host can run desks at all: Linux, a usable `/dev/kvm`, and the
- * Cloud Hypervisor binary. All three checks are injectable and the answer is
- * fail-closed — a host missing any of them gets no desk capability rather
- * than a degraded one.
+ * The complete Cloud Hypervisor invocation as inspectable data. Nothing here
+ * has been spawned: tests, audit logs, and readiness screens can assert on the
+ * exact argv a desk would boot with.
+ */
+export interface CloudHypervisorLaunchPlan extends DeskLaunchPlanBase {
+  hypervisor: 'cloud-hypervisor'
+  vmm: { command: string; args: string[] }
+  api: { socketPath: string }
+  tap: { device: string; mac: string }
+}
+
+/**
+ * A Virtualization.framework desk as inspectable data: what the helper is
+ * asked to boot. The helper path belongs to the backend, not the plan.
+ */
+export interface VirtualizationLaunchPlan extends DeskLaunchPlanBase {
+  hypervisor: 'virtualization'
+  /**
+   * The host Unix socket guest TCP ports are reached through, with the same
+   * preamble as `vsock`: `CONNECT <tcp port>\n` answered by `OK <n>\n` once
+   * the guest accepts, or a close with nothing written when it refuses.
+   */
+  ports: { socketPath: string }
+  network: {
+    mac: string
+    allowLan: boolean
+    guestAddress: string
+    gatewayAddress: string
+    prefixLength: number
+    dns: string[]
+  }
+}
+
+export type DeskLaunchPlan = CloudHypervisorLaunchPlan | VirtualizationLaunchPlan
+
+/**
+ * Whether this host can run desks at all. On Linux: a usable `/dev/kvm` and
+ * the Cloud Hypervisor binary. On macOS: Apple silicon, macOS 14 or later (the
+ * first with Virtualization.framework save and restore), and an existing
+ * `appkit-desk-vz` helper at `helperPath`. Signature and entitlement are checked
+ * by macOS on execution, not by this probe. Every check is injectable and the
+ * answer is fail-closed — a host missing any of them gets no desk capability
+ * rather than a degraded one.
  */
 export function isDeskSupported(options: {
   platform?: NodeJS.Platform
   kvmPath?: string
   vmmPath?: string
+  /** macOS: the signed `appkit-desk-vz` helper. Required there. */
+  helperPath?: string
+  arch?: string
+  /** The kernel release, as `os.release()` reports it. */
+  osRelease?: string
   pathExists?: (path: string) => boolean
 } = {}): boolean {
   const platform = options.platform ?? process.platform
   const pathExists = options.pathExists ?? existsSync
+  if (platform === 'darwin') {
+    const major = Number.parseInt((options.osRelease ?? hostRelease()).split('.')[0] ?? '', 10)
+    return (
+      (options.arch ?? hostArch()) === 'arm64'
+      && Number.isInteger(major)
+      && major >= MIN_DARWIN_MAJOR
+      && options.helperPath !== undefined
+      && isAbsolute(options.helperPath)
+      && pathExists(options.helperPath)
+    )
+  }
   return (
     platform === 'linux'
     && pathExists(options.kvmPath ?? DEFAULT_KVM_PATH)
@@ -140,18 +253,49 @@ export function cleanDeskId(value: string): string {
   return value
 }
 
+export interface DeskLaunchPlanDependencies {
+  pathExists?: (path: string) => boolean
+  deviceExists?: (path: string) => boolean
+}
+
 /**
- * Build the deterministic Cloud Hypervisor launch plan without spawning
- * anything. Fail closed: a missing `/dev/kvm`, VMM binary, kernel, base image,
+ * Build the deterministic launch plan without spawning anything. Fail closed:
+ * a missing `/dev/kvm` or VMM binary (Cloud Hypervisor), kernel, base image,
  * or overlay directory throws instead of producing a plan that cannot boot.
  */
 export function buildDeskLaunchPlan(
+  options: DeskLaunchPlanOptions & { hypervisor: 'virtualization' },
+  dependencies?: DeskLaunchPlanDependencies,
+): VirtualizationLaunchPlan
+export function buildDeskLaunchPlan(
+  options: DeskLaunchPlanOptions & { hypervisor?: 'cloud-hypervisor' },
+  dependencies?: DeskLaunchPlanDependencies,
+): CloudHypervisorLaunchPlan
+export function buildDeskLaunchPlan(
   options: DeskLaunchPlanOptions,
-  dependencies: {
-    pathExists?: (path: string) => boolean
-    deviceExists?: (path: string) => boolean
-  } = {},
+  dependencies?: DeskLaunchPlanDependencies,
+): DeskLaunchPlan
+export function buildDeskLaunchPlan(
+  options: DeskLaunchPlanOptions,
+  dependencies: DeskLaunchPlanDependencies = {},
 ): DeskLaunchPlan {
+  const hypervisor = options.hypervisor ?? 'cloud-hypervisor'
+  if (hypervisor === 'virtualization') return buildVirtualizationPlan(options, dependencies)
+  if (hypervisor !== 'cloud-hypervisor') {
+    throw new DeskError(`Unknown hypervisor: ${String(hypervisor)}`)
+  }
+  if (options.guestNetwork !== undefined) {
+    throw new DeskError(
+      'guestNetwork applies to Virtualization.framework desks; a Cloud Hypervisor desk is networked with createDeskNetwork.',
+    )
+  }
+  return buildCloudHypervisorPlan(options, dependencies)
+}
+
+function buildCloudHypervisorPlan(
+  options: DeskLaunchPlanOptions,
+  dependencies: DeskLaunchPlanDependencies,
+): CloudHypervisorLaunchPlan {
   const pathExists = dependencies.pathExists ?? existsSync
   const deviceExists = dependencies.deviceExists ?? existsSync
   const deskId = cleanDeskId(options.deskId)
@@ -271,6 +415,7 @@ export function buildDeskLaunchPlan(
       ]
 
   return {
+    hypervisor: 'cloud-hypervisor',
     deskId,
     vmm: { command: vmmPath, args },
     overlay: { path: overlayPath, basePath: baseImagePath, create },
@@ -285,6 +430,139 @@ export function buildDeskLaunchPlan(
     kernelCmdline,
     launcherIdentity,
   }
+}
+
+/**
+ * The Virtualization.framework plan. The same fail-closed checks on the guest
+ * assets; no KVM or VMM binary, because the backend owns the helper; and the
+ * overlay is an APFS clone (`cp -c`), which is to APFS what `--reflink=auto`
+ * is to XFS: instant and block-sharing. A volume that cannot clone must be
+ * replaced with one that supports it.
+ */
+function buildVirtualizationPlan(
+  options: DeskLaunchPlanOptions,
+  dependencies: DeskLaunchPlanDependencies,
+): VirtualizationLaunchPlan {
+  const pathExists = dependencies.pathExists ?? existsSync
+  const deskId = cleanDeskId(options.deskId)
+  if (options.tapDevice !== undefined) {
+    throw new DeskError('tapDevice applies to Cloud Hypervisor desks; a Virtualization.framework desk has no TAP.')
+  }
+  const kernelPath = absolutePath(options.kernelPath, 'kernelPath')
+  if (!pathExists(kernelPath)) {
+    throw new DeskError(`Guest kernel does not exist: ${kernelPath}`)
+  }
+  const initramfsPath =
+    options.initramfsPath === undefined ? null : absolutePath(options.initramfsPath, 'initramfsPath')
+  if (initramfsPath !== null && !pathExists(initramfsPath)) {
+    throw new DeskError(`Initramfs does not exist: ${initramfsPath}`)
+  }
+  const baseImagePath = absolutePath(options.baseImagePath, 'baseImagePath')
+  if (!pathExists(baseImagePath)) {
+    throw new DeskError(`Base image does not exist: ${baseImagePath}`)
+  }
+  const overlayPath = absolutePath(options.overlayPath, 'overlayPath')
+  const overlayDirectory = dirname(overlayPath)
+  if (!pathExists(overlayDirectory)) {
+    throw new DeskError(`Overlay directory does not exist: ${overlayDirectory}`)
+  }
+  const memoryMb = positiveInteger(options.memoryMb ?? DEFAULT_MEMORY_MB, 'memoryMb')
+  const vcpus = positiveInteger(options.vcpus ?? DEFAULT_VCPUS, 'vcpus')
+  const runtimeDir = absolutePath(options.runtimeDir ?? join(tmpdir(), 'appkit-desk'), 'runtimeDir')
+  // Keep Darwin's small sockaddr_un limit even for a maximum-length desk ID.
+  const socketId = createHash('sha256').update(deskId).digest('hex').slice(0, 20)
+  const vsockSocketPath = socketPath(join(runtimeDir, `d-${socketId}.vsock`))
+  const portsSocketPath = socketPath(join(runtimeDir, `d-${socketId}.ports`))
+  const snapshotDir = options.snapshotDir
+    ? absolutePath(options.snapshotDir, 'snapshotDir')
+    : join(overlayDirectory, `${deskId}.snapshot`)
+  const restoring = options.restore === true
+  if (restoring && !pathExists(snapshotDir)) {
+    throw new DeskError(`Desk ${deskId} has no snapshot to restore at ${snapshotDir}`)
+  }
+  const network = cleanGuestNetwork(options.guestNetwork ?? {})
+  return {
+    hypervisor: 'virtualization',
+    deskId,
+    overlay: {
+      path: overlayPath,
+      basePath: baseImagePath,
+      create: pathExists(overlayPath) ? null : { command: 'cp', args: ['-c', baseImagePath, overlayPath] },
+    },
+    vsock: { cid: VZ_GUEST_CID, socketPath: vsockSocketPath },
+    ports: { socketPath: portsSocketPath },
+    network: {
+      mac: cleanMacAddress(options.macAddress ?? deskMacAddress(deskId)),
+      ...network,
+    },
+    snapshot: { dir: snapshotDir, restoring },
+    memoryMb,
+    vcpus,
+    kernelPath,
+    initramfsPath,
+    kernelCmdline: options.kernelCmdline ?? DEFAULT_KERNEL_CMDLINE,
+    launcherIdentity: cleanLauncherIdentity(options.launcherIdentity),
+  }
+}
+
+function cleanGuestNetwork(
+  options: DeskGuestNetworkOptions,
+): Omit<VirtualizationLaunchPlan['network'], 'mac'> {
+  if (options.allowLan !== undefined && typeof options.allowLan !== 'boolean') {
+    throw new DeskError('guestNetwork.allowLan must be a boolean.')
+  }
+  const guestAddress = ipv4(options.guestAddress ?? DEFAULT_VZ_GUEST_ADDRESS, 'guestNetwork.guestAddress')
+  const gatewayAddress = ipv4(options.gatewayAddress ?? DEFAULT_VZ_GATEWAY_ADDRESS, 'guestNetwork.gatewayAddress')
+  const prefixLength = options.prefixLength ?? DEFAULT_VZ_PREFIX_LENGTH
+  if (!Number.isInteger(prefixLength) || prefixLength < 8 || prefixLength > 30) {
+    throw new DeskError('guestNetwork.prefixLength must be an integer between 8 and 30.')
+  }
+  const mask = (0xffff_ffff << (32 - prefixLength)) >>> 0
+  if (
+    guestAddress === gatewayAddress
+    || ((ipv4Number(guestAddress) & mask) >>> 0) !== ((ipv4Number(gatewayAddress) & mask) >>> 0)
+  ) {
+    throw new DeskError("guestNetwork.guestAddress must be a different address in the gateway's subnet.")
+  }
+  const dns = [...(options.dns ?? DEFAULT_VZ_DNS)]
+  if (dns.length < 1 || dns.length > 3) {
+    throw new DeskError('guestNetwork.dns must list one to three IPv4 resolvers.')
+  }
+  return {
+    allowLan: options.allowLan ?? false,
+    guestAddress,
+    gatewayAddress,
+    prefixLength,
+    dns: dns.map((entry) => ipv4(entry, 'guestNetwork.dns')),
+  }
+}
+
+/** Stable per desk, so a restored guest finds the NIC it was saved with. */
+function deskMacAddress(deskId: string): string {
+  const digest = createHash('sha256').update(`appkit-desk:${deskId}`).digest()
+  const octets = [0x06, ...digest.subarray(0, 5)]
+  return octets.map((octet) => octet.toString(16).padStart(2, '0')).join(':')
+}
+
+function socketPath(path: string): string {
+  if (Buffer.byteLength(path) > DARWIN_SOCKET_PATH_LIMIT) {
+    throw new DeskError(
+      `Socket path ${path} is longer than the ${DARWIN_SOCKET_PATH_LIMIT} bytes macOS allows; `
+        + 'use a shorter runtimeDir or deskId.',
+    )
+  }
+  return path
+}
+
+function ipv4(value: string, field: string): string {
+  if (typeof value !== 'string' || isIP(value) !== 4) {
+    throw new DeskError(`${field} must be an IPv4 address.`)
+  }
+  return value
+}
+
+function ipv4Number(address: string): number {
+  return address.split('.').reduce((value, octet) => ((value << 8) | Number(octet)) >>> 0, 0)
 }
 
 function defaultTapDevice(cid: number): string {

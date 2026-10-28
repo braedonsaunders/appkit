@@ -10,3 +10,6 @@ coverage/
 .artifacts/
 *.tgz
 .vercel
+
+.pnpm-store/
+packages/desk/vz/.build/

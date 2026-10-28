@@ -258,3 +258,56 @@ DESK_CHECK_TMPDIR=/data/tmp pnpm --filter @braedonsaunders/appkit-desk exec tsx 
 ```
 
 Set `DESK_CHECK_KERNEL_CMDLINE` for images that require a custom root device. The check creates and removes a disposable VM, overlay, snapshot, TAP and firewall rules. It verifies a guest HTTP stream before and after memory restore; it does not verify the proxy or cross-CPU migration. Choose addresses that do not overlap existing routes.
+
+## macOS Virtualization.framework backend
+
+On Apple silicon with macOS 14 or later, a host can supply a signed
+`appkit-desk-vz` helper to `createVirtualizationBackend` and pass that backend
+into `createDeskHost`:
+
+```ts
+import { createDeskHost, createVirtualizationBackend, isDeskSupported } from '@braedonsaunders/appkit-desk'
+
+const helperPath = '/opt/appkit/bin/appkit-desk-vz'
+if (!isDeskSupported({ helperPath })) throw new Error('This host cannot run desks.')
+const backend = createVirtualizationBackend({ helperPath })
+const host = createDeskHost({
+  imageRoot: '/var/lib/appkit/desk',
+  backend,
+  guestNetwork: { allowLan: false },
+  ports,
+})
+```
+
+The guest needs an arm64 Linux kernel, raw base image and the same desk guest
+agent as the Linux backend. Use the kernel command line appropriate to the
+image. Per-desk disks use macOS `cp -c`; provision the overlay directory on a
+filesystem that supports cloning. The helper creates a userspace IPv4 network
+with DHCP, defaults to `10.0.2.15/24` and gateway `10.0.2.2`, and blocks
+private, link-local, shared and host addresses by default. Set `allowLan` only
+when the host policy explicitly permits local network access. `DeskHandle.connect`
+uses the helper's TCP relay; no routable guest IP on the Mac is required.
+
+The npm package includes the Swift source under `vz/`. Build it on macOS with
+Xcode and `vz/build.sh`; the script signs with the required virtualization
+entitlement. Its default ad hoc signature is for local use. Distributors must
+sign with their own Developer ID (`APPKIT_CODESIGN_IDENTITY`) and handle
+notarization and distribution. The caller supplies the absolute installed
+helper path; installation does not download or execute a binary. Save and
+restore use a stable desk MAC and machine identifier; the host removes the
+snapshot while the restored VM is paused before resuming it. The userspace
+network is recreated on restore, so existing TCP and UDP flows must reconnect.
+
+For a disposable macOS integration check, supply a prepared guest image with
+its desk agent and Python 3, its matching `vmlinux` and `initrd`, and the signed
+helper. In a source checkout, run `packages/desk/scripts/check-vz.mts` with `DESK_CHECK_IMAGE_ROOT`,
+`DESK_CHECK_BASE_IMAGE`, and `DESK_CHECK_VZ_HELPER`; set
+`DESK_CHECK_KERNEL_CMDLINE` if the image uses a different root device. The
+check creates a temporary guest and tests guest execution, a private-host
+network fence, guest TCP access, and memory save/restore. It removes the guest
+and its temporary files on exit.
+
+For clients that require a local TCP URL, `await listenDeskPort(desk, port)`
+returns a loopback-only `{ host, port, close }` listener. Each incoming
+connection opens a guest stream through `desk.connect`; call `close()` when the
+lease ends to close the listener and its connections.

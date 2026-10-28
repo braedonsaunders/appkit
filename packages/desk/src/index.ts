@@ -8,3 +8,6 @@ export * from './frames'
 export * from './portable-home'
 export * from './conformance'
 export * from './network'
+
+export * from './virtualization'
+export * from './port-relay'
