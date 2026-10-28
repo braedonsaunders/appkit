@@ -1,5 +1,14 @@
 # @braedonsaunders/appkit-jobs
 
+## 0.3.0
+
+### Minor Changes
+
+- a8f7b6a: Add the pure `/recurrence` entry for anchored intervals, one-time instants,
+  IANA-zone daily/weekly/monthly calendars, active weekdays and overnight windows,
+  explicit DST handling, strict validation, and skip/coalesce cursor advancement.
+  Timezone calculations use Temporal without importing the Redis or BullMQ runtime.
+
 ## 0.2.4
 
 ### Patch Changes
