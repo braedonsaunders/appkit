@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.0
+
+### Minor Changes
+
+- 1a42a25: Add routed TAP networking with selectable open or proxied egress, guest TCP streams, and CPU-aware snapshot fallback. Existing deployments using `bh` iptables chains should set `chainPrefix: 'bh'` to retain them during rolling upgrades.
+- c569235: Add `DeskHost.shutdown(deskId)`: stop a desk without its memory while keeping its overlay, so the next start or resume cold boots from disk.
+
 ## 0.6.0
 
 ### Minor Changes
