@@ -112,6 +112,12 @@ stops, the disk persists, applications cold-start on `resume`. Keep-alive jobs
 die with the lease, and their termination is recorded as `job_exit` so no
 process ever runs where an operator cannot see it.
 
+`host.shutdown(deskId)` is a restart, not a destroy: a resident desk is synced
+and shut down instead of parked, a parked desk's memory snapshot is discarded,
+and the overlay stays, so the next `start` or `resume` cold boots from disk.
+Use it when a desk must come back fresh — new memory or vCPU settings, or a
+guest wedged in a way a resume would bring straight back.
+
 Residency is bounded by a hard capacity cap. Starts beyond the cap queue FIFO
 rather than overcommitting host memory. `host.stats()` reports
 `{ resident, queued, capacity, suspended, lastStartedAt, lastSuspendedAt,

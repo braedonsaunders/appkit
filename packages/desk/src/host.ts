@@ -416,6 +416,14 @@ export interface DeskHost {
   start(options: DeskStartOptions): Promise<DeskHandle>
   resume(deskId: string): Promise<DeskHandle>
   suspend(deskId: string): Promise<void>
+  /**
+   * Stop a desk WITHOUT its memory, keeping its overlay: the next `start` or
+   * `resume` cold boots from disk. This is a restart, not a destroy — the disk
+   * is the desk and stays exactly where it is. A resident desk is synced and
+   * shut down rather than parked; a suspended desk's parked memory snapshot is
+   * discarded. Unknown desks are a no-op.
+   */
+  shutdown(deskId: string): Promise<void>
   destroy(deskId: string): Promise<void>
   stats(): DeskHostStats
   /**
@@ -711,7 +719,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     return join(dirname(overlayPath), `${deskId}.snapshot`)
   }
 
-  async function teardown(record: DeskRecord): Promise<boolean> {
+  async function teardown(record: DeskRecord, keepMemory = true): Promise<boolean> {
     if (record.status !== 'resident') return false
     await endHandover(record, 'revoked')
     for (const stop of [...record.streamStops]) stop()
@@ -751,8 +759,10 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       // the disk alone is exactly what is left whenever a snapshot is discarded,
       // which happens on every failed restore. Syncing first makes discarding a
       // snapshot always safe instead of usually safe.
-      const parking = parkWithMemory && typeof machine.park === 'function'
-      if (parking) await syncGuest(record, machine)
+      const parking = keepMemory && parkWithMemory && typeof machine.park === 'function'
+      // A shutdown that throws memory away leaves the disk as the only state, so
+      // it is flushed exactly as a park is.
+      if (parking || !keepMemory) await syncGuest(record, machine)
       try {
         if (parking) {
           const snapshotDir = snapshotDirFor(record.startOptions.overlayPath, record.deskId)
@@ -1580,6 +1590,19 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     })
   }
 
+  async function shutdown(deskId: string): Promise<void> {
+    const id = cleanDeskId(deskId)
+    await serializeLifecycle(id, async () => {
+      const record = records.get(id)
+      if (!record) return
+      await teardown(record, false)
+      // A desk parked earlier still has its memory image on disk; dropping it is
+      // what makes the next boot cold. The overlay is untouched — only `destroy`
+      // may remove it.
+      await removeSnapshot(snapshotDirFor(record.startOptions.overlayPath, record.deskId))
+    })
+  }
+
   /**
    * Delete a desk's overlay. The ONLY place in this module that removes a
    * desk's disk, and it is reachable from `destroy` alone — see the contract
@@ -1677,7 +1700,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     }
   }
 
-  return { start, resume, suspend, destroy, stats, sweep }
+  return { start, resume, suspend, shutdown, destroy, stats, sweep }
 }
 
 export interface VerifyDeskHostOptions {
