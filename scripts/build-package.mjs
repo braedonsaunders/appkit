@@ -149,6 +149,12 @@ async function copyPublishedAssets() {
   const drizzle = join(packageRoot, 'drizzle')
   if (existsSync(drizzle)) await cp(drizzle, join(outputRoot, 'drizzle'), { recursive: true })
 
+  // Desk's native helper ships as source; build products are local artifacts.
+  const vz = join(packageRoot, 'vz')
+  if (manifest.name === '@braedonsaunders/appkit-desk' && existsSync(vz)) {
+    await cp(vz, join(outputRoot, 'vz'), { recursive: true, filter: (path) => !path.split(sep).includes('.build') })
+  }
+
   const packageReadme = join(packageRoot, 'README.md')
   if (existsSync(packageReadme)) await copyFile(packageReadme, join(outputRoot, 'README.md'))
   else {

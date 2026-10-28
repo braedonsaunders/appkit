@@ -11,7 +11,7 @@
 import { existsSync } from 'node:fs'
 import { execFile } from 'node:child_process'
 import { mkdir, readFile, rm, statfs, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { arch, cpus, release, tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
 import { Buffer } from 'node:buffer'
@@ -24,6 +24,7 @@ import {
   DEFAULT_VMM_PATH,
   DeskError,
   type DeskLauncherIdentity,
+  type DeskGuestNetworkOptions,
 } from './plan'
 import {
   cloudHypervisorBackend,
@@ -111,6 +112,7 @@ export interface DeskHostOptions {
   runtimeDir?: string
   launcherIdentity?: DeskLauncherIdentity
   backend?: DeskBackend
+  guestNetwork?: DeskGuestNetworkOptions
   ports: DeskPorts
   /** Override TCP dialing for tests or a host-specific transport. */
   connectGuest?: (address: string, port: number) => Promise<Duplex>
@@ -504,7 +506,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
   // cloud kernel boots without every caller having to name it; an explicit
   // option always wins.
   const defaultInitramfs = join(options.imageRoot, 'initrd')
-  const initramfsPath =
+  const resolveInitramfsPath = () =>
     options.initramfsPath ?? (pathExists(defaultInitramfs) ? defaultInitramfs : undefined)
   const kernelCmdline = options.kernelCmdline
 
@@ -856,10 +858,13 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     // names its vsock and tap, and a cold-boot retry that renumbered them would
     // come up on a different tap than the one the egress rules were put on.
     const cid = nextCid++
+    const initramfsPath = resolveInitramfsPath()
     const planFor = (restore: boolean) =>
       buildDeskLaunchPlan(
         {
           deskId,
+          hypervisor: backend.hypervisor ?? 'cloud-hypervisor',
+          ...(backend.hypervisor === 'virtualization' ? { guestNetwork: options.guestNetwork } : {}),
           vmmPath: options.vmmPath,
           kvmPath: options.kvmPath,
           kernelPath,
@@ -1204,11 +1209,12 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       async connect(port: number): Promise<Duplex> {
         requireMachine(record, epoch)
         if (!Number.isInteger(port) || port < 1 || port > 65535) throw new DeskError('Guest TCP port must be between 1 and 65535.')
+        const machine = requireMachine(record, epoch)
         const address = record.startOptions.network?.guestAddress
-        if (!address || isIP(address) !== 4) throw new DeskError('A guest IPv4 address is required to connect to a desk port.')
+        if (!machine.connect && (!address || isIP(address) !== 4)) throw new DeskError('A guest IPv4 address is required to connect to a desk port.')
         touch(record)
         try {
-          const stream = await (options.connectGuest ?? connectGuestTcp)(address, port)
+          const stream = machine.connect ? await machine.connect(port) : await (options.connectGuest ?? connectGuestTcp)(address!, port)
           try { requireMachine(record, epoch) } catch (error) { stream.destroy(); throw error }
           const stop = () => stream.destroy()
           record.relayStops.add(stop)
@@ -1738,6 +1744,7 @@ export interface OverlayReflinkCheck {
 
 /**
  * Whether the overlay directory's filesystem can make reflink clones.
+ * On macOS this probes APFS cloning with `cp -c`. On Linux:
  *
  * This exists because `cp --reflink=auto` — what `buildDeskLaunchPlan` uses,
  * deliberately, so a desk still boots on a filesystem without reflink — is
@@ -1775,7 +1782,7 @@ export async function verifyOverlayReflink(options: {
       )
     }
     await copy(source, destination)
-    return { supported: true, overlayDirectory, detail: 'cp --reflink=always succeeded.' }
+    return { supported: true, overlayDirectory, detail: process.platform === 'darwin' ? 'cp -c succeeded.' : 'cp --reflink=always succeeded.' }
   } catch (error) {
     if (error instanceof DeskError) throw error
     return { supported: false, overlayDirectory, detail: errorMessage(error) }
@@ -1797,10 +1804,12 @@ export async function assertOverlayReflink(options: {
   const check = await verifyOverlayReflink(options)
   if (!check.supported) {
     throw new DeskError(
-      `The overlay directory ${check.overlayDirectory} is on a filesystem without reflink `
-        + 'support, so every desk would FULL-COPY the base image instead of sharing its '
-        + 'blocks — gigabytes and minutes per desk, and a disk sized for sharing fills after '
-        + `a handful of them. Put the overlay directory on XFS or Btrfs. Probe said: ${check.detail}`,
+      process.platform === 'darwin'
+        ? `The overlay directory ${check.overlayDirectory} does not support cloning. Put it on APFS. Probe said: ${check.detail}`
+        : `The overlay directory ${check.overlayDirectory} is on a filesystem without reflink `
+          + 'support, so every desk would FULL-COPY the base image instead of sharing its '
+          + 'blocks — gigabytes and minutes per desk, and a disk sized for sharing fills after '
+          + `a handful of them. Put the overlay directory on XFS or Btrfs. Probe said: ${check.detail}`,
     )
   }
   return check
@@ -1808,7 +1817,7 @@ export async function assertOverlayReflink(options: {
 
 async function reflinkAlways(source: string, destination: string): Promise<void> {
   await new Promise<void>((resolvePromise, rejectPromise) => {
-    execFile('cp', ['--reflink=always', source, destination], (error, _stdout, stderr) => {
+    execFile('cp', [process.platform === 'darwin' ? '-c' : '--reflink=always', source, destination], (error, _stdout, stderr) => {
       if (error) {
         rejectPromise(new Error(stderr.trim() || errorMessage(error)))
         return
@@ -1822,6 +1831,7 @@ export interface DeskHostVerification {
   /** Whether this host can serve desks: KVM present and the guest reachable. */
   supported: boolean
   vmmPath: string
+  /** KVM availability; false on macOS, which uses Virtualization.framework. */
   kvm: boolean
   vsock: boolean
   virtioGpu: boolean
@@ -1841,14 +1851,15 @@ export async function verifyDeskHost(options: VerifyDeskHostOptions): Promise<De
   const deviceExists = options.deviceExists ?? existsSync
   const idFactory = options.idFactory ?? randomUUID
   const backend = options.backend ?? cloudHypervisorBackend
-  const vmmPath = options.vmmPath ?? DEFAULT_VMM_PATH
+  const isVirtualization = backend.hypervisor === 'virtualization'
+  const vmmPath = options.vmmPath ?? backend.vmmPath ?? DEFAULT_VMM_PATH
   const kvmPath = options.kvmPath ?? DEFAULT_KVM_PATH
 
-  if (platform !== 'linux') {
-    throw new DeskError(`The AppKit desk requires Linux; received ${platform}.`)
+  if (platform !== (isVirtualization ? 'darwin' : 'linux')) {
+    throw new DeskError(isVirtualization ? `Virtualization requires macOS; received ${platform}.` : `The AppKit desk requires Linux; received ${platform}.`)
   }
   if (!pathExists(vmmPath)) {
-    throw new DeskError(`Cloud Hypervisor was not found at ${vmmPath}.`)
+    throw new DeskError(isVirtualization ? `Virtualization helper was not found at ${vmmPath}.` : `Cloud Hypervisor was not found at ${vmmPath}.`)
   }
   if (!pathExists(options.kernelPath)) {
     throw new DeskError(`Guest kernel does not exist: ${options.kernelPath}`)
@@ -1856,7 +1867,7 @@ export async function verifyDeskHost(options: VerifyDeskHostOptions): Promise<De
   if (!pathExists(options.baseImagePath)) {
     throw new DeskError(`Base image does not exist: ${options.baseImagePath}`)
   }
-  if (!deviceExists(kvmPath)) {
+  if (!isVirtualization && !deviceExists(kvmPath)) {
     return { supported: false, vmmPath, kvm: false, vsock: false, virtioGpu: false }
   }
 
@@ -1866,6 +1877,7 @@ export async function verifyDeskHost(options: VerifyDeskHostOptions): Promise<De
   const plan = buildDeskLaunchPlan(
     {
       deskId,
+      hypervisor: backend.hypervisor ?? 'cloud-hypervisor',
       vmmPath,
       kvmPath,
       kernelPath: options.kernelPath,
@@ -1910,7 +1922,7 @@ export async function verifyDeskHost(options: VerifyDeskHostOptions): Promise<De
     }
     await rm(overlayPath, { force: true })
   }
-  return { supported: vsock, vmmPath, kvm: true, vsock, virtioGpu }
+  return { supported: vsock, vmmPath, kvm: !isVirtualization, vsock, virtioGpu }
 }
 
 function nonEmptyString(value: string, field: string): string {
@@ -1969,6 +1981,11 @@ export function isIncompatibleCpuSnapshotError(error: unknown): boolean {
 }
 /** Hash the host's CPU identity and advertised feature set, excluding per-core counters. */
 export async function hostCpuSignature(): Promise<string> {
+  if (process.platform === 'darwin') {
+    const model = cpus()[0]?.model
+    if (!model) throw new DeskError('Cannot determine host CPU signature.')
+    return createHash('sha256').update(`darwin:${arch()}:${release()}:${model}`).digest('hex')
+  }
   const cpuinfo = await readFile('/proc/cpuinfo', 'utf8')
   const first = cpuinfo.split(/\n\s*\n/)[0] ?? ''
   const identity = first.split('\n').filter((line) => /^(vendor_id|cpu family|model\s|model name|stepping|flags|microcode)\s*:/.test(line)).join('\n')

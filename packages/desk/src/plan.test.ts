@@ -12,7 +12,7 @@ import {
 
 const allPathsExist = () => true
 
-const baseOptions: DeskLaunchPlanOptions = {
+const baseOptions: DeskLaunchPlanOptions & { hypervisor?: 'cloud-hypervisor' } = {
   deskId: 'agent-7',
   kernelPath: '/data/agent-disks/vmlinux',
   baseImagePath: '/data/agent-disks/base.qcow2',
