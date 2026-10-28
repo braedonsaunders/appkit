@@ -740,6 +740,14 @@ existing deployments can override queue names or concurrency without forking
 the runtime.
 Its `/web-push` entry includes subscription validation, public-DNS
 checks, bounded encrypted payloads, and terminal provider status handling.
+Its pure `/recurrence` entry supports anchored elapsed intervals (at least 60s),
+once instants, and daily/weekly/monthly calendars in named IANA zones, with active
+weekdays and cross-midnight windows. `parseRecurrenceSchedule`, `nextOccurrence`,
+`resolveLocalDateTime`, and `advanceRecurrence` are transport-independent and
+import no BullMQ/Redis runtime. Calendar gaps skip; folds choose the earlier
+instant once. Hosts supply the clock, persist the exact next cursor, and reserve
+skip/coalesce runs atomically. See the jobs README for the complete contract and
+`/packages/jobs/demo?view=recurrence` for a deterministic calculation proof.
 
 ## 11. Workflows, sync, integrations, notifications, and customization
 
