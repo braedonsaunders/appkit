@@ -1233,6 +1233,7 @@ test('trimming can be turned off for a guest that has no fstrim', async () => {
 
 /** A host with snapshot parking on, and full visibility of the snapshot files. */
 function makeParkingHost(options: { snapshotExists?: boolean; park?: () => Promise<void> } = {}) {
+  let shutdowns = 0
   const made: string[] = []
   const removedSnapshots: string[] = []
   const parked: string[] = []
@@ -1248,7 +1249,9 @@ function makeParkingHost(options: { snapshotExists?: boolean; park?: () => Promi
         // The real backend calls this while the guest is restored and PAUSED.
         await hooks?.onRestored?.()
       }
-      const fake = fakeMachine(plan.deskId, () => Promise.resolve())
+      const fake = fakeMachine(plan.deskId, async () => {
+        shutdowns += 1
+      })
       const machine = fake.machine
       return {
         ...machine,
@@ -1298,6 +1301,7 @@ function makeParkingHost(options: { snapshotExists?: boolean; park?: () => Promi
     parked,
     synced,
     hasSnapshot: () => snapshotExists,
+    shutdowns: () => shutdowns,
   }
 }
 
@@ -1390,6 +1394,36 @@ test('a destroyed desk takes its snapshot with it', async () => {
     context.removedSnapshots.includes('/images/overlays/agent-gone.snapshot'),
     'destroy reclaims the snapshot alongside the overlay',
   )
+})
+
+test('shutdown restarts a desk cold: synced and stopped, never parked, overlay kept', async () => {
+  const context = makeParkingHost()
+  await context.host.start(startOptions('agent-restart'))
+  await context.host.shutdown('agent-restart')
+
+  assert.deepEqual(context.parked, [], 'no memory image was written')
+  assert.equal(context.shutdowns(), 1, 'the VM was shut down')
+  assert.deepEqual(context.synced, ['agent-restart'], 'after flushing the guest, since the disk is all that remains')
+  assert.equal(context.hasSnapshot(), false)
+
+  // The desk is still known and resumable: a restart, not a destroy.
+  await context.host.resume('agent-restart')
+  assert.equal(context.plans.at(-1)?.snapshot.restoring, false, 'and it comes back from a cold boot')
+})
+
+test('shutdown discards a parked desk\'s memory so its next resume cold boots', async () => {
+  const context = makeParkingHost()
+  await context.host.start(startOptions('agent-parked'))
+  await context.host.suspend('agent-parked')
+  assert.equal(context.hasSnapshot(), true, 'parked with memory first')
+
+  await context.host.shutdown('agent-parked')
+  assert.ok(context.removedSnapshots.includes('/images/overlays/agent-parked.snapshot'))
+  assert.equal(context.hasSnapshot(), false)
+
+  await context.host.resume('agent-parked')
+  assert.equal(context.plans.at(-1)?.snapshot.restoring, false, 'the next boot is cold')
+  await context.host.shutdown('never-started')
 })
 
 test('parking stays off unless a deployment asks for it', async () => {
