@@ -100,6 +100,7 @@ import { AgentConversationDemo } from './agent-conversation-demo'
 import { SuperadminDemo } from './superadmin-demo'
 import { FeedbackPackageDemo } from '../../../../../components/feedback-demo'
 import { ErrorsPackageDemo } from '../../../../../components/errors-demo'
+import { JobsDemoNav, RecurrenceDemo } from '../../../../../components/recurrence-demo'
 
 const PACKAGE_DEMOS = {
   'agent-tools': 'Managed agent tools',
@@ -194,7 +195,10 @@ function renderPackageDemo(
     case 'emails':
       return <EmailsDemo provider={queryValue(query.provider, 'resend')} />
     case 'jobs':
-      return <JobsDemo recipients={boundedInteger(query.recipients, 620, 1, 1_000)} />
+      return <>
+        <JobsDemoNav active={query.view === 'recurrence' ? 'recurrence' : 'queues'} />
+        {query.view === 'recurrence' ? <RecurrenceDemo /> : <JobsDemo recipients={boundedInteger(query.recipients, 620, 1, 1_000)} />}
+      </>
     case 'mailbox':
       return <MailboxDemo />
     case 'office':

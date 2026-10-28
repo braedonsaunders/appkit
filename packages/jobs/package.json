@@ -1,7 +1,7 @@
 {
   "name": "@braedonsaunders/appkit-jobs",
   "version": "0.2.4",
-  "description": "Production BullMQ runtime and complete reusable queue profiles for email, notifications, PDF, reports, schedules, scripts, migration, capture, and outbound work.",
+  "description": "Pure timezone-aware recurrence and production BullMQ queue profiles for email, notifications, PDF, reports, schedules, scripts, migration, capture, and outbound work.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {
@@ -14,6 +14,7 @@
     "./pdf": "./src/pdf.ts",
     "./reports": "./src/reports.ts",
     "./scheduled": "./src/scheduled.ts",
+    "./recurrence": "./src/recurrence.ts",
     "./scripts": "./src/scripts.ts",
     "./sandbox": "./src/sandbox.ts",
     "./migration": "./src/migration.ts",
@@ -35,6 +36,7 @@
   "dependencies": {
     "@braedonsaunders/appkit-egress-proxy": "workspace:*",
     "@braedonsaunders/appkit-email-render": "workspace:*",
+    "@js-temporal/polyfill": "^0.5.1",
     "bullmq": "^5.34.0",
     "ioredis": "^5.4.2",
     "web-push": "^3.6.7"
