@@ -9,7 +9,7 @@
 /// Some destinations are never meaningful through a NAT whatever the setting:
 /// "this network", loopback (the guest's own loopback never leaves the guest,
 /// so a packet for 127/8 arriving here is spoofed or broken), multicast, and
-/// the reserved and broadcast space.
+/// the reserved, documentation and broadcast space.
 public struct EgressFence: Sendable {
   public var allowLan: Bool
 
@@ -18,6 +18,9 @@ public struct EgressFence: Sendable {
   public static let alwaysDenied: [CIDR] = [
     CIDR(IPv4(0, 0, 0, 0), 8),
     CIDR(IPv4(127, 0, 0, 0), 8),
+    CIDR(IPv4(192, 0, 2, 0), 24),
+    CIDR(IPv4(198, 51, 100, 0), 24),
+    CIDR(IPv4(203, 0, 113, 0), 24),
     CIDR(IPv4(224, 0, 0, 0), 4),
     CIDR(IPv4(240, 0, 0, 0), 4),
   ]

@@ -19,11 +19,11 @@ import Testing
 
 @Test func fencesLocalSpaceAndTheMacUnlessTheLanIsAllowed() {
   let fence = EgressFence(allowLan: false)
-  let mac: Set<IPv4> = [IPv4(203, 0, 113, 7)]
-  for fenced in ["10.1.2.3", "172.16.0.1", "172.31.255.255", "192.168.1.1", "169.254.169.254", "100.64.0.1", "100.100.100.100", "203.0.113.7"] {
+  let mac: Set<IPv4> = [IPv4(151, 101, 1, 69)]
+  for fenced in ["10.1.2.3", "172.16.0.1", "172.31.255.255", "192.168.1.1", "169.254.169.254", "100.64.0.1", "100.100.100.100", "151.101.1.69"] {
     #expect(fence.verdict(for: IPv4(fenced)!, hostAddresses: mac) == .fenced, "\(fenced)")
   }
-  for open in ["1.1.1.1", "9.9.9.9", "172.32.0.1", "100.128.0.1", "151.101.1.69"] {
+  for open in ["1.1.1.1", "9.9.9.9", "172.32.0.1", "100.128.0.1"] {
     #expect(fence.verdict(for: IPv4(open)!, hostAddresses: mac) == .allowed, "\(open)")
   }
   for invalid in ["127.0.0.1", "0.1.2.3", "224.0.0.251", "255.255.255.255", "240.0.0.1"] {
@@ -31,8 +31,20 @@ import Testing
   }
   let lan = EgressFence(allowLan: true)
   #expect(lan.verdict(for: IPv4(192, 168, 1, 1), hostAddresses: mac) == .allowed)
-  #expect(lan.verdict(for: IPv4(203, 0, 113, 7), hostAddresses: mac) == .allowed)
+  #expect(lan.verdict(for: IPv4(151, 101, 1, 69), hostAddresses: mac) == .allowed)
   #expect(lan.verdict(for: IPv4(127, 0, 0, 1), hostAddresses: mac) == .invalid)
+}
+
+@Test func documentationNetworksRemainBlockedWhenLanIsAllowed() {
+  for allowLan in [false, true] {
+    let fence = EgressFence(allowLan: allowLan)
+    for address in ["192.0.2.0", "192.0.2.1", "192.0.2.255", "198.51.100.0", "198.51.100.255", "203.0.113.0", "203.0.113.255"] {
+      #expect(fence.verdict(for: IPv4(address)!, hostAddresses: []) == .invalid, "\(address)")
+    }
+    for address in ["192.0.1.255", "192.0.3.0", "198.51.99.255", "198.51.101.0", "203.0.112.255", "203.0.114.0"] {
+      #expect(fence.verdict(for: IPv4(address)!, hostAddresses: []) == .allowed, "\(address)")
+    }
+  }
 }
 
 @Test func computesTheInternetChecksum() {
@@ -212,8 +224,8 @@ func writeAll(_ fd: Int32, _ bytes: [UInt8]) {
 }
 
 @MainActor @Test func refusesFencedDestinationsWithAdministrativelyProhibited() throws {
-  let harness = Harness(hostAddresses: [IPv4(203, 0, 113, 7)])
-  for target in ["192.168.1.1", "10.0.0.1", "169.254.169.254", "100.64.0.1", "203.0.113.7"] {
+  let harness = Harness(hostAddresses: [IPv4(151, 101, 1, 69)])
+  for target in ["192.168.1.1", "10.0.0.1", "169.254.169.254", "100.64.0.1", "151.101.1.69"] {
     let syn = TCPSegment(sourcePort: 40_000, destinationPort: 80, sequence: 1, acknowledgement: 0, flags: [.syn], window: 64_240)
     harness.send(tcp: syn, to: IPv4(target)!)
     let packet = try #require(harness.takePackets().first, "\(target)")

@@ -284,7 +284,9 @@ agent as the Linux backend. Use the kernel command line appropriate to the
 image. Per-desk disks use macOS `cp -c`; provision the overlay directory on a
 filesystem that supports cloning. The helper creates a userspace IPv4 network
 with DHCP, defaults to `10.0.2.15/24` and gateway `10.0.2.2`, and blocks
-private, link-local, shared and host addresses by default. Set `allowLan` only
+private, link-local, shared and host addresses by default. RFC 5737 documentation
+subnets (`192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24`) are always blocked,
+including when LAN access is allowed. Set `allowLan` only
 when the host policy explicitly permits local network access. `DeskHandle.connect`
 uses the helper's TCP relay; no routable guest IP on the Mac is required.
 
