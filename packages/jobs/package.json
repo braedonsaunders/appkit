@@ -1,6 +1,6 @@
 {
   "name": "@braedonsaunders/appkit-jobs",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "description": "Pure timezone-aware recurrence and production BullMQ queue profiles for email, notifications, PDF, reports, schedules, scripts, migration, capture, and outbound work.",
   "license": "AGPL-3.0-or-later",
   "type": "module",

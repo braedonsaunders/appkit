@@ -1,5 +1,12 @@
 # @braedonsaunders/appkit-notifications
 
+## 5.0.0
+
+### Patch Changes
+
+- Updated dependencies [a8f7b6a]
+  - @braedonsaunders/appkit-jobs@0.3.0
+
 ## 4.0.0
 
 ### Patch Changes
