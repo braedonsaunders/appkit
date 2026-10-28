@@ -12,7 +12,9 @@ import { cn } from './utils'
 //   sticky-bars  : z-30
 //   dropdowns    : z-40
 //   drawer       : z-50   (stacked/nested: z-[55])
-//   floating UI  : z-[60] — Popover, Select dropdown, confirm dialog
+//   floating UI  : z-[60] — Popover, confirm dialog
+//   dialog       : z-[65]
+//   select       : z-[70] — dropdown and mobile sheet above dialogs
 //   toast        : z-70
 //
 // The drawer's top edge is `--drawer-top` (default 0). An app shell sets it to

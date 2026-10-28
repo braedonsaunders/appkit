@@ -215,7 +215,11 @@ export function SearchSelect({
       }
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setOpen(false)
+        triggerRef.current?.focus()
+      }
       else if (e.key === 'ArrowDown') {
         e.preventDefault()
         setHighlight((h) => nextEnabled(h, 1))
@@ -371,7 +375,7 @@ export function SearchSelect({
                 width: Math.max(pos.width, 208),
                 maxHeight: pos.maxHeight,
               }}
-              className="z-[60] flex flex-col overflow-hidden rounded-xl border border-border bg-elevated shadow-lg"
+              className="z-[70] flex flex-col overflow-hidden rounded-xl border border-border bg-elevated shadow-lg"
             >
               {showSearch ? searchBox(false) : null}
               <div className={cn('min-h-0 flex-1 overflow-y-auto', showSearch && 'mt-1')}>{optionList}</div>
@@ -384,7 +388,7 @@ export function SearchSelect({
         ? createPortal(
             <AnimatePresence>
               {open ? (
-                <div data-ui-overlay className="fixed inset-0 z-[60]">
+                <div data-ui-overlay className="fixed inset-0 z-[70]">
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
