@@ -1262,6 +1262,7 @@ function makeParkingHost(
   options: {
     snapshotExists?: boolean
     park?: () => Promise<void>
+    hookSupport?: boolean
     host?: Pick<DeskHostOptions, 'readSnapshotShares' | 'isDirectory'>
   } = {},
 ) {
@@ -1287,12 +1288,14 @@ function makeParkingHost(
       const machine = fake.machine
       return {
         ...machine,
+        ...(options.hookSupport ? { supportsPausedParkHook: true as const } : {}),
         async request(command: Parameters<typeof machine.request>[0]) {
           if ((command as { command?: string }).command === 'sync') synced.push(plan.deskId)
           return machine.request(command)
         },
-        async park(dir: string) {
+        async park(dir: string, hooks?: import('./backend').DeskParkHooks) {
           if (options.park) await options.park()
+          await hooks?.onPaused?.()
           parked.push(dir)
         },
       }
@@ -1337,6 +1340,32 @@ function makeParkingHost(
     shutdowns: () => shutdowns,
   }
 }
+
+test('explicit suspend prepares only on a capable backend after sync', async () => {
+  const context = makeParkingHost({ hookSupport: true })
+  await context.host.start(startOptions('agent-park'))
+  const steps: string[] = []
+  await context.host.suspend('agent-park', {
+    beforePark: async () => { assert.deepEqual(context.synced, ['agent-park']); steps.push('prepare') },
+    onPaused: async () => { steps.push('paused') },
+  })
+  assert.deepEqual(steps, ['prepare', 'paused'])
+  const unsupported = makeParkingHost()
+  await unsupported.host.start(startOptions('agent-park'))
+  let error: unknown
+  await unsupported.host.suspend('agent-park', { beforePark: async () => assert.fail('unsupported'), onPausedError: value => { error = value } })
+  assert.match(String(error), /unavailable/)
+  assert.equal(unsupported.parked.length, 1)
+})
+
+test('failed preparation skips paused hook but retains normal parking', async () => {
+  const context = makeParkingHost({ hookSupport: true })
+  await context.host.start(startOptions('agent-park'))
+  let error: unknown
+  await context.host.suspend('agent-park', { beforePark: async () => { throw new Error('prepare') }, onPaused: async () => assert.fail('unprepared'), onPausedError: value => { error = value } })
+  assert.match(String(error), /prepare/)
+  assert.equal(context.parked.length, 1)
+})
 
 test('parking a desk keeps its memory, and syncs the guest first', async () => {
   const context = makeParkingHost()

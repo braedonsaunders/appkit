@@ -27,6 +27,13 @@ tiers already cover.
 
 Size the concurrency cap against screen-open desks, not headless ones.
 
+Explicit `suspend` accepts optional sidecar hooks: `beforePark` runs after guest
+trim and sync, and `onPaused` runs after the Cloud Hypervisor VM pauses and
+before its memory snapshot. The caller must undo partial preparation on failure,
+bound hook duration, and provide durable recovery across crashes. A hook failure
+is reported to `onPausedError` and ordinary memory parking continues. Backends
+without the paused hook report it unavailable and park normally.
+
 ## Booting a desk
 
 ```ts

@@ -72,6 +72,7 @@ export type DeskConnectionChange =
 
 /** A booted microVM as the host sees it: one desk, one guest-agent channel. */
 export interface DeskMachine {
+  supportsPausedParkHook?: true
   readonly deskId: string
   /**
    * Send one request to the in-guest agent and await its correlated result.
@@ -135,7 +136,14 @@ export interface DeskMachine {
    * parked without a prior `sync` is consistent only *with that snapshot* —
    * which matters the moment the snapshot is discarded.
    */
-  park?(snapshotDir: string): Promise<void>
+  park?(snapshotDir: string, hooks?: DeskParkHooks): Promise<void>
+}
+
+export interface DeskParkHooks {
+  /** Called while the VM is paused, before its memory snapshot is written. */
+  onPaused?: () => Promise<void>
+  /** Reports a sidecar failure; ordinary memory parking continues. */
+  onPausedError?: (error: unknown) => void
 }
 
 export interface DeskBootHooks {
@@ -176,6 +184,8 @@ export type DeskProcessLauncher = (
 ) => ChildProcess
 
 export interface CloudHypervisorBackendOptions {
+  /** VMM API transport, injectable for tests. */
+  vmmApi?: VmmApiCall
   /** Descriptors retained by the VMM and share daemons, mapped consecutively from fd 3. */
   inheritedFds?: readonly number[]
   /** Spawns the VMM and image tooling; injectable for tests. */
@@ -223,6 +233,7 @@ export interface CloudHypervisorBackendOptions {
 export function createCloudHypervisorBackend(
   options: CloudHypervisorBackendOptions = {},
 ): DeskBackend {
+  const api = options.vmmApi ?? vmmApi
   const launcher = options.launcher ?? defaultLauncher
   const connect = options.connect ?? defaultConnect
   const platform = options.platform ?? process.platform
@@ -342,9 +353,9 @@ export function createCloudHypervisorBackend(
     // guest still cannot write, then start it.
     if (plan.snapshot.restoring) {
       try {
-        await waitForVmm(vmmApi, plan.api.socketPath, { now, exited: exit, timeoutMs: connectTimeoutMs })
+        await waitForVmm(api, plan.api.socketPath, { now, exited: exit, timeoutMs: connectTimeoutMs })
         await hooks?.onRestored?.()
-        await vmmApi(plan.api.socketPath, '/api/v1/vm.resume')
+        await api(plan.api.socketPath, '/api/v1/vm.resume')
       } catch (error) {
         await stop()
         const said = log.tail()
@@ -407,12 +418,15 @@ export function createCloudHypervisorBackend(
         return attemptHandshake(connect, plan.vsock.socketPath, port, handshakeTimeoutMs)
       } } : {}),
       stop,
-      pause: () => setVmmState(vmmApi, plan.api.socketPath, 'Paused'),
-      resume: () => setVmmState(vmmApi, plan.api.socketPath, 'Running'),
-      park: async (snapshotDir) => {
+      pause: () => setVmmState(api, plan.api.socketPath, 'Paused'),
+      resume: () => setVmmState(api, plan.api.socketPath, 'Running'),
+      supportsPausedParkHook: true,
+      park: async (snapshotDir, hooks) => {
         try {
-          await vmmApi(plan.api.socketPath, '/api/v1/vm.pause')
-          await vmmApi(plan.api.socketPath, '/api/v1/vm.snapshot', { destination_url: `file://${snapshotDir}` })
+          await api(plan.api.socketPath, '/api/v1/vm.pause')
+          try { await hooks?.onPaused?.() }
+          catch (error) { try { hooks?.onPausedError?.(error) } catch { /* preserve memory */ } }
+          await api(plan.api.socketPath, '/api/v1/vm.snapshot', { destination_url: `file://${snapshotDir}` })
           await writeShareManifest(snapshotDir, plan.shares)
         } finally {
           await stop()

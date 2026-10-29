@@ -34,6 +34,7 @@ import {
   type DeskBackend,
   type DeskConnectionChange,
   type DeskMachine,
+  type DeskParkHooks,
 } from './backend'
 import { readShareManifest } from './machine'
 import {
@@ -462,6 +463,11 @@ export interface DeskHostStats {
   lastSnapshotCpuFallback: { deskId: string; at: string; reason: 'signature_mismatch' | 'incompatible_cpuid' } | null
 }
 
+export interface DeskSuspendHooks extends DeskParkHooks {
+  /** Undo partial preparation before rejecting; crash recovery belongs to the caller. */
+  beforePark?: (machine: DeskMachine) => Promise<void>
+}
+
 export interface DeskHost {
   start(options: DeskStartOptions): Promise<DeskHandle>
   /** True when this resident desk supports in-memory pause. */
@@ -470,7 +476,7 @@ export interface DeskHost {
   pause(deskId: string): Promise<void>
   /** Resume a paused resident desk or restore a suspended desk. */
   resume(deskId: string): Promise<DeskHandle>
-  suspend(deskId: string): Promise<void>
+  suspend(deskId: string, hooks?: DeskSuspendHooks): Promise<void>
   /**
    * Stop a desk WITHOUT its memory, keeping its overlay: the next `start` or
    * `resume` cold boots from disk. This is a restart, not a destroy — the disk
@@ -791,7 +797,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     try { await parent.sync() } finally { await parent.close() }
   }
 
-  async function teardown(record: DeskRecord, keepMemory = true): Promise<boolean> {
+  async function teardown(record: DeskRecord, keepMemory = true, hooks?: DeskSuspendHooks): Promise<boolean> {
     if (record.status === 'suspending' && record.machine) {
       // A previous stop failed. Keep the overlay fenced until a retry confirms
       // the VMM has exited; never boot another VM or delete it underneath one.
@@ -853,6 +859,10 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       // A shutdown that throws memory away leaves the disk as the only state, so
       // it is flushed exactly as a park is.
       if (parking || !keepMemory) await syncGuest(record, machine)
+      if (hooks && (!parking || !machine.supportsPausedParkHook)) {
+        try { hooks.onPausedError?.(new DeskError('Paused park hooks are unavailable')) } catch { /* preserve memory */ }
+        hooks = undefined
+      }
       try {
         if (parking) {
           const snapshotDir = snapshotDirFor(record.startOptions.overlayPath, record.deskId)
@@ -869,7 +879,11 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
             const directory = await open(snapshotDir, 'r')
             try { await directory.sync() } finally { await directory.close() }
           }
-          await machine.park!(snapshotDir)
+          if (hooks?.beforePark) {
+            try { await hooks.beforePark(machine) }
+            catch (error) { try { hooks.onPausedError?.(error) } catch { /* preserve memory */ }; hooks = undefined }
+          }
+          await machine.park!(snapshotDir, hooks)
           const signature = await (options.cpuSignature ?? hostCpuSignature)()
           await (options.writeSnapshotSignature ?? writeSnapshotSignature)(snapshotDir, signature)
           if (options.strictMemoryRestore || record.startOptions.template) {
@@ -1167,7 +1181,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         }
       }
       restored.shutdown = async () => { await stop(); await releaseSource() }
-      if (park) restored.park = async (dir) => { await park(dir); await releaseSource() }
+      if (park) restored.park = async (dir, hooks) => { await park(dir, hooks); await releaseSource() }
     }
 
     let record = records.get(deskId)
@@ -1862,12 +1876,12 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     })
   }
 
-  async function suspend(deskId: string): Promise<void> {
+  async function suspend(deskId: string, hooks?: DeskSuspendHooks): Promise<void> {
     const id = cleanDeskId(deskId)
     await serializeLifecycle(id, async () => {
       const record = records.get(id)
       if (!record) return
-      await teardown(record)
+      await teardown(record, true, hooks)
     })
   }
 
