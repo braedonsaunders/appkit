@@ -396,3 +396,7 @@ For clients that require a local TCP URL, `await listenDeskPort(desk, port)`
 returns a loopback-only `{ host, port, close }` listener. Each incoming
 connection opens a guest stream through `desk.connect`; call `close()` when the
 lease ends to close the listener and its connections.
+
+Cloud Hypervisor backends can opt into `serviceVsock: true` when their guest image provides
+vsock service listeners. `DeskHandle.connect(port)` then opens that vsock port using the
+Cloud Hypervisor socket handshake. The default remains TCP for existing guest images.

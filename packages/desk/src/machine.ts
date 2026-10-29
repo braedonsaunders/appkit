@@ -319,7 +319,9 @@ export function createGuestMachine(options: {
     machine.connect = async (port: number) => {
       if (paused) throw new DeskError(`Desk ${deskId} is paused; resume it first.`)
       if (state === 'closed') throw new DeskError(`Desk ${deskId} is no longer connected.`)
-      return await connect(port)
+      const connection = await connect(port)
+      if ((state as string) === 'closed') { connection.destroy(); throw new DeskError(`Desk ${deskId} is no longer connected.`) }
+      return connection
     }
   }
   return machine

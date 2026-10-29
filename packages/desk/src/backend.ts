@@ -6,7 +6,7 @@ import { GUEST_AGENT_VSOCK_PORT } from './protocol'
 import {
   DEFAULT_REQUEST_TIMEOUT_MS, DEFAULT_CONNECT_TIMEOUT_MS, DEFAULT_CONNECT_RETRY_DELAY_MS,
   DEFAULT_HANDSHAKE_TIMEOUT_MS, DEFAULT_RECONNECT_WINDOW_MS, DEFAULT_RECONNECT_RETRY_DELAY_MS,
-  DEFAULT_KILL_GRACE_MS, RECONNECT_BACKOFF_CEILING, connectWithRetry, createGuestMachine,
+  DEFAULT_KILL_GRACE_MS, RECONNECT_BACKOFF_CEILING, connectWithRetry, createGuestMachine, attemptHandshake,
   defaultLauncher, defaultConnect, drainOutput, watchExit, terminate, runToCompletion, errorMessage,
   assertShareManifest, writeShareManifest, type ExitWatcher,
 } from './machine'
@@ -210,6 +210,8 @@ export interface CloudHypervisorBackendOptions {
   reconnectRetryDelayMs?: number
   killGraceMs?: number
   guestAgentPort?: number
+  /** Use guest-provided vsock service bridges for DeskHandle.connect. Opt in only when the image provides them. */
+  serviceVsock?: boolean
   /** Whether a share daemon's socket exists yet; injectable for tests. */
   pathExists?: (path: string) => boolean
   /** Removes a stale share socket before its daemon starts; injectable for tests. */
@@ -398,6 +400,10 @@ export function createCloudHypervisorBackend(
       now,
       idFactory,
       requestTimeoutMs,
+      ...(options.serviceVsock ? { connect: (port: number) => {
+        if (!Number.isInteger(port) || port < 1 || port > 65535) throw new DeskError('Guest port must be between 1 and 65535.')
+        return attemptHandshake(connect, plan.vsock.socketPath, port, handshakeTimeoutMs)
+      } } : {}),
       stop,
       pause: () => setVmmState(vmmApi, plan.api.socketPath, 'Paused'),
       resume: () => setVmmState(vmmApi, plan.api.socketPath, 'Running'),
