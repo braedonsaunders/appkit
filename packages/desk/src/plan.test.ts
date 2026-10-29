@@ -404,3 +404,17 @@ test('a share socket path longer than Linux allows is refused', () => {
     /longer than the 107 bytes Linux allows/,
   )
 })
+
+test('plans immutable block and pmem attachments and rejects ambiguous paths', () => {
+  const sha256 = 'a'.repeat(64)
+  const options = { ...baseOptions, readOnlyAttachments: [
+    { path: '/images/system.erofs', sha256, kind: 'block' as const },
+    { path: '/images/other.erofs', sha256, kind: 'pmem' as const },
+  ] }
+  const plan = buildDeskLaunchPlan(options, { pathExists: allPathsExist, deviceExists: allPathsExist })
+  assert.ok(plan.vmm.args.includes('path=/images/system.erofs,readonly=on,image_type=raw'))
+  assert.ok(plan.vmm.args.includes('file=/images/other.erofs,discard_writes=on'))
+  assert.throws(() => buildDeskLaunchPlan({ ...options, readOnlyAttachments: [{ path: '/bad,path', sha256, kind: 'block' }] }, { pathExists: allPathsExist, deviceExists: allPathsExist }), DeskError)
+  assert.throws(() => buildDeskLaunchPlan({ ...options, readOnlyAttachments: [{ path: '/ok', sha256: 'bad', kind: 'block' }] }, { pathExists: allPathsExist, deviceExists: allPathsExist }), DeskError)
+  assert.throws(() => buildDeskLaunchPlan({ ...options, hypervisor: 'virtualization' }, { pathExists: allPathsExist }), DeskError)
+})

@@ -8,7 +8,7 @@
  * emission to the consumer's ports, and the handover masking contract. It
  * never touches a database and knows nothing about tenants or approvals.
  */
-import { existsSync } from 'node:fs'
+import { createReadStream, existsSync } from 'node:fs'
 import { execFile } from 'node:child_process'
 import { mkdir, open, readFile, rename, rm, statfs, writeFile } from 'node:fs/promises'
 import { arch, cpus, release, tmpdir } from 'node:os'
@@ -26,6 +26,7 @@ import {
   type DeskLauncherIdentity,
   type DeskGuestNetworkOptions,
   type DeskShare,
+  type DeskReadOnlyAttachment,
   type DeskVirtiofsdSandbox,
 } from './plan'
 import {
@@ -227,6 +228,8 @@ export interface DeskStartOptions {
    * and the desk cold boots with these instead.
    */
   shares?: readonly DeskShare[]
+  /** Immutable attachments; retain their path and contents while a snapshot exists. */
+  readOnlyAttachments?: readonly DeskReadOnlyAttachment[]
 }
 
 export interface DeskExecOptions {
@@ -820,6 +823,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
           const snapshotDir = snapshotDirFor(record.startOptions.overlayPath, record.deskId)
           await makeSnapshotDir(snapshotDir)
           await machine.park!(snapshotDir)
+          if (record.startOptions.readOnlyAttachments?.length) await writeFile(join(snapshotDir, 'attachments.json'), JSON.stringify(record.startOptions.readOnlyAttachments), { mode: 0o600 })
           const signature = await (options.cpuSignature ?? hostCpuSignature)()
           await (options.writeSnapshotSignature ?? writeSnapshotSignature)(snapshotDir, signature)
         } else {
@@ -931,6 +935,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
           tapDevice: startOptions.network?.tapDevice,
           macAddress: startOptions.network?.macAddress,
           shares,
+          readOnlyAttachments: startOptions.readOnlyAttachments,
           // Forward the host's cmdline only when set; otherwise the plan falls
           // back to DEFAULT_KERNEL_CMDLINE.
           ...(kernelCmdline === undefined ? {} : { kernelCmdline }),
@@ -949,8 +954,23 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       }
     }
 
+    // Verify bytes, not just the caller's label, before the VMM can map them.
+    for (const image of startOptions.readOnlyAttachments ?? []) {
+      const hash = createHash('sha256')
+      for await (const chunk of createReadStream(image.path)) hash.update(chunk as Buffer)
+      if (hash.digest('hex') !== image.sha256) throw new DeskError(`Read-only attachment digest mismatch: ${image.path}`)
+    }
     let resuming = parkWithMemory && pathExists(snapshotDir)
     if (resuming) {
+      let savedAttachments: unknown
+      try { savedAttachments = JSON.parse(await readFile(join(snapshotDir, 'attachments.json'), 'utf8')) }
+      catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+        savedAttachments = []
+      }
+      if (JSON.stringify(savedAttachments) !== JSON.stringify(startOptions.readOnlyAttachments ?? [])) {
+        throw new DeskError('Snapshot read-only attachment identity does not match; restore requires the original images.')
+      }
       const saved = await (options.readSnapshotSignature ?? readSnapshotSignature)(snapshotDir)
       if (saved !== null && saved !== await (options.cpuSignature ?? hostCpuSignature)()) {
         await removeSnapshot(snapshotDir)

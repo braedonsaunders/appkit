@@ -412,3 +412,14 @@ lease ends to close the listener and its connections.
 Cloud Hypervisor backends can opt into `serviceVsock: true` when their guest image provides
 vsock service listeners. `DeskHandle.connect(port)` then opens that vsock port using the
 Cloud Hypervisor socket handshake. The default remains TCP for existing guest images.
+
+## Immutable image attachments
+
+On Cloud Hypervisor, `DeskStartOptions.readOnlyAttachments` accepts an ordered list of
+`{ path, sha256, kind }`, where `kind` is `block` or `pmem` and `sha256` is the
+lowercase SHA-256 of the image. Block devices are attached read-only; pmem uses
+`discard_writes=on`, so guest writes do not persist. The caller must keep each file
+and its path immutable and available for as long as a desk or its snapshot uses it.
+AppKit hashes each image on start and records the attachment list with the snapshot;
+restore refuses a changed list before resuming. Virtualization.framework rejects
+attachments. Device support and filesystem mount options depend on the guest kernel.

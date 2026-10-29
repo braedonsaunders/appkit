@@ -112,6 +112,14 @@ export interface DeskShare {
  */
 export type DeskVirtiofsdSandbox = 'namespace' | 'chroot'
 
+/** An immutable host image. The caller must retain its bytes and path for every snapshot. */
+export interface DeskReadOnlyAttachment {
+  path: string
+  /** SHA-256 of the immutable image, used as snapshot identity. */
+  sha256: string
+  kind: 'block' | 'pmem'
+}
+
 export interface DeskLaunchPlanOptions {
   deskId: string
   /** Defaults to `cloud-hypervisor`. */
@@ -162,6 +170,8 @@ export interface DeskLaunchPlanOptions {
    * same shares the desk was parked with; see the backends.
    */
   shares?: readonly DeskShare[]
+  /** Additional immutable Cloud Hypervisor devices, in guest enumeration order. */
+  readOnlyAttachments?: readonly DeskReadOnlyAttachment[]
   /**
    * Cloud Hypervisor only: the `virtiofsd` binary (1.13 or later) that serves
    * each share. Defaults to the first `virtiofsd` on `PATH`, then
@@ -428,6 +438,7 @@ function buildCloudHypervisorPlan(
     // guest instead of a missing snapshot out here.
     throw new DeskError(`Desk ${deskId} has no snapshot to restore at ${snapshotDir}`)
   }
+  const attachments = cleanAttachments(options.readOnlyAttachments, pathExists)
   const shares = cloudHypervisorShares(cleanShares(options.shares, isDirectory), {
     deskId,
     runtimeDir,
@@ -492,7 +503,8 @@ function buildCloudHypervisorPlan(
         '--cmdline', kernelCmdline,
         // Be explicit that the disk is raw: CH deprecated image-format auto-detection
         // and warns without image_type; there is never a qcow2 overlay here.
-        '--disk', `path=${overlayPath},image_type=raw`,
+        '--disk', `path=${overlayPath},image_type=raw`, ...attachments.filter(a => a.kind === 'block').map(a => `path=${a.path},readonly=on,image_type=raw`),
+        ...attachments.filter(a => a.kind === 'pmem').flatMap(a => ['--pmem', `file=${a.path},discard_writes=on`]),
         // vhost-user devices map guest RAM into their daemon, so it must be
         // shared memory; a desk without shares keeps private memory.
         '--memory', `size=${memoryMb}M${shares.length === 0 ? '' : ',shared=on'}`,
@@ -537,6 +549,7 @@ function buildVirtualizationPlan(
   dependencies: DeskLaunchPlanDependencies,
 ): VirtualizationLaunchPlan {
   const pathExists = dependencies.pathExists ?? existsSync
+  if (options.readOnlyAttachments?.length) throw new DeskError('Read-only attachments require Cloud Hypervisor.')
   const deskId = cleanDeskId(options.deskId)
   if (options.tapDevice !== undefined) {
     throw new DeskError('tapDevice applies to Cloud Hypervisor desks; a Virtualization.framework desk has no TAP.')
@@ -603,6 +616,18 @@ function buildVirtualizationPlan(
     kernelCmdline: options.kernelCmdline ?? DEFAULT_KERNEL_CMDLINE,
     launcherIdentity: cleanLauncherIdentity(options.launcherIdentity),
   }
+}
+
+/** Reject ambiguous Cloud Hypervisor key-value arguments and unpinned images. */
+export function cleanAttachments(attachments: readonly DeskReadOnlyAttachment[] | undefined, pathExists: (path: string) => boolean): DeskReadOnlyAttachment[] {
+  if (attachments === undefined) return []
+  if (!Array.isArray(attachments)) throw new DeskError('readOnlyAttachments must be an array.')
+  return attachments.map((attachment, index) => {
+    if (!attachment || !['block', 'pmem'].includes(attachment.kind) || !/^[a-f0-9]{64}$/.test(attachment.sha256)) throw new DeskError(`Invalid readOnlyAttachments[${index}].`)
+    const path = absolutePath(attachment.path, `readOnlyAttachments[${index}].path`)
+    if (path.includes(',') || !pathExists(path)) throw new DeskError(`Invalid attachment path: ${path}`)
+    return { path, kind: attachment.kind, sha256: attachment.sha256 }
+  })
 }
 
 /** Validate shares as given: tags, absolute existing directories, explicit access. */
