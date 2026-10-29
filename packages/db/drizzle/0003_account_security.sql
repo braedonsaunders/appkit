@@ -2,7 +2,7 @@ ALTER TABLE "users" ADD COLUMN "two_factor_enabled" boolean DEFAULT false NOT NU
 --> statement-breakpoint
 CREATE TABLE "two_factors" (
  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
- "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+ "user_id" uuid NOT NULL CONSTRAINT "two_factors_user_id_users_id_fk" REFERENCES "users"("id") ON DELETE CASCADE,
  "secret" text NOT NULL,
  "backup_codes" text NOT NULL,
  "verified" boolean DEFAULT true,
