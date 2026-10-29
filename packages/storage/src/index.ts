@@ -71,6 +71,14 @@ export type Storage = {
   bucket: string
   client: S3Client
   put: (input: PutObjectInput) => Promise<void>
+  /**
+   * Upload an async stream with 8 MiB parts and at most 10,000 parts. The
+   * producer must observe `signal` to unblock a pending read on cancellation.
+   * A lost completion response has an unknown outcome; use a unique key and
+   * publish it only after verification. Incomplete-upload lifecycle cleanup
+   * covers lost creation responses.
+   */
+  putStream: (input: { key: string; body: AsyncIterable<Uint8Array>; contentType?: string; signal?: AbortSignal }) => Promise<void>
   /** Fetch an object's bytes. */
   getBytes: (key: string) => Promise<Uint8Array>
   delete: (key: string) => Promise<void>
@@ -79,7 +87,7 @@ export type Storage = {
   headObject: (key: string) => Promise<StoredObjectMetadata | null>
   exists: (key: string) => Promise<boolean>
   getRange: (key: string, start: number, end: number, ifMatch?: string) => Promise<Uint8Array>
-  getStream: (key: string) => Promise<{ stream: ReadableStream; contentLength?: number; contentType?: string }>
+  getStream: (key: string, options?: { signal?: AbortSignal }) => Promise<{ stream: ReadableStream; contentLength?: number; contentType?: string }>
   /** A presigned URL to upload directly (PUT). */
   presignPut: (key: string, opts?: { expiresIn?: number; contentType?: string; metadata?: Record<string, string>; tagging?: string }) => Promise<string>
   /** A presigned URL to download directly (GET). */
@@ -164,6 +172,69 @@ export function createStorage(config: StorageConfig): Storage {
     )
   }
 
+
+  async function putStream(input: { key: string; body: AsyncIterable<Uint8Array>; contentType?: string; signal?: AbortSignal }): Promise<void> {
+    const partSize = 8 * 1024 * 1024
+    const signal = input.signal
+    signal?.throwIfAborted()
+    const created = await client.send(new CreateMultipartUploadCommand({ Bucket, Key: input.key,
+      ContentType: input.contentType ?? 'application/octet-stream', ContentDisposition: 'attachment',
+      Tagging: storageObjectTagging('durable', stateTagKey),
+    }), { abortSignal: signal })
+    const uploadId = created.UploadId
+    if (!uploadId) throw new Error('Storage did not return a multipart upload ID')
+    const parts: Array<{ ETag: string; PartNumber: number }> = []
+    let buffer = Buffer.allocUnsafe(partSize)
+    let length = 0
+    let multipartActive = true
+    const upload = async () => {
+      signal?.throwIfAborted()
+      const partNumber = parts.length + 1
+      if (partNumber > 10_000) throw new Error('Multipart upload exceeds 10000 parts')
+      const result = await client.send(new UploadPartCommand({ Bucket, Key: input.key, UploadId: uploadId,
+        PartNumber: partNumber, Body: buffer.subarray(0, length),
+      }), { abortSignal: signal })
+      if (!result.ETag) throw new Error(`Storage did not confirm multipart part ${partNumber}`)
+      parts.push({ ETag: result.ETag, PartNumber: partNumber })
+      buffer = Buffer.allocUnsafe(partSize)
+      length = 0
+    }
+    try {
+      for await (const chunk of input.body) {
+        signal?.throwIfAborted()
+        let offset = 0
+        while (offset < chunk.byteLength) {
+          if (length === partSize) await upload()
+          const count = Math.min(partSize - length, chunk.byteLength - offset)
+          buffer.set(chunk.subarray(offset, offset + count), length)
+          length += count
+          offset += count
+        }
+      }
+      signal?.throwIfAborted()
+      if (!length && parts.length === 0) {
+        await abortMultipartUpload(input.key, uploadId)
+        multipartActive = false
+        await client.send(new PutObjectCommand({ Bucket, Key: input.key, Body: Buffer.alloc(0),
+          ContentType: input.contentType ?? 'application/octet-stream', ContentDisposition: 'attachment',
+          Tagging: storageObjectTagging('durable', stateTagKey),
+        }), { abortSignal: signal })
+        return
+      }
+      if (length) await upload()
+      await client.send(new CompleteMultipartUploadCommand({ Bucket, Key: input.key, UploadId: uploadId,
+        MultipartUpload: { Parts: parts },
+      }), { abortSignal: signal })
+    } catch (error) {
+      if (multipartActive) {
+        try { await abortMultipartUpload(input.key, uploadId) } catch (cleanupError) {
+          throw new AggregateError([error, cleanupError], 'Multipart upload and abort both failed')
+        }
+      }
+      throw error
+    }
+  }
+
   async function getBytes(key: string): Promise<Uint8Array> {
     const res = await client.send(new GetObjectCommand({ Bucket, Key: key }))
     if (!res.Body) throw new Error(`Object ${key} has no body`)
@@ -200,8 +271,8 @@ export function createStorage(config: StorageConfig): Storage {
     return result.Body.transformToByteArray()
   }
 
-  async function getStream(key: string): Promise<{ stream: ReadableStream; contentLength?: number; contentType?: string }> {
-    const result = await client.send(new GetObjectCommand({ Bucket, Key: key }))
+  async function getStream(key: string, options?: { signal?: AbortSignal }): Promise<{ stream: ReadableStream; contentLength?: number; contentType?: string }> {
+    const result = await client.send(new GetObjectCommand({ Bucket, Key: key }), { abortSignal: options?.signal })
     if (!result.Body) throw new Error(`Object ${key} has no body`)
     return { stream: result.Body.transformToWebStream() as ReadableStream, ...(result.ContentLength === undefined ? {} : { contentLength: result.ContentLength }), ...(result.ContentType === undefined ? {} : { contentType: result.ContentType }) }
   }
@@ -300,5 +371,5 @@ export function createStorage(config: StorageConfig): Storage {
     } finally { await del(probeKey) }
   }
 
-  return { bucket: Bucket, client, put, getBytes, delete: del, head, headObject, exists, getRange, getStream, presignPut, presignGet, presignExistingGet, createMultipartUpload, presignMultipartPart, completeMultipartUpload, abortMultipartUpload, promote, ensureReady }
+  return { bucket: Bucket, client, put, putStream, getBytes, delete: del, head, headObject, exists, getRange, getStream, presignPut, presignGet, presignExistingGet, createMultipartUpload, presignMultipartPart, completeMultipartUpload, abortMultipartUpload, promote, ensureReady }
 }
