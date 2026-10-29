@@ -152,3 +152,13 @@ test('stream download forwards cancellation to object storage', async () => {
   await storage.getStream('object', { signal: abort.signal })
   assert.equal(received, abort.signal)
 })
+
+
+test('object deletion forwards cancellation to storage', async () => {
+  const abort = new AbortController()
+  let received: AbortSignal | undefined
+  const client = { async send(_command: object, options: { abortSignal?: AbortSignal }) { received = options.abortSignal; return {} } } as unknown as S3Client
+  const storage = createStorage({ endpoint: 'https://storage.example.test', bucket: 'private', accessKeyId: 'key', secretAccessKey: 'secret', client })
+  await storage.delete('object', { signal: abort.signal })
+  assert.equal(received, abort.signal)
+})
