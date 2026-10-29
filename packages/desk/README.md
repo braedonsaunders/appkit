@@ -313,6 +313,16 @@ extents, and confirms the guest HTTP process survives a second restore. It uses
 recovery instead of deleting backing files from a live process. The check does
 not measure latency or memory savings.
 
+`memoryRestoreMode: 'ondemand'` selects Cloud Hypervisor's userfaultfd page-on-access
+restore instead of its default eager copy. It requires Linux 6.6 or newer and
+permission to open `/dev/userfaultfd` or use the corresponding syscall. It rejects
+virtio-fs shares and does not silently cold boot when restore is unavailable. The
+source snapshot is durably retired before boot and retained until the VMM stops;
+an interrupted restore leaves a durable fence requiring operator recovery. The
+mode can be selected per host or per desk and is separate from copy-on-write
+restore: it does not share CoW pages or enable incremental snapshot writes.
+Run the disposable check with `DESK_CHECK_RESTORE_MODE=ondemand` to exercise it.
+
 ## Host directory shares
 
 A desk can mount host directories over virtio-fs. Pass `shares` to

@@ -160,8 +160,8 @@ export interface DeskHostOptions {
    * occurrence is indistinguishable, from inside the guest, from a failing host.
    */
   parkWithMemory?: boolean
-  /** Opt in to Cloud Hypervisor copy-on-write snapshot restore. */
-  memoryRestoreMode?: 'copyonwrite'
+  /** Select file-backed CoW or strict userfaultfd on-demand restore on Linux. */
+  memoryRestoreMode?: 'copyonwrite' | 'ondemand'
   /** Refuse fallback or replay after a memory restore is interrupted. */
   strictMemoryRestore?: boolean
   /** Atomically retire a parked snapshot and sync its parent directory. */
@@ -237,8 +237,8 @@ export interface DeskStartOptions {
   leaseMs?: number
   /** Preserve memory state on failures or interruption for this desk. */
   strictMemoryRestore?: boolean
-  /** Select copy-on-write restore for this desk. */
-  memoryRestoreMode?: 'copyonwrite'
+  /** Select file-backed CoW or strict userfaultfd on-demand restore for this desk. */
+  memoryRestoreMode?: 'copyonwrite' | 'ondemand'
   /** Stable guest CID; callers must allocate it uniquely across host restarts. */
   vsockCid?: number
   network?: { tapDevice?: string; macAddress?: string; guestAddress?: string }
@@ -797,6 +797,11 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     return join(dirname(overlayPath), `${deskId}.snapshot`)
   }
 
+  function strictMemory(start: DeskStartOptions): boolean {
+    return Boolean(options.strictMemoryRestore || start.strictMemoryRestore || start.template
+      || (start.memoryRestoreMode ?? options.memoryRestoreMode) === 'ondemand')
+  }
+
   async function clearRestoreMarker(snapshotDir: string): Promise<void> {
     await rm(`${snapshotDir}.restore-pending`, { force: true })
     const parent = await open(dirname(snapshotDir), 'r')
@@ -892,7 +897,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
           await machine.park!(snapshotDir, hooks)
           const signature = await (options.cpuSignature ?? hostCpuSignature)()
           await (options.writeSnapshotSignature ?? writeSnapshotSignature)(snapshotDir, signature)
-          if (options.strictMemoryRestore || record.startOptions.strictMemoryRestore || record.startOptions.template) {
+          if (strictMemory(record.startOptions)) {
             for (const name of ['config.json', 'state.json', 'memory-ranges', 'appkit-cpu-signature']) {
               const file = await open(join(snapshotDir, name), 'r')
               try { await file.sync() } finally { await file.close() }
@@ -912,7 +917,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
           record.machine = machine
           throw new DeskError(`Desk ${record.deskId} could not stop after teardown failed: ${errorMessage(stopError)}`)
         }
-        if (parking && !options.strictMemoryRestore && !record.startOptions.strictMemoryRestore && !record.startOptions.template) {
+        if (parking && !strictMemory(record.startOptions)) {
           await removeSnapshot(snapshotDirFor(record.startOptions.overlayPath, record.deskId)).catch(
             () => undefined,
           )
@@ -986,7 +991,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     // as whatever the overlay copy fails with.
     await admitDisk(startOptions.overlayPath)
     const snapshotDir = snapshotDirFor(startOptions.overlayPath, deskId)
-    const strictRestore = Boolean(options.strictMemoryRestore || startOptions.strictMemoryRestore || startOptions.template)
+    const strictRestore = strictMemory(startOptions)
     const restoreMode = startOptions.template ? 'copyonwrite' : startOptions.memoryRestoreMode ?? options.memoryRestoreMode
     if ((strictRestore || restoreMode) && (!parkWithMemory || backend.hypervisor === 'virtualization')) throw new DeskError('Strict or copy-on-write restore requires Cloud Hypervisor and parkWithMemory.')
     if (strictRestore && existsSync(`${snapshotDir}.restore-pending`)) {
@@ -1091,10 +1096,10 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     if (initializeTemplate && !resuming) throw new DeskError('A template fork requires its prepared snapshot.')
     // Shared guest memory, required by virtio-fs, makes Cloud Hypervisor fall
     // back to eager restore. Reject before retiring the snapshot or cold booting.
-    if (restoreMode === 'copyonwrite') {
-      if (startOptions.shares?.length) throw new DeskError('Copy-on-write restore cannot be combined with virtio-fs shares.')
+    if (restoreMode) {
+      if (startOptions.shares?.length) throw new DeskError('Copy-on-write or on-demand restore cannot be combined with virtio-fs shares.')
       if (resuming && (await (options.readSnapshotShares ?? readShareManifest)(snapshotDir)).length) {
-        throw new DeskError('The parked snapshot has virtio-fs shares and cannot use copy-on-write restore.')
+        throw new DeskError('The parked snapshot has virtio-fs shares and cannot use copy-on-write or on-demand restore.')
       }
     }
     if (resuming) {
@@ -1125,7 +1130,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     // Retire before starting the VMM: after a crash the old name can never be
     // replayed against a disk the guest may have changed. The retired file is
     // private backing memory, not a restorable snapshot.
-    if (resuming && restoreMode === 'copyonwrite') {
+    if (resuming && restoreMode) {
       restoreDir = `${snapshotDir}.source-${randomUUID()}`
       await retireSnapshot(snapshotDir, restoreDir)
     }
@@ -1136,7 +1141,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         ? await backend.boot(launchPlan, {
             // Eager restore removes the parked snapshot before resume. A CoW
             // source was already retired durably before the VMM started.
-            onRestored: restoreMode === 'copyonwrite' ? async () => {} : () => removeSnapshot(snapshotDir),
+            onRestored: restoreMode ? async () => {} : () => removeSnapshot(snapshotDir),
           })
         : await backend.boot(launchPlan)
       if (initializeTemplate && startOptions.template) {
@@ -1177,7 +1182,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       }
     }
 
-    if (resuming && restoreMode === 'copyonwrite') {
+    if (resuming && restoreMode) {
       // The mapping remains file-backed until the VMM has exited. Never remove
       // it after a failed stop; leaking it is safer than invalidating a live VM.
       const restored = machine
@@ -1904,7 +1909,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       // may remove it.
       const snapshot = snapshotDirFor(record.startOptions.overlayPath, record.deskId)
       await removeSnapshot(snapshot)
-      if (options.strictMemoryRestore || record.startOptions.strictMemoryRestore || record.startOptions.template) await clearRestoreMarker(snapshot)
+      if (strictMemory(record.startOptions)) await clearRestoreMarker(snapshot)
     })
   }
 

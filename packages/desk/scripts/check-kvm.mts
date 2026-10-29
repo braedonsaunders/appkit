@@ -22,8 +22,12 @@ const tmpRoot = required('DESK_CHECK_TMPDIR')
 /** Set to also check a read-only virtio-fs share, including a file held open across the restore. */
 const virtiofsdPath = process.env.DESK_CHECK_VIRTIOFSD
 const exec = promisify(execFile)
+const restoreMode = process.env.DESK_CHECK_RESTORE_MODE ?? (process.env.DESK_CHECK_COW === '1' ? 'copyonwrite' : undefined)
+if (restoreMode !== undefined && restoreMode !== 'copyonwrite' && restoreMode !== 'ondemand') {
+  throw new Error('DESK_CHECK_RESTORE_MODE must be copyonwrite or ondemand')
+}
 const incremental = process.env.DESK_CHECK_INCREMENTAL === '1'
-if (incremental && (process.env.DESK_CHECK_COW !== '1' || virtiofsdPath)) {
+if (incremental && (restoreMode !== 'copyonwrite' || virtiofsdPath)) {
   throw new Error('Incremental check requires DESK_CHECK_COW=1 and no virtio-fs share')
 }
 const vmmPath = process.env.DESK_CHECK_VMM
@@ -53,7 +57,7 @@ if (virtiofsdPath) {
 }
 const network = createDeskNetwork({ gateway, dns: '1.1.1.1', egress: { mode: 'open' } })
 const host = createDeskHost({ imageRoot, runtimeDir, ...(vmmPath ? { vmmPath } : {}), parkWithMemory: true, trimOnSuspend: false,
-  ...(process.env.DESK_CHECK_COW === '1' ? { memoryRestoreMode: 'copyonwrite' as const } : {}),
+  ...(restoreMode ? { memoryRestoreMode: restoreMode } : {}),
   ports: { onEvent: (event) => console.log(event.kind), audit: () => {} },
   ...(process.env.DESK_CHECK_KERNEL_CMDLINE ? { kernelCmdline: process.env.DESK_CHECK_KERNEL_CMDLINE } : {}),
   ...(virtiofsdPath ? { virtiofsdPath } : {}),

@@ -1694,7 +1694,8 @@ test('a desk can select TCP or vsock for each service connection', async () => {
   assert.equal(vsock.destroyed, true)
 })
 
-test('copy-on-write restore retires the snapshot before boot and retains its source until the VMM stops', async () => {
+for (const mode of ['copyonwrite', 'ondemand'] as const) {
+test(`${mode} restore retires the snapshot before boot and retains its source until the VMM stops`, async () => {
   const directory = await mkdtemp(join(tmpdir(), 'desk-cow-'))
   const snapshot = join(directory, 'cow.snapshot')
   await import('node:fs/promises').then(({ mkdir }) => mkdir(snapshot))
@@ -1709,14 +1710,14 @@ test('copy-on-write restore retires the snapshot before boot and retains its sou
       assert.equal(await readFile(join(source, 'memory-ranges'), 'utf8'), 'memory')
       await assert.rejects(readFile(join(snapshot, 'memory-ranges')), /ENOENT/)
       assert.equal(plan.hypervisor, 'cloud-hypervisor')
-      assert.ok(plan.vmm.args.some((arg) => arg.includes('memory_restore_mode=copyonwrite')))
+      assert.ok(plan.vmm.args.some((arg) => arg.includes(`memory_restore_mode=${mode}`)))
       await hooks?.onRestored?.()
       return fakeMachine(plan.deskId, () => stopped.promise).machine
     },
   }
-  const host = createDeskHost({ imageRoot: directory, parkWithMemory: true, memoryRestoreMode: 'copyonwrite', backend,
+  const host = createDeskHost({ imageRoot: directory, parkWithMemory: true, memoryRestoreMode: mode, backend,
     ports: { onEvent: () => {}, audit: () => {} }, pathExists: (path) => path === snapshot || !path.endsWith('.snapshot'),
-    deviceExists: () => true, readSnapshotShares: async () => [], readSnapshotSignature: async () => null,
+    deviceExists: () => true, readSnapshotShares: async () => [], readSnapshotSignature: async () => 'cpu', cpuSignature: async () => 'cpu',
     trimOnSuspend: false,
   })
   try {
@@ -1729,6 +1730,8 @@ test('copy-on-write restore retires the snapshot before boot and retains its sou
     await assert.rejects(readFile(join(source, 'memory-ranges')), /ENOENT/)
   } finally { stopped.resolve(); await rm(directory, { recursive: true, force: true }) }
 })
+
+}
 
 test('failed copy-on-write restore never replays or deletes the retired source', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'desk-cow-fail-'))
@@ -1867,7 +1870,8 @@ test('copy-on-write refuses parked virtio-fs shares before snapshot retirement o
   assert.equal(removed, 0)
 })
 
-test('strict restore failure leaves a durable fence and never cold boots', async () => {
+for (const mode of [undefined, 'ondemand'] as const) {
+test(`strict ${mode ?? 'copy'} restore failure leaves a durable fence and never cold boots`, async () => {
   const root = await mkdtemp(join(tmpdir(), 'desk-strict-'))
   try {
     const overlay = join(root, 'child.raw')
@@ -1876,7 +1880,7 @@ test('strict restore failure leaves a durable fence and never cold boots', async
     let attempts = 0
     const backend: DeskBackend = { async boot() { attempts++; throw new Error('restore failed') } }
     const options: DeskHostOptions = {
-      imageRoot: root, backend, parkWithMemory: true, strictMemoryRestore: true,
+      imageRoot: root, backend, parkWithMemory: true, strictMemoryRestore: mode === undefined, ...(mode ? { memoryRestoreMode: mode } : {}),
       ports: { onEvent: () => {}, audit: () => {} },
       pathExists: () => true, deviceExists: () => true, trimOnSuspend: false,
       readSnapshotSignature: async () => 'same', cpuSignature: async () => 'same',
@@ -1889,6 +1893,8 @@ test('strict restore failure leaves a durable fence and never cold boots', async
     assert.equal(attempts, 1)
   } finally { await rm(root, { recursive: true, force: true }) }
 })
+
+}
 
 test('strict lifecycle retains its fence until the parked snapshot is durable', async () => {
   const root = await mkdtemp(join(tmpdir(), 'desk-strict-park-'))
