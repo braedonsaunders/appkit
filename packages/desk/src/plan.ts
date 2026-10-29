@@ -869,3 +869,8 @@ function positiveInteger(value: number, field: string): number {
   }
   return value
 }
+
+/** Snapshot restore modes implemented with source lifetime and failure fencing. */
+export const DESK_MEMORY_RESTORE_MODES = ['copyonwrite', 'ondemand'] as const
+/** Suspend hooks include positive completion after snapshot durability. */
+export const DESK_PARK_HOOK_VERSION = 1 as const
