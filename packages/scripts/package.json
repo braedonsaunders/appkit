@@ -37,7 +37,7 @@
     "cron-parser": "^4.9.0"
   },
   "peerDependencies": {
-    "@braedonsaunders/appkit-db": "^0.2.0",
+    "@braedonsaunders/appkit-db": "^0.2.1",
     "@braedonsaunders/appkit-ui": "^0.4.1",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.24.0",

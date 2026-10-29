@@ -1,5 +1,11 @@
 # @braedonsaunders/appkit-db
 
+## 0.2.1
+
+### Patch Changes
+
+- 17ed6c9: Add opt-in authenticator MFA with Better Auth enrollment, challenges and recovery codes, canonical persistence, client APIs, and a session cookie-cache disable option for immediate revocation.
+
 ## 0.2.0
 
 ### Minor Changes

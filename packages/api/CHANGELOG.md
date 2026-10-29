@@ -1,5 +1,13 @@
 # @braedonsaunders/appkit-api
 
+## 0.1.4
+
+### Patch Changes
+
+- Updated dependencies [17ed6c9]
+  - @braedonsaunders/appkit-db@0.2.1
+  - @braedonsaunders/appkit-tenant@0.2.2
+
 ## 0.1.3
 
 ### Patch Changes

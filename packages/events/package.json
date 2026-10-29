@@ -1,6 +1,6 @@
 {
   "name": "@braedonsaunders/appkit-events",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Audit trail (audit + diff) and a transactional outbox (recordDomainEvent) over @braedonsaunders/appkit-db.",
   "license": "AGPL-3.0-or-later",
   "type": "module",

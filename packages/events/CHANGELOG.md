@@ -1,5 +1,12 @@
 # @braedonsaunders/appkit-events
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [17ed6c9]
+  - @braedonsaunders/appkit-db@0.2.1
+
 ## 0.3.0
 
 ### Minor Changes
