@@ -1150,7 +1150,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     let machine: DeskMachine
     try {
       const launchPlan = resuming ? await restorePlan() : planFor(false)
-      if (resuming && startOptions.template) launchPlan.snapshot.requirePrivateMemoryMapping = true
+      if (resuming && (startOptions.template || (startOptions.strictMemoryRestore && restoreMode === 'copyonwrite'))) launchPlan.snapshot.requirePrivateMemoryMapping = true
       machine = resuming
         ? await backend.boot(launchPlan, {
             // Eager restore removes the parked snapshot before resume. A CoW
