@@ -1,0 +1,35 @@
+name: Check desk VMM
+on:
+  pull_request:
+    paths:
+      - 'packages/desk/vmm/**'
+      - '.github/workflows/desk-vmm.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desk-vmm-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native build dependencies
+        run: sudo apt-get update && sudo apt-get install -y musl-tools build-essential pkg-config
+      - name: Build and test pinned VMM
+        run: python3 packages/desk/vmm/build.py --output "$RUNNER_TEMP/desk-vmm" --jobs 2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desk-vmm-${{ matrix.arch }}
+          path: ${{ runner.temp }}/desk-vmm/artifacts
+          if-no-files-found: error

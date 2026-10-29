@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "repository": "https://github.com/cloud-hypervisor/cloud-hypervisor.git",
+  "baseCommit": "038ce5a72d761380a02f714a4eb4ca63e0ea073d",
+  "baseVersion": "54.0",
+  "sourceTree": "05ffd3fe421222c923f1d2bcae4d0fc2706c921e",
+  "rustVersion": "1.89.0",
+  "buildSuffix": "appkit-incremental.1",
+  "patches": [
+    {
+      "file": "patches/0001-vmm-memory_manager-Factor-out-write_guest_range.patch",
+      "sha256": "8cdf64c56ce6db43110b05aed980847a6ecebb69f9a05afa66d0c41a6c16f594",
+      "backportCommit": "49de295ea5a6a94e0e62c3a4a3253ac047dd9c22",
+      "upstreamCommit": "10671a66c800af615aef39f2c15f958a594cc941"
+    },
+    {
+      "file": "patches/0002-vm-migration-Derive-PartialEq-for-MemoryRangeTable.patch",
+      "sha256": "27fdc0326731fc7202cd806b9a0b4296430dd04f100adaf321ba0b1bfd6aa20e",
+      "backportCommit": "4db4567b92518a38368cc9882c25df4712cb709f",
+      "upstreamCommit": "db28c934bd2e08c097e01bf827beefa70a408b7e"
+    },
+    {
+      "file": "patches/0003-vm-migration-vmm-Sort-memory-range-tables-by-guest-a.patch",
+      "sha256": "79236718a6b7d002266d76d9f79f5080168d8395cc858b565989a3da22eac4ae",
+      "backportCommit": "79d8ec3a717ac2e923ed0355a02e6b4aa5206019",
+      "upstreamCommit": "1c447edc178d03541e970c9e649cd2285f7e0532"
+    },
+    {
+      "file": "patches/0004-vmm-Add-a-reader-for-proc-self-pagemap.patch",
+      "sha256": "c74f45680499bb0ac9f538b5c7e4f04a59eb17b0142b53a7ea3405761b618c4e",
+      "backportCommit": "ee6d7e51c5530f1d25ba15d6e0f364b586657991",
+      "upstreamCommit": "46282ae4ecbf0415a91f2f48e925f7b64d8f2035"
+    },
+    {
+      "file": "patches/0005-vmm-Reuse-the-copy-on-write-restore-source-in-snapsh.patch",
+      "sha256": "0d0ec944677fa6002dc3a06bef8400b400ddbbe0637947403dff901af4d720ff",
+      "backportCommit": "dd629131fe32e75ff0976dafecad87ef68f9eb13",
+      "upstreamCommit": "0295e241e3efed4a53b63d120130d9a284211a12"
+    },
+    {
+      "file": "patches/0006-docs-Describe-snapshots-of-copy-on-write-restored-VM.patch",
+      "sha256": "3ab1bf1d80fabbacd0999e7ed02d73b9a74e4806dda1d6fb492e492a3872a4c4",
+      "backportCommit": "61b6113dc3df3665a411abe2b744cbf81d8cc4e8",
+      "upstreamCommit": "a02b114bd42c65b73033231a27bd23f3c487fc4c"
+    },
+    {
+      "file": "patches/0007-tests-ensure-memory-copy-on-write-restore-isolation.patch",
+      "sha256": "9a9aca01cc5b097b3d37f58eed0b340202b3a0c0af4a0c360844cec24ede488d",
+      "backportCommit": "e0cc85f1223d316586dea4c0d0fdcb34370abd80",
+      "upstreamCommit": "04439a62ada68541cfd370e0fbacd11586a16718"
+    }
+  ]
+}

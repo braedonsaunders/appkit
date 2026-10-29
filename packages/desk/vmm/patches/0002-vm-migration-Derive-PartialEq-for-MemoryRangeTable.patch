@@ -1,0 +1,26 @@
+From 4db4567b92518a38368cc9882c25df4712cb709f Mon Sep 17 00:00:00 2001
+From: CMGS <ilskdw@gmail.com>
+Date: Mon, 5 Oct 2026 10:28:11 +0800
+Subject: [PATCH 2/7] vm-migration: Derive PartialEq for MemoryRangeTable
+
+Let callers compare two tables with `==`. A later commit compares the
+memory layout of a snapshot with the layout of its restore source.
+
+Signed-off-by: CMGS <ilskdw@gmail.com>
+---
+ vm-migration/src/protocol.rs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/vm-migration/src/protocol.rs b/vm-migration/src/protocol.rs
+index ea4517e2471935595d8b7a8784e4fb3505861609..fcf21adb955c6dd682d2f03524698bf23160b913 100644
+--- a/vm-migration/src/protocol.rs
++++ b/vm-migration/src/protocol.rs
+@@ -429,7 +429,7 @@ pub fn write_to(&self, fd: &mut dyn Write) -> Result<(), MigratableError> {
+ }
+ 
+ /// A set of guest-memory ranges to transfer as one migration payload.
+-#[derive(Clone, Default, Debug, Serialize, Deserialize)]
++#[derive(Clone, Default, Debug, PartialEq, Eq, Serialize, Deserialize)]
+ pub struct MemoryRangeTable {
+     data: Vec<MemoryRange>,
+ }

@@ -1,0 +1,50 @@
+From 79d8ec3a717ac2e923ed0355a02e6b4aa5206019 Mon Sep 17 00:00:00 2001
+From: CMGS <ilskdw@gmail.com>
+Date: Thu, 15 Oct 2026 18:59:32 +0800
+Subject: [PATCH 3/7] vm-migration, vmm: Sort memory range tables by guest
+ address
+
+memory_range_table() walks the memory zones in hash order, so with
+several zones the order of the ranges changes from run to run. Sort the
+table by guest address before it is returned.
+
+This also fixes the guest memory order in a coredump with several
+memory zones: coredump_memory_regions() computes the PT_LOAD offsets in
+guest address order, but coredump_iterate_save_mem() wrote the ranges in
+table order.
+
+Signed-off-by: CMGS <ilskdw@gmail.com>
+---
+ vm-migration/src/protocol.rs | 5 +++++
+ vmm/src/memory_manager.rs    | 2 ++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/vm-migration/src/protocol.rs b/vm-migration/src/protocol.rs
+index fcf21adb955c6dd682d2f03524698bf23160b913..a636e070b92697b9f08406074da8415fc5e44840 100644
+--- a/vm-migration/src/protocol.rs
++++ b/vm-migration/src/protocol.rs
+@@ -498,6 +498,11 @@ pub fn ranges(&self) -> &[MemoryRange] {
+         &self.data
+     }
+ 
++    /// Sorts the ranges by guest address.
++    pub fn sort(&mut self) {
++        self.data.sort_unstable_by_key(|range| range.gpa);
++    }
++
+     pub fn push(&mut self, range: MemoryRange) {
+         self.data.push(range);
+     }
+diff --git a/vmm/src/memory_manager.rs b/vmm/src/memory_manager.rs
+index 6a48a5b278e3f705a0c6a2252e1a60458e5325f7..3d631cbede22fca17086484a86c93880cabc43ec 100644
+--- a/vmm/src/memory_manager.rs
++++ b/vmm/src/memory_manager.rs
+@@ -3095,6 +3095,8 @@ pub fn memory_range_table(
+             }
+         }
+ 
++        // Memory zones iterate in hash order.
++        table.sort();
+         Ok(table)
+     }
+ 
