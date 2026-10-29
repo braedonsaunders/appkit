@@ -112,6 +112,19 @@ stops, the disk persists, applications cold-start on `resume`. Keep-alive jobs
 die with the lease, and their termination is recorded as `job_exit` so no
 process ever runs where an operator cannot see it.
 
+`host.canPause(deskId)` reports whether a resident desk supports in-memory
+pause. Cloud Hypervisor supports `await host.pause(deskId)` and
+`await host.resume(deskId)`; other backends can decline it. A paused desk keeps
+its handle, capacity slot, running jobs and original lease and idle deadlines.
+Guest requests are rejected while paused; requests already in flight fail with
+unknown fate. A guest connection lost during the pause reconnects on resume.
+An active handover prevents pause. Suspend and shutdown resume the desk before
+trimming and syncing. Lifecycle operations, including lease sweeps, serialize
+per desk. If a control operation fails and the VM state cannot be confirmed,
+the desk remains fenced; retry `resume` after the control socket is available.
+Existing guest service streams remain open, but cannot make progress while the
+VM is paused.
+
 `host.shutdown(deskId)` is a restart, not a destroy: a resident desk is synced
 and shut down instead of parked, a parked desk's memory snapshot is discarded,
 and the overlay stays, so the next `start` or `resume` cold boots from disk.
@@ -257,7 +270,7 @@ DESK_CHECK_IMAGE_ROOT=/data/desk-image DESK_CHECK_BASE_IMAGE=/data/desk-image/ba
 DESK_CHECK_TMPDIR=/data/tmp pnpm --filter @braedonsaunders/appkit-desk exec tsx scripts/check-kvm.mts
 ```
 
-Set `DESK_CHECK_KERNEL_CMDLINE` for images that require a custom root device. The check creates and removes a disposable VM, overlay, snapshot, TAP and firewall rules. It verifies a guest HTTP stream before and after memory restore; it does not verify the proxy or cross-CPU migration. Choose addresses that do not overlap existing routes. Set `DESK_CHECK_VIRTIOFSD` to a `virtiofsd` binary to also check a read-only share: the guest mounts it, a write fails, and a file held open across the park reads back after the restore.
+Set `DESK_CHECK_KERNEL_CMDLINE` for images that require a custom root device. The check creates and removes a disposable VM, overlay, snapshot, TAP and firewall rules. It verifies resident pause and resume, and a guest HTTP stream before and after memory restore; it does not verify the proxy or cross-CPU migration. Choose addresses that do not overlap existing routes. Set `DESK_CHECK_VIRTIOFSD` to a `virtiofsd` binary to also check a read-only share: the guest mounts it, a write fails, and a file held open across the park reads back after the restore.
 
 ## Host directory shares
 
@@ -383,3 +396,7 @@ For clients that require a local TCP URL, `await listenDeskPort(desk, port)`
 returns a loopback-only `{ host, port, close }` listener. Each incoming
 connection opens a guest stream through `desk.connect`; call `close()` when the
 lease ends to close the listener and its connections.
+
+Cloud Hypervisor backends can opt into `serviceVsock: true` when their guest image provides
+vsock service listeners. `DeskHandle.connect(port)` then opens that vsock port using the
+Cloud Hypervisor socket handshake. The default remains TCP for existing guest images.

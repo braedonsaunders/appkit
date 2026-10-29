@@ -6,6 +6,7 @@ import { Duplex } from 'node:stream'
 import type { ChildProcess } from 'node:child_process'
 import {
   createCloudHypervisorBackend,
+  setVmmState,
   DeskRequestFateUnknownError,
   type DeskConnectionChange,
 } from './backend'
@@ -737,4 +738,47 @@ test('the share record beside a snapshot round-trips, and a damaged one is refus
   } finally {
     await rm(directory, { recursive: true, force: true })
   }
+})
+
+
+test('pause and resume reconcile command failures using VM state', async () => {
+  const paths: string[] = []
+  const call = async (_socket: string, path: string) => {
+    paths.push(path)
+    if (path.endsWith('vm.info')) return JSON.stringify({ state: 'Running' })
+    throw new Error('control connection lost')
+  }
+  await setVmmState(call, '/socket', 'Running')
+  await assert.rejects(setVmmState(call, '/socket', 'Paused'), /control connection lost/)
+  assert.deepEqual(paths, ['/api/v1/vm.resume', '/api/v1/vm.info', '/api/v1/vm.pause', '/api/v1/vm.info'])
+})
+
+test('service vsock is opt-in and handshakes the requested guest port', async () => {
+  const vsock = fakeVsock(guestHandlers)
+  const backend = createCloudHypervisorBackend({ platform: 'linux', serviceVsock: true,
+    launcher: () => fakeChild({ exitOnKill: true }), connect: vsock.connect })
+  const machine = await backend.boot(makePlan())
+  assert.ok(machine.connect)
+  await assert.rejects(() => machine.connect!(65536), /between 1 and 65535/)
+  const service = await machine.connect(14600)
+  assert.deepEqual(vsock.handshakes, ['CONNECT 5252', 'CONNECT 14600'])
+  service.destroy()
+  await machine.shutdown()
+  await assert.rejects(() => machine.connect!(14600), /no longer connected/)
+})
+
+test('service vsock rejects a refused handshake and closes the attempted stream', async () => {
+  const vsock = fakeVsock(guestHandlers)
+  let attempts = 0
+  let rejected: Duplex | undefined
+  const backend = createCloudHypervisorBackend({ platform: 'linux', serviceVsock: true,
+    launcher: () => fakeChild({ exitOnKill: true }), connect: path => {
+      if (++attempts === 1) return vsock.connect(path)
+      rejected = new Duplex({ read() {}, write(_chunk, _encoding, callback) { this.push('ERR unavailable\n'); callback() } })
+      return rejected
+    } })
+  const machine = await backend.boot(makePlan())
+  await assert.rejects(() => machine.connect!(14700), /refused/)
+  assert.equal(rejected?.destroyed, true)
+  await machine.shutdown()
 })

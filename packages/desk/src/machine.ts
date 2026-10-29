@@ -78,6 +78,8 @@ export function createGuestMachine(options: {
    * guest channel has been closed. Must leave the VMM stopped on failure too.
    */
   park?: (snapshotDir: string) => Promise<void>
+  pause?: () => Promise<void>
+  resume?: () => Promise<void>
   /** Open a host-to-guest TCP stream, for backends with no routable guest. */
   connect?: (port: number) => Promise<Duplex>
 }): DeskMachine {
@@ -95,6 +97,8 @@ export function createGuestMachine(options: {
   let state: 'live' | 'reconnecting' | 'closed' = 'live'
   let reconnects = 0
   let reconnecting: Promise<void> | null = null
+  let paused = false
+  let deferredDrop: { reason: string; at: number } | null = null
 
   function failAll(error: Error): void {
     for (const entry of pending.values()) {
@@ -192,7 +196,8 @@ export function createGuestMachine(options: {
           + `(${reason}); the guest may or may not have run it.`,
       ),
     )
-    reconnecting = restore(reason, lostAt)
+    if (paused) deferredDrop = { reason, at: lostAt }
+    else reconnecting = restore(reason, lostAt)
   }
 
   /** Always resolves: callers await it to learn the outcome, not to be thrown at. */
@@ -230,12 +235,14 @@ export function createGuestMachine(options: {
       // caller a desk is gone when it is about to be fine is the bug this
       // machine exists to end. The wait is bounded by the same window the
       // reconnect itself is.
+      if (paused) throw new DeskError(`Desk ${deskId} is paused; resume it first.`)
       const waitUntil = now() + reconnectWindowMs
       while (state === 'reconnecting') {
         const attempt = reconnecting
         if (!attempt || now() >= waitUntil) break
         await attempt
       }
+      if (paused) throw new DeskError(`Desk ${deskId} is paused; resume it first.`)
       if (state !== 'live') {
         // This one never left the host, so — unlike a request that was in
         // flight when the channel dropped — repeating it is safe.
@@ -273,6 +280,28 @@ export function createGuestMachine(options: {
       await options.stop()
     },
   }
+  if (options.pause && options.resume) {
+    const pause = options.pause
+    const resume = options.resume
+    machine.pause = async () => {
+      if (paused) return
+      if (state !== 'live') throw new DeskError(`Desk ${deskId} is not connected.`)
+      paused = true
+      failAll(new DeskRequestFateUnknownError(`Desk ${deskId} paused with a request in flight; its fate is unknown.`))
+      // On failure the VMM state may be unknown; retain the fence until resume succeeds.
+      await pause()
+    }
+    machine.resume = async () => {
+      if (!paused) return
+      await resume()
+      paused = false
+      if (deferredDrop && state === 'reconnecting') {
+        const drop = deferredDrop
+        deferredDrop = null
+        reconnecting = restore(drop.reason, drop.at)
+      }
+    }
+  }
   if (options.park) {
     const park = options.park
     machine.park = async (snapshotDir: string) => {
@@ -288,8 +317,11 @@ export function createGuestMachine(options: {
   if (options.connect) {
     const connect = options.connect
     machine.connect = async (port: number) => {
+      if (paused) throw new DeskError(`Desk ${deskId} is paused; resume it first.`)
       if (state === 'closed') throw new DeskError(`Desk ${deskId} is no longer connected.`)
-      return await connect(port)
+      const connection = await connect(port)
+      if ((state as string) === 'closed') { connection.destroy(); throw new DeskError(`Desk ${deskId} is no longer connected.`) }
+      return connection
     }
   }
   return machine

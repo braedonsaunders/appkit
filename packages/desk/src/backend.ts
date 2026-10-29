@@ -6,7 +6,7 @@ import { GUEST_AGENT_VSOCK_PORT } from './protocol'
 import {
   DEFAULT_REQUEST_TIMEOUT_MS, DEFAULT_CONNECT_TIMEOUT_MS, DEFAULT_CONNECT_RETRY_DELAY_MS,
   DEFAULT_HANDSHAKE_TIMEOUT_MS, DEFAULT_RECONNECT_WINDOW_MS, DEFAULT_RECONNECT_RETRY_DELAY_MS,
-  DEFAULT_KILL_GRACE_MS, RECONNECT_BACKOFF_CEILING, connectWithRetry, createGuestMachine,
+  DEFAULT_KILL_GRACE_MS, RECONNECT_BACKOFF_CEILING, connectWithRetry, createGuestMachine, attemptHandshake,
   defaultLauncher, defaultConnect, drainOutput, watchExit, terminate, runToCompletion, errorMessage,
   assertShareManifest, writeShareManifest, type ExitWatcher,
 } from './machine'
@@ -116,6 +116,9 @@ export interface DeskMachine {
    * `DeskError` when the guest refuses or does not answer.
    */
   connect?(port: number): Promise<Duplex>
+  /** Optional resident pause and resume. Callers must serialize these with lifecycle operations. */
+  pause?(): Promise<void>
+  resume?(): Promise<void>
   /** Stop the VM. Idempotent; resolves once the VMM process has exited. */
   shutdown(): Promise<void>
   /**
@@ -207,6 +210,8 @@ export interface CloudHypervisorBackendOptions {
   reconnectRetryDelayMs?: number
   killGraceMs?: number
   guestAgentPort?: number
+  /** Use guest-provided vsock service bridges for DeskHandle.connect. Opt in only when the image provides them. */
+  serviceVsock?: boolean
   /** Whether a share daemon's socket exists yet; injectable for tests. */
   pathExists?: (path: string) => boolean
   /** Removes a stale share socket before its daemon starts; injectable for tests. */
@@ -395,7 +400,13 @@ export function createCloudHypervisorBackend(
       now,
       idFactory,
       requestTimeoutMs,
+      ...(options.serviceVsock ? { connect: (port: number) => {
+        if (!Number.isInteger(port) || port < 1 || port > 65535) throw new DeskError('Guest port must be between 1 and 65535.')
+        return attemptHandshake(connect, plan.vsock.socketPath, port, handshakeTimeoutMs)
+      } } : {}),
       stop,
+      pause: () => setVmmState(vmmApi, plan.api.socketPath, 'Paused'),
+      resume: () => setVmmState(vmmApi, plan.api.socketPath, 'Running'),
       park: async (snapshotDir) => {
         try {
           await vmmApi(plan.api.socketPath, '/api/v1/vm.pause')
@@ -433,11 +444,25 @@ export type VmmApiCall = (
   path: string,
   body?: Record<string, unknown>,
   method?: 'PUT' | 'GET',
-) => Promise<void>
+) => Promise<void | string>
+
+/** Reconcile an ambiguous command failure against the VMM before releasing the fence. */
+export async function setVmmState(call: VmmApiCall, socketPath: string, desired: 'Paused' | 'Running'): Promise<void> {
+  try {
+    await call(socketPath, desired === 'Paused' ? '/api/v1/vm.pause' : '/api/v1/vm.resume')
+  } catch (error) {
+    try {
+      const response = await call(socketPath, '/api/v1/vm.info', undefined, 'GET')
+      const info: unknown = typeof response === 'string' ? JSON.parse(response) : null
+      if (info && typeof info === 'object' && 'state' in info && info.state === desired) return
+    } catch { /* State is unknown: preserve the original failure and the request fence. */ }
+    throw error
+  }
+}
 
 const vmmApi: VmmApiCall = async (socketPath, path, body, method = 'PUT') => {
   const payload = body === undefined ? undefined : Buffer.from(JSON.stringify(body), 'utf8')
-  await new Promise<void>((resolve, reject) => {
+  return await new Promise<string>((resolve, reject) => {
     const request = httpRequest(
       {
         socketPath,
@@ -455,7 +480,7 @@ const vmmApi: VmmApiCall = async (socketPath, path, body, method = 'PUT') => {
         response.on('end', () => {
           const status = response.statusCode ?? 0
           if (status >= 200 && status < 300) {
-            resolve()
+            resolve(Buffer.concat(chunks).toString('utf8'))
             return
           }
           const said = Buffer.concat(chunks).toString('utf8').trim().slice(0, 400)
