@@ -466,3 +466,11 @@ that any of those identities are globally unique. Cloud Hypervisor restores
 virtio-net configuration from saved device state, so the guest must also change
 its live MAC under an external network fence before traffic is allowed.
 Read-only attachments retain their paths; the caller must verify their contents.
+
+`strictMemoryRestore` refuses a missing or mismatched saved CPU identity and
+refuses a cold-boot fallback when a restore fails. Before restore it writes a
+durable `.restore-pending` marker beside the snapshot. The marker stays until a
+later memory park has completed and its snapshot files are synced. If the host
+restarts with the marker present, wake fails and requires operator recovery;
+the disk and retired source are not automatically deleted. This is a lifecycle
+fence, not a template registration or guest identity reset.

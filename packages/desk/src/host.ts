@@ -161,6 +161,8 @@ export interface DeskHostOptions {
   parkWithMemory?: boolean
   /** Opt in to Cloud Hypervisor copy-on-write snapshot restore. */
   memoryRestoreMode?: 'copyonwrite'
+  /** Refuse fallback or replay after a memory restore is interrupted. */
+  strictMemoryRestore?: boolean
   /** Atomically retire a parked snapshot and sync its parent directory. */
   retireSnapshot?: (from: string, to: string) => Promise<void>
   /** Identifies the host CPU for conservative snapshot portability checks. */
@@ -533,6 +535,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
   const deviceExists = options.deviceExists ?? existsSync
   const removeOverlay = options.removeOverlay ?? ((path: string) => rm(path, { force: true }))
   const parkWithMemory = options.parkWithMemory ?? false
+  if (options.strictMemoryRestore && !parkWithMemory) throw new DeskError('Strict memory restore requires parkWithMemory.')
   if (options.memoryRestoreMode && (!parkWithMemory || backend.hypervisor === 'virtualization')) {
     throw new DeskError('Copy-on-write restore requires Cloud Hypervisor and parkWithMemory.')
   }
@@ -773,6 +776,12 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     return join(dirname(overlayPath), `${deskId}.snapshot`)
   }
 
+  async function clearRestoreMarker(snapshotDir: string): Promise<void> {
+    await rm(`${snapshotDir}.restore-pending`, { force: true })
+    const parent = await open(dirname(snapshotDir), 'r')
+    try { await parent.sync() } finally { await parent.close() }
+  }
+
   async function teardown(record: DeskRecord, keepMemory = true): Promise<boolean> {
     if (record.status === 'suspending' && record.machine) {
       // A previous stop failed. Keep the overlay fenced until a retry confirms
@@ -854,6 +863,15 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
           await machine.park!(snapshotDir)
           const signature = await (options.cpuSignature ?? hostCpuSignature)()
           await (options.writeSnapshotSignature ?? writeSnapshotSignature)(snapshotDir, signature)
+          if (options.strictMemoryRestore) {
+            for (const name of ['config.json', 'state.json', 'memory-ranges', 'appkit-cpu-signature']) {
+              const file = await open(join(snapshotDir, name), 'r')
+              try { await file.sync() } finally { await file.close() }
+            }
+            const directory = await open(snapshotDir, 'r')
+            try { await directory.sync() } finally { await directory.close() }
+            await clearRestoreMarker(snapshotDir)
+          }
         } else {
           await machine.shutdown()
         }
@@ -865,7 +883,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
           record.machine = machine
           throw new DeskError(`Desk ${record.deskId} could not stop after teardown failed: ${errorMessage(stopError)}`)
         }
-        if (parking) {
+        if (parking && !options.strictMemoryRestore) {
           await removeSnapshot(snapshotDirFor(record.startOptions.overlayPath, record.deskId)).catch(
             () => undefined,
           )
@@ -939,6 +957,9 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     // as whatever the overlay copy fails with.
     await admitDisk(startOptions.overlayPath)
     const snapshotDir = snapshotDirFor(startOptions.overlayPath, deskId)
+    if (options.strictMemoryRestore && existsSync(`${snapshotDir}.restore-pending`)) {
+      throw new DeskError(`Desk ${deskId} has an interrupted memory restore; operator recovery is required.`)
+    }
     // The SAME cid for both attempts below. A restored VM's snapshotted config
     // names its vsock and tap, and a cold-boot retry that renumbered them would
     // come up on a different tap than the one the egress rules were put on.
@@ -1012,11 +1033,19 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         throw new DeskError('Snapshot read-only attachment identity does not match; restore requires the original images.')
       }
       const saved = await (options.readSnapshotSignature ?? readSnapshotSignature)(snapshotDir)
+      if (options.strictMemoryRestore && saved === null) throw new DeskError(`Desk ${deskId} snapshot has no CPU identity.`)
       if (saved !== null && saved !== await (options.cpuSignature ?? hostCpuSignature)()) {
+        if (options.strictMemoryRestore) throw new DeskError(`Desk ${deskId} snapshot CPU identity does not match.`)
         await removeSnapshot(snapshotDir)
         resuming = false
         recordCpuFallback(deskId, 'signature_mismatch')
       }
+    }
+    if (options.strictMemoryRestore) {
+      const marker = await open(`${snapshotDir}.restore-pending`, 'wx', 0o600)
+      try { await marker.writeFile('restore in progress\n'); await marker.sync() } finally { await marker.close() }
+      const parent = await open(dirname(snapshotDir), 'r')
+      try { await parent.sync() } finally { await parent.close() }
     }
     // Retire before starting the VMM: after a crash the old name can never be
     // replayed against a disk the guest may have changed. The retired file is
@@ -1036,6 +1065,10 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         : await backend.boot(planFor(false))
     } catch (error) {
       if (resuming) {
+        if (options.strictMemoryRestore) {
+          lastError = `Desk ${deskId} memory restore failed: ${errorMessage(error)}`
+          throw new DeskError(lastError)
+        }
         // A snapshot that will not come back is worse than no snapshot: it makes
         // the desk unbootable for as long as it sits there. Drop it and cold
         // boot. Safe by construction — the guest never ran, so the disk is

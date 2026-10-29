@@ -1837,3 +1837,48 @@ test('copy-on-write refuses parked virtio-fs shares before snapshot retirement o
   assert.equal(retired, 0)
   assert.equal(removed, 0)
 })
+
+test('strict restore failure leaves a durable fence and never cold boots', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'desk-strict-'))
+  try {
+    const overlay = join(root, 'child.raw')
+    const snapshot = join(root, 'child.snapshot')
+    await import('node:fs/promises').then(fs => fs.mkdir(snapshot))
+    let attempts = 0
+    const backend: DeskBackend = { async boot() { attempts++; throw new Error('restore failed') } }
+    const options: DeskHostOptions = {
+      imageRoot: root, backend, parkWithMemory: true, strictMemoryRestore: true,
+      ports: { onEvent: () => {}, audit: () => {} },
+      pathExists: () => true, deviceExists: () => true, trimOnSuspend: false,
+      readSnapshotSignature: async () => 'same', cpuSignature: async () => 'same',
+    }
+    const start = { deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: overlay }
+    await assert.rejects(createDeskHost(options).start(start), /memory restore failed/)
+    assert.equal(attempts, 1)
+    assert.equal(await readFile(`${snapshot}.restore-pending`, 'utf8'), 'restore in progress\n')
+    await assert.rejects(createDeskHost(options).start(start), /interrupted memory restore/)
+    assert.equal(attempts, 1)
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
+
+test('strict lifecycle retains its fence until the parked snapshot is durable', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'desk-strict-park-'))
+  try {
+    const snapshot = join(root, 'child.snapshot')
+    const backend: DeskBackend = { async boot() {
+      const machine = fakeMachine('child').machine
+      machine.park = async directory => {
+        for (const name of ['config.json', 'state.json', 'memory-ranges']) await writeFile(join(directory, name), name)
+      }
+      return machine
+    } }
+    const host = createDeskHost({ imageRoot: root, backend, parkWithMemory: true, strictMemoryRestore: true,
+      ports: { onEvent: () => {}, audit: () => {} }, pathExists: path => path === snapshot ? existsSync(path) : true,
+      deviceExists: () => true, trimOnSuspend: false, cpuSignature: async () => 'cpu' })
+    await host.start({ deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: join(root, 'child.raw') })
+    assert.equal(existsSync(`${snapshot}.restore-pending`), true)
+    await host.suspend('child')
+    assert.equal(existsSync(`${snapshot}.restore-pending`), false)
+    assert.equal(await readFile(join(snapshot, 'appkit-cpu-signature'), 'utf8'), 'cpu')
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
