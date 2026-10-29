@@ -14,3 +14,4 @@ export * from './port-relay'
 
 export * from './template-source'
 export * from './template-plan'
+export * from './template-registry'

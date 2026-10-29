@@ -474,3 +474,19 @@ later memory park has completed and its snapshot files are synced. If the host
 restarts with the marker present, wake fails and requires operator recovery;
 the disk and retired source are not automatically deleted. This is a lifecycle
 fence, not a template registration or guest identity reset.
+
+`registerDeskTemplate` records the hashes of a stopped, read-only template disk,
+snapshot files, kernel, initramfs and read-only attachments together with its VMM
+and CPU identities. The caller must supply actual VMM and CPU identities and
+prepare the source in isolation without user data or credentials. Hashing cannot
+establish that provenance. The source and its memory inode must be protected
+against all writers for the lifetime of its descendants.
+
+`forkDeskTemplate` checks the registration and actual file bytes, reserves a new
+private directory, copies the template disk into an independent writable file,
+and pins the same snapshot memory inode. Its returned disk and snapshot are
+prepared artifacts, not a running VM. A caller must verify `.prepared`, establish
+an external network and workload fence before restore, reinitialize the guest's
+identity and entropy, and only then allow traffic or guest workloads. An
+interrupted preparation leaves a directory without `.prepared`; it must not be
+restored. Retain and inspect it before cleanup.
