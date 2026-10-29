@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { Buffer } from 'node:buffer'
+import { existsSync } from 'node:fs'
 import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -1751,4 +1752,64 @@ test('copy-on-write source is retained until park completes and the new snapshot
     assert.equal(await readFile(join(snapshot, 'memory-ranges'), 'utf8'), 'new')
     await assert.rejects(readFile(join(source, 'memory-ranges')), /ENOENT/)
   } finally { gate.resolve(); await fs.rm(directory, { recursive: true, force: true }) }
+})
+
+test('attachment identity is durable before park and mismatches fail before CoW retirement', async () => {
+  const fs = await import('node:fs/promises')
+  const { createHash } = await import('node:crypto')
+  const directory = await mkdtemp(join(tmpdir(), 'desk-attachment-'))
+  const image = join(directory, 'image.raw')
+  const snapshot = join(directory, 'attached.snapshot')
+  await writeFile(image, 'image bytes')
+  const attachment = { path: image, sha256: createHash('sha256').update('image bytes').digest('hex'), kind: 'block' as const }
+  let booted = 0
+  const backend: DeskBackend = { async boot(plan) {
+    booted++
+    const machine = fakeMachine(plan.deskId).machine
+    machine.park = async (dir) => {
+      assert.deepEqual(JSON.parse(await readFile(join(dir, 'attachments.json'), 'utf8')), [attachment])
+      await writeFile(join(dir, 'memory-ranges'), 'memory')
+    }
+    return machine
+  } }
+  const options = { deskId: 'attached', baseImage: join(directory, 'base'), overlayPath: join(directory, 'attached.raw'), readOnlyAttachments: [attachment] }
+  const host = createDeskHost({ imageRoot: directory, parkWithMemory: true, memoryRestoreMode: 'copyonwrite', backend,
+    ports: { onEvent: () => {}, audit: () => {} }, pathExists: (path) => path === snapshot ? requireExists(path) : true,
+    deviceExists: () => true, readSnapshotShares: async () => [], readSnapshotSignature: async () => null,
+    cpuSignature: async () => 'cpu', writeSnapshotSignature: async () => {}, trimOnSuspend: false,
+  })
+  function requireExists(path: string) { return existsSync(path) }
+  try {
+    await host.start(options)
+    await host.suspend('attached')
+    await assert.rejects(host.start({ ...options, readOnlyAttachments: [] }), /identity does not match/)
+    assert.equal(booted, 1)
+    assert.equal(await readFile(join(snapshot, 'memory-ranges'), 'utf8'), 'memory')
+    await writeFile(image, 'tampered')
+    await assert.rejects(host.start(options), /digest mismatch/)
+    assert.equal(await readFile(join(snapshot, 'memory-ranges'), 'utf8'), 'memory')
+  } finally { await fs.rm(directory, { recursive: true, force: true }) }
+})
+
+test('snapshot preparation failure cannot release a desk until shutdown succeeds', async () => {
+  let stops = 0
+  let removed = 0
+  const factory = fakeBackendFactory({ shutdown: async () => { stops++; if (stops === 1) throw new Error('stop failed') } })
+  const host = createDeskHost({ imageRoot: '/images', backend: { async boot(plan) {
+    const machine = await factory.backend.boot(plan)
+    machine.park = async () => { throw new Error('must not park') }
+    return machine
+  } }, parkWithMemory: true, trimOnSuspend: false,
+    ports: { onEvent: () => {}, audit: () => {} }, pathExists: () => true, deviceExists: () => true,
+    makeSnapshotDir: async () => { throw new Error('disk full') },
+    removeSnapshot: async () => {}, removeOverlay: async () => { removed++ },
+  })
+  await host.start(startOptions('failed-stop'))
+  await assert.rejects(host.suspend('failed-stop'), /could not stop/)
+  assert.equal(host.stats().resident, 1)
+  await assert.rejects(host.resume('failed-stop'), /has not stopped/)
+  await host.destroy('failed-stop')
+  assert.equal(stops, 2)
+  assert.equal(removed, 1)
+  assert.equal(host.stats().resident, 0)
 })

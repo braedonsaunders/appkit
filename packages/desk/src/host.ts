@@ -769,6 +769,18 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
   }
 
   async function teardown(record: DeskRecord, keepMemory = true): Promise<boolean> {
+    if (record.status === 'suspending' && record.machine) {
+      // A previous stop failed. Keep the overlay fenced until a retry confirms
+      // the VMM has exited; never boot another VM or delete it underneath one.
+      await record.machine.shutdown()
+      await removeSnapshot(snapshotDirFor(record.startOptions.overlayPath, record.deskId))
+      record.machine = null
+      record.status = 'suspended'
+      occupied -= 1
+      lastSuspendedAt = iso(now())
+      drainQueue()
+      return true
+    }
     if (record.status !== 'resident') return false
     // Resume before issuing trim, sync, or handover commands. On failure leave
     // the resident record intact and fenced so the caller can retry.
@@ -822,18 +834,32 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         if (parking) {
           const snapshotDir = snapshotDirFor(record.startOptions.overlayPath, record.deskId)
           await makeSnapshotDir(snapshotDir)
+          // Persist attachment identity before the VMM can produce a complete
+          // snapshot. A crash must never leave attached VM state with no record.
+          if (record.startOptions.readOnlyAttachments?.length) {
+            const manifest = join(snapshotDir, 'attachments.json')
+            const file = await open(manifest, 'wx', 0o600)
+            try {
+              await file.writeFile(JSON.stringify(record.startOptions.readOnlyAttachments))
+              await file.sync()
+            } finally { await file.close() }
+            const directory = await open(snapshotDir, 'r')
+            try { await directory.sync() } finally { await directory.close() }
+          }
           await machine.park!(snapshotDir)
-          if (record.startOptions.readOnlyAttachments?.length) await writeFile(join(snapshotDir, 'attachments.json'), JSON.stringify(record.startOptions.readOnlyAttachments), { mode: 0o600 })
           const signature = await (options.cpuSignature ?? hostCpuSignature)()
           await (options.writeSnapshotSignature ?? writeSnapshotSignature)(snapshotDir, signature)
         } else {
           await machine.shutdown()
         }
       } catch (error) {
-        // `park` stops the VMM on its own way out, so the desk is down either
-        // way; what is lost is the memory, not the desk. Leave nothing behind
-        // that a later boot would try to restore from.
+        // Preparation can fail before park is called, so confirm the VMM is
+        // down even when park itself normally stops on failure.
         lastError = errorMessage(error)
+        try { await machine.shutdown() } catch (stopError) {
+          record.machine = machine
+          throw new DeskError(`Desk ${record.deskId} could not stop after teardown failed: ${errorMessage(stopError)}`)
+        }
         if (parking) {
           await removeSnapshot(snapshotDirFor(record.startOptions.overlayPath, record.deskId)).catch(
             () => undefined,
@@ -1682,6 +1708,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     const deskId = cleanDeskId(startOptions.deskId)
     return serializeLifecycle(deskId, async () => {
       const existing = records.get(deskId)
+      if (existing?.status === 'suspending') throw new DeskError(`Desk ${deskId} has not stopped; retry suspend first.`)
       if (existing?.status === 'resident' && existing.handle) {
         if (existing.paused) { await existing.machine!.resume!(); existing.paused = false }
         return existing.handle
@@ -1712,6 +1739,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     return serializeLifecycle(id, async () => {
       const record = records.get(id)
       if (!record) throw new DeskError(`Unknown desk: ${deskId}`)
+      if (record.status === 'suspending') throw new DeskError(`Desk ${id} has not stopped; retry suspend first.`)
       if (record.status === 'resident' && record.handle) {
         if (record.paused) { await record.machine!.resume!(); record.paused = false }
         return record.handle
