@@ -31,3 +31,9 @@ The build workflow checks both native architectures. A successful build does not
 establish guest restore correctness: run the desk KVM check with the resulting VMM
 and remote client, including repeated copy-on-write park/restore and source-file
 immutability checks, before selecting these binaries on a host.
+
+A tag matching `desk-vmm-v<baseVersion>-<buildSuffix without appkit->` runs both
+native builds and publishes architecture archives with licenses and SHA-256
+checksums. Pull requests and manual checks upload CI artifacts only. Package
+consumers pin an archive checksum; selecting the new binary remains an explicit
+host configuration change.

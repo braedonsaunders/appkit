@@ -1,5 +1,7 @@
 name: Check desk VMM
 on:
+  push:
+    tags: ['desk-vmm-v*']
   pull_request:
     paths:
       - 'packages/desk/vmm/**'
@@ -23,13 +25,51 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Verify release tag
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          manifest = json.load(open('packages/desk/vmm/source.json'))
+          expected = 'desk-vmm-v' + manifest['baseVersion'] + '-' + manifest['buildSuffix'].removeprefix('appkit-')
+          assert os.environ['RELEASE_TAG'] == expected, (os.environ['RELEASE_TAG'], expected)
+          PY
       - name: Install native build dependencies
         run: sudo apt-get update && sudo apt-get install -y musl-tools build-essential pkg-config
       - name: Build and test pinned VMM
         run: python3 packages/desk/vmm/build.py --output "$RUNNER_TEMP/desk-vmm" --jobs 2
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: desk-vmm-${{ matrix.arch }}
           path: ${{ runner.temp }}/desk-vmm/artifacts
           if-no-files-found: error
+  publish:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: desk-vmm-*
+          path: artifacts
+      - name: Package native binaries and publish checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          mkdir release
+          for arch in amd64 arm64; do
+            (cd "artifacts/desk-vmm-$arch" && sha256sum -c SHA256SUMS)
+            chmod 755 "artifacts/desk-vmm-$arch/cloud-hypervisor" "artifacts/desk-vmm-$arch/ch-remote"
+            tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner -czf "release/desk-vmm-$arch.tar.gz" -C "artifacts/desk-vmm-$arch" .
+          done
+          (cd release && sha256sum desk-vmm-*.tar.gz > SHA256SUMS)
+          printf '%s\n' 'Pinned Cloud Hypervisor v54 with upstream incremental copy-on-write snapshot writes. Native binaries, source manifest, licenses and checksums are included. This release does not install or replace a host VMM automatically.' > release/notes.txt
+          gh release create "$RELEASE_TAG" --verify-tag --latest=false --title "$RELEASE_TAG" --notes-file release/notes.txt release/*.tar.gz release/SHA256SUMS
