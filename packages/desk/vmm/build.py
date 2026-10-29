@@ -68,7 +68,7 @@ def main():
     cargo = ('cargo', f'+{toolchain}')
     # These tests exercise real mmap/pagemap and private-page snapshot writes.
     for name in ('pagemap::tests', 'memory_manager::tests'):
-        run(*cargo, 'test', '--locked', '-p', 'vmm', '--lib', '--target', target,
+        run(*cargo, 'test', '--locked', '-p', 'vmm', '--lib', '--features', 'kvm', '--target', target,
             name, '--', '--test-threads=1', cwd=source, env=env)
     run(*cargo, 'build', '--locked', '--release', '-p', 'cloud-hypervisor',
         '--bins', '--target', target, cwd=source, env=env)
