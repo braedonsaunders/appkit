@@ -1010,6 +1010,14 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         recordCpuFallback(deskId, 'signature_mismatch')
       }
     }
+    // Shared guest memory, required by virtio-fs, makes Cloud Hypervisor fall
+    // back to eager restore. Reject before retiring the snapshot or cold booting.
+    if (options.memoryRestoreMode === 'copyonwrite') {
+      if (startOptions.shares?.length) throw new DeskError('Copy-on-write restore cannot be combined with virtio-fs shares.')
+      if (resuming && (await (options.readSnapshotShares ?? readShareManifest)(snapshotDir)).length) {
+        throw new DeskError('The parked snapshot has virtio-fs shares and cannot use copy-on-write restore.')
+      }
+    }
     // Retire before starting the VMM: after a crash the old name can never be
     // replayed against a disk the guest may have changed. The retired file is
     // private backing memory, not a restorable snapshot.
