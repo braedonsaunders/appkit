@@ -1,18 +1,75 @@
-export const SUPPORTED_LOCALES = ['en', 'fr', 'es'] as const
+export const SUPPORTED_LOCALES = [
+  // The original three stay first so normalized locale lists keep their order.
+  'en',
+  'fr',
+  'es',
+  'cs',
+  'da',
+  'de',
+  'fi',
+  'it',
+  'ja',
+  'ko',
+  'nb',
+  'nl',
+  'pl',
+  'pt-BR',
+  'ru',
+  'sv',
+  'tr',
+  'uk',
+  'zh-CN',
+  'zh-TW',
+] as const
 
 export type AppLocale = (typeof SUPPORTED_LOCALES)[number]
 
 export const DEFAULT_LOCALE: AppLocale = 'en'
 
+/** Every supported locale with its English name and its name in its own language. */
 export const LOCALE_OPTIONS = [
   { value: 'en', label: 'English', nativeLabel: 'English' },
   { value: 'fr', label: 'French', nativeLabel: 'Français' },
   { value: 'es', label: 'Spanish', nativeLabel: 'Español' },
+  { value: 'cs', label: 'Czech', nativeLabel: 'Čeština' },
+  { value: 'da', label: 'Danish', nativeLabel: 'Dansk' },
+  { value: 'de', label: 'German', nativeLabel: 'Deutsch' },
+  { value: 'fi', label: 'Finnish', nativeLabel: 'Suomi' },
+  { value: 'it', label: 'Italian', nativeLabel: 'Italiano' },
+  { value: 'ja', label: 'Japanese', nativeLabel: '日本語' },
+  { value: 'ko', label: 'Korean', nativeLabel: '한국어' },
+  { value: 'nb', label: 'Norwegian', nativeLabel: 'Norsk bokmål' },
+  { value: 'nl', label: 'Dutch', nativeLabel: 'Nederlands' },
+  { value: 'pl', label: 'Polish', nativeLabel: 'Polski' },
+  { value: 'pt-BR', label: 'Portuguese (Brazil)', nativeLabel: 'Português (Brasil)' },
+  { value: 'ru', label: 'Russian', nativeLabel: 'Русский' },
+  { value: 'sv', label: 'Swedish', nativeLabel: 'Svenska' },
+  { value: 'tr', label: 'Turkish', nativeLabel: 'Türkçe' },
+  { value: 'uk', label: 'Ukrainian', nativeLabel: 'Українська' },
+  { value: 'zh-CN', label: 'Chinese (Simplified)', nativeLabel: '简体中文' },
+  { value: 'zh-TW', label: 'Chinese (Traditional)', nativeLabel: '繁體中文' },
 ] as const satisfies readonly {
   value: AppLocale
   label: string
   nativeLabel: string
 }[]
+
+const LOCALE_BY_TAG = new Map<string, AppLocale>(
+  SUPPORTED_LOCALES.map((locale) => [locale.toLowerCase(), locale]),
+)
+
+/** Language, region, and script tags that belong on a supported locale. */
+const LOCALE_ALIASES: Readonly<Record<string, AppLocale>> = {
+  pt: 'pt-BR',
+  no: 'nb',
+  nn: 'nb',
+  zh: 'zh-CN',
+  'zh-hans': 'zh-CN',
+  'zh-sg': 'zh-CN',
+  'zh-hant': 'zh-TW',
+  'zh-hk': 'zh-TW',
+  'zh-mo': 'zh-TW',
+}
 
 export function isAppLocale(value: unknown): value is AppLocale {
   return typeof value === 'string' && (SUPPORTED_LOCALES as readonly string[]).includes(value)
@@ -20,6 +77,29 @@ export function isAppLocale(value: unknown): value is AppLocale {
 
 export function parseAppLocale(value: unknown): AppLocale | null {
   return isAppLocale(value) ? value : null
+}
+
+/**
+ * Map one BCP 47 tag onto a supported locale, most specific subtags first:
+ * `de-AT` → `de`, `pt-PT` → `pt-BR`, `zh-Hant-HK` → `zh-TW`.
+ */
+export function matchLocale(tag: string): AppLocale | null {
+  const parts = tag.trim().toLowerCase().replace(/_/g, '-').split('-')
+  for (let length = parts.length; length > 0; length -= 1) {
+    const candidate = parts.slice(0, length).join('-')
+    const match = LOCALE_BY_TAG.get(candidate) ?? LOCALE_ALIASES[candidate]
+    if (match) return match
+  }
+  return null
+}
+
+/** The first supported locale in a preference list such as `navigator.languages`. */
+export function negotiateLocale(requested: readonly string[]): AppLocale {
+  for (const tag of requested) {
+    const locale = matchLocale(tag)
+    if (locale) return locale
+  }
+  return DEFAULT_LOCALE
 }
 
 /** Best-effort locale negotiation for unauthenticated/public requests. */
@@ -34,7 +114,7 @@ export function localeFromAcceptLanguage(header: string | null | undefined): App
         .find((parameter) => parameter.startsWith('q='))
       const parsedQuality = quality ? Number(quality.slice(2)) : 1
       return {
-        locale: parseAppLocale(tag.toLowerCase().split('-')[0]),
+        locale: matchLocale(tag),
         quality: Number.isFinite(parsedQuality) ? Math.max(0, Math.min(1, parsedQuality)) : 0,
       }
     })
@@ -126,3 +206,15 @@ export function localizeText(
   }
   return fallback
 }
+
+export {
+  createSystemTranslator,
+  formatMessage,
+  messageProblems,
+  messagePlaceholders,
+  type MessageCatalog,
+  type MessageValues,
+  type PluralMessage,
+  type SystemTranslator,
+} from './messages'
+export { systemMessageKey } from './system-key'

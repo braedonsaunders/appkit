@@ -414,9 +414,18 @@ flows, and documents must agree on them. `@braedonsaunders/appkit-forms-document
 styles and generated bounded PDF templates and re-exports those canonical
 helpers for existing document consumers.
 
-`@braedonsaunders/appkit-i18n` resolves supported locales, Accept-Language, tenant defaults,
+`@braedonsaunders/appkit-i18n` resolves supported locales (twenty, from English to
+Traditional Chinese), Accept-Language and `navigator.languages` negotiation with
+region/script fallback (`pt-PT` → `pt-BR`, `zh-Hant-HK` → `zh-TW`), tenant defaults,
 per-user overrides, and localized authored content. Plain-string records remain
-valid during progressive adoption.
+valid during progressive adoption. First-party copy uses the exact-copy
+translator: write the English in code, look it up with
+`createSystemTranslator(locale, catalog)`, and key catalogues by
+`systemMessageKey(source)`. The translator fills `{name}` placeholders, selects
+CLDR plural forms through `translator.plural(count, one, other)`, falls back to
+the English when an entry is missing, and plugs straight into `UiTextProvider`.
+`messageProblems` validates a catalogue entry (placeholders, required plural
+categories) for extraction and coverage tooling.
 
 `@braedonsaunders/appkit-email-render` is the extracted production rendering keystone used before
 `@braedonsaunders/appkit-emails` transport. It compiles inline, saved-template, and design modes;
