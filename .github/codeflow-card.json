@@ -2,108 +2,6 @@
   "version": 1,
   "runs": [
     {
-      "at": "2026-09-18T02:00:35.565Z",
-      "sha": "9ceea12182f72792d65c51d17b3125dfa058c4dd",
-      "pr": null,
-      "actor": "braedonsaunders",
-      "files": 1123,
-      "functions": 4028,
-      "loc": 199076,
-      "languages": 13,
-      "topLanguages": [
-        {
-          "ext": "ts",
-          "pct": 48,
-          "lines": 94923
-        },
-        {
-          "ext": "tsx",
-          "pct": 34,
-          "lines": 68013
-        },
-        {
-          "ext": "yaml",
-          "pct": 7,
-          "lines": 14739
-        },
-        {
-          "ext": "json",
-          "pct": 5,
-          "lines": 10941
-        },
-        {
-          "ext": "md",
-          "pct": 3,
-          "lines": 6136
-        }
-      ],
-      "dead": 151,
-      "deadPct": 3.7,
-      "circular": 1,
-      "godObjects": 1,
-      "avgCoupling": 3.8,
-      "securityIssues": 86,
-      "patterns": 8,
-      "duplicates": 24,
-      "layerViolations": 363,
-      "connections": 4280,
-      "avgFnLines": 15,
-      "longestFn": 16,
-      "testFiles": 163,
-      "testRatio": 14.5,
-      "topFolders": [
-        {
-          "name": "packages",
-          "count": 994
-        },
-        {
-          "name": "apps",
-          "count": 101
-        },
-        {
-          "name": "scripts",
-          "count": 14
-        },
-        {
-          "name": "root",
-          "count": 8
-        },
-        {
-          "name": "docs",
-          "count": 4
-        }
-      ],
-      "folders": 5,
-      "grade": "D",
-      "score": 67,
-      "topBlast": {
-        "path": "packages/viewspec/src/builder.ts",
-        "direct": 181,
-        "transitive": 667,
-        "total": 848
-      },
-      "fragility": [
-        {
-          "path": "packages/viewspec/src/builder.ts",
-          "direct": 181,
-          "transitive": 667,
-          "total": 848
-        },
-        {
-          "path": "packages/apps/src/memory.ts",
-          "direct": 140,
-          "transitive": 661,
-          "total": 801
-        },
-        {
-          "path": "packages/desk/src/host.ts",
-          "direct": 112,
-          "transitive": 549,
-          "total": 661
-        }
-      ]
-    },
-    {
       "at": "2026-10-08T20:36:37.687Z",
       "sha": "a6686991d4fa44d07ddd57949762c7eeb0fa58be",
       "pr": null,
@@ -2993,6 +2891,108 @@
           "ext": "md",
           "pct": 3,
           "lines": 7317
+        }
+      ],
+      "dead": 158,
+      "deadPct": 3.6,
+      "circular": 1,
+      "godObjects": 1,
+      "avgCoupling": 4.4,
+      "securityIssues": 95,
+      "patterns": 8,
+      "duplicates": 27,
+      "layerViolations": 487,
+      "connections": 5204,
+      "avgFnLines": 15.1,
+      "longestFn": 16,
+      "testFiles": 180,
+      "testRatio": 15.3,
+      "topFolders": [
+        {
+          "name": "packages",
+          "count": 1045
+        },
+        {
+          "name": "apps",
+          "count": 103
+        },
+        {
+          "name": "scripts",
+          "count": 16
+        },
+        {
+          "name": "root",
+          "count": 8
+        },
+        {
+          "name": "docs",
+          "count": 4
+        }
+      ],
+      "folders": 5,
+      "grade": "D",
+      "score": 66,
+      "topBlast": {
+        "path": "packages/desk/vz/Sources/appkit-desk-vz/Control.swift",
+        "direct": 565,
+        "transitive": 889,
+        "total": 1454
+      },
+      "fragility": [
+        {
+          "path": "packages/desk/vz/Sources/appkit-desk-vz/Control.swift",
+          "direct": 565,
+          "transitive": 889,
+          "total": 1454
+        },
+        {
+          "path": "packages/viewspec/src/builder.ts",
+          "direct": 190,
+          "transitive": 845,
+          "total": 1035
+        },
+        {
+          "path": "packages/apps/src/memory.ts",
+          "direct": 146,
+          "transitive": 884,
+          "total": 1030
+        }
+      ]
+    },
+    {
+      "at": "2026-10-29T23:46:59.636Z",
+      "sha": "159a32747ff1841ebcf4264b0796226621c619e4",
+      "pr": null,
+      "actor": "braedonsaunders",
+      "files": 1178,
+      "functions": 4390,
+      "loc": 211932,
+      "languages": 16,
+      "topLanguages": [
+        {
+          "ext": "ts",
+          "pct": 47,
+          "lines": 100149
+        },
+        {
+          "ext": "tsx",
+          "pct": 32,
+          "lines": 68387
+        },
+        {
+          "ext": "yaml",
+          "pct": 7,
+          "lines": 14761
+        },
+        {
+          "ext": "json",
+          "pct": 6,
+          "lines": 13012
+        },
+        {
+          "ext": "md",
+          "pct": 3,
+          "lines": 7349
         }
       ],
       "dead": 158,
