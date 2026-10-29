@@ -241,6 +241,15 @@ test('threads kernelCmdline from DeskHostOptions into the launch plan, defaultin
   assert.equal(withOverride.plans[0]?.kernelCmdline, 'root=/dev/vda3 rw quiet')
 })
 
+test('uses per-desk kernel and initramfs without changing another desk', async () => {
+  const context = makeHost()
+  await context.host.start({ ...startOptions('split'), kernelPath: '/images/split/vmlinux', initramfsPath: '/images/split/initrd' })
+  await context.host.start(startOptions('legacy'))
+  assert.equal(context.plans[0]?.kernelPath, '/images/split/vmlinux')
+  assert.equal(context.plans[0]?.initramfsPath, '/images/split/initrd')
+  assert.equal(context.plans[1]?.kernelPath, '/images/vmlinux')
+})
+
 test('discovers a default initramfs installed after host construction', async () => {
   let installed = false
   const factory = fakeBackendFactory()

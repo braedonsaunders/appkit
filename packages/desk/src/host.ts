@@ -214,6 +214,9 @@ export interface DeskStartOptions {
   deskId: string
   /** Absolute path of the golden base image this desk boots from. */
   baseImage: string
+  /** Optional kernel and initramfs for this desk; retain them with its disk. */
+  kernelPath?: string
+  initramfsPath?: string
   /** Absolute path of this desk's copy-on-write overlay. */
   overlayPath: string
   memoryMb?: number
@@ -938,7 +941,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     // names its vsock and tap, and a cold-boot retry that renumbered them would
     // come up on a different tap than the one the egress rules were put on.
     const cid = nextCid++
-    const initramfsPath = resolveInitramfsPath()
+    const initramfsPath = startOptions.initramfsPath ?? resolveInitramfsPath()
     let restoreDir = snapshotDir
     const planFor = (restore: boolean, shares = startOptions.shares) =>
       buildDeskLaunchPlan(
@@ -950,7 +953,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
             : { virtiofsdPath: options.virtiofsdPath, virtiofsdSandbox: options.virtiofsdSandbox }),
           vmmPath: options.vmmPath,
           kvmPath: options.kvmPath,
-          kernelPath,
+          kernelPath: startOptions.kernelPath ?? kernelPath,
           ...(initramfsPath === undefined ? {} : { initramfsPath }),
           baseImagePath: startOptions.baseImage,
           overlayPath: startOptions.overlayPath,
