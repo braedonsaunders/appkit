@@ -1,5 +1,5 @@
 import { createAuthClient } from 'better-auth/react'
-import { magicLinkClient } from 'better-auth/client/plugins'
+import { magicLinkClient, twoFactorClient } from 'better-auth/client/plugins'
 
 export type AppkitAuthClientOptions = {
   baseURL?: string
@@ -15,7 +15,7 @@ export type AppkitAuthClientOptions = {
 export function createAppkitAuthClient(options: AppkitAuthClientOptions = {}) {
   return createAuthClient({
     ...options,
-    plugins: [magicLinkClient()],
+    plugins: [magicLinkClient(), twoFactorClient()],
   })
 }
 

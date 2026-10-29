@@ -13,6 +13,15 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: appkit-test
+          POSTGRES_DB: appkit_security_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -23,4 +32,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Verify persisted account security
+        run: pnpm --filter @braedonsaunders/appkit-auth test
+        env:
+          APPKIT_TEST_DATABASE_URL: postgresql://postgres:appkit-test@localhost:5432/appkit_security_test
       - run: pnpm validate
