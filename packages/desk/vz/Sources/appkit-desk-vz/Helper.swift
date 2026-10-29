@@ -2,6 +2,13 @@ import DeskNet
 import Foundation
 import Virtualization
 
+/// A host directory shared into the guest over virtio-fs.
+struct ShareRequest {
+  let tag: String
+  let directory: URL
+  let readOnly: Bool
+}
+
 /// Everything `boot` needs, validated before anything is created.
 struct BootRequest {
   let kernel: URL
@@ -16,6 +23,7 @@ struct BootRequest {
   let machineIdentifier: Data?
   let consoleLog: URL?
   let network: NetworkConfiguration
+  let shares: [ShareRequest]
 
   init(_ body: [String: Any]) throws {
     kernel = URL(fileURLWithPath: try body.path("kernel"))
@@ -39,6 +47,7 @@ struct BootRequest {
     if restoreFrom != nil && machineIdentifier == nil {
       throw RequestError("restoreFrom requires the machineIdentifier the machine was saved with.")
     }
+    shares = try Self.shares(body["shares"])
 
     let network = (body["network"] as? [String: Any]) ?? [:]
     var configuration = NetworkConfiguration(allowLan: try network.bool("allowLan", default: false))
@@ -73,6 +82,27 @@ struct BootRequest {
       throw RequestError("network.guestAddress must be a different address in the gateway's subnet.")
     }
     self.network = configuration
+  }
+
+  /// Tags are checked against Virtualization.framework's own rules when the
+  /// devices are made; here, only that each is present and unique.
+  private static func shares(_ value: Any?) throws -> [ShareRequest] {
+    guard let value, !(value is NSNull) else { return [] }
+    guard let entries = value as? [[String: Any]] else { throw RequestError("shares must be an array of objects.") }
+    var tags = Set<String>()
+    return try entries.enumerated().map { index, entry in
+      let tag = try entry.string("tag")
+      guard tags.insert(tag).inserted else { throw RequestError("shares[\(index)].tag \(tag) is used by another share.") }
+      let path = try entry.path("path")
+      var isDirectory: ObjCBool = false
+      guard FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory), isDirectory.boolValue else {
+        throw RequestError("shares[\(index)].path is not an existing directory: \(path)")
+      }
+      guard entry["readOnly"] is NSNumber else { throw RequestError("shares[\(index)].readOnly must be a boolean.") }
+      return ShareRequest(
+        tag: tag, directory: URL(fileURLWithPath: path, isDirectory: true),
+        readOnly: try entry.bool("readOnly", default: false))
+    }
   }
 }
 
@@ -331,6 +361,21 @@ final class Helper: NSObject, VZVirtualMachineDelegate {
     var network = request.network
     network.guestMAC = MAC(nic.macAddress.string) ?? network.guestMAC
     attachNetwork(network, fd: helperEnd)
+
+    // Built from the request on every boot, so a restore has exactly the
+    // devices the machine was saved with as long as the host asks for the same
+    // shares — which it checks before restoring.
+    configuration.directorySharingDevices = try request.shares.map { share in
+      do {
+        try VZVirtioFileSystemDeviceConfiguration.validateTag(share.tag)
+      } catch {
+        throw RequestError("Share tag \(share.tag) is not a valid virtio-fs tag: \(describe(error))")
+      }
+      let device = VZVirtioFileSystemDeviceConfiguration(tag: share.tag)
+      device.share = VZSingleDirectoryShare(
+        directory: VZSharedDirectory(url: share.directory, readOnly: share.readOnly))
+      return device
+    }
 
     configuration.entropyDevices = [VZVirtioEntropyDeviceConfiguration()]
     configuration.memoryBalloonDevices = [VZVirtioTraditionalMemoryBalloonDeviceConfiguration()]

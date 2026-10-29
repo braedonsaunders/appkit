@@ -8,8 +8,8 @@ import type { DeskBackend, DeskProcessLauncher } from './backend'
 import { DeskError } from './plan'
 import { GUEST_AGENT_VSOCK_PORT } from './protocol'
 import {
-  attemptHandshake, connectWithRetry, createGuestMachine, defaultConnect, drainOutput,
-  errorMessage, runToCompletion, terminate, watchExit,
+  assertShareManifest, attemptHandshake, connectWithRetry, createGuestMachine, defaultConnect, drainOutput,
+  errorMessage, runToCompletion, terminate, watchExit, writeShareManifest,
 } from './machine'
 
 /** A signed helper is supplied by the host; it is not downloaded or executed at install time. */
@@ -39,6 +39,12 @@ export function createVirtualizationBackend(options: VirtualizationBackendOption
       if (plan.hypervisor !== 'virtualization') throw new DeskError('Virtualization backend requires a virtualization plan.')
       if ((options.platform ?? process.platform) !== 'darwin') throw new DeskError('Virtualization requires macOS.')
       if (plan.overlay.create) await runToCompletion(launcher(plan.overlay.create.command, plan.overlay.create.args, { identity: plan.launcherIdentity }), `overlay creation for desk ${plan.deskId}`)
+      // A saved machine restores only into the device list it was saved with.
+      if (plan.snapshot.restoring) {
+        await assertShareManifest(plan.snapshot.dir, plan.shares).catch((error: unknown) => {
+          throw new DeskError(`Virtualization desk ${plan.deskId} cannot be restored: ${errorMessage(error)}`)
+        })
+      }
       await mkdir(dirname(plan.vsock.socketPath), { recursive: true, mode: 0o700 })
       const child = launcher(options.helperPath, [], { identity: plan.launcherIdentity })
       const exit = watchExit(child)
@@ -88,6 +94,7 @@ export function createVirtualizationBackend(options: VirtualizationBackendOption
           ...(options.consoleLogPath ? { consoleLog: options.consoleLogPath } : {}),
           disk: plan.overlay.path, memoryMb: plan.memoryMb, vcpus: plan.vcpus,
           vsockSocket: plan.vsock.socketPath, portSocket: plan.ports.socketPath,
+          shares: plan.shares.map(({ tag, path, readOnly }) => ({ tag, path, readOnly })),
           ...(plan.snapshot.restoring ? { restoreFrom: join(plan.snapshot.dir, 'state'), machineIdentifier: identifier } : {}),
           network: { ...plan.network, macAddress: plan.network.mac },
         })
@@ -114,6 +121,7 @@ export function createVirtualizationBackend(options: VirtualizationBackendOption
               try {
                 await call('save', { path: join(dir, 'state') })
                 await writeFile(join(dir, 'machine-id'), machineIdentifier, { mode: 0o600 })
+                await writeShareManifest(dir, plan.shares)
               } finally { await stop() }
             },
           } : {}),
