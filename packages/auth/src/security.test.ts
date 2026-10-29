@@ -2,6 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { Pool } from 'pg'
+import { symmetricDecrypt } from 'better-auth/crypto'
 import { createAppkitAuth } from './server'
 
 // A dedicated disposable database is supplied by hosted CI; never use a production URL.
@@ -38,7 +39,9 @@ test('persisted MFA, recovery and revocation across the canonical migration', { 
     const enabled = await request('two-factor/enable', { password: 'initial password' })
     assert.equal(enabled.status, 200)
     const enrollment = await enabled.json() as { totpURI: string; backupCodes: string[] }
-    const secret = new URL(enrollment.totpURI).searchParams.get('secret')!
+    const encrypted = (await pool.query('SELECT secret FROM two_factors WHERE user_id=$1', [userId])).rows[0].secret
+    // generateTOTP takes the raw secret; the otpauth URI encodes that secret as Base32.
+    const secret = await symmetricDecrypt({ key: 'integration-test-secret-with-at-least-32-characters', data: encrypted })
     const code = await auth.api.generateTOTP({ body: { secret } })
     assert.equal((await request('two-factor/verify-totp', code)).status, 200)
     const stored = (await pool.query('SELECT secret,backup_codes FROM two_factors WHERE user_id=$1', [userId])).rows[0]
