@@ -1,9 +1,9 @@
 import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
-import { existsSync } from 'node:fs'
+import { existsSync, statSync } from 'node:fs'
 import { isIP } from 'node:net'
 import { arch as hostArch, release as hostRelease, tmpdir } from 'node:os'
-import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { delimiter, dirname, isAbsolute, join, resolve } from 'node:path'
 
 export const DEFAULT_VMM_PATH = '/usr/bin/cloud-hypervisor'
 export const DEFAULT_KVM_PATH = '/dev/kvm'
@@ -12,6 +12,12 @@ export const DEFAULT_RUNTIME_DIR = '/run/appkit-desk'
 export const DEFAULT_MEMORY_MB = 384
 export const DEFAULT_VCPUS = 2
 export const DEFAULT_KERNEL_CMDLINE = 'root=/dev/vda rw quiet'
+/**
+ * Where a Cloud Hypervisor desk looks for `virtiofsd` when `virtiofsdPath` is
+ * not set and it is not on `PATH`: Debian's and Fedora's package location.
+ */
+export const DEFAULT_VIRTIOFSD_PATH = '/usr/libexec/virtiofsd'
+export const DEFAULT_VIRTIOFSD_SANDBOX: DeskVirtiofsdSandbox = 'namespace'
 /**
  * The guest network Virtualization.framework desks get from the helper's NAT:
  * the same addresses QEMU's user networking uses, so they are unsurprising in
@@ -27,6 +33,10 @@ export const VZ_GUEST_CID = 3
 const MIN_DARWIN_MAJOR = 23
 /** `sun_path` holds 104 bytes on Darwin, including the terminator. */
 const DARWIN_SOCKET_PATH_LIMIT = 103
+/** `sun_path` holds 108 bytes on Linux, including the terminator. */
+const LINUX_SOCKET_PATH_LIMIT = 107
+/** Linux's virtio-fs tag field is 36 bytes; Virtualization.framework enforces the same. */
+const SHARE_TAG_PATTERN = /^[a-z0-9][a-z0-9-]{0,35}$/
 
 const DESK_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/
 const TAP_DEVICE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,14}$/
@@ -76,6 +86,32 @@ export interface DeskGuestNetworkOptions {
   dns?: readonly string[]
 }
 
+/**
+ * A host directory shared into the guest over virtio-fs. The guest mounts it
+ * with `mount -t virtiofs <tag> <dir>`.
+ */
+export interface DeskShare {
+  /** 1–36 lowercase letters, digits, or hyphens, starting with a letter or digit; unique per desk. */
+  tag: string
+  /** Absolute path of an existing host directory. */
+  path: string
+  /**
+   * Refuse every write from the guest. Enforced by the host's file server, so
+   * a guest cannot lift it by remounting the share read-write.
+   */
+  readOnly: boolean
+}
+
+/**
+ * How `virtiofsd` confines itself to the shared directory. `namespace` (its
+ * own default) pivots into the directory inside new mount, PID and network
+ * namespaces, which needs CAP_SYS_ADMIN when run as root and unprivileged user
+ * namespaces otherwise. `chroot` only chroots, which needs root and suits a
+ * container that may not create namespaces. Both stop symlinks from escaping
+ * the share; running unconfined is not offered.
+ */
+export type DeskVirtiofsdSandbox = 'namespace' | 'chroot'
+
 export interface DeskLaunchPlanOptions {
   deskId: string
   /** Defaults to `cloud-hypervisor`. */
@@ -121,6 +157,19 @@ export interface DeskLaunchPlanOptions {
   macAddress?: string
   /** Virtualization.framework only: the helper's NAT network and fence. */
   guestNetwork?: DeskGuestNetworkOptions
+  /**
+   * Host directories shared into the guest. Restoring a snapshot requires the
+   * same shares the desk was parked with; see the backends.
+   */
+  shares?: readonly DeskShare[]
+  /**
+   * Cloud Hypervisor only: the `virtiofsd` binary (1.13 or later) that serves
+   * each share. Defaults to the first `virtiofsd` on `PATH`, then
+   * `/usr/libexec/virtiofsd`. Not needed, and not looked for, without shares.
+   */
+  virtiofsdPath?: string
+  /** Cloud Hypervisor only: defaults to `namespace`. */
+  virtiofsdSandbox?: DeskVirtiofsdSandbox
   kernelCmdline?: string
   launcherIdentity?: DeskLauncherIdentity
   /**
@@ -158,6 +207,8 @@ export interface DeskLaunchPlanBase {
   vsock: { cid: number; socketPath: string }
   /** Where a memory snapshot of this desk is written, and read back from. */
   snapshot: { dir: string; restoring: boolean }
+  /** Host directories shared into the guest, in the order they were given. */
+  shares: readonly DeskShare[]
   memoryMb: number
   vcpus: number
   kernelPath: string
@@ -177,6 +228,18 @@ export interface CloudHypervisorLaunchPlan extends DeskLaunchPlanBase {
   vmm: { command: string; args: string[] }
   api: { socketPath: string }
   tap: { device: string; mac: string }
+  /**
+   * Each share with the `virtiofsd` that serves it. Every daemon must be
+   * listening on its socket before the VMM starts, for a boot and for a
+   * restore alike.
+   */
+  shares: readonly CloudHypervisorShare[]
+}
+
+export interface CloudHypervisorShare extends DeskShare {
+  /** The vhost-user socket the daemon listens on and the VMM connects to. */
+  socketPath: string
+  daemon: { command: string; args: string[] }
 }
 
 /**
@@ -256,6 +319,10 @@ export function cleanDeskId(value: string): string {
 export interface DeskLaunchPlanDependencies {
   pathExists?: (path: string) => boolean
   deviceExists?: (path: string) => boolean
+  /** Whether a path is an existing directory; checked for every share. */
+  isDirectory?: (path: string) => boolean
+  /** Searched for `virtiofsd` when `virtiofsdPath` is not set; defaults to `process.env.PATH`. */
+  searchPath?: string
 }
 
 /**
@@ -298,6 +365,7 @@ function buildCloudHypervisorPlan(
 ): CloudHypervisorLaunchPlan {
   const pathExists = dependencies.pathExists ?? existsSync
   const deviceExists = dependencies.deviceExists ?? existsSync
+  const isDirectory = dependencies.isDirectory ?? directoryExists
   const deskId = cleanDeskId(options.deskId)
   const kvmPath = absolutePath(options.kvmPath ?? DEFAULT_KVM_PATH, 'kvmPath')
   if (!deviceExists(kvmPath)) {
@@ -355,6 +423,14 @@ function buildCloudHypervisorPlan(
     // guest instead of a missing snapshot out here.
     throw new DeskError(`Desk ${deskId} has no snapshot to restore at ${snapshotDir}`)
   }
+  const shares = cloudHypervisorShares(cleanShares(options.shares, isDirectory), {
+    deskId,
+    runtimeDir,
+    virtiofsdPath: options.virtiofsdPath,
+    sandbox: options.virtiofsdSandbox ?? DEFAULT_VIRTIOFSD_SANDBOX,
+    pathExists,
+    searchPath: dependencies.searchPath ?? process.env.PATH ?? '',
+  })
 
   const create = pathExists(overlayPath)
     ? null
@@ -391,6 +467,10 @@ function buildCloudHypervisorPlan(
   // parameter exists for VMs whose tap was passed as a file descriptor, and
   // producing one from Node would mean an ioctl(TUNSETIFF) it cannot make.
   // Because `deskPlan` configures `--net tap=<name>`, there is nothing to pass.
+  //
+  // Shares are in the snapshotted config too, by socket path. What the
+  // snapshot cannot hold is a running `virtiofsd`, so the backend starts the
+  // same daemons on the same sockets before this VMM either way.
   const args = restoring
     ? [
         '--api-socket', apiSocketPath,
@@ -406,10 +486,15 @@ function buildCloudHypervisorPlan(
         // Be explicit that the disk is raw: CH deprecated image-format auto-detection
         // and warns without image_type; there is never a qcow2 overlay here.
         '--disk', `path=${overlayPath},image_type=raw`,
-        '--memory', `size=${memoryMb}M`,
+        // vhost-user devices map guest RAM into their daemon, so it must be
+        // shared memory; a desk without shares keeps private memory.
+        '--memory', `size=${memoryMb}M${shares.length === 0 ? '' : ',shared=on'}`,
         '--cpus', `boot=${vcpus}`,
         '--vsock', `cid=${vsockCid},socket=${vsockSocketPath}`,
         '--net', `tap=${tapDevice},mac=${macAddress}`,
+        ...(shares.length === 0
+          ? []
+          : ['--fs', ...shares.map((share) => `tag=${share.tag},socket=${share.socketPath}`)]),
         '--serial', 'off',
         '--console', 'off',
       ]
@@ -423,6 +508,7 @@ function buildCloudHypervisorPlan(
     api: { socketPath: apiSocketPath },
     tap: { device: tapDevice, mac: macAddress },
     snapshot: { dir: snapshotDir, restoring },
+    shares,
     memoryMb,
     vcpus,
     kernelPath,
@@ -447,6 +533,11 @@ function buildVirtualizationPlan(
   const deskId = cleanDeskId(options.deskId)
   if (options.tapDevice !== undefined) {
     throw new DeskError('tapDevice applies to Cloud Hypervisor desks; a Virtualization.framework desk has no TAP.')
+  }
+  if (options.virtiofsdPath !== undefined || options.virtiofsdSandbox !== undefined) {
+    throw new DeskError(
+      'virtiofsdPath and virtiofsdSandbox apply to Cloud Hypervisor desks; Virtualization.framework serves shares itself.',
+    )
   }
   const kernelPath = absolutePath(options.kernelPath, 'kernelPath')
   if (!pathExists(kernelPath)) {
@@ -481,6 +572,7 @@ function buildVirtualizationPlan(
     throw new DeskError(`Desk ${deskId} has no snapshot to restore at ${snapshotDir}`)
   }
   const network = cleanGuestNetwork(options.guestNetwork ?? {})
+  const shares = cleanShares(options.shares, dependencies.isDirectory ?? directoryExists)
   return {
     hypervisor: 'virtualization',
     deskId,
@@ -496,6 +588,7 @@ function buildVirtualizationPlan(
       ...network,
     },
     snapshot: { dir: snapshotDir, restoring },
+    shares,
     memoryMb,
     vcpus,
     kernelPath,
@@ -503,6 +596,111 @@ function buildVirtualizationPlan(
     kernelCmdline: options.kernelCmdline ?? DEFAULT_KERNEL_CMDLINE,
     launcherIdentity: cleanLauncherIdentity(options.launcherIdentity),
   }
+}
+
+/** Validate shares as given: tags, absolute existing directories, explicit access. */
+function cleanShares(
+  shares: readonly DeskShare[] | undefined,
+  isDirectory: (path: string) => boolean,
+): DeskShare[] {
+  if (shares === undefined) return []
+  if (!Array.isArray(shares)) throw new DeskError('shares must be an array.')
+  const tags = new Set<string>()
+  return shares.map((share: DeskShare, index) => {
+    const field = `shares[${index}]`
+    if (typeof share !== 'object' || share === null) throw new DeskError(`${field} must be an object.`)
+    if (typeof share.tag !== 'string' || !SHARE_TAG_PATTERN.test(share.tag)) {
+      throw new DeskError(
+        `${field}.tag must be 1–36 lowercase letters, digits, or hyphens, starting with a letter or digit.`,
+      )
+    }
+    if (tags.has(share.tag)) throw new DeskError(`${field}.tag ${share.tag} is already used by another share.`)
+    tags.add(share.tag)
+    if (typeof share.path !== 'string') throw new DeskError(`${field}.path must be an absolute path.`)
+    const path = absolutePath(share.path, `${field}.path`)
+    if (!isDirectory(path)) throw new DeskError(`${field}.path is not an existing directory: ${path}`)
+    if (typeof share.readOnly !== 'boolean') throw new DeskError(`${field}.readOnly must be a boolean.`)
+    return { tag: share.tag, path, readOnly: share.readOnly }
+  })
+}
+
+/**
+ * One `virtiofsd` per share. `--cache=auto` lets the guest cache for a second
+ * at a time, so changes the host makes under a share reach running guests;
+ * `always` would let a guest keep serving a file the host has replaced.
+ * `--readonly` is the enforcement for a read-only share — the guest is never
+ * trusted to honour a read-only mount.
+ */
+function cloudHypervisorShares(
+  shares: readonly DeskShare[],
+  context: {
+    deskId: string
+    runtimeDir: string
+    virtiofsdPath: string | undefined
+    sandbox: DeskVirtiofsdSandbox
+    pathExists: (path: string) => boolean
+    searchPath: string
+  },
+): CloudHypervisorShare[] {
+  if (shares.length === 0) return []
+  if (context.sandbox !== 'namespace' && context.sandbox !== 'chroot') {
+    throw new DeskError("virtiofsdSandbox must be 'namespace' or 'chroot'.")
+  }
+  const command = resolveVirtiofsd(context.virtiofsdPath, context.pathExists, context.searchPath)
+  return shares.map((share) => {
+    // A dot cannot appear in a tag, so `<desk>.<tag>` names one socket for
+    // exactly one desk and share even though desk IDs may contain hyphens.
+    const socketPath = join(context.runtimeDir, `desk-${context.deskId}.${share.tag}.fs.sock`)
+    if (Buffer.byteLength(socketPath) > LINUX_SOCKET_PATH_LIMIT) {
+      throw new DeskError(
+        `Socket path ${socketPath} is longer than the ${LINUX_SOCKET_PATH_LIMIT} bytes Linux allows; `
+          + 'use a shorter runtimeDir, deskId, or share tag.',
+      )
+    }
+    return {
+      ...share,
+      socketPath,
+      daemon: {
+        command,
+        args: [
+          `--socket-path=${socketPath}`,
+          `--shared-dir=${share.path}`,
+          `--sandbox=${context.sandbox}`,
+          '--cache=auto',
+          ...(share.readOnly ? ['--readonly'] : []),
+        ],
+      },
+    }
+  })
+}
+
+function resolveVirtiofsd(
+  configured: string | undefined,
+  pathExists: (path: string) => boolean,
+  searchPath: string,
+): string {
+  if (configured !== undefined) {
+    const path = absolutePath(configured, 'virtiofsdPath')
+    if (!pathExists(path)) {
+      throw new DeskError(`virtiofsd was not found at ${path}. Install virtiofsd or configure virtiofsdPath.`)
+    }
+    return path
+  }
+  const candidates = [
+    ...searchPath.split(delimiter).filter((entry) => isAbsolute(entry)).map((entry) => join(entry, 'virtiofsd')),
+    DEFAULT_VIRTIOFSD_PATH,
+  ]
+  const found = candidates.find((candidate) => pathExists(candidate))
+  if (found === undefined) {
+    throw new DeskError(
+      `virtiofsd was not found on PATH or at ${DEFAULT_VIRTIOFSD_PATH}. Install virtiofsd 1.13 or later, or configure virtiofsdPath.`,
+    )
+  }
+  return found
+}
+
+function directoryExists(path: string): boolean {
+  return statSync(path, { throwIfNoEntry: false })?.isDirectory() === true
 }
 
 function cleanGuestNetwork(
