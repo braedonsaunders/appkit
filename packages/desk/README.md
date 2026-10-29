@@ -27,6 +27,18 @@ tiers already cover.
 
 Size the concurrency cap against screen-open desks, not headless ones.
 
+Explicit `suspend` accepts optional sidecar hooks: `beforePark` runs after guest
+trim and sync, and `onPaused` runs after the Cloud Hypervisor VM pauses and
+before its memory snapshot. The caller must undo partial preparation on failure,
+bound hook duration, and provide durable recovery across crashes. A hook failure
+is reported to `onPausedError` and ordinary memory parking continues. Backends
+without the paused hook report it unavailable and park normally.
+`onParked(snapshotDir)` runs only after a successful memory snapshot, CPU identity
+write, and file/directory sync, and only if preparation and paused hooks reported
+no failure. Use that positive completion signal to publish a sidecar; `suspend`
+returning or a snapshot directory existing alone does not prove a successful park.
+A publication callback failure is reported without discarding the memory snapshot.
+
 ## Booting a desk
 
 ```ts
@@ -292,6 +304,30 @@ DESK_CHECK_TMPDIR=/data/tmp pnpm --filter @braedonsaunders/appkit-desk exec tsx 
 
 Set `DESK_CHECK_COW=1` to exercise copy-on-write snapshot restore and `DESK_CHECK_BALLOON=1` to check the guest virtio-balloon driver. Set `DESK_CHECK_KERNEL_CMDLINE` for images that require a custom root device. The check creates and removes a disposable VM, overlay, snapshot, TAP and firewall rules. It verifies resident pause and resume, and a guest HTTP stream before and after memory restore; it does not verify the proxy or cross-CPU migration. Choose addresses that do not overlap existing routes. Set `DESK_CHECK_VIRTIOFSD` to a `virtiofsd` binary to also check a read-only share: the guest mounts it, a write fails, and a file held open across the park reads back after the restore.
 
+The check uses a unique desk ID and private runtime directory. Set `DESK_CHECK_CID`
+to a free guest CID when testing alongside other hosts. Put `DESK_CHECK_TMPDIR` on
+the same reflink-capable filesystem as the base image to avoid a full disk copy.
+Run inside a disposable network namespace when testing on a machine with an active
+host. `DESK_CHECK_VMM` selects a test binary without changing the system VMM.
+
+With the [pinned incremental build](vmm/README.md), set `DESK_CHECK_INCREMENTAL=1`
+and `DESK_CHECK_COW=1` on XFS or Btrfs. This retains a hard link to the original
+memory file, verifies its digest after another park, checks shared filesystem
+extents, and confirms the guest HTTP process survives a second restore. It uses
+`filefrag` from e2fsprogs. A failed VMM stop leaves the test files in place for
+recovery instead of deleting backing files from a live process. The check does
+not measure latency or memory savings.
+
+`memoryRestoreMode: 'ondemand'` selects Cloud Hypervisor's userfaultfd page-on-access
+restore instead of its default eager copy. It requires Linux 6.6 or newer and
+permission to open `/dev/userfaultfd` or use the corresponding syscall. It rejects
+virtio-fs shares and does not silently cold boot when restore is unavailable. The
+source snapshot is durably retired before boot and retained until the VMM stops;
+an interrupted restore leaves a durable fence requiring operator recovery. The
+mode can be selected per host or per desk and is separate from copy-on-write
+restore: it does not share CoW pages or enable incremental snapshot writes.
+Run the disposable check with `DESK_CHECK_RESTORE_MODE=ondemand` to exercise it.
+
 ## Host directory shares
 
 A desk can mount host directories over virtio-fs. Pass `shares` to
@@ -431,3 +467,84 @@ and its path immutable and available for as long as a desk or its snapshot uses 
 AppKit hashes each image on start and records the attachment list with the snapshot;
 restore refuses a changed list before resuming. Virtualization.framework rejects
 attachments. Device support and filesystem mount options depend on the guest kernel.
+
+Cloud Hypervisor backends accept `inheritedFds`, a list of open descriptors to
+retain in the VMM and each share daemon, mapped to consecutive child descriptors
+starting at 3. Keep each descriptor open until the backend has stopped its
+children. For example, a host can retain an advisory lock in those processes
+so that an orphaned VMM continues to fence offline disk operations. The caller
+is responsible for acquiring and validating the lock and for ensuring the
+executables do not close the inherited descriptors. Run
+`python3 packages/desk/scripts/check-inherited-lock.py` from the repository to
+check descriptor inheritance and release with disposable processes.
+### Snapshot memory pins
+
+`pinTemplateMemory(source, destination, config)` creates an exclusive child
+snapshot directory with a hard link to the source `memory-ranges` inode and
+private `state.json` and `config.json` files. `assertPinnedTemplateMemory`
+checks the publication marker, source inode, and read-only mode before use.
+Source and destination must be on the same filesystem. The caller must keep
+the memory bytes unchanged for the lifetime of every child and prevent all
+writers, including processes with permission to change the file mode. Removing
+the source pathname does not invalidate an existing hard link.
+
+These filesystem operations alone do not establish that a snapshot is safe to
+clone. A caller must independently validate its contents and compatibility,
+prepare independent disk and device identities, fence the guest until it has
+been reinitialized, and retain each memory pin while its VM can use it. A
+partially published destination is left in place after an interruption and
+must not be restored. Remove it only after verifying no VM is using it.
+
+`planTemplateConfig` checks a snapshot config for a restricted Cloud Hypervisor
+copy-on-write configuration and produces a child-specific copy with distinct
+disk, TAP, MAC and vsock endpoints. It does not create a disk or establish
+that any of those identities are globally unique. Cloud Hypervisor restores
+virtio-net configuration from saved device state, so the guest must also change
+its live MAC under an external network fence before traffic is allowed.
+Read-only attachments retain their paths; the caller must verify their contents.
+
+`strictMemoryRestore` refuses a missing or mismatched saved CPU identity and
+refuses a cold-boot fallback when a restore fails. Before restore it writes a
+durable `.restore-pending` marker beside the snapshot. The marker stays until a
+later memory park has completed and its snapshot files are synced. If the host
+restarts with the marker present, wake fails and requires operator recovery;
+the disk and retired source are not automatically deleted. This is a lifecycle
+fence, not a template registration or guest identity reset.
+
+`registerDeskTemplate` records the hashes of a stopped, read-only template disk,
+snapshot files, kernel, initramfs and read-only attachments together with its VMM
+and CPU identities. The caller must supply actual VMM and CPU identities and
+prepare the source in isolation without user data or credentials. Hashing cannot
+establish that provenance. The source and its memory inode must be protected
+against all writers for the lifetime of its descendants.
+
+`forkDeskTemplate` checks the registration and actual file bytes, reserves a new
+private directory, copies the template disk into an independent writable file,
+and pins the same snapshot memory inode in the child directory for its lifetime,
+including while parked. Its returned disk and snapshot are
+prepared artifacts, not a running VM. A caller must verify `.prepared`, establish
+an external network and workload fence before restore, reinitialize the guest's
+identity and entropy, and only then allow traffic or guest workloads. An
+interrupted preparation leaves a directory without `.prepared`; it must not be
+restored. Retain and inspect it before cleanup.
+
+A caller can pass `template` in `DeskStartOptions` on a Cloud Hypervisor host
+with memory parking enabled. This opts that desk into strict copy-on-write restore
+without changing the restore mode of other desks. Its `holdFence` callback establishes the external network fence before
+preparation or restore, including when preparation was interrupted. Its `prepare`
+callback receives the assigned launch plan and creates the disk and snapshot. AppKit verifies their device and resource identities against that
+plan. After restore, `initialize` runs before the desk handle is exposed;
+only after it succeeds and the initialization marker is durable does
+`releaseFence` run. If initialization fails, AppKit stops the guest, preserves
+the interruption marker and does not release the fence. The caller is
+responsible for ensuring the source has no running user workloads at capture
+and for resetting guest entropy and identity in `initialize`.
+
+A caller may supply `vsockCid` on a start to use a stable guest CID. AppKit
+rejects collisions among CIDs allocated by the same host instance; the caller
+must also keep that allocation unique across host instances and restarts.
+
+A descendant may select strict memory handling and copy-on-write restore per
+start without requesting template initialization again. Explicit `shutdown`
+stops that known VM, discards its memory and clears its interruption marker;
+this permits an intentional cold restart of its existing disk.

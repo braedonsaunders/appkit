@@ -201,7 +201,7 @@ export interface DeskLaunchPlanOptions {
    */
   restore?: boolean
   /** Cloud Hypervisor copy-on-write restore; the source must remain unchanged while resident. */
-  memoryRestoreMode?: 'copyonwrite'
+  memoryRestoreMode?: 'copyonwrite' | 'ondemand'
 }
 
 /** What every plan carries, whichever hypervisor runs it. */
@@ -220,7 +220,7 @@ export interface DeskLaunchPlanBase {
    */
   vsock: { cid: number; socketPath: string }
   /** Where a memory snapshot of this desk is written, and read back from. */
-  snapshot: { dir: string; restoring: boolean }
+  snapshot: { dir: string; restoring: boolean; requirePrivateMemoryMapping?: boolean }
   /** Host directories shared into the guest, in the order they were given. */
   shares: readonly DeskShare[]
   memoryMb: number
@@ -361,8 +361,8 @@ export function buildDeskLaunchPlan(
   dependencies: DeskLaunchPlanDependencies = {},
 ): DeskLaunchPlan {
   const hypervisor = options.hypervisor ?? 'cloud-hypervisor'
-  if (options.memoryRestoreMode !== undefined && (options.memoryRestoreMode !== 'copyonwrite' || hypervisor !== 'cloud-hypervisor')) {
-    throw new DeskError('Copy-on-write restore requires Cloud Hypervisor.')
+  if (options.memoryRestoreMode !== undefined && (!['copyonwrite', 'ondemand'].includes(options.memoryRestoreMode) || hypervisor !== 'cloud-hypervisor')) {
+    throw new DeskError('Memory restore mode requires Cloud Hypervisor and must be copyonwrite or ondemand.')
   }
   if (hypervisor === 'virtualization') return buildVirtualizationPlan(options, dependencies)
   if (hypervisor !== 'cloud-hypervisor') {
@@ -494,7 +494,7 @@ function buildCloudHypervisorPlan(
   const args = restoring
     ? [
         '--api-socket', apiSocketPath,
-        '--restore', `source_url=file://${snapshotDir},resume=false${options.memoryRestoreMode === 'copyonwrite' ? ',memory_restore_mode=copyonwrite' : ''}`,
+        '--restore', `source_url=file://${snapshotDir},resume=false${options.memoryRestoreMode ? `,memory_restore_mode=${options.memoryRestoreMode}` : ''}`,
       ]
     : [
         '--api-socket', apiSocketPath,
@@ -869,3 +869,8 @@ function positiveInteger(value: number, field: string): number {
   }
   return value
 }
+
+/** Snapshot restore modes implemented with source lifetime and failure fencing. */
+export const DESK_MEMORY_RESTORE_MODES = ['copyonwrite', 'ondemand'] as const
+/** Suspend hooks include positive completion after snapshot durability. */
+export const DESK_PARK_HOOK_VERSION = 1 as const

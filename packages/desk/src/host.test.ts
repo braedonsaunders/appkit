@@ -1262,6 +1262,7 @@ function makeParkingHost(
   options: {
     snapshotExists?: boolean
     park?: () => Promise<void>
+    hookSupport?: boolean
     host?: Pick<DeskHostOptions, 'readSnapshotShares' | 'isDirectory'>
   } = {},
 ) {
@@ -1287,12 +1288,14 @@ function makeParkingHost(
       const machine = fake.machine
       return {
         ...machine,
+        ...(options.hookSupport ? { supportsPausedParkHook: true as const } : {}),
         async request(command: Parameters<typeof machine.request>[0]) {
           if ((command as { command?: string }).command === 'sync') synced.push(plan.deskId)
           return machine.request(command)
         },
-        async park(dir: string) {
+        async park(dir: string, hooks?: import('./backend').DeskParkHooks) {
           if (options.park) await options.park()
+          await hooks?.onPaused?.()
           parked.push(dir)
         },
       }
@@ -1337,6 +1340,32 @@ function makeParkingHost(
     shutdowns: () => shutdowns,
   }
 }
+
+test('explicit suspend prepares only on a capable backend after sync', async () => {
+  const context = makeParkingHost({ hookSupport: true })
+  await context.host.start(startOptions('agent-park'))
+  const steps: string[] = []
+  await context.host.suspend('agent-park', {
+    beforePark: async () => { assert.deepEqual(context.synced, ['agent-park']); steps.push('prepare') },
+    onPaused: async () => { steps.push('paused') },
+  })
+  assert.deepEqual(steps, ['prepare', 'paused'])
+  const unsupported = makeParkingHost()
+  await unsupported.host.start(startOptions('agent-park'))
+  let error: unknown
+  await unsupported.host.suspend('agent-park', { beforePark: async () => assert.fail('unsupported'), onPausedError: value => { error = value } })
+  assert.match(String(error), /unavailable/)
+  assert.equal(unsupported.parked.length, 1)
+})
+
+test('failed preparation skips paused hook but retains normal parking', async () => {
+  const context = makeParkingHost({ hookSupport: true })
+  await context.host.start(startOptions('agent-park'))
+  let error: unknown
+  await context.host.suspend('agent-park', { beforePark: async () => { throw new Error('prepare') }, onPaused: async () => assert.fail('unprepared'), onPausedError: value => { error = value } })
+  assert.match(String(error), /prepare/)
+  assert.equal(context.parked.length, 1)
+})
 
 test('parking a desk keeps its memory, and syncs the guest first', async () => {
   const context = makeParkingHost()
@@ -1665,7 +1694,8 @@ test('a desk can select TCP or vsock for each service connection', async () => {
   assert.equal(vsock.destroyed, true)
 })
 
-test('copy-on-write restore retires the snapshot before boot and retains its source until the VMM stops', async () => {
+for (const mode of ['copyonwrite', 'ondemand'] as const) {
+test(`${mode} restore retires the snapshot before boot and retains its source until the VMM stops`, async () => {
   const directory = await mkdtemp(join(tmpdir(), 'desk-cow-'))
   const snapshot = join(directory, 'cow.snapshot')
   await import('node:fs/promises').then(({ mkdir }) => mkdir(snapshot))
@@ -1680,14 +1710,14 @@ test('copy-on-write restore retires the snapshot before boot and retains its sou
       assert.equal(await readFile(join(source, 'memory-ranges'), 'utf8'), 'memory')
       await assert.rejects(readFile(join(snapshot, 'memory-ranges')), /ENOENT/)
       assert.equal(plan.hypervisor, 'cloud-hypervisor')
-      assert.ok(plan.vmm.args.some((arg) => arg.includes('memory_restore_mode=copyonwrite')))
+      assert.ok(plan.vmm.args.some((arg) => arg.includes(`memory_restore_mode=${mode}`)))
       await hooks?.onRestored?.()
       return fakeMachine(plan.deskId, () => stopped.promise).machine
     },
   }
-  const host = createDeskHost({ imageRoot: directory, parkWithMemory: true, memoryRestoreMode: 'copyonwrite', backend,
+  const host = createDeskHost({ imageRoot: directory, parkWithMemory: true, memoryRestoreMode: mode, backend,
     ports: { onEvent: () => {}, audit: () => {} }, pathExists: (path) => path === snapshot || !path.endsWith('.snapshot'),
-    deviceExists: () => true, readSnapshotShares: async () => [], readSnapshotSignature: async () => null,
+    deviceExists: () => true, readSnapshotShares: async () => [], readSnapshotSignature: async () => 'cpu', cpuSignature: async () => 'cpu',
     trimOnSuspend: false,
   })
   try {
@@ -1700,6 +1730,8 @@ test('copy-on-write restore retires the snapshot before boot and retains its sou
     await assert.rejects(readFile(join(source, 'memory-ranges')), /ENOENT/)
   } finally { stopped.resolve(); await rm(directory, { recursive: true, force: true }) }
 })
+
+}
 
 test('failed copy-on-write restore never replays or deletes the retired source', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'desk-cow-fail-'))
@@ -1836,4 +1868,196 @@ test('copy-on-write refuses parked virtio-fs shares before snapshot retirement o
   assert.equal(boots, 0)
   assert.equal(retired, 0)
   assert.equal(removed, 0)
+})
+
+for (const mode of [undefined, 'ondemand'] as const) {
+test(`strict ${mode ?? 'copy'} restore failure leaves a durable fence and never cold boots`, async () => {
+  const root = await mkdtemp(join(tmpdir(), 'desk-strict-'))
+  try {
+    const overlay = join(root, 'child.raw')
+    const snapshot = join(root, 'child.snapshot')
+    await import('node:fs/promises').then(fs => fs.mkdir(snapshot))
+    let attempts = 0
+    const backend: DeskBackend = { async boot() { attempts++; throw new Error('restore failed') } }
+    const options: DeskHostOptions = {
+      imageRoot: root, backend, parkWithMemory: true, strictMemoryRestore: mode === undefined, ...(mode ? { memoryRestoreMode: mode } : {}),
+      ports: { onEvent: () => {}, audit: () => {} },
+      pathExists: () => true, deviceExists: () => true, trimOnSuspend: false,
+      readSnapshotSignature: async () => 'same', cpuSignature: async () => 'same',
+    }
+    const start = { deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: overlay }
+    await assert.rejects(createDeskHost(options).start(start), /memory restore failed/)
+    assert.equal(attempts, 1)
+    assert.equal(await readFile(`${snapshot}.restore-pending`, 'utf8'), 'restore in progress\n')
+    await assert.rejects(createDeskHost(options).start(start), /interrupted memory restore/)
+    assert.equal(attempts, 1)
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
+
+}
+
+test('strict lifecycle retains its fence until the parked snapshot is durable', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'desk-strict-park-'))
+  try {
+    const snapshot = join(root, 'child.snapshot')
+    const backend: DeskBackend = { async boot() {
+      const machine = fakeMachine('child').machine
+      machine.park = async directory => {
+        for (const name of ['config.json', 'state.json', 'memory-ranges']) await writeFile(join(directory, name), name)
+      }
+      return machine
+    } }
+    const host = createDeskHost({ imageRoot: root, backend, parkWithMemory: true, strictMemoryRestore: true,
+      ports: { onEvent: () => {}, audit: () => {} }, pathExists: path => path === snapshot ? existsSync(path) : true,
+      deviceExists: () => true, trimOnSuspend: false, cpuSignature: async () => 'cpu' })
+    await host.start({ deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: join(root, 'child.raw') })
+    assert.equal(existsSync(`${snapshot}.restore-pending`), true)
+    await host.suspend('child')
+    assert.equal(existsSync(`${snapshot}.restore-pending`), false)
+    assert.equal(await readFile(join(snapshot, 'appkit-cpu-signature'), 'utf8'), 'cpu')
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
+
+test('template initializes before exposure and releases the fence after durable completion', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'desk-template-host-'))
+  try {
+    const child = join(root, 'child'), disk = join(child, 'disk.raw'), snapshot = join(child, 'child.snapshot')
+    const events: string[] = []
+    const backend: DeskBackend = { async boot(plan) { assert.equal(plan.hypervisor, 'cloud-hypervisor'); assert.equal(plan.snapshot.restoring, true); assert.ok(plan.vmm.args.some(arg => arg.includes('memory_restore_mode=copyonwrite'))); events.push('restore'); return fakeMachine('child').machine } }
+    const host = createDeskHost({ imageRoot: root, backend, parkWithMemory: true,
+      ports: { onEvent: () => {}, audit: () => {} }, pathExists: path => path === child || path === snapshot || path === disk ? existsSync(path) : true,
+      deviceExists: () => true, trimOnSuspend: false, cpuSignature: async () => 'cpu', runtimeDir: root })
+    await host.start({ deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: disk, template: {
+      async holdFence() { events.push('fenced') },
+      async verifyPrepared() { events.push('verify') },
+      async verifyResume() {},
+      async prepare(plan) {
+        assert.equal(plan.hypervisor, 'cloud-hypervisor')
+        await import('node:fs/promises').then(fs => fs.mkdir(snapshot, { recursive: true }))
+        await writeFile(disk, 'disk')
+        await writeFile(join(child, '.prepared'), '1\n')
+        await writeFile(join(snapshot, 'appkit-cpu-signature'), 'cpu')
+        await writeFile(join(snapshot, 'config.json'), JSON.stringify({ disks: [{ path: disk }], net: [{ tap: plan.tap.device, mac: plan.tap.mac }], vsock: { cid: plan.vsock.cid, socket: plan.vsock.socketPath }, memory: { size: plan.memoryMb * 1024 * 1024 }, cpus: { boot_vcpus: plan.vcpus } }))
+      },
+      async initialize() { events.push('initialize'); assert.equal(existsSync(join(child, '.initialized')), false) },
+      async releaseFence() { events.push('release'); assert.equal(await readFile(join(child, '.initialized'), 'utf8'), '1\n') },
+    } })
+    assert.deepEqual(events, ['fenced', 'verify', 'restore', 'initialize', 'release'])
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
+
+test('template initialization failure stops the guest and keeps the fence', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'desk-template-failure-'))
+  try {
+    const child = join(root, 'child'), disk = join(child, 'disk.raw'), snapshot = join(child, 'child.snapshot')
+    let stopped = 0, released = false
+    const backend: DeskBackend = { async boot() { return fakeMachine('child', async () => { stopped++ }).machine } }
+    const host = createDeskHost({ imageRoot: root, backend, parkWithMemory: true, strictMemoryRestore: true, memoryRestoreMode: 'copyonwrite',
+      ports: { onEvent: () => {}, audit: () => {} }, pathExists: path => path === child || path === snapshot || path === disk ? existsSync(path) : true,
+      deviceExists: () => true, trimOnSuspend: false, cpuSignature: async () => 'cpu', runtimeDir: root })
+    await assert.rejects(host.start({ deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: disk, template: {
+      async holdFence() {},
+      async verifyPrepared() {},
+      async verifyResume() {},
+      async prepare(plan) {
+        assert.equal(plan.hypervisor, 'cloud-hypervisor')
+        await import('node:fs/promises').then(fs => fs.mkdir(snapshot, { recursive: true }))
+        await writeFile(disk, 'disk')
+        await writeFile(join(child, '.prepared'), '1\n')
+        await writeFile(join(snapshot, 'appkit-cpu-signature'), 'cpu')
+        await writeFile(join(snapshot, 'config.json'), JSON.stringify({ disks: [{ path: disk }], net: [{ tap: plan.tap.device, mac: plan.tap.mac }], vsock: { cid: plan.vsock.cid, socket: plan.vsock.socketPath }, memory: { size: plan.memoryMb * 1024 * 1024 }, cpus: { boot_vcpus: plan.vcpus } }))
+      },
+      async initialize() { throw new Error('reset failed') },
+      async releaseFence() { released = true },
+    } }), /reset failed/)
+    assert.equal(stopped, 1)
+    assert.equal(released, false)
+    assert.equal(existsSync(join(child, '.initialized')), false)
+    assert.equal(existsSync(`${snapshot}.restore-pending`), true)
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
+
+test('explicit guest CIDs do not collide within a host', async () => {
+  const factory = fakeBackendFactory()
+  const host = createDeskHost({ imageRoot: '/images', backend: factory.backend, pathExists: () => true, deviceExists: () => true,
+    ports: { onEvent: () => {}, audit: () => {} }, trimOnSuspend: false })
+  await host.start({ ...startOptions('one'), vsockCid: 100 })
+  await assert.rejects(host.start({ ...startOptions('two'), vsockCid: 100 }), /already assigned/)
+  await host.start(startOptions('three'))
+  assert.equal(factory.plans[0]?.vsock.cid, 100)
+  assert.equal(factory.plans[1]?.vsock.cid, 101)
+})
+
+test('explicit shutdown clears a strict desk fence only after stopping the VM', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'desk-strict-shutdown-'))
+  try {
+    const marker = join(root, 'child.snapshot.restore-pending')
+    let stopped = false
+    const backend: DeskBackend = { async boot() { return fakeMachine('child', async () => { stopped = true }).machine } }
+    const host = createDeskHost({ imageRoot: root, backend, parkWithMemory: true, ports: { onEvent: () => {}, audit: () => {} },
+      pathExists: path => path.endsWith('child.snapshot') ? false : true, deviceExists: () => true, trimOnSuspend: false })
+    await host.start({ deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: join(root, 'child.raw'), strictMemoryRestore: true })
+    assert.equal(existsSync(marker), true)
+    await host.shutdown('child')
+    assert.equal(stopped, true)
+    assert.equal(existsSync(marker), false)
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
+
+for (const failure of ['none', 'park', 'signature', 'sidecar', 'publication'] as const) {
+  test(`park completion is authoritative and preserves memory on ${failure} failure`, async () => {
+    const root = await mkdtemp(join(tmpdir(), 'desk-park-proof-'))
+    const snapshot = join(root, 'child.snapshot')
+    let completed = 0
+    const errors: string[] = []
+    const backend: DeskBackend = { async boot() {
+      const machine = fakeMachine('child').machine
+      machine.supportsPausedParkHook = true
+      machine.park = async (directory, hooks) => {
+        if (failure === 'park') throw new Error('snapshot failed')
+        if (failure === 'sidecar') hooks?.onPausedError?.(new Error('clone failed'))
+        for (const name of ['config.json', 'state.json', 'memory-ranges']) await writeFile(join(directory, name), name)
+      }
+      return machine
+    } }
+    const host = createDeskHost({ imageRoot: root, backend, parkWithMemory: true,
+      ports: { onEvent: () => {}, audit: () => {} }, deviceExists: () => true,
+      pathExists: path => path === snapshot ? existsSync(path) : true, trimOnSuspend: false,
+      cpuSignature: async () => { if (failure === 'signature') throw new Error('CPU identity failed'); return 'cpu' },
+    })
+    try {
+      await host.start({ deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: join(root, 'child.raw') })
+      await host.suspend('child', {
+        onPausedError: error => { errors.push(String(error)) },
+        async onParked(directory) {
+          assert.equal(directory, snapshot)
+          assert.equal(await readFile(join(directory, 'appkit-cpu-signature'), 'utf8'), 'cpu')
+          assert.equal(await readFile(join(directory, 'memory-ranges'), 'utf8'), 'memory-ranges')
+          completed++
+          if (failure === 'publication') throw new Error('cache publication failed')
+        },
+      })
+      assert.equal(completed, failure === 'none' || failure === 'publication' ? 1 : 0)
+      if (failure === 'publication' || failure === 'sidecar') {
+        assert.equal(errors.length, 1)
+        assert.equal(await readFile(join(snapshot, 'memory-ranges'), 'utf8'), 'memory-ranges')
+      }
+    } finally { await host.destroy('child'); await rm(root, { recursive: true, force: true }) }
+  })
+}
+test('a parked template descendant rejects changed image identity before VMM launch', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'desk-template-resume-'))
+  try {
+    const child = join(root, 'child')
+    await import('node:fs/promises').then(fs => fs.mkdir(join(child, 'child.snapshot'), { recursive: true }))
+    await writeFile(join(child, '.initialized'), '1\n')
+    let boots = 0
+    const host = createDeskHost({ imageRoot: root, parkWithMemory: true, backend: { async boot() { boots++; throw new Error('must not boot') } },
+      pathExists: () => true, deviceExists: () => true, ports: { onEvent: () => {}, audit: () => {} }, trimOnSuspend: false })
+    await assert.rejects(host.start({ deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: join(child, 'disk.raw'), template: {
+      async holdFence() {}, async prepare() {}, async verifyPrepared() {},
+      async verifyResume() { throw new Error('image changed') }, async initialize() {}, async releaseFence() {},
+    } }), /image changed/)
+    assert.equal(boots, 0)
+  } finally { await rm(root, { recursive: true, force: true }) }
 })

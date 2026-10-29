@@ -1,0 +1,348 @@
+From dd629131fe32e75ff0976dafecad87ef68f9eb13 Mon Sep 17 00:00:00 2001
+From: CMGS <ilskdw@gmail.com>
+Date: Thu, 15 Oct 2026 19:04:22 +0800
+Subject: [PATCH 5/7] vmm: Reuse the copy-on-write restore source in snapshots
+
+A VM restored with memory_restore_mode=copyonwrite maps its RAM
+privately from the snapshot memory file. A snapshot of that VM writes
+all guest memory again. Most pages are still equal to the source file.
+
+Clone the source into the new memory file with FICLONERANGE, for the
+length of the snapshot. Then write only the private copies that the
+pagemap reader finds. The result is a complete memory file, thus
+restore does not change.
+
+Open the pagemap when the copy-on-write mapping is created. Landlock
+applies after that, thus the snapshot needs no new rule.
+
+Write all guest memory, as before, if the memory layout changed since
+the restore, if the pagemap cannot be opened, or if the clone fails
+(different filesystem, no reflink support). The last two log a warning.
+Allow FICLONERANGE in the seccomp filter of the VMM thread.
+
+8 GiB guest on XFS, restored copy-on-write, idle for 3 minutes:
+
+  bytes written                      8 GiB  -> 274 MB
+  vm.snapshot + fsync of the file    17.2 s -> 0.9 s
+
+Signed-off-by: CMGS <ilskdw@gmail.com>
+---
+ vmm/src/lib.rs             |   1 -
+ vmm/src/memory_manager.rs  | 114 +++++++++++++++++++++++++++++++++++--
+ vmm/src/seccomp_filters.rs |  10 ++--
+ vmm/src/sparse.rs          |  49 ++++++++++++++--
+ 4 files changed, 161 insertions(+), 13 deletions(-)
+
+diff --git a/vmm/src/lib.rs b/vmm/src/lib.rs
+index de3da755ce4ba8f222ab69d306ebc1a01cac5959..86310f2ae7efbb4e0728d434052ff1d229966648 100644
+--- a/vmm/src/lib.rs
++++ b/vmm/src/lib.rs
+@@ -95,7 +95,6 @@
+ pub mod locked_unix_listener;
+ pub mod memory_manager;
+ pub mod migration;
+-#[cfg_attr(not(test), expect(dead_code))]
+ mod pagemap;
+ mod pci_segment;
+ mod prefault;
+diff --git a/vmm/src/memory_manager.rs b/vmm/src/memory_manager.rs
+index 3d631cbede22fca17086484a86c93880cabc43ec..425be2728276e0b1c0a09606edd31e075b88a7a3 100644
+--- a/vmm/src/memory_manager.rs
++++ b/vmm/src/memory_manager.rs
+@@ -58,7 +58,8 @@
+ };
+ use crate::migration::transport::SocketStream;
+ use crate::migration::url_to_path;
+-use crate::sparse::{next_data_extent, write_region_sparse};
++use crate::pagemap::PageMap;
++use crate::sparse::{clone_file_range, next_data_extent, write_region_sparse};
+ use crate::uffd::{
+     self, FileUffdMemorySource, SocketUffdMemorySource, Uffd, UffdMemorySource, UffdRange,
+ };
+@@ -236,6 +237,13 @@ fn size_clear_of_reserved(regions: &[ArchMemRegion], base: u64, size: u64) -> Re
+     Ok(end - base)
+ }
+ 
++// The snapshot memory file a copy-on-write restore mapped guest RAM from.
++struct CowSource {
++    file: File,
++    ranges: MemoryRangeTable,
++    pagemap: PageMap,
++}
++
+ pub struct MemoryManager {
+     boot_guest_memory: GuestMemoryMmap,
+     guest_memory: GuestMemoryAtomic<GuestMemoryMmap>,
+@@ -262,6 +270,7 @@ pub struct MemoryManager {
+     thp: bool,
+     user_provided_zones: bool,
+     snapshot_memory_ranges: MemoryRangeTable,
++    cow_source: Option<CowSource>,
+     memory_zones: MemoryZones,
+     log_dirty: bool, // Enable dirty logging for created RAM regions
+     arch_mem_regions: Vec<ArchMemRegion>,
+@@ -1028,7 +1037,20 @@ fn mmap_cow_saved_regions(
+                 "snapshot memory file is shorter than the saved ranges",
+             )));
+         }
+-        do_mmap_cow_saved_regions(&guest_memory, &memory_file, saved_regions, self.thp)
++        do_mmap_cow_saved_regions(&guest_memory, &memory_file, saved_regions, self.thp)?;
++        // Landlock applies after the restore, so the pagemap is opened here.
++        self.cow_source = match PageMap::open() {
++            Ok(pagemap) => Some(CowSource {
++                file: memory_file,
++                ranges: saved_regions.clone(),
++                pagemap,
++            }),
++            Err(e) => {
++                warn!("Restore (mode=copyonwrite): snapshots will write all guest memory: {e}");
++                None
++            }
++        };
++        Ok(())
+     }
+ 
+     /// Restore guest memory using userfaultfd for lazy demand paging.
+@@ -2232,6 +2254,7 @@ pub fn new(
+             reserve: config.reserve,
+             user_provided_zones,
+             snapshot_memory_ranges: MemoryRangeTable::default(),
++            cow_source: None,
+             memory_zones,
+             guest_ram_mappings: Vec::new(),
+             uffd_handler: None,
+@@ -3686,6 +3709,19 @@ fn send(
+             .map(|r| r.length)
+             .sum();
+ 
++        let guest_memory = self.guest_memory.memory();
++
++        if let Some(source) = &self.cow_source
++            && source.ranges == self.snapshot_memory_ranges
++        {
++            match clone_file_range(&source.file, &memory_file, total_len) {
++                Ok(()) => return write_private_pages(&guest_memory, source, &mut memory_file),
++                Err(e) => {
++                    warn!("Snapshot: restore source not cloned, writing all guest memory: {e}");
++                }
++            }
++        }
++
+         // Pre-size the file so per-region write_at lands at the dense-layout
+         // offset. On filesystems that support sparse files unwritten bytes
+         // become real holes; on others the kernel zero-fills the allocation,
+@@ -3695,7 +3731,6 @@ fn send(
+         // write path which never writes past the growing EOF.
+         let sparse_layout = memory_file.set_len(total_len).is_ok();
+ 
+-        let guest_memory = self.guest_memory.memory();
+         let mut file_cursor: u64 = 0;
+ 
+         for range in self.snapshot_memory_ranges.ranges() {
+@@ -3832,13 +3867,45 @@ fn write_guest_range(
+     while offset < length {
+         let bytes_written = guest_memory
+             .write_volatile_to(GuestAddress(gpa + offset), file, (length - offset) as usize)
+-            .context("Error writing dense memory snapshot region")
++            .context("Error writing memory snapshot region")
+             .map_err(MigratableError::MigrateSend)?;
+         offset += bytes_written as u64;
+     }
+     Ok(())
+ }
+ 
++// Writes the guest pages that no longer read from the restore source over
++// the clone of that source in `file`.
++fn write_private_pages(
++    guest_memory: &GuestMemoryMmap,
++    source: &CowSource,
++    file: &mut File,
++) -> result::Result<(), MigratableError> {
++    let mut file_offset: u64 = 0;
++    for range in source.ranges.ranges() {
++        let host_addr = guest_memory
++            .get_host_address(GuestAddress(range.gpa))
++            .context("Error locating guest memory range")
++            .map_err(MigratableError::MigrateSend)?;
++        let private_ranges = source
++            .pagemap
++            .private_ranges(host_addr as u64, range.length)
++            .context("Error reading the pagemap")
++            .map_err(MigratableError::MigrateSend)?;
++        for private in private_ranges {
++            write_guest_range(
++                guest_memory,
++                file,
++                file_offset + private.start,
++                range.gpa + private.start,
++                private.end - private.start,
++            )?;
++        }
++        file_offset += range.length;
++    }
++    Ok(())
++}
++
+ // Reports whether every saved range is page-aligned and lies wholly inside a
+ // single plain private-anonymous guest region — the MAP_FIXED overlay
+ // preconditions. File-backed regions are rejected: their stale mapping
+@@ -3971,6 +4038,7 @@ fn guest_ram_stays_clear_of_reserved() {
+     }
+ 
+     use std::io::{Read, Seek, SeekFrom, Write};
++    use std::os::unix::fs::FileExt;
+ 
+     use vm_migration::protocol::{MemoryRange, MemoryRangeTable};
+ 
+@@ -4192,6 +4260,44 @@ fn cow_restore_maps_data_and_reads_holes_as_zero() {
+         assert_eq!(back[0], 0xab);
+     }
+ 
++    #[test]
++    fn cow_snapshot_writes_private_pages_over_the_source() {
++        let page = page_size();
++        let gm = GuestMemoryMmap::from_ranges(&[(GuestAddress(0), (16 * page) as usize)]).unwrap();
++        let mut file = tempfile::tempfile().unwrap();
++        for i in 0..16u8 {
++            file.write_all(&vec![i + 1; page as usize]).unwrap();
++        }
++        let mut ranges = MemoryRangeTable::default();
++        ranges.push(MemoryRange {
++            gpa: 0,
++            length: 16 * page,
++        });
++        do_mmap_cow_saved_regions(&gm, &file, &ranges, false).unwrap();
++        let source = CowSource {
++            file,
++            ranges,
++            pagemap: PageMap::open().unwrap(),
++        };
++        gm.write_obj::<u8>(0x55, GuestAddress(page)).unwrap();
++        gm.write_obj::<u8>(0x77, GuestAddress(12 * page + 9))
++            .unwrap();
++
++        let mut snapshot = tempfile::tempfile().unwrap();
++        let mut content = vec![0u8; (16 * page) as usize];
++        source.file.read_exact_at(&mut content, 0).unwrap();
++        snapshot.write_all(&content).unwrap();
++        write_private_pages(&gm, &source, &mut snapshot).unwrap();
++
++        let mut got = vec![0u8; (16 * page) as usize];
++        snapshot.read_exact_at(&mut got, 0).unwrap();
++        let mut want = vec![0u8; (16 * page) as usize];
++        gm.read_slice(&mut want, GuestAddress(0)).unwrap();
++        assert!(got == want);
++        assert_eq!(content[page as usize], 2);
++        assert_eq!(got[page as usize], 0x55);
++    }
++
+     #[test]
+     fn cow_restore_rejects_unaligned_or_out_of_region_ranges() {
+         let page = page_size();
+diff --git a/vmm/src/seccomp_filters.rs b/vmm/src/seccomp_filters.rs
+index 61828e13bcb7c9444043d4bca331abdae05e96c8..39cdfd0a0def4fb48c5d863dc94abd43c4ae5506 100644
+--- a/vmm/src/seccomp_filters.rs
++++ b/vmm/src/seccomp_filters.rs
+@@ -8,10 +8,11 @@
+ 
+ use hypervisor::HypervisorType;
+ use libc::{
+-    BLKIOMIN, BLKIOOPT, BLKPBSZGET, BLKSSZGET, FIOCLEX, FIONBIO, SIOCGIFFLAGS, SIOCGIFHWADDR,
+-    SIOCGIFINDEX, SIOCGIFMTU, SIOCSIFADDR, SIOCSIFFLAGS, SIOCSIFHWADDR, SIOCSIFMTU, SIOCSIFNETMASK,
+-    TCGETS, TCGETS2, TCSETS, TCSETS2, TIOCGPGRP, TIOCGPTPEER, TIOCGWINSZ, TIOCSCTTY, TIOCSPGRP,
+-    TIOCSPTLCK, TUNGETFEATURES, TUNGETIFF, TUNSETIFF, TUNSETOFFLOAD, TUNSETQUEUE, TUNSETVNETHDRSZ,
++    BLKIOMIN, BLKIOOPT, BLKPBSZGET, BLKSSZGET, FICLONERANGE, FIOCLEX, FIONBIO, SIOCGIFFLAGS,
++    SIOCGIFHWADDR, SIOCGIFINDEX, SIOCGIFMTU, SIOCSIFADDR, SIOCSIFFLAGS, SIOCSIFHWADDR, SIOCSIFMTU,
++    SIOCSIFNETMASK, TCGETS, TCGETS2, TCSETS, TCSETS2, TIOCGPGRP, TIOCGPTPEER, TIOCGWINSZ,
++    TIOCSCTTY, TIOCSPGRP, TIOCSPTLCK, TUNGETFEATURES, TUNGETIFF, TUNSETIFF, TUNSETOFFLOAD,
++    TUNSETQUEUE, TUNSETVNETHDRSZ,
+ };
+ use seccompiler::SeccompCmpOp::{Eq, MaskedEq};
+ use seccompiler::{
+@@ -351,6 +352,7 @@ fn create_vmm_ioctl_seccomp_rule_common(
+         and![Cond::new(1, ArgLen::Dword, Eq, BLKGETSIZE64 as _)?],
+         and![Cond::new(1, ArgLen::Dword, Eq, BLKDISCARD as _)?],
+         and![Cond::new(1, ArgLen::Dword, Eq, BLKZEROOUT as _)?],
++        and![Cond::new(1, ArgLen::Dword, Eq, FICLONERANGE as _)?],
+         and![Cond::new(1, ArgLen::Dword, Eq, FIOCLEX as _)?],
+         and![Cond::new(1, ArgLen::Dword, Eq, FIONBIO as _)?],
+         and![Cond::new(1, ArgLen::Dword, Eq, SIOCGIFFLAGS)?],
+diff --git a/vmm/src/sparse.rs b/vmm/src/sparse.rs
+index ce205ece1642ccd38ae5efe6d75a260fad076e0f..06d14b34e05ea457b4e4734beacf109a07c1a6df 100644
+--- a/vmm/src/sparse.rs
++++ b/vmm/src/sparse.rs
+@@ -3,9 +3,9 @@
+ // SPDX-License-Identifier: Apache-2.0
+ //
+ 
+-//! Sparse file-copy helpers shared between snapshot/restore paths (the
+-//! `MemoryManager` snapshot writer and the offload daemon). Holes are
+-//! detected via `lseek(SEEK_DATA)`/`lseek(SEEK_HOLE)` and left as holes in
++//! Sparse and reflink file-copy helpers shared between snapshot/restore
++//! paths (the `MemoryManager` snapshot writer and the offload daemon). Holes
++//! are detected via `lseek(SEEK_DATA)`/`lseek(SEEK_HOLE)` and left as holes in
+ //! the destination, with a dense fallback when the source filesystem does
+ //! not support sparse-seek.
+ 
+@@ -149,6 +149,25 @@ pub fn copy_region(
+     Ok(())
+ }
+ 
++/// Make the first `len` bytes of `dst` share the extents of the first `len`
++/// bytes of `src` (`FICLONERANGE`). Fails unless both files are on one
++/// filesystem that supports reflink.
++pub fn clone_file_range(src: &File, dst: &File, len: u64) -> io::Result<()> {
++    let range = libc::file_clone_range {
++        src_fd: src.as_raw_fd().into(),
++        src_offset: 0,
++        src_length: len,
++        dest_offset: 0,
++    };
++    // SAFETY: both fds are valid for the borrows and `range` outlives the
++    // call; FICLONERANGE only reads them.
++    let ret = unsafe { libc::ioctl(dst.as_raw_fd(), libc::FICLONERANGE as _, &range) };
++    if ret < 0 {
++        return Err(io::Error::last_os_error());
++    }
++    Ok(())
++}
++
+ #[cfg(test)]
+ mod tests {
+     use std::io::Write;
+@@ -158,7 +177,7 @@ mod tests {
+ 
+     use vm_allocator::page_size::get_page_size;
+ 
+-    use super::{next_data_extent, write_region_sparse};
++    use super::{clone_file_range, next_data_extent, write_region_sparse};
+ 
+     fn make_memfd(size: u64) -> fs::File {
+         // SAFETY: memfd_create is a self-contained syscall; we own the
+@@ -414,4 +433,26 @@ fn round_trip_sparse_write_then_read() {
+         assert!(restored[4096 * 26..4096 * 30].iter().all(|&b| b == 0xBB));
+         assert!(restored[4096 * 30..].iter().all(|&b| b == 0));
+     }
++
++    #[test]
++    fn clone_file_range_copies_content_where_reflink_exists() {
++        let mut src = tempfile::tempfile().unwrap();
++        src.write_all(&[0xab; 8192]).unwrap();
++        let dst = tempfile::tempfile().unwrap();
++        match clone_file_range(&src, &dst, 4096) {
++            Ok(()) => {
++                assert_eq!(dst.metadata().unwrap().len(), 4096);
++                let mut got = [0u8; 4096];
++                dst.read_exact_at(&mut got, 0).unwrap();
++                assert_eq!(got, [0xab; 4096]);
++            }
++            Err(e) => assert!(
++                matches!(
++                    e.raw_os_error(),
++                    Some(libc::EOPNOTSUPP | libc::EXDEV | libc::EINVAL)
++                ),
++                "unexpected clone error: {e}"
++            ),
++        }
++    }
+ }

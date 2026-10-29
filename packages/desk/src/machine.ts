@@ -12,7 +12,7 @@ import { createConnection } from 'node:net'
 import { join } from 'node:path'
 import { Buffer } from 'node:buffer'
 import type { Duplex } from 'node:stream'
-import { DeskRequestFateUnknownError, type DeskConnectionChange, type DeskMachine } from './backend'
+import { DeskRequestFateUnknownError, type DeskConnectionChange, type DeskMachine, type DeskParkHooks } from './backend'
 import { DeskError, type DeskLauncherIdentity, type DeskShare } from './plan'
 import {
   encodeFrame,
@@ -77,7 +77,8 @@ export function createGuestMachine(options: {
    * Pause, snapshot into `snapshotDir`, and stop the VMM. Called after the
    * guest channel has been closed. Must leave the VMM stopped on failure too.
    */
-  park?: (snapshotDir: string) => Promise<void>
+  park?: (snapshotDir: string, hooks?: DeskParkHooks) => Promise<void>
+  supportsPausedParkHook?: true
   pause?: () => Promise<void>
   resume?: () => Promise<void>
   /** Open a host-to-guest TCP stream, for backends with no routable guest. */
@@ -304,14 +305,15 @@ export function createGuestMachine(options: {
   }
   if (options.park) {
     const park = options.park
-    machine.park = async (snapshotDir: string) => {
+    if (options.supportsPausedParkHook) machine.supportsPausedParkHook = true
+    machine.park = async (snapshotDir: string, hooks?: DeskParkHooks) => {
       // Close the guest channel FIRST. Pausing a VM strands whatever was in
       // flight on the vsock, and a reconnect attempt against a paused guest
       // would burn the whole reconnect window before giving up — so the channel
       // is made terminal before the VM stops answering, exactly as shutdown
       // does it.
       close(new DeskError(`Desk ${deskId} is being parked.`), true)
-      await park(snapshotDir)
+      await park(snapshotDir, hooks)
     }
   }
   if (options.connect) {
@@ -666,10 +668,10 @@ function shareManifest(shares: readonly DeskShare[]): string {
 export function defaultLauncher(
   command: string,
   args: readonly string[],
-  options: { identity?: DeskLauncherIdentity },
+  options: { identity?: DeskLauncherIdentity; inheritedFds?: readonly number[] },
 ): ChildProcess {
   return spawn(command, [...args], {
-    stdio: ['ignore', 'pipe', 'pipe'],
+    stdio: ['ignore', 'pipe', 'pipe', ...(options.inheritedFds ?? [])],
     uid: options.identity?.uid,
     gid: options.identity?.gid,
   })

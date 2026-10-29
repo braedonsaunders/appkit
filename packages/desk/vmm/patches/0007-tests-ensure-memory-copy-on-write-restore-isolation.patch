@@ -1,0 +1,108 @@
+From e0cc85f1223d316586dea4c0d0fdcb34370abd80 Mon Sep 17 00:00:00 2001
+From: Wei Liu <liuwe@microsoft.com>
+Date: Tue, 27 Oct 2026 17:07:45 -0700
+Subject: [PATCH 7/7] tests: ensure memory copy-on-write restore isolation
+
+Extend the existing test case to make sure the copy-on-write semantics
+is implemented correctly. The original file should not be altered.
+
+Remove the hard-coded `memory-ranges` string in code while at it.
+
+Signed-off-by: Wei Liu <liuwe@microsoft.com>
+---
+ cloud-hypervisor/tests/integration.rs | 39 ++++++++++++++++++++++++++-
+ vmm/src/memory_manager.rs             |  3 ++-
+ 2 files changed, 40 insertions(+), 2 deletions(-)
+
+diff --git a/cloud-hypervisor/tests/integration.rs b/cloud-hypervisor/tests/integration.rs
+index b3643d1003b57670d10e0bd1994a72db3efc6596..1bdbed570a7976ad6854c6a31c03d9693a26db23 100644
+--- a/cloud-hypervisor/tests/integration.rs
++++ b/cloud-hypervisor/tests/integration.rs
+@@ -22,6 +22,7 @@
+ 
+ use block::ImageType;
+ use test_infra::*;
++use vmm::memory_manager::SNAPSHOT_FILENAME;
+ use vmm_sys_util::tempdir::TempDir;
+ use vmm_sys_util::tempfile::TempFile;
+ use wait_timeout::ChildExt;
+@@ -9847,6 +9848,19 @@ pub(crate) fn _test_snapshot_restore(cfg: SnapshotRestoreTest) {
+ 
+         handle_child_output(r, &output);
+ 
++        let snapshot_memory_checksum = if memory_restore_mode == Some("copyonwrite") {
++            let memory_file_path = Path::new(&snapshot_dir).join(SNAPSHOT_FILENAME);
++            let mut memory_file = File::open(&memory_file_path).unwrap();
++            let memory_file_size = memory_file.metadata().unwrap().len();
++            Some((
++                memory_file_path,
++                memory_file_size,
++                compute_file_checksum(&mut memory_file, memory_file_size),
++            ))
++        } else {
++            None
++        };
++
+         // Remove the vsock socket file.
+         Command::new("rm")
+             .arg("-f")
+@@ -9937,7 +9951,7 @@ pub(crate) fn _test_snapshot_restore(cfg: SnapshotRestoreTest) {
+             // fallback to copy keeps RAM anonymous), and the mapped file must
+             // outlive the VM.
+             let maps = read_to_string(format!("/proc/{}/maps", child.id())).unwrap();
+-            assert!(maps.contains(&format!("{snapshot_dir}/memory-ranges")));
++            assert!(maps.contains(&format!("{snapshot_dir}/{SNAPSHOT_FILENAME}")));
+         } else {
+             // Remove the snapshot dir
+             let _ = remove_dir_all(snapshot_dir.as_str());
+@@ -9985,6 +9999,15 @@ pub(crate) fn _test_snapshot_restore(cfg: SnapshotRestoreTest) {
+ 
+             guest.check_devices_common(Some(&socket), Some(&console_text), None);
+ 
++            if memory_restore_mode == Some("copyonwrite") {
++                guest
++                    .ssh_command(
++                        "sudo dd if=/dev/urandom of=/dev/shm/cow-test bs=1M count=64 conv=fsync \
++                         && sudo dd if=/dev/shm/cow-test of=/dev/null bs=1M count=64",
++                    )
++                    .expect("Failed to write and read guest memory during COW restore");
++            }
++
+             #[cfg(target_arch = "x86_64")]
+             guest.remove_test_disk(&api_socket_restored);
+ 
+@@ -10051,6 +10074,20 @@ pub(crate) fn _test_snapshot_restore(cfg: SnapshotRestoreTest) {
+         });
+ 
+         handle_child_output(r, &output);
++
++        if let Some((memory_file_path, initial_size, initial_checksum)) = snapshot_memory_checksum {
++            let mut memory_file = File::open(&memory_file_path).unwrap();
++            let memory_file_size = memory_file.metadata().unwrap().len();
++            assert_eq!(
++                memory_file_size, initial_size,
++                "Copy-on-write restore changed the snapshot memory file size"
++            );
++            assert_eq!(
++                initial_checksum,
++                compute_file_checksum(&mut memory_file, memory_file_size),
++                "Copy-on-write restore modified the snapshot memory file"
++            );
++        }
+     }
+ 
+     #[cfg(not(feature = "mshv"))]
+diff --git a/vmm/src/memory_manager.rs b/vmm/src/memory_manager.rs
+index 425be2728276e0b1c0a09606edd31e075b88a7a3..26aedb5489dd404093c6d97941f36b15fad52c2b 100644
+--- a/vmm/src/memory_manager.rs
++++ b/vmm/src/memory_manager.rs
+@@ -78,7 +78,8 @@ struct UffdHandler {
+ 
+ const DEFAULT_MEMORY_ZONE: &str = "mem0";
+ 
+-const SNAPSHOT_FILENAME: &str = "memory-ranges";
++/// Filename used to store guest RAM in snapshot directories.
++pub const SNAPSHOT_FILENAME: &str = "memory-ranges";
+ 
+ #[cfg(target_arch = "x86_64")]
+ const X86_64_IRQ_BASE: u32 = 5;

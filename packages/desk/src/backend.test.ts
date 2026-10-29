@@ -4,6 +4,9 @@ import { Buffer } from 'node:buffer'
 import { EventEmitter } from 'node:events'
 import { Duplex } from 'node:stream'
 import type { ChildProcess } from 'node:child_process'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import {
   createCloudHypervisorBackend,
   setVmmState,
@@ -15,6 +18,23 @@ import { buildDeskLaunchPlan, type DeskLaunchPlan } from './plan'
 import type { GuestEventMessage } from './protocol'
 
 type FakeChild = ChildProcess & { killedWith: NodeJS.Signals[] }
+
+test('paused sidecar failures preserve ordinary memory parking', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'desk-park-hook-'))
+  try {
+    const calls: string[] = []
+    const child = fakeChild({ exitOnKill: true })
+    const backend = createCloudHypervisorBackend({ platform: 'linux', launcher: () => child,
+      connect: fakeVsock(guestHandlers).connect, vmmApi: async (_socket, path) => { calls.push(path) } })
+    const machine = await backend.boot(makePlan())
+    assert.equal(machine.supportsPausedParkHook, true)
+    let failure: unknown
+    await machine.park!(dir, { onPaused: async () => { calls.push('hook'); throw new Error('sidecar') }, onPausedError: error => { failure = error } })
+    assert.match(String(failure), /sidecar/)
+    assert.deepEqual(calls, ['/api/v1/vm.pause', 'hook', '/api/v1/vm.snapshot'])
+    assert.deepEqual(child.killedWith, ['SIGTERM'])
+  } finally { await rm(dir, { recursive: true, force: true }) }
+})
 
 function fakeChild(options: { exitOnKill?: boolean; exitImmediately?: boolean } = {}): FakeChild {
   const child = new EventEmitter() as FakeChild
