@@ -583,29 +583,52 @@ export function attemptHandshake(
  * A snapshot holds the machine's devices, shares among them, so it can only
  * come back with the shares it was parked with: Cloud Hypervisor would resume
  * without a share that was added since, and Virtualization.framework refuses a
- * changed device list. Recording them lets a backend refuse a mismatched
- * restore up front, which the host answers with a cold boot.
+ * changed device list. The host restores with this list rather than the one it
+ * was given, and a backend refuses a plan that disagrees with it.
  */
 const SHARE_MANIFEST = 'shares.json'
 
 export async function writeShareManifest(snapshotDir: string, shares: readonly DeskShare[]): Promise<void> {
-  const manifest = shares.map(({ tag, path, readOnly }) => ({ tag, path, readOnly }))
-  await writeFile(join(snapshotDir, SHARE_MANIFEST), `${JSON.stringify(manifest)}\n`, { mode: 0o600 })
+  await writeFile(join(snapshotDir, SHARE_MANIFEST), `${shareManifest(shares)}\n`, { mode: 0o600 })
 }
 
-/** Throws unless the snapshot was parked with exactly `shares`, in order. No manifest means none. */
-export async function assertShareManifest(snapshotDir: string, shares: readonly DeskShare[]): Promise<void> {
-  let saved: string
+/**
+ * The shares recorded beside a snapshot. A snapshot with no record predates
+ * shares, so it was taken with none. Paths are returned as recorded; whether
+ * they still exist is the launch plan's to check.
+ */
+export async function readShareManifest(snapshotDir: string): Promise<DeskShare[]> {
+  let text: string
   try {
-    saved = (await readFile(join(snapshotDir, SHARE_MANIFEST), 'utf8')).trim()
+    text = await readFile(join(snapshotDir, SHARE_MANIFEST), 'utf8')
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
-    saved = '[]'
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []
+    throw error
   }
-  const wanted = JSON.stringify(shares.map(({ tag, path, readOnly }) => ({ tag, path, readOnly })))
-  if (saved !== wanted) {
-    throw new DeskError(`the snapshot was taken with shares ${saved}, not ${wanted}`)
+  let value: unknown
+  try {
+    value = JSON.parse(text)
+  } catch {
+    throw new DeskError(`${join(snapshotDir, SHARE_MANIFEST)} is not valid JSON.`)
   }
+  const valid = Array.isArray(value) && value.every((entry: unknown) =>
+    typeof entry === 'object' && entry !== null
+    && typeof (entry as DeskShare).tag === 'string'
+    && typeof (entry as DeskShare).path === 'string'
+    && typeof (entry as DeskShare).readOnly === 'boolean')
+  if (!valid) throw new DeskError(`${join(snapshotDir, SHARE_MANIFEST)} is not a list of shares.`)
+  return (value as DeskShare[]).map(({ tag, path, readOnly }) => ({ tag, path, readOnly }))
+}
+
+/** Throws unless the snapshot was parked with exactly `shares`, in order. */
+export async function assertShareManifest(snapshotDir: string, shares: readonly DeskShare[]): Promise<void> {
+  const saved = shareManifest(await readShareManifest(snapshotDir))
+  const wanted = shareManifest(shares)
+  if (saved !== wanted) throw new DeskError(`the snapshot was taken with shares ${saved}, not ${wanted}`)
+}
+
+function shareManifest(shares: readonly DeskShare[]): string {
+  return JSON.stringify(shares.map(({ tag, path, readOnly }) => ({ tag, path, readOnly })))
 }
 
 export function defaultLauncher(
