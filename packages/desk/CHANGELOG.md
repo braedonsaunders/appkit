@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.11.0
+
+### Minor Changes
+
+- f92b26b: Add strict on-demand userfaultfd restore with immutable source retention and durable interrupted-restore fencing.
+- 511a8f0: Expose optional preparation and paused sidecar hooks for explicit memory parking.
+- 5eba294: Allow Cloud Hypervisor VMM and share daemons to inherit host file descriptors.
+- dcdfc95: Add snapshot memory inode pinning, template registration and disk fork preparation, a restricted Cloud Hypervisor child configuration planner, and strict memory lifecycle fencing.
+
 ## 0.10.0
 
 ### Minor Changes
