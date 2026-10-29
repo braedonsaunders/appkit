@@ -1,5 +1,13 @@
 # @braedonsaunders/appkit-forms
 
+## 0.2.7
+
+### Patch Changes
+
+- Updated dependencies [8f4d9e1]
+  - @braedonsaunders/appkit-i18n@0.2.0
+  - @braedonsaunders/appkit-forms-core@0.1.2
+
 ## 0.2.6
 
 ### Patch Changes
