@@ -1,6 +1,6 @@
 {
   "name": "@braedonsaunders/appkit-desk",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Per-agent Debian microVMs on Linux and macOS, with a framed guest-agent protocol, leases, snapshots, and governed networking.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
