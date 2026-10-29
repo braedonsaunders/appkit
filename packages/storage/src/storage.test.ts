@@ -94,3 +94,49 @@ test('private-bucket readiness is explicit, idempotent, and verifies anonymous r
     'DeleteObjectCommand',
   ])
 })
+
+test('stream uploads multipart parts in bounded chunks and commits in order', async () => {
+  const seen: Array<{ name: string; input: Record<string, unknown> }> = []
+  const client = { async send(command: { input: Record<string, unknown> }) {
+    const name = command.constructor.name
+    seen.push({ name, input: command.input })
+    if (name === 'CreateMultipartUploadCommand') return { UploadId: 'upload' }
+    if (name === 'UploadPartCommand') return { ETag: `part-${command.input.PartNumber}` }
+    return {}
+  } } as unknown as S3Client
+  const storage = createStorage({ endpoint: 'https://storage.example.test', bucket: 'private', accessKeyId: 'key', secretAccessKey: 'secret', client })
+  async function* source() { yield Buffer.alloc(8 * 1024 * 1024, 1); yield Buffer.from('tail') }
+  await storage.putStream({ key: 'object', body: source() })
+  assert.deepEqual(seen.map((entry) => entry.name), ['CreateMultipartUploadCommand', 'UploadPartCommand', 'UploadPartCommand', 'CompleteMultipartUploadCommand'])
+  assert.equal((seen[1]!.input.Body as Buffer).length, 8 * 1024 * 1024)
+  assert.equal((seen[2]!.input.Body as Buffer).toString(), 'tail')
+  assert.deepEqual((seen[3]!.input.MultipartUpload as { Parts: unknown[] }).Parts, [{ ETag: 'part-1', PartNumber: 1 }, { ETag: 'part-2', PartNumber: 2 }])
+})
+
+test('stream upload aborts its multipart object when the producer fails or is cancelled', async () => {
+  const seen: string[] = []
+  const client = { async send(command: object) {
+    const name = command.constructor.name
+    seen.push(name)
+    if (name === 'CreateMultipartUploadCommand') return { UploadId: 'upload' }
+    return {}
+  } } as unknown as S3Client
+  const storage = createStorage({ endpoint: 'https://storage.example.test', bucket: 'private', accessKeyId: 'key', secretAccessKey: 'secret', client })
+  const abort = new AbortController()
+  async function* source() { yield Buffer.from('one'); abort.abort(); yield Buffer.from('two') }
+  await assert.rejects(storage.putStream({ key: 'object', body: source(), signal: abort.signal }))
+  assert.deepEqual(seen, ['CreateMultipartUploadCommand', 'AbortMultipartUploadCommand'])
+})
+
+test('empty streaming upload aborts multipart and writes an empty object', async () => {
+  const seen: string[] = []
+  const client = { async send(command: object) {
+    const name = command.constructor.name
+    seen.push(name)
+    return name === 'CreateMultipartUploadCommand' ? { UploadId: 'upload' } : {}
+  } } as unknown as S3Client
+  const storage = createStorage({ endpoint: 'https://storage.example.test', bucket: 'private', accessKeyId: 'key', secretAccessKey: 'secret', client })
+  async function* source(): AsyncGenerator<Uint8Array> { return }
+  await storage.putStream({ key: 'empty', body: source() })
+  assert.deepEqual(seen, ['CreateMultipartUploadCommand', 'AbortMultipartUploadCommand', 'PutObjectCommand'])
+})
