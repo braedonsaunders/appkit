@@ -666,10 +666,10 @@ function shareManifest(shares: readonly DeskShare[]): string {
 export function defaultLauncher(
   command: string,
   args: readonly string[],
-  options: { identity?: DeskLauncherIdentity },
+  options: { identity?: DeskLauncherIdentity; inheritedFds?: readonly number[] },
 ): ChildProcess {
   return spawn(command, [...args], {
-    stdio: ['ignore', 'pipe', 'pipe'],
+    stdio: ['ignore', 'pipe', 'pipe', ...(options.inheritedFds ?? [])],
     uid: options.identity?.uid,
     gid: options.identity?.gid,
   })

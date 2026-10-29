@@ -431,3 +431,13 @@ and its path immutable and available for as long as a desk or its snapshot uses 
 AppKit hashes each image on start and records the attachment list with the snapshot;
 restore refuses a changed list before resuming. Virtualization.framework rejects
 attachments. Device support and filesystem mount options depend on the guest kernel.
+
+Cloud Hypervisor backends accept `inheritedFds`, a list of open descriptors to
+retain in the VMM and each share daemon, mapped to consecutive child descriptors
+starting at 3. Keep each descriptor open until the backend has stopped its
+children. For example, a host can retain an advisory lock in those processes
+so that an orphaned VMM continues to fence offline disk operations. The caller
+is responsible for acquiring and validating the lock and for ensuring the
+executables do not close the inherited descriptors. Run
+`python3 packages/desk/scripts/check-inherited-lock.py` from the repository to
+check descriptor inheritance and release with disposable processes.

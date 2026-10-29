@@ -172,10 +172,12 @@ export interface DeskBackend {
 export type DeskProcessLauncher = (
   command: string,
   args: readonly string[],
-  options: { identity?: DeskLauncherIdentity },
+  options: { identity?: DeskLauncherIdentity; inheritedFds?: readonly number[] },
 ) => ChildProcess
 
 export interface CloudHypervisorBackendOptions {
+  /** Descriptors retained by the VMM and share daemons, mapped consecutively from fd 3. */
+  inheritedFds?: readonly number[]
   /** Spawns the VMM and image tooling; injectable for tests. */
   launcher?: DeskProcessLauncher
   /** Opens the host side of the vsock Unix socket; injectable for tests. */
@@ -255,7 +257,7 @@ export function createCloudHypervisorBackend(
     try {
       for (const share of plan.shares) {
         await removeFile(share.socketPath)
-        const child = launcher(share.daemon.command, share.daemon.args, { identity: plan.launcherIdentity })
+        const child = launcher(share.daemon.command, share.daemon.args, { identity: plan.launcherIdentity, inheritedFds: options.inheritedFds })
         daemons.push({ tag: share.tag, child, exit: watchExit(child), log: drainOutput(child) })
       }
       const deadline = now() + connectTimeoutMs
@@ -320,7 +322,7 @@ export function createCloudHypervisorBackend(
     } catch (error) {
       throw new DeskError(`Desk ${plan.deskId} could not start its shares: ${errorMessage(error)}`)
     }
-    const child = launcher(plan.vmm.command, plan.vmm.args, { identity: plan.launcherIdentity })
+    const child = launcher(plan.vmm.command, plan.vmm.args, { identity: plan.launcherIdentity, inheritedFds: options.inheritedFds })
     const log = drainOutput(child)
     const exit = watchExit(child)
     shares.supervise(child, exit)
