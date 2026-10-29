@@ -116,6 +116,9 @@ export interface DeskMachine {
    * `DeskError` when the guest refuses or does not answer.
    */
   connect?(port: number): Promise<Duplex>
+  /** Optional resident pause and resume. Callers must serialize these with lifecycle operations. */
+  pause?(): Promise<void>
+  resume?(): Promise<void>
   /** Stop the VM. Idempotent; resolves once the VMM process has exited. */
   shutdown(): Promise<void>
   /**
@@ -396,6 +399,8 @@ export function createCloudHypervisorBackend(
       idFactory,
       requestTimeoutMs,
       stop,
+      pause: () => setVmmState(vmmApi, plan.api.socketPath, 'Paused'),
+      resume: () => setVmmState(vmmApi, plan.api.socketPath, 'Running'),
       park: async (snapshotDir) => {
         try {
           await vmmApi(plan.api.socketPath, '/api/v1/vm.pause')
@@ -433,11 +438,25 @@ export type VmmApiCall = (
   path: string,
   body?: Record<string, unknown>,
   method?: 'PUT' | 'GET',
-) => Promise<void>
+) => Promise<void | string>
+
+/** Reconcile an ambiguous command failure against the VMM before releasing the fence. */
+export async function setVmmState(call: VmmApiCall, socketPath: string, desired: 'Paused' | 'Running'): Promise<void> {
+  try {
+    await call(socketPath, desired === 'Paused' ? '/api/v1/vm.pause' : '/api/v1/vm.resume')
+  } catch (error) {
+    try {
+      const response = await call(socketPath, '/api/v1/vm.info', undefined, 'GET')
+      const info: unknown = typeof response === 'string' ? JSON.parse(response) : null
+      if (info && typeof info === 'object' && 'state' in info && info.state === desired) return
+    } catch { /* State is unknown: preserve the original failure and the request fence. */ }
+    throw error
+  }
+}
 
 const vmmApi: VmmApiCall = async (socketPath, path, body, method = 'PUT') => {
   const payload = body === undefined ? undefined : Buffer.from(JSON.stringify(body), 'utf8')
-  await new Promise<void>((resolve, reject) => {
+  return await new Promise<string>((resolve, reject) => {
     const request = httpRequest(
       {
         socketPath,
@@ -455,7 +474,7 @@ const vmmApi: VmmApiCall = async (socketPath, path, body, method = 'PUT') => {
         response.on('end', () => {
           const status = response.statusCode ?? 0
           if (status >= 200 && status < 300) {
-            resolve()
+            resolve(Buffer.concat(chunks).toString('utf8'))
             return
           }
           const said = Buffer.concat(chunks).toString('utf8').trim().slice(0, 400)

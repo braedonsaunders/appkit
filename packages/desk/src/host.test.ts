@@ -1557,3 +1557,62 @@ test('a parked share whose directory is gone fails the restore clearly, and the 
     /could not resume from its snapshot and was cold booted: its restore, with the shares it was parked with, could not be planned: shares\[0\]\.path is not an existing directory: \/srv\/removed/,
   )
 })
+
+
+test('resident pause fences handles and resumes before teardown guest commands', async () => {
+  const factory = fakeBackendFactory()
+  const context = makeHost({ backend: factory.backend })
+  const handle = await context.host.start(startOptions('resident-pause'))
+  const fake = factory.machines[0]!
+  const calls: string[] = []
+  fake.machine.pause = async () => { calls.push('pause') }
+  fake.machine.resume = async () => { calls.push('resume') }
+  const request = fake.machine.request.bind(fake.machine)
+  fake.machine.request = async (command, options) => { calls.push(command.op); return request(command, options) }
+  assert.equal(context.host.canPause('resident-pause'), true)
+  await context.host.pause('resident-pause')
+  await assert.rejects(handle.exec({ command: '/bin/true' }), /not resident/)
+  assert.equal(context.host.stats().resident, 1)
+  assert.equal(await context.host.resume('resident-pause'), handle)
+  await context.host.pause('resident-pause')
+  await context.host.suspend('resident-pause')
+  assert.deepEqual(calls.slice(0, 4), ['pause', 'resume', 'pause', 'resume'])
+  assert.ok(calls.slice(4).includes('exec'), 'guest trim occurs after resume')
+})
+
+test('unsupported pause and failed resume preserve the resident desk', async () => {
+  const factory = fakeBackendFactory()
+  const context = makeHost({ backend: factory.backend })
+  const handle = await context.host.start(startOptions('pause-failure'))
+  assert.equal(context.host.canPause('pause-failure'), false)
+  await assert.rejects(context.host.pause('pause-failure'), /cannot be paused/)
+  const machine = factory.machines[0]!.machine
+  machine.pause = async () => undefined
+  machine.resume = async () => { throw new Error('resume failed') }
+  await context.host.pause('pause-failure')
+  await assert.rejects(context.host.suspend('pause-failure'), /resume failed/)
+  await assert.rejects(handle.exec({ command: '/bin/true' }), /not resident/)
+  assert.equal(context.host.stats().resident, 1)
+  machine.resume = async () => undefined
+  await context.host.suspend('pause-failure')
+})
+
+test('sweep waits for pause before resuming and suspending the desk', async () => {
+  const factory = fakeBackendFactory()
+  const context = makeHost({ backend: factory.backend, idleSuspendMs: 1000 })
+  await context.host.start(startOptions('pause-sweep'))
+  const machine = factory.machines[0]!.machine
+  const gate = deferred<void>()
+  const order: string[] = []
+  machine.pause = async () => { order.push('pause-start'); await gate.promise; order.push('pause-end') }
+  machine.resume = async () => { order.push('resume') }
+  const pausing = context.host.pause('pause-sweep')
+  context.clock.value += 2000
+  const sweeping = context.host.sweep()
+  await nextTurn()
+  assert.deepEqual(order, ['pause-start'])
+  gate.resolve()
+  await pausing
+  assert.equal(await sweeping, 1)
+  assert.deepEqual(order, ['pause-start', 'pause-end', 'resume'])
+})

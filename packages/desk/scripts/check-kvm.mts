@@ -65,6 +65,13 @@ try {
     try { await check(); connected = true; break } catch { await new Promise((resolve) => setTimeout(resolve, 100)) }
   }
   if (!connected) throw new Error('Guest service did not become reachable')
+  if (!host.canPause('integration-check')) throw new Error('Cloud Hypervisor does not offer resident pause')
+  await host.pause('integration-check')
+  let fenced = false
+  try { await shell('true') } catch { fenced = true }
+  if (!fenced) throw new Error('Guest requests were not fenced while paused')
+  desk = await host.resume('integration-check')
+  await check()
   if (virtiofsdPath) {
     const mounted = await shell('mkdir -p /mnt/check && mount -t virtiofs check /mnt/check && cat /mnt/check/hello.txt')
     if (mounted.stdout !== 'shared from the host\n') throw new Error(`Share did not mount: ${mounted.stderr}`)

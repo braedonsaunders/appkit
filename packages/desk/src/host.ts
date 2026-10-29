@@ -442,6 +442,11 @@ export interface DeskHostStats {
 
 export interface DeskHost {
   start(options: DeskStartOptions): Promise<DeskHandle>
+  /** True when this resident desk supports in-memory pause. */
+  canPause(deskId: string): boolean
+  /** Pause a resident desk; its lease and capacity remain in effect. */
+  pause(deskId: string): Promise<void>
+  /** Resume a paused resident desk or restore a suspended desk. */
   resume(deskId: string): Promise<DeskHandle>
   suspend(deskId: string): Promise<void>
   /**
@@ -484,6 +489,7 @@ interface DeskRecord {
   deskId: string
   startOptions: DeskStartOptions
   status: 'resident' | 'suspending' | 'suspended'
+  paused: boolean
   machine: DeskMachine | null
   epoch: number
   leaseDeadline: number
@@ -587,7 +593,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
   }
 
   function requireMachine(record: DeskRecord, epoch: number): DeskMachine {
-    if (record.status !== 'resident' || record.epoch !== epoch || !record.machine) {
+    if (record.status !== 'resident' || record.paused || record.epoch !== epoch || !record.machine) {
       throw new DeskError(`Desk ${record.deskId} is not resident; resume it first.`)
     }
     return record.machine
@@ -749,6 +755,12 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
 
   async function teardown(record: DeskRecord, keepMemory = true): Promise<boolean> {
     if (record.status !== 'resident') return false
+    // Resume before issuing trim, sync, or handover commands. On failure leave
+    // the resident record intact and fenced so the caller can retry.
+    if (record.paused) {
+      await record.machine!.resume!()
+      record.paused = false
+    }
     await endHandover(record, 'revoked')
     for (const stop of [...record.streamStops]) stop()
     record.streamStops.clear()
@@ -970,6 +982,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         deskId,
         startOptions,
         status: 'resident',
+        paused: false,
         machine,
         epoch: 1,
         leaseDeadline: 0,
@@ -987,6 +1000,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     } else {
       record.startOptions = startOptions
       record.status = 'resident'
+      record.paused = false
       record.machine = machine
       record.epoch += 1
       record.jobs = new Map()
@@ -1609,8 +1623,28 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     const deskId = cleanDeskId(startOptions.deskId)
     return serializeLifecycle(deskId, async () => {
       const existing = records.get(deskId)
-      if (existing?.status === 'resident' && existing.handle) return existing.handle
+      if (existing?.status === 'resident' && existing.handle) {
+        if (existing.paused) { await existing.machine!.resume!(); existing.paused = false }
+        return existing.handle
+      }
       return admit(() => boot(deskId, { ...startOptions, deskId }))
+    })
+  }
+
+  function canPause(deskId: string): boolean {
+    const record = records.get(cleanDeskId(deskId))
+    return record?.status === 'resident' && typeof record.machine?.pause === 'function' && typeof record.machine?.resume === 'function'
+  }
+
+  async function pause(deskId: string): Promise<void> {
+    const id = cleanDeskId(deskId)
+    await serializeLifecycle(id, async () => {
+      const record = records.get(id)
+      if (!record || record.status !== 'resident' || !canPause(id)) throw new DeskError(`Desk ${id} cannot be paused.`)
+      if (record.paused) return
+      if (record.screen?.handover) throw new DeskError(`Desk ${id} has an active handover.`)
+      record.paused = true
+      await record.machine!.pause!()
     })
   }
 
@@ -1619,7 +1653,10 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     return serializeLifecycle(id, async () => {
       const record = records.get(id)
       if (!record) throw new DeskError(`Unknown desk: ${deskId}`)
-      if (record.status === 'resident' && record.handle) return record.handle
+      if (record.status === 'resident' && record.handle) {
+        if (record.paused) { await record.machine!.resume!(); record.paused = false }
+        return record.handle
+      }
       return admit(() => boot(record.deskId, record.startOptions))
     })
   }
@@ -1743,7 +1780,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     }
   }
 
-  return { start, resume, suspend, shutdown, destroy, stats, sweep }
+  return { start, canPause, pause, resume, suspend, shutdown, destroy, stats, sweep }
 }
 
 export interface VerifyDeskHostOptions {

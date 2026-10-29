@@ -6,6 +6,7 @@ import { Duplex } from 'node:stream'
 import type { ChildProcess } from 'node:child_process'
 import {
   createCloudHypervisorBackend,
+  setVmmState,
   DeskRequestFateUnknownError,
   type DeskConnectionChange,
 } from './backend'
@@ -737,4 +738,17 @@ test('the share record beside a snapshot round-trips, and a damaged one is refus
   } finally {
     await rm(directory, { recursive: true, force: true })
   }
+})
+
+
+test('pause and resume reconcile command failures using VM state', async () => {
+  const paths: string[] = []
+  const call = async (_socket: string, path: string) => {
+    paths.push(path)
+    if (path.endsWith('vm.info')) return JSON.stringify({ state: 'Running' })
+    throw new Error('control connection lost')
+  }
+  await setVmmState(call, '/socket', 'Running')
+  await assert.rejects(setVmmState(call, '/socket', 'Paused'), /control connection lost/)
+  assert.deepEqual(paths, ['/api/v1/vm.resume', '/api/v1/vm.info', '/api/v1/vm.pause', '/api/v1/vm.info'])
 })
