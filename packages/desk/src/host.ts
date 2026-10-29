@@ -61,6 +61,8 @@ import type {
   WindowInfo,
 } from './events'
 
+/** Capability marker for the fenced template lifecycle and mapping proof. */
+export const DESK_TEMPLATE_VERSION = 1
 export const DEFAULT_CAPACITY = 4
 export const DEFAULT_IDLE_SUSPEND_MS = 5 * 60_000
 export const DEFAULT_LEASE_MS = 15 * 60_000
