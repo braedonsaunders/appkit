@@ -10,6 +10,7 @@ import { assertPinnedTemplateMemory, pinTemplateMemory } from './template-source
 export interface DeskTemplateCompatibility {
   vmmVersion: string
   cpuSignature: string
+  baseImagePath: string
   kernelPath: string
   initramfsPath: string
   attachmentPaths: readonly string[]
@@ -36,7 +37,7 @@ async function digest(path: string, immutable: boolean): Promise<string> {
 async function measure(snapshot: string, diskPath: string, compatibility: DeskTemplateCompatibility): Promise<Registration> {
   if (!isAbsolute(snapshot) || !compatibility.cpuSignature || !compatibility.vmmVersion) throw new Error('Invalid template compatibility identity')
   const diskFiles = [join(snapshot, 'config.json'), join(snapshot, 'state.json'), join(snapshot, 'memory-ranges'), diskPath]
-  const boundFiles = [compatibility.kernelPath, compatibility.initramfsPath, ...compatibility.attachmentPaths]
+  const boundFiles = [compatibility.baseImagePath, compatibility.kernelPath, compatibility.initramfsPath, ...compatibility.attachmentPaths]
   const all = [...diskFiles, ...boundFiles]
   if (new Set(all).size !== all.length) throw new Error('Template file identities must be distinct')
   const values = await Promise.all(all.map((path, index) => digest(path, index < diskFiles.length)))
