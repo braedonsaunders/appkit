@@ -458,3 +458,11 @@ prepare independent disk and device identities, fence the guest until it has
 been reinitialized, and retain each memory pin while its VM can use it. A
 partially published destination is left in place after an interruption and
 must not be restored. Remove it only after verifying no VM is using it.
+
+`planTemplateConfig` checks a snapshot config for a restricted Cloud Hypervisor
+copy-on-write configuration and produces a child-specific copy with distinct
+disk, TAP, MAC and vsock endpoints. It does not create a disk or establish
+that any of those identities are globally unique. Cloud Hypervisor restores
+virtio-net configuration from saved device state, so the guest must also change
+its live MAC under an external network fence before traffic is allowed.
+Read-only attachments retain their paths; the caller must verify their contents.
