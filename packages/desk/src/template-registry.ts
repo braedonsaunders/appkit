@@ -9,6 +9,7 @@ import { assertPinnedTemplateMemory, pinTemplateMemory } from './template-source
 /** Compatibility inputs must describe the actual VMM and host CPU, not labels. */
 export interface DeskTemplateCompatibility {
   vmmVersion: string
+  vmmPath: string
   cpuSignature: string
   baseImagePath: string
   kernelPath: string
@@ -37,7 +38,7 @@ async function digest(path: string, immutable: boolean): Promise<string> {
 async function measure(snapshot: string, diskPath: string, compatibility: DeskTemplateCompatibility): Promise<Registration> {
   if (!isAbsolute(snapshot) || !compatibility.cpuSignature || !compatibility.vmmVersion) throw new Error('Invalid template compatibility identity')
   const diskFiles = [join(snapshot, 'config.json'), join(snapshot, 'state.json'), join(snapshot, 'memory-ranges'), diskPath]
-  const boundFiles = [compatibility.baseImagePath, compatibility.kernelPath, compatibility.initramfsPath, ...compatibility.attachmentPaths]
+  const boundFiles = [compatibility.vmmPath, compatibility.baseImagePath, compatibility.kernelPath, compatibility.initramfsPath, ...compatibility.attachmentPaths]
   const all = [...diskFiles, ...boundFiles]
   if (new Set(all).size !== all.length) throw new Error('Template file identities must be distinct')
   const files: Record<string, string> = {}
