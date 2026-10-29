@@ -8,7 +8,7 @@ import {
   DEFAULT_HANDSHAKE_TIMEOUT_MS, DEFAULT_RECONNECT_WINDOW_MS, DEFAULT_RECONNECT_RETRY_DELAY_MS,
   DEFAULT_KILL_GRACE_MS, RECONNECT_BACKOFF_CEILING, connectWithRetry, createGuestMachine,
   defaultLauncher, defaultConnect, drainOutput, watchExit, terminate, runToCompletion, errorMessage,
-  assertShareManifest, writeShareManifest, delay, type ExitWatcher,
+  assertShareManifest, writeShareManifest, type ExitWatcher,
 } from './machine'
 /**
  * The backend port.
@@ -267,7 +267,9 @@ export function createCloudHypervisorBackend(
             `virtiofsd did not create ${waiting.map((share) => share.socketPath).join(', ')} in ${connectTimeoutMs}ms.`,
           )
         }
-        await delay(connectRetryDelayMs)
+        // A held timer: the wait is bounded by the deadline, and nothing else may be keeping
+        // the process alive while a daemon starts.
+        await new Promise<void>((resolvePromise) => setTimeout(resolvePromise, connectRetryDelayMs))
       }
     } catch (error) {
       await stop()
