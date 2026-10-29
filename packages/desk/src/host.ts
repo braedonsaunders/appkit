@@ -8,9 +8,9 @@
  * emission to the consumer's ports, and the handover masking contract. It
  * never touches a database and knows nothing about tenants or approvals.
  */
-import { existsSync } from 'node:fs'
+import { createReadStream, existsSync } from 'node:fs'
 import { execFile } from 'node:child_process'
-import { mkdir, readFile, rm, statfs, writeFile } from 'node:fs/promises'
+import { mkdir, open, readFile, rename, rm, statfs, writeFile } from 'node:fs/promises'
 import { arch, cpus, release, tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
@@ -26,6 +26,7 @@ import {
   type DeskLauncherIdentity,
   type DeskGuestNetworkOptions,
   type DeskShare,
+  type DeskReadOnlyAttachment,
   type DeskVirtiofsdSandbox,
 } from './plan'
 import {
@@ -158,6 +159,10 @@ export interface DeskHostOptions {
    * occurrence is indistinguishable, from inside the guest, from a failing host.
    */
   parkWithMemory?: boolean
+  /** Opt in to Cloud Hypervisor copy-on-write snapshot restore. */
+  memoryRestoreMode?: 'copyonwrite'
+  /** Atomically retire a parked snapshot and sync its parent directory. */
+  retireSnapshot?: (from: string, to: string) => Promise<void>
   /** Identifies the host CPU for conservative snapshot portability checks. */
   cpuSignature?: () => Promise<string>
   readSnapshotSignature?: (directory: string) => Promise<string | null>
@@ -173,8 +178,8 @@ export interface DeskHostOptions {
   /**
    * Destroy a snapshot; defaults to `rm(path, { recursive: true, force: true })`.
    *
-   * Called at the one moment it is safe to — a restored guest still paused — so
-   * a failure here is not cosmetic. It is the reason the restore is abandoned.
+   * Eager restore removes the snapshot while paused. Copy-on-write restore
+   * removes its retired source only after the VMM exits.
    */
   removeSnapshot?: (path: string) => Promise<void>
   /**
@@ -209,9 +214,14 @@ export interface DeskStartOptions {
   deskId: string
   /** Absolute path of the golden base image this desk boots from. */
   baseImage: string
+  /** Optional kernel and initramfs for this desk; retain them with its disk. */
+  kernelPath?: string
+  initramfsPath?: string
   /** Absolute path of this desk's copy-on-write overlay. */
   overlayPath: string
   memoryMb?: number
+  /** Enable Cloud Hypervisor free-page reporting on cold boot. */
+  freePageReporting?: boolean
   vcpus?: number
   leaseMs?: number
   network?: { tapDevice?: string; macAddress?: string; guestAddress?: string }
@@ -223,6 +233,8 @@ export interface DeskStartOptions {
    * and the desk cold boots with these instead.
    */
   shares?: readonly DeskShare[]
+  /** Immutable attachments; retain their path and contents while a snapshot exists. */
+  readOnlyAttachments?: readonly DeskReadOnlyAttachment[]
 }
 
 export interface DeskExecOptions {
@@ -521,6 +533,14 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
   const deviceExists = options.deviceExists ?? existsSync
   const removeOverlay = options.removeOverlay ?? ((path: string) => rm(path, { force: true }))
   const parkWithMemory = options.parkWithMemory ?? false
+  if (options.memoryRestoreMode && (!parkWithMemory || backend.hypervisor === 'virtualization')) {
+    throw new DeskError('Copy-on-write restore requires Cloud Hypervisor and parkWithMemory.')
+  }
+  const retireSnapshot = options.retireSnapshot ?? (async (from: string, to: string) => {
+    await rename(from, to)
+    const directory = await open(dirname(from), 'r')
+    try { await directory.sync() } finally { await directory.close() }
+  })
   const makeSnapshotDir = options.makeSnapshotDir ?? ((path: string) => mkdir(path, { recursive: true }).then(() => undefined))
   const removeSnapshot =
     options.removeSnapshot ?? ((path: string) => rm(path, { recursive: true, force: true }))
@@ -754,6 +774,18 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
   }
 
   async function teardown(record: DeskRecord, keepMemory = true): Promise<boolean> {
+    if (record.status === 'suspending' && record.machine) {
+      // A previous stop failed. Keep the overlay fenced until a retry confirms
+      // the VMM has exited; never boot another VM or delete it underneath one.
+      await record.machine.shutdown()
+      await removeSnapshot(snapshotDirFor(record.startOptions.overlayPath, record.deskId))
+      record.machine = null
+      record.status = 'suspended'
+      occupied -= 1
+      lastSuspendedAt = iso(now())
+      drainQueue()
+      return true
+    }
     if (record.status !== 'resident') return false
     // Resume before issuing trim, sync, or handover commands. On failure leave
     // the resident record intact and fenced so the caller can retry.
@@ -807,6 +839,18 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         if (parking) {
           const snapshotDir = snapshotDirFor(record.startOptions.overlayPath, record.deskId)
           await makeSnapshotDir(snapshotDir)
+          // Persist attachment identity before the VMM can produce a complete
+          // snapshot. A crash must never leave attached VM state with no record.
+          if (record.startOptions.readOnlyAttachments?.length) {
+            const manifest = join(snapshotDir, 'attachments.json')
+            const file = await open(manifest, 'wx', 0o600)
+            try {
+              await file.writeFile(JSON.stringify(record.startOptions.readOnlyAttachments))
+              await file.sync()
+            } finally { await file.close() }
+            const directory = await open(snapshotDir, 'r')
+            try { await directory.sync() } finally { await directory.close() }
+          }
           await machine.park!(snapshotDir)
           const signature = await (options.cpuSignature ?? hostCpuSignature)()
           await (options.writeSnapshotSignature ?? writeSnapshotSignature)(snapshotDir, signature)
@@ -814,10 +858,13 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
           await machine.shutdown()
         }
       } catch (error) {
-        // `park` stops the VMM on its own way out, so the desk is down either
-        // way; what is lost is the memory, not the desk. Leave nothing behind
-        // that a later boot would try to restore from.
+        // Preparation can fail before park is called, so confirm the VMM is
+        // down even when park itself normally stops on failure.
         lastError = errorMessage(error)
+        try { await machine.shutdown() } catch (stopError) {
+          record.machine = machine
+          throw new DeskError(`Desk ${record.deskId} could not stop after teardown failed: ${errorMessage(stopError)}`)
+        }
         if (parking) {
           await removeSnapshot(snapshotDirFor(record.startOptions.overlayPath, record.deskId)).catch(
             () => undefined,
@@ -896,7 +943,8 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     // names its vsock and tap, and a cold-boot retry that renumbered them would
     // come up on a different tap than the one the egress rules were put on.
     const cid = nextCid++
-    const initramfsPath = resolveInitramfsPath()
+    const initramfsPath = startOptions.initramfsPath ?? resolveInitramfsPath()
+    let restoreDir = snapshotDir
     const planFor = (restore: boolean, shares = startOptions.shares) =>
       buildDeskLaunchPlan(
         {
@@ -907,28 +955,30 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
             : { virtiofsdPath: options.virtiofsdPath, virtiofsdSandbox: options.virtiofsdSandbox }),
           vmmPath: options.vmmPath,
           kvmPath: options.kvmPath,
-          kernelPath,
+          kernelPath: startOptions.kernelPath ?? kernelPath,
           ...(initramfsPath === undefined ? {} : { initramfsPath }),
           baseImagePath: startOptions.baseImage,
           overlayPath: startOptions.overlayPath,
           memoryMb: startOptions.memoryMb,
+          freePageReporting: startOptions.freePageReporting,
           vcpus: startOptions.vcpus,
           vsockCid: cid,
           runtimeDir: options.runtimeDir,
           tapDevice: startOptions.network?.tapDevice,
           macAddress: startOptions.network?.macAddress,
           shares,
+          readOnlyAttachments: startOptions.readOnlyAttachments,
           // Forward the host's cmdline only when set; otherwise the plan falls
           // back to DEFAULT_KERNEL_CMDLINE.
           ...(kernelCmdline === undefined ? {} : { kernelCmdline }),
           launcherIdentity: options.launcherIdentity,
-          snapshotDir,
-          ...(restore ? { restore: true as const } : {}),
+          snapshotDir: restore ? restoreDir : snapshotDir,
+          ...(restore ? { restore: true as const, ...(options.memoryRestoreMode ? { memoryRestoreMode: options.memoryRestoreMode } : {}) } : {}),
         },
         { pathExists, deviceExists, ...(options.isDirectory ? { isDirectory: options.isDirectory } : {}) },
       )
     const restorePlan = async () => {
-      const parked = await (options.readSnapshotShares ?? readShareManifest)(snapshotDir)
+      const parked = await (options.readSnapshotShares ?? readShareManifest)(restoreDir)
       try {
         return planFor(true, parked)
       } catch (error) {
@@ -936,8 +986,23 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       }
     }
 
+    // Verify bytes, not just the caller's label, before the VMM can map them.
+    for (const image of startOptions.readOnlyAttachments ?? []) {
+      const hash = createHash('sha256')
+      for await (const chunk of createReadStream(image.path)) hash.update(chunk as Buffer)
+      if (hash.digest('hex') !== image.sha256) throw new DeskError(`Read-only attachment digest mismatch: ${image.path}`)
+    }
     let resuming = parkWithMemory && pathExists(snapshotDir)
     if (resuming) {
+      let savedAttachments: unknown
+      try { savedAttachments = JSON.parse(await readFile(join(snapshotDir, 'attachments.json'), 'utf8')) }
+      catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+        savedAttachments = []
+      }
+      if (JSON.stringify(savedAttachments) !== JSON.stringify(startOptions.readOnlyAttachments ?? [])) {
+        throw new DeskError('Snapshot read-only attachment identity does not match; restore requires the original images.')
+      }
       const saved = await (options.readSnapshotSignature ?? readSnapshotSignature)(snapshotDir)
       if (saved !== null && saved !== await (options.cpuSignature ?? hostCpuSignature)()) {
         await removeSnapshot(snapshotDir)
@@ -945,15 +1010,20 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         recordCpuFallback(deskId, 'signature_mismatch')
       }
     }
+    // Retire before starting the VMM: after a crash the old name can never be
+    // replayed against a disk the guest may have changed. The retired file is
+    // private backing memory, not a restorable snapshot.
+    if (resuming && options.memoryRestoreMode === 'copyonwrite') {
+      restoreDir = `${snapshotDir}.source-${randomUUID()}`
+      await retireSnapshot(snapshotDir, restoreDir)
+    }
     let machine: DeskMachine
     try {
       machine = resuming
         ? await backend.boot(await restorePlan(), {
-            // The guest is restored and PAUSED here. Destroying the snapshot in
-            // this window is what stops a memory image ever outliving the disk
-            // state it belongs to. If it fails the restore is abandoned rather
-            // than resumed, because resuming would leave both alive at once.
-            onRestored: () => removeSnapshot(snapshotDir),
+            // Eager restore removes the parked snapshot before resume. A CoW
+            // source was already retired durably before the VMM started.
+            onRestored: options.memoryRestoreMode === 'copyonwrite' ? async () => {} : () => removeSnapshot(snapshotDir),
           })
         : await backend.boot(planFor(false))
     } catch (error) {
@@ -963,6 +1033,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         // boot. Safe by construction — the guest never ran, so the disk is
         // exactly as the pre-park sync left it.
         const why = errorMessage(error)
+        resuming = false
         await removeSnapshot(snapshotDir)
         if (isIncompatibleCpuSnapshotError(error)) recordCpuFallback(deskId, 'incompatible_cpuid')
         else lastError = `Desk ${deskId} could not resume from its snapshot and was cold booted: ${why}`
@@ -974,6 +1045,21 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
           ? error
           : new DeskError(`Desk ${deskId} failed to boot: ${errorMessage(error)}`)
       }
+    }
+
+    if (resuming && options.memoryRestoreMode === 'copyonwrite') {
+      // The mapping remains file-backed until the VMM has exited. Never remove
+      // it after a failed stop; leaking it is safer than invalidating a live VM.
+      const restored = machine
+      const stop = restored.shutdown.bind(restored)
+      const park = restored.park?.bind(restored)
+      const releaseSource = async () => {
+        try { await removeSnapshot(restoreDir) } catch (error) {
+          lastError = `Snapshot source cleanup failed for ${deskId}: ${errorMessage(error)}`
+        }
+      }
+      restored.shutdown = async () => { await stop(); await releaseSource() }
+      if (park) restored.park = async (dir) => { await park(dir); await releaseSource() }
     }
 
     let record = records.get(deskId)
@@ -1628,6 +1714,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     const deskId = cleanDeskId(startOptions.deskId)
     return serializeLifecycle(deskId, async () => {
       const existing = records.get(deskId)
+      if (existing?.status === 'suspending') throw new DeskError(`Desk ${deskId} has not stopped; retry suspend first.`)
       if (existing?.status === 'resident' && existing.handle) {
         if (existing.paused) { await existing.machine!.resume!(); existing.paused = false }
         return existing.handle
@@ -1658,6 +1745,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     return serializeLifecycle(id, async () => {
       const record = records.get(id)
       if (!record) throw new DeskError(`Unknown desk: ${deskId}`)
+      if (record.status === 'suspending') throw new DeskError(`Desk ${id} has not stopped; retry suspend first.`)
       if (record.status === 'resident' && record.handle) {
         if (record.paused) { await record.machine!.resume!(); record.paused = false }
         return record.handle

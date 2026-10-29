@@ -143,7 +143,7 @@ export interface DeskBootHooks {
    * Called on a restore, after the snapshot has been read back and before the
    * guest is allowed to run.
    *
-   * This is the window in which the snapshot must be destroyed. A memory image
+   * The snapshot must no longer be available for replay by this point. A memory image
    * is valid only against the disk it was taken with, so once the guest resumes
    * and writes, any surviving snapshot describes a past that no longer matches —
    * and replaying it later would corrupt the desk. Restoring paused and
@@ -336,7 +336,7 @@ export function createCloudHypervisorBackend(
 
     // A restored guest comes back PAUSED (see the `resume=false` reasoning in
     // the plan). Three things have to happen in this order and nowhere else:
-    // prove the restore finished, let the caller destroy the snapshot while the
+    // prove the restore finished, let the caller invalidate replay while the
     // guest still cannot write, then start it.
     if (plan.snapshot.restoring) {
       try {

@@ -260,6 +260,25 @@ The default iptables chain prefix is `desk`. Existing deployments using the `bh`
 
 Supply `network: { tapDevice, macAddress, guestAddress }` to `host.start`, then `await desk.connect(port)` returns a Node `Duplex` TCP stream to the guest. The caller owns the stream; suspension closes it. A service must listen on the guest interface, and its protocol and authentication remain the application's responsibility. `connectGuest` on host options injects a dialer for testing.
 
+`freePageReporting: true` on `host.start` configures a zero-size
+virtio-balloon with free-page reporting on a Cloud Hypervisor cold boot. It
+requires guest driver support; the snapshot retains its original device
+configuration. Reporting frees host memory when the guest reports unused pages;
+it does not promise a particular snapshot size. Virtualization.framework does
+not support this option.
+
+With Cloud Hypervisor v54 or later, `memoryRestoreMode: 'copyonwrite'` opts in
+to file-backed restore alongside `parkWithMemory: true`. The parked snapshot is
+atomically renamed to a unique source and its parent directory synced before
+the VMM starts, so it cannot be replayed after the disk changes. The source is
+kept unchanged until the VMM exits, then removed. A host crash or failed stop can
+leave a `*.snapshot.source-*` directory; only remove it after verifying that no
+VMM maps it. Restore failures can leave one too. The source contains guest RAM
+and needs the same protection as a parked snapshot. Cloud Hypervisor can fall
+back to eager copying for incompatible memory or devices. Separate reflinked
+files do not share page-cache identity, and this option does not create cloned
+template guests or promise incremental snapshots.
+
 With `parkWithMemory`, new snapshots carry a host CPU signature. A changed signature skips restore and cold boots; Cloud Hypervisor's specific incompatible-CPUID restore error also triggers a cold boot. These outcomes increment `stats().snapshotCpuFallbacks`, set `lastSnapshotCpuFallback`, and emit `snapshot_cpu_fallback`, rather than setting `lastError`. Existing snapshots without a signature are attempted normally. Signatures are conservative CPU identity and feature fingerprints, not a guarantee of CPUID compatibility; a cold boot loses the parked process state. Keep snapshots and their overlays together.
 
 For a disposable real-host check, provide a guest image with the desk agent and Python 3, Cloud Hypervisor, KVM, and a free TAP name and IP pair. Run from the repository root in the target network namespace with privileges to manage TAP and iptables:
@@ -270,7 +289,7 @@ DESK_CHECK_IMAGE_ROOT=/data/desk-image DESK_CHECK_BASE_IMAGE=/data/desk-image/ba
 DESK_CHECK_TMPDIR=/data/tmp pnpm --filter @braedonsaunders/appkit-desk exec tsx scripts/check-kvm.mts
 ```
 
-Set `DESK_CHECK_KERNEL_CMDLINE` for images that require a custom root device. The check creates and removes a disposable VM, overlay, snapshot, TAP and firewall rules. It verifies resident pause and resume, and a guest HTTP stream before and after memory restore; it does not verify the proxy or cross-CPU migration. Choose addresses that do not overlap existing routes. Set `DESK_CHECK_VIRTIOFSD` to a `virtiofsd` binary to also check a read-only share: the guest mounts it, a write fails, and a file held open across the park reads back after the restore.
+Set `DESK_CHECK_COW=1` to exercise copy-on-write snapshot restore and `DESK_CHECK_BALLOON=1` to check the guest virtio-balloon driver. Set `DESK_CHECK_KERNEL_CMDLINE` for images that require a custom root device. The check creates and removes a disposable VM, overlay, snapshot, TAP and firewall rules. It verifies resident pause and resume, and a guest HTTP stream before and after memory restore; it does not verify the proxy or cross-CPU migration. Choose addresses that do not overlap existing routes. Set `DESK_CHECK_VIRTIOFSD` to a `virtiofsd` binary to also check a read-only share: the guest mounts it, a write fails, and a file held open across the park reads back after the restore.
 
 ## Host directory shares
 
@@ -400,3 +419,14 @@ lease ends to close the listener and its connections.
 Cloud Hypervisor backends can opt into `serviceVsock: true` when their guest image provides
 vsock service listeners. `DeskHandle.connect(port)` then opens that vsock port using the
 Cloud Hypervisor socket handshake. The default remains TCP for existing guest images.
+
+## Immutable image attachments
+
+On Cloud Hypervisor, `DeskStartOptions.readOnlyAttachments` accepts an ordered list of
+`{ path, sha256, kind }`, where `kind` is `block` or `pmem` and `sha256` is the
+lowercase SHA-256 of the image. Block devices are attached read-only; pmem uses
+`discard_writes=on`, so guest writes do not persist. The caller must keep each file
+and its path immutable and available for as long as a desk or its snapshot uses it.
+AppKit hashes each image on start and records the attachment list with the snapshot;
+restore refuses a changed list before resuming. Virtualization.framework rejects
+attachments. Device support and filesystem mount options depend on the guest kernel.

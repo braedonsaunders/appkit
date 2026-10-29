@@ -404,3 +404,27 @@ test('a share socket path longer than Linux allows is refused', () => {
     /longer than the 107 bytes Linux allows/,
   )
 })
+
+test('plans immutable block and pmem attachments and rejects ambiguous paths', () => {
+  const sha256 = 'a'.repeat(64)
+  const options = { ...baseOptions, readOnlyAttachments: [
+    { path: '/images/system.erofs', sha256, kind: 'block' as const },
+    { path: '/images/other.erofs', sha256, kind: 'pmem' as const },
+  ] }
+  const plan = buildDeskLaunchPlan(options, { pathExists: allPathsExist, deviceExists: allPathsExist })
+  assert.ok(plan.vmm.args.includes('path=/images/system.erofs,readonly=on,image_type=raw'))
+  assert.ok(plan.vmm.args.includes('file=/images/other.erofs,discard_writes=on'))
+  assert.throws(() => buildDeskLaunchPlan({ ...options, readOnlyAttachments: [{ path: '/bad,path', sha256, kind: 'block' }] }, { pathExists: allPathsExist, deviceExists: allPathsExist }), DeskError)
+  assert.throws(() => buildDeskLaunchPlan({ ...options, readOnlyAttachments: [{ path: '/ok', sha256: 'bad', kind: 'block' }] }, { pathExists: allPathsExist, deviceExists: allPathsExist }), DeskError)
+  assert.throws(() => buildDeskLaunchPlan({ ...options, hypervisor: 'virtualization' }, { pathExists: allPathsExist }), DeskError)
+})
+
+
+test('free-page reporting configures a zero-size balloon only on cold Cloud Hypervisor boots', () => {
+  const deps = { pathExists: allPathsExist, deviceExists: allPathsExist }
+  const cold = buildDeskLaunchPlan({ ...baseOptions, freePageReporting: true }, deps)
+  assert.equal(cold.vmm.args[cold.vmm.args.indexOf('--balloon') + 1], 'size=0,free_page_reporting=on')
+  const restored = buildDeskLaunchPlan({ ...baseOptions, freePageReporting: true, restore: true, snapshotDir: '/data/agent-disks/overlays/agent-7.snapshot' }, deps)
+  assert.equal(restored.vmm.args.includes('--balloon'), false)
+  assert.throws(() => buildDeskLaunchPlan({ ...baseOptions, hypervisor: 'virtualization', freePageReporting: true }, deps), /requires Cloud Hypervisor/)
+})
