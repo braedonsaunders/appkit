@@ -11,3 +11,5 @@ export * from './network'
 
 export * from './virtualization'
 export * from './port-relay'
+
+export * from './template-source'

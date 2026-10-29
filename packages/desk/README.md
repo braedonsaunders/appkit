@@ -441,3 +441,20 @@ is responsible for acquiring and validating the lock and for ensuring the
 executables do not close the inherited descriptors. Run
 `python3 packages/desk/scripts/check-inherited-lock.py` from the repository to
 check descriptor inheritance and release with disposable processes.
+### Snapshot memory pins
+
+`pinTemplateMemory(source, destination, config)` creates an exclusive child
+snapshot directory with a hard link to the source `memory-ranges` inode and
+private `state.json` and `config.json` files. `assertPinnedTemplateMemory`
+checks the publication marker, source inode, and read-only mode before use.
+Source and destination must be on the same filesystem. The caller must keep
+the memory bytes unchanged for the lifetime of every child and prevent all
+writers, including processes with permission to change the file mode. Removing
+the source pathname does not invalidate an existing hard link.
+
+These filesystem operations alone do not establish that a snapshot is safe to
+clone. A caller must independently validate its contents and compatibility,
+prepare independent disk and device identities, fence the guest until it has
+been reinitialized, and retain each memory pin while its VM can use it. A
+partially published destination is left in place after an interruption and
+must not be restored. Remove it only after verifying no VM is using it.
