@@ -25,6 +25,8 @@ import {
   DeskError,
   type DeskLauncherIdentity,
   type DeskGuestNetworkOptions,
+  type DeskShare,
+  type DeskVirtiofsdSandbox,
 } from './plan'
 import {
   cloudHypervisorBackend,
@@ -113,6 +115,13 @@ export interface DeskHostOptions {
   launcherIdentity?: DeskLauncherIdentity
   backend?: DeskBackend
   guestNetwork?: DeskGuestNetworkOptions
+  /**
+   * Cloud Hypervisor only: the `virtiofsd` (1.13 or later) behind each share.
+   * Defaults to the first on `PATH`, then `/usr/libexec/virtiofsd`.
+   */
+  virtiofsdPath?: string
+  /** Cloud Hypervisor only: how `virtiofsd` confines itself; defaults to `namespace`. */
+  virtiofsdSandbox?: DeskVirtiofsdSandbox
   ports: DeskPorts
   /** Override TCP dialing for tests or a host-specific transport. */
   connectGuest?: (address: string, port: number) => Promise<Duplex>
@@ -125,6 +134,8 @@ export interface DeskHostOptions {
   now?: () => number
   pathExists?: (path: string) => boolean
   deviceExists?: (path: string) => boolean
+  /** Whether a share's path is an existing directory; injectable for tests. */
+  isDirectory?: (path: string) => boolean
   /**
    * Delete a destroyed desk's overlay. Injectable so the destroy path is
    * testable without a filesystem; defaults to `rm(path, { force: true })`.
@@ -197,6 +208,12 @@ export interface DeskStartOptions {
   vcpus?: number
   leaseMs?: number
   network?: { tapDevice?: string; macAddress?: string; guestAddress?: string }
+  /**
+   * Host directories shared into the guest over virtio-fs. A parked desk
+   * resumes with its memory only when started with the same shares, in the
+   * same order; otherwise it cold boots with the new ones.
+   */
+  shares?: readonly DeskShare[]
 }
 
 export interface DeskExecOptions {
@@ -864,7 +881,9 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         {
           deskId,
           hypervisor: backend.hypervisor ?? 'cloud-hypervisor',
-          ...(backend.hypervisor === 'virtualization' ? { guestNetwork: options.guestNetwork } : {}),
+          ...(backend.hypervisor === 'virtualization'
+            ? { guestNetwork: options.guestNetwork }
+            : { virtiofsdPath: options.virtiofsdPath, virtiofsdSandbox: options.virtiofsdSandbox }),
           vmmPath: options.vmmPath,
           kvmPath: options.kvmPath,
           kernelPath,
@@ -877,6 +896,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
           runtimeDir: options.runtimeDir,
           tapDevice: startOptions.network?.tapDevice,
           macAddress: startOptions.network?.macAddress,
+          shares: startOptions.shares,
           // Forward the host's cmdline only when set; otherwise the plan falls
           // back to DEFAULT_KERNEL_CMDLINE.
           ...(kernelCmdline === undefined ? {} : { kernelCmdline }),
@@ -884,7 +904,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
           snapshotDir,
           ...(restore ? { restore: true as const } : {}),
         },
-        { pathExists, deviceExists },
+        { pathExists, deviceExists, ...(options.isDirectory ? { isDirectory: options.isDirectory } : {}) },
       )
 
     let resuming = parkWithMemory && pathExists(snapshotDir)
