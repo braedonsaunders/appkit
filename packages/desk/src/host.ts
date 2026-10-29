@@ -1252,7 +1252,10 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     return {
       deskId: record.deskId,
       renewLease(ms: number): void {
-        requireMachine(record, epoch)
+        // Renewing a lease is host-side and remains valid during resident pause.
+        if (record.status !== 'resident' || record.epoch !== epoch || !record.machine) {
+          throw new DeskError(`Desk ${record.deskId} is not resident; resume it first.`)
+        }
         record.leaseDeadline = now() + positiveInteger(ms, 'ms')
         touch(record)
         armTimer(record)

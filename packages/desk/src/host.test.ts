@@ -1616,3 +1616,20 @@ test('sweep waits for pause before resuming and suspending the desk', async () =
   assert.equal(await sweeping, 1)
   assert.deepEqual(order, ['pause-start', 'pause-end', 'resume'])
 })
+
+
+test('a paused resident desk can renew its lease', async () => {
+  const factory = fakeBackendFactory()
+  const context = makeHost({ backend: factory.backend, idleSuspendMs: 60_000, defaultLeaseMs: 1_000 })
+  const handle = await context.host.start(startOptions('paused-lease'))
+  const machine = factory.machines[0]!.machine
+  machine.pause = async () => undefined
+  machine.resume = async () => undefined
+  await context.host.pause('paused-lease')
+  context.clock.value += 900
+  handle.renewLease(2_000)
+  context.clock.value += 200
+  assert.equal(await context.host.sweep(), 0)
+  await context.host.suspend('paused-lease')
+  assert.throws(() => handle.renewLease(1000), /not resident/)
+})
