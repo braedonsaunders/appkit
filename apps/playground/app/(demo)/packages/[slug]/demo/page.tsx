@@ -1166,9 +1166,12 @@ async function DeskDemo() {
     vcpus: 2,
     vsockCid: 107,
     launcherIdentity: { uid: 1000, gid: 1000 },
+    shares: [{ tag: 'tools', path: '/srv/desk-tools', readOnly: true }],
+    virtiofsdPath: '/usr/libexec/virtiofsd',
   }, {
     pathExists: (path) => path !== DESK_OVERLAY_PATH,
     deviceExists: () => true,
+    isDirectory: () => true,
   })
 
   const readiness = DESK_HOST_CONDITIONS.map((condition) => ({
@@ -1217,6 +1220,14 @@ async function DeskDemo() {
             <DemoRow label="VMM control" value={plan.api.socketPath} mono />
             <DemoRow label="Network tap" value={`${plan.tap.device} · ${plan.tap.mac} — derived from the CID, stable per desk`} mono />
             <DemoRow label="Kernel" value={`${plan.kernelPath} · ${plan.kernelCmdline}`} mono />
+            {plan.shares.map((share) => (
+              <DemoRow
+                key={share.tag}
+                label={`Share ${share.tag}`}
+                value={`${share.path} · ${share.readOnly ? 'read-only' : 'read-write'} · ${share.daemon.command} ${share.daemon.args.join(' ')}`}
+                mono
+              />
+            ))}
             <DemoRow
               label="Launcher identity"
               value={`${plan.launcherIdentity?.uid}:${plan.launcherIdentity?.gid} — never root`}
