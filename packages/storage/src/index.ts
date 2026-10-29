@@ -81,7 +81,7 @@ export type Storage = {
   putStream: (input: { key: string; body: AsyncIterable<Uint8Array>; contentType?: string; signal?: AbortSignal }) => Promise<void>
   /** Fetch an object's bytes. */
   getBytes: (key: string) => Promise<Uint8Array>
-  delete: (key: string) => Promise<void>
+  delete: (key: string, options?: { signal?: AbortSignal }) => Promise<void>
   /** Object metadata; null if it doesn't exist. */
   head: (key: string) => Promise<{ size: number; contentType?: string } | null>
   headObject: (key: string) => Promise<StoredObjectMetadata | null>
@@ -241,8 +241,8 @@ export function createStorage(config: StorageConfig): Storage {
     return await res.Body.transformToByteArray()
   }
 
-  async function del(key: string): Promise<void> {
-    await client.send(new DeleteObjectCommand({ Bucket, Key: key }))
+  async function del(key: string, options?: { signal?: AbortSignal }): Promise<void> {
+    await client.send(new DeleteObjectCommand({ Bucket, Key: key }), { abortSignal: options?.signal })
   }
 
   async function head(key: string): Promise<{ size: number; contentType?: string } | null> {
