@@ -1,5 +1,6 @@
 ---
 '@braedonsaunders/appkit-i18n': minor
+'@braedonsaunders/appkit-forms-documents': patch
 ---
 
 Support twenty locales (adding Czech, Danish, German, Finnish, Italian, Japanese,
@@ -11,3 +12,5 @@ exact-copy `createSystemTranslator` over `systemMessageKey` catalogues, with
 compatibility, plus `formatMessage` and `messageProblems` for catalogue tooling.
 `AppLocale` now covers the wider set; exhaustive per-locale records need entries for
 the new locales.
+
+Generated PDF record reports carry their heading copy in every supported locale.
