@@ -93,8 +93,12 @@ test('weak secrets and credential-bearing base URLs fail closed', () => {
     appName: 'Example', sendEmail: async () => {} }
   const ordinary = createAppkitAuth(options)
   assert.equal(ordinary.options.plugins?.some(plugin => plugin.id === 'two-factor'), false)
+  assert.equal(ordinary.options.plugins?.some(plugin => plugin.id === 'magic-link'), true)
   const secured = createAppkitAuth({ ...options, twoFactor: {}, session: { cookieCacheEnabled: false } })
   assert.equal(secured.options.session?.cookieCache?.enabled, false)
+  assert.equal(secured.options.plugins?.some(plugin => plugin.id === 'magic-link'), false)
+  assert.throws(() => createAppkitAuth({ ...options, twoFactor: {}, magicLink: {} }), /requires password sign-in/)
+  assert.throws(() => createAppkitAuth({ ...options, twoFactor: {}, extend: { socialProviders: { github: { clientId: 'test', clientSecret: 'test' } } } }), /requires password sign-in/)
   const plugin = secured.options.plugins?.find(plugin => plugin.id === 'two-factor')
   assert.ok(plugin)
   const schema = plugin.schema as unknown as { twoFactor: { modelName: string }; user: { fields: { twoFactorEnabled: { fieldName: string } } } }

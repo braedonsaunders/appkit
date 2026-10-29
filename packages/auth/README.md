@@ -39,7 +39,11 @@ Applications own branding, transactional email transport, route authorization, t
 
 `twoFactor: { issuer?: string }` opts into Better Auth authenticator enrollment,
 TOTP challenges and encrypted single-use recovery codes. Apply appkit-db migrations
-before enabling it. Enrollment requires password confirmation and a valid authenticator
+before enabling it. MFA mode exposes password sign-in only: the magic-link plugin is
+omitted, and configuring magic-link options, magic-link invitation services or social
+providers together with MFA throws at startup. Better Auth does not apply its password
+MFA challenge to those alternate session issuers. Apps without MFA retain those flows.
+Enrollment requires password confirmation and a valid authenticator
 code before protection becomes active. The client includes `twoFactor` methods.
 Applications must handle `twoFactorRedirect` before granting domain access, including
 invitation acceptance; password verification alone is not a completed sign-in.

@@ -67,6 +67,11 @@ export function createAppkitAuth(options: AppkitAuthOptions) {
   if (options.secret.length < 32) {
     throw new Error('Authentication secret must contain at least 32 characters.')
   }
+  // Better Auth's two-factor challenge hook covers password sign-in, not magic
+  // links or social callbacks. Never expose those alternate session issuers in MFA mode.
+  if (options.twoFactor && (options.inviteService || options.magicLink || Object.keys(options.extend?.socialProviders ?? {}).length)) {
+    throw new Error('Authenticator MFA requires password sign-in; magic links, magic-link invitations and social providers cannot be combined with it.')
+  }
   const inviteTTL = options.inviteService?.ttlSeconds
   const magicTTL = options.magicLink?.expiresIn ?? inviteTTL ?? 15 * 60
   if (inviteTTL && magicTTL !== inviteTTL) {
@@ -189,7 +194,7 @@ export function createAppkitAuth(options: AppkitAuthOptions) {
           } },
         },
       })] : []),
-      magicLink({
+      ...(options.twoFactor ? [] : [magicLink({
         disableSignUp: options.magicLink?.disableSignUp ?? true,
         expiresIn: magicTTL,
         storeToken: 'hashed',
@@ -212,7 +217,7 @@ export function createAppkitAuth(options: AppkitAuthOptions) {
             ...rendered,
           })
         },
-      }),
+      })]),
     ],
     hooks: {
       after: async (rawContext) => {

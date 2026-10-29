@@ -34,6 +34,7 @@ test('persisted MFA, recovery and revocation across the canonical migration', { 
       }
       return response
     }
+    assert.equal((await request('sign-in/magic-link', { email: 'admin@example.test' })).status, 404)
     assert.equal((await request('sign-in/email', { email: 'admin@example.test', password: 'initial password' })).status, 200)
     const beforeEnrollment = cookie()
     const enabled = await request('two-factor/enable', { password: 'initial password' })
