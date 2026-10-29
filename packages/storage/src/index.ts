@@ -87,7 +87,7 @@ export type Storage = {
   headObject: (key: string) => Promise<StoredObjectMetadata | null>
   exists: (key: string) => Promise<boolean>
   getRange: (key: string, start: number, end: number, ifMatch?: string) => Promise<Uint8Array>
-  getStream: (key: string) => Promise<{ stream: ReadableStream; contentLength?: number; contentType?: string }>
+  getStream: (key: string, options?: { signal?: AbortSignal }) => Promise<{ stream: ReadableStream; contentLength?: number; contentType?: string }>
   /** A presigned URL to upload directly (PUT). */
   presignPut: (key: string, opts?: { expiresIn?: number; contentType?: string; metadata?: Record<string, string>; tagging?: string }) => Promise<string>
   /** A presigned URL to download directly (GET). */
@@ -271,8 +271,8 @@ export function createStorage(config: StorageConfig): Storage {
     return result.Body.transformToByteArray()
   }
 
-  async function getStream(key: string): Promise<{ stream: ReadableStream; contentLength?: number; contentType?: string }> {
-    const result = await client.send(new GetObjectCommand({ Bucket, Key: key }))
+  async function getStream(key: string, options?: { signal?: AbortSignal }): Promise<{ stream: ReadableStream; contentLength?: number; contentType?: string }> {
+    const result = await client.send(new GetObjectCommand({ Bucket, Key: key }), { abortSignal: options?.signal })
     if (!result.Body) throw new Error(`Object ${key} has no body`)
     return { stream: result.Body.transformToWebStream() as ReadableStream, ...(result.ContentLength === undefined ? {} : { contentLength: result.ContentLength }), ...(result.ContentType === undefined ? {} : { contentType: result.ContentType }) }
   }

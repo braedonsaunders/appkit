@@ -140,3 +140,15 @@ test('empty streaming upload aborts multipart and writes an empty object', async
   await storage.putStream({ key: 'empty', body: source() })
   assert.deepEqual(seen, ['CreateMultipartUploadCommand', 'AbortMultipartUploadCommand', 'PutObjectCommand'])
 })
+
+test('stream download forwards cancellation to object storage', async () => {
+  const abort = new AbortController()
+  let received: AbortSignal | undefined
+  const client = { async send(_command: object, options: { abortSignal?: AbortSignal }) {
+    received = options.abortSignal
+    return { Body: { transformToWebStream: () => new ReadableStream() } }
+  } } as unknown as S3Client
+  const storage = createStorage({ endpoint: 'https://storage.example.test', bucket: 'private', accessKeyId: 'key', secretAccessKey: 'secret', client })
+  await storage.getStream('object', { signal: abort.signal })
+  assert.equal(received, abort.signal)
+})
