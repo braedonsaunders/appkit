@@ -34,3 +34,18 @@ Mount `toNextJsHandler(getAuth())` from `@braedonsaunders/appkit-auth/next` in a
 Create one `InviteService` with an explicit signing secret and a memory or Drizzle store. Mint a new grant after atomically advancing `membership.invitedAt`, pass its callback path to `signInMagicLink`, and provide the same service to `createAppkitAuth`. Membership activation then occurs only after Better Auth successfully consumes the matching one-time magic link.
 
 Applications own branding, transactional email transport, route authorization, tenant selection cookies, and optional post-acceptance domain effects. The package owns the security state machine and complete UI/runtime boundary.
+
+### Account security
+
+`twoFactor: { issuer?: string }` opts into Better Auth authenticator enrollment,
+TOTP challenges and encrypted single-use recovery codes. Apply appkit-db migrations
+before enabling it. Enrollment requires password confirmation and a valid authenticator
+code before protection becomes active. The client includes `twoFactor` methods.
+Applications must handle `twoFactorRedirect` before granting domain access, including
+invitation acceptance; password verification alone is not a completed sign-in.
+
+`session.cookieCacheEnabled: false` checks persisted sessions on each request, so a
+revoked session cannot remain authorized through a cached cookie. The default remains
+true. Password reset revokes sessions. Applications own email delivery, allowed auth
+routes and account-security screens, and must never return session bearer tokens in
+session management listings.

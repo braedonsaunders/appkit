@@ -1,5 +1,5 @@
 import { betterAuth } from 'better-auth'
-import { magicLink } from 'better-auth/plugins'
+import { magicLink, twoFactor } from 'better-auth/plugins'
 import type { AuthEmailRenderer, AuthEmailSender } from './mail'
 import { renderMagicLinkEmail, renderPasswordResetEmail } from './mail'
 import type { InviteService } from './invites'
@@ -20,6 +20,7 @@ export type AppkitAuthOptions = {
     expiresIn?: number
     updateAge?: number
     cookieCacheMaxAge?: number
+    cookieCacheEnabled?: boolean
   }
   password?: {
     disableSignUp?: boolean
@@ -27,6 +28,8 @@ export type AppkitAuthOptions = {
     minLength?: number
     resetTokenExpiresIn?: number
   }
+  /** TOTP enrollment, challenges and encrypted single-use recovery codes. */
+  twoFactor?: { issuer?: string }
   magicLink?: {
     expiresIn?: number
     disableSignUp?: boolean
@@ -127,7 +130,7 @@ export function createAppkitAuth(options: AppkitAuthOptions) {
       expiresIn: options.session?.expiresIn ?? 60 * 60 * 24 * 30,
       updateAge: options.session?.updateAge ?? 60 * 60 * 24,
       cookieCache: {
-        enabled: true,
+        enabled: options.session?.cookieCacheEnabled ?? true,
         maxAge: options.session?.cookieCacheMaxAge ?? 60 * 5,
       },
     },
@@ -176,6 +179,16 @@ export function createAppkitAuth(options: AppkitAuthOptions) {
       },
     },
     plugins: [
+      ...(options.twoFactor ? [twoFactor({
+        issuer: options.twoFactor.issuer ?? appName,
+        schema: {
+          user: { fields: { twoFactorEnabled: 'two_factor_enabled' } },
+          twoFactor: { modelName: 'two_factors', fields: {
+            userId: 'user_id', backupCodes: 'backup_codes',
+            failedVerificationCount: 'failed_verification_count', lockedUntil: 'locked_until',
+          } },
+        },
+      })] : []),
       magicLink({
         disableSignUp: options.magicLink?.disableSignUp ?? true,
         expiresIn: magicTTL,

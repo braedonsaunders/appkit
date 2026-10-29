@@ -86,3 +86,19 @@ test('weak secrets and credential-bearing base URLs fail closed', () => {
     /without credentials/,
   )
 })
+
+ test('MFA is opt-in and revocation-sensitive apps can disable cookie caching', async () => {
+  const pool = new Pool({ connectionString: 'postgresql://app:secret@127.0.0.1:1/appkit' })
+  const options = { database: pool, baseURL: 'https://app.example.test', secret: SECRET,
+    appName: 'Example', sendEmail: async () => {} }
+  const ordinary = createAppkitAuth(options)
+  assert.equal(ordinary.options.plugins?.some(plugin => plugin.id === 'two-factor'), false)
+  const secured = createAppkitAuth({ ...options, twoFactor: {}, session: { cookieCacheEnabled: false } })
+  assert.equal(secured.options.session?.cookieCache?.enabled, false)
+  const plugin = secured.options.plugins?.find(plugin => plugin.id === 'two-factor')
+  assert.ok(plugin)
+  const schema = plugin.schema as unknown as { twoFactor: { modelName: string }; user: { fields: { twoFactorEnabled: { fieldName: string } } } }
+  assert.equal(schema.twoFactor.modelName, 'two_factors')
+  assert.equal(schema.user.fields.twoFactorEnabled.fieldName, 'two_factor_enabled')
+  await pool.end()
+})

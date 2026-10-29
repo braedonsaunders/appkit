@@ -22,6 +22,13 @@
       "when": 1784684284165,
       "tag": "0002_outgoing_susan_delgado",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793290000000,
+      "tag": "0003_account_security",
+      "breakpoints": true
     }
   ]
 }

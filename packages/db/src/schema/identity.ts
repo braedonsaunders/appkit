@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import {
   boolean,
+  integer,
   foreignKey,
   index,
   jsonb,
@@ -52,6 +53,7 @@ export const users = pgTable('users', {
   id: id(),
   email: text('email').notNull(),
   name: text('name').notNull(),
+  twoFactorEnabled: boolean('two_factor_enabled').notNull().default(false),
   emailVerified: boolean('email_verified').notNull().default(false),
   image: text('image'),
   timezone: text('timezone').notNull().default('UTC'),
@@ -252,3 +254,14 @@ export const IDENTITY_TENANT_TABLES = [
   'role_assignments',
   'user_permission_overrides',
 ] as const
+
+/** Better Auth owns encryption, enrollment and recovery-code consumption. */
+export const authTwoFactors = pgTable('two_factors', {
+  id: id(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  secret: text('secret').notNull(),
+  backupCodes: text('backup_codes').notNull(),
+  verified: boolean('verified').default(true),
+  failedVerificationCount: integer('failed_verification_count').default(0),
+  lockedUntil: timestamp('locked_until', { withTimezone: true }),
+}, t => [index('two_factors_user_idx').on(t.userId), index('two_factors_secret_idx').on(t.secret)])
