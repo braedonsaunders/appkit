@@ -920,7 +920,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       try {
         return planFor(true, parked)
       } catch (error) {
-        throw new DeskError(`the shares it was parked with cannot be served: ${errorMessage(error)}`)
+        throw new DeskError(`its restore, with the shares it was parked with, could not be planned: ${errorMessage(error)}`)
       }
     }
 

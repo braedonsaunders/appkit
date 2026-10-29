@@ -1554,6 +1554,6 @@ test('a parked share whose directory is gone fails the restore clearly, and the 
   assert.deepEqual(context.removedSnapshots, ['/images/overlays/agent-gone.snapshot'])
   assert.match(
     context.host.stats().lastError ?? '',
-    /could not resume from its snapshot and was cold booted: the shares it was parked with cannot be served: shares\[0\]\.path is not an existing directory: \/srv\/removed/,
+    /could not resume from its snapshot and was cold booted: its restore, with the shares it was parked with, could not be planned: shares\[0\]\.path is not an existing directory: \/srv\/removed/,
   )
 })
