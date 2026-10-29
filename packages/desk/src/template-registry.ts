@@ -11,6 +11,7 @@ export interface DeskTemplateCompatibility {
   vmmVersion: string
   vmmPath: string
   cpuSignature: string
+  componentVersion: string
   baseImagePath: string
   kernelPath: string
   initramfsPath: string
@@ -36,7 +37,7 @@ async function digest(path: string, immutable: boolean): Promise<string> {
 }
 
 async function measure(snapshot: string, diskPath: string, compatibility: DeskTemplateCompatibility): Promise<Registration> {
-  if (!isAbsolute(snapshot) || !compatibility.cpuSignature || !compatibility.vmmVersion) throw new Error('Invalid template compatibility identity')
+  if (!isAbsolute(snapshot) || !compatibility.cpuSignature || !compatibility.vmmVersion || !compatibility.componentVersion) throw new Error('Invalid template compatibility identity')
   const diskFiles = [join(snapshot, 'config.json'), join(snapshot, 'state.json'), join(snapshot, 'memory-ranges'), diskPath]
   const boundFiles = [compatibility.vmmPath, compatibility.baseImagePath, compatibility.kernelPath, compatibility.initramfsPath, ...compatibility.attachmentPaths]
   const all = [...diskFiles, ...boundFiles]

@@ -16,7 +16,7 @@ test('registration binds image identities and forks independent disk with shared
     await writeFile(join(snapshot, 'state.json'), '{}')
     await writeFile(join(snapshot, 'memory-ranges'), 'memory')
     for (const file of [disk, join(snapshot, 'config.json'), join(snapshot, 'state.json'), join(snapshot, 'memory-ranges')]) await chmod(file, 0o400)
-    const compatibility = { vmmVersion: 'v54.0', vmmPath: vmm, cpuSignature: 'cpu', baseImagePath: golden, kernelPath: kernel, initramfsPath: initramfs, attachmentPaths: [] }
+    const compatibility = { vmmVersion: 'v54.0', vmmPath: vmm, cpuSignature: 'cpu', componentVersion: 'components', baseImagePath: golden, kernelPath: kernel, initramfsPath: initramfs, attachmentPaths: [] }
     await registerDeskTemplate(snapshot, disk, compatibility)
     const identity = { deskId: 'child', tap: 'tap1', mac: '02:00:00:00:00:02', vsockCid: 5, vsockSocket: '/new.sock' }
     const first = await forkDeskTemplate(snapshot, join(root, 'child1'), identity, compatibility)
@@ -40,6 +40,7 @@ test('registration binds image identities and forks independent disk with shared
     await assert.rejects(verifyDeskTemplateFork(join(root, 'child1'), identity, compatibility), /disk changed/)
     assert.equal(await readFile(second.diskPath, 'utf8'), disk)
     await assert.rejects(forkDeskTemplate(snapshot, join(root, 'badcpu'), identity, { ...compatibility, cpuSignature: 'other' }), /compatibility/)
+    await assert.rejects(verifyDeskTemplateCompatibility(join(root, 'child1'), { ...compatibility, componentVersion: 'new-components' }), /compatibility/)
     await writeFile(vmm, 'changed')
     await assert.rejects(forkDeskTemplate(snapshot, join(root, 'badvmm'), identity, compatibility), /changed since registration/)
     await writeFile(vmm, vmm)
