@@ -1890,7 +1890,7 @@ test('template initializes before exposure and releases the fence after durable 
     const events: string[] = []
     const backend: DeskBackend = { async boot(plan) { assert.equal(plan.snapshot.restoring, true); events.push('restore'); return fakeMachine('child').machine } }
     const host = createDeskHost({ imageRoot: root, backend, parkWithMemory: true, strictMemoryRestore: true, memoryRestoreMode: 'copyonwrite',
-      ports: { onEvent: () => {}, audit: () => {} }, pathExists: path => path === snapshot || path === disk ? existsSync(path) : true,
+      ports: { onEvent: () => {}, audit: () => {} }, pathExists: path => path === child || path === snapshot || path === disk ? existsSync(path) : true,
       deviceExists: () => true, trimOnSuspend: false, cpuSignature: async () => 'cpu', runtimeDir: root })
     await host.start({ deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: disk, template: {
       async prepare(plan) {
@@ -1916,7 +1916,7 @@ test('template initialization failure stops the guest and keeps the fence', asyn
     let stopped = 0, released = false
     const backend: DeskBackend = { async boot() { return fakeMachine('child', async () => { stopped++ }).machine } }
     const host = createDeskHost({ imageRoot: root, backend, parkWithMemory: true, strictMemoryRestore: true, memoryRestoreMode: 'copyonwrite',
-      ports: { onEvent: () => {}, audit: () => {} }, pathExists: path => path === snapshot || path === disk ? existsSync(path) : true,
+      ports: { onEvent: () => {}, audit: () => {} }, pathExists: path => path === child || path === snapshot || path === disk ? existsSync(path) : true,
       deviceExists: () => true, trimOnSuspend: false, cpuSignature: async () => 'cpu', runtimeDir: root })
     await assert.rejects(host.start({ deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: disk, template: {
       async prepare(plan) {

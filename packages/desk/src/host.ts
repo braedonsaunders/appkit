@@ -1002,7 +1002,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
           snapshotDir: restore ? restoreDir : snapshotDir,
           ...(restore ? { restore: true as const, ...(options.memoryRestoreMode ? { memoryRestoreMode: options.memoryRestoreMode } : {}) } : {}),
         },
-        { pathExists, deviceExists, ...(options.isDirectory ? { isDirectory: options.isDirectory } : {}) },
+        { pathExists: (path) => Boolean(startOptions.template && path === dirname(startOptions.overlayPath)) || pathExists(path), deviceExists, ...(options.isDirectory ? { isDirectory: options.isDirectory } : {}) },
       )
     const restorePlan = async () => {
       const parked = await (options.readSnapshotShares ?? readShareManifest)(restoreDir)
