@@ -22,6 +22,7 @@ test('registration binds image identities and forks independent disk with shared
     const first = await forkDeskTemplate(snapshot, join(root, 'child1'), identity, compatibility)
     const second = await forkDeskTemplate(snapshot, join(root, 'child2'), { ...identity, tap: 'tap2', vsockCid: 6, vsockSocket: '/other.sock', mac: '02:00:00:00:00:03' }, compatibility)
     assert.equal((await stat(join(first.snapshotPath, 'memory-ranges'))).ino, (await stat(join(second.snapshotPath, 'memory-ranges'))).ino)
+    assert.equal((await stat(join(root, 'child1', '.template-memory'))).ino, (await stat(join(snapshot, 'memory-ranges'))).ino)
     assert.notEqual((await stat(first.diskPath)).ino, (await stat(second.diskPath)).ino)
     await writeFile(first.diskPath, 'child data')
     assert.equal(await readFile(second.diskPath, 'utf8'), disk)

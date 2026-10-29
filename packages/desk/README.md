@@ -505,7 +505,8 @@ against all writers for the lifetime of its descendants.
 
 `forkDeskTemplate` checks the registration and actual file bytes, reserves a new
 private directory, copies the template disk into an independent writable file,
-and pins the same snapshot memory inode. Its returned disk and snapshot are
+and pins the same snapshot memory inode in the child directory for its lifetime,
+including while parked. Its returned disk and snapshot are
 prepared artifacts, not a running VM. A caller must verify `.prepared`, establish
 an external network and workload fence before restore, reinitialize the guest's
 identity and entropy, and only then allow traffic or guest workloads. An

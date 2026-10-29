@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { constants, createReadStream } from 'node:fs'
-import { chmod, copyFile, lstat, mkdir, open, readFile, stat } from 'node:fs/promises'
+import { chmod, copyFile, link, lstat, mkdir, open, readFile, stat } from 'node:fs/promises'
 import { dirname, isAbsolute, join } from 'node:path'
 import { cleanDeskId } from './plan'
 import { planTemplateConfig, type DeskTemplateChildIdentity } from './template-plan'
@@ -88,6 +88,8 @@ export async function forkDeskTemplate(snapshot: string, childDirectory: string,
   try { await disk.sync() } finally { await disk.close() }
   await pinTemplateMemory(snapshot, snapshotPath, config)
   await assertPinnedTemplateMemory(snapshot, snapshotPath)
+  // Retain the shared source across both resident and parked descendants.
+  await link(join(snapshotPath, 'memory-ranges'), join(childDirectory, '.template-memory'))
   const attachments = compatibility.attachmentPaths.map(path => ({ path, sha256: registered.files[path], kind: 'block' }))
   for (const [name, value] of [['appkit-cpu-signature', compatibility.cpuSignature], ['attachments.json', JSON.stringify(attachments)]] as const) {
     const file = await open(join(snapshotPath, name), 'wx', 0o600)
