@@ -143,6 +143,8 @@ export interface DeskLaunchPlanOptions {
   /** Absolute path of this desk's copy-on-write overlay (a raw reflink clone). */
   overlayPath: string
   memoryMb?: number
+  /** Cloud Hypervisor virtio-balloon with free-page reporting, size zero. */
+  freePageReporting?: boolean
   vcpus?: number
   /**
    * Guest vsock context ID; must be unique among resident desks. Cloud
@@ -508,6 +510,7 @@ function buildCloudHypervisorPlan(
         // vhost-user devices map guest RAM into their daemon, so it must be
         // shared memory; a desk without shares keeps private memory.
         '--memory', `size=${memoryMb}M${shares.length === 0 ? '' : ',shared=on'}`,
+        ...(options.freePageReporting ? ['--balloon', 'size=0,free_page_reporting=on'] : []),
         '--cpus', `boot=${vcpus}`,
         '--vsock', `cid=${vsockCid},socket=${vsockSocketPath}`,
         '--net', `tap=${tapDevice},mac=${macAddress}`,
@@ -550,6 +553,7 @@ function buildVirtualizationPlan(
 ): VirtualizationLaunchPlan {
   const pathExists = dependencies.pathExists ?? existsSync
   if (options.readOnlyAttachments?.length) throw new DeskError('Read-only attachments require Cloud Hypervisor.')
+  if (options.freePageReporting) throw new DeskError('Free-page reporting requires Cloud Hypervisor.')
   const deskId = cleanDeskId(options.deskId)
   if (options.tapDevice !== undefined) {
     throw new DeskError('tapDevice applies to Cloud Hypervisor desks; a Virtualization.framework desk has no TAP.')

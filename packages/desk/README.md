@@ -260,6 +260,13 @@ The default iptables chain prefix is `desk`. Existing deployments using the `bh`
 
 Supply `network: { tapDevice, macAddress, guestAddress }` to `host.start`, then `await desk.connect(port)` returns a Node `Duplex` TCP stream to the guest. The caller owns the stream; suspension closes it. A service must listen on the guest interface, and its protocol and authentication remain the application's responsibility. `connectGuest` on host options injects a dialer for testing.
 
+`freePageReporting: true` on `host.start` configures a zero-size
+virtio-balloon with free-page reporting on a Cloud Hypervisor cold boot. It
+requires guest driver support; the snapshot retains its original device
+configuration. Reporting frees host memory when the guest reports unused pages;
+it does not promise a particular snapshot size. Virtualization.framework does
+not support this option.
+
 With Cloud Hypervisor v54 or later, `memoryRestoreMode: 'copyonwrite'` opts in
 to file-backed restore alongside `parkWithMemory: true`. The parked snapshot is
 atomically renamed to a unique source and its parent directory synced before
@@ -282,7 +289,7 @@ DESK_CHECK_IMAGE_ROOT=/data/desk-image DESK_CHECK_BASE_IMAGE=/data/desk-image/ba
 DESK_CHECK_TMPDIR=/data/tmp pnpm --filter @braedonsaunders/appkit-desk exec tsx scripts/check-kvm.mts
 ```
 
-Set `DESK_CHECK_COW=1` to exercise copy-on-write snapshot restore. Set `DESK_CHECK_KERNEL_CMDLINE` for images that require a custom root device. The check creates and removes a disposable VM, overlay, snapshot, TAP and firewall rules. It verifies resident pause and resume, and a guest HTTP stream before and after memory restore; it does not verify the proxy or cross-CPU migration. Choose addresses that do not overlap existing routes. Set `DESK_CHECK_VIRTIOFSD` to a `virtiofsd` binary to also check a read-only share: the guest mounts it, a write fails, and a file held open across the park reads back after the restore.
+Set `DESK_CHECK_COW=1` to exercise copy-on-write snapshot restore and `DESK_CHECK_BALLOON=1` to check the guest virtio-balloon driver. Set `DESK_CHECK_KERNEL_CMDLINE` for images that require a custom root device. The check creates and removes a disposable VM, overlay, snapshot, TAP and firewall rules. It verifies resident pause and resume, and a guest HTTP stream before and after memory restore; it does not verify the proxy or cross-CPU migration. Choose addresses that do not overlap existing routes. Set `DESK_CHECK_VIRTIOFSD` to a `virtiofsd` binary to also check a read-only share: the guest mounts it, a write fails, and a file held open across the park reads back after the restore.
 
 ## Host directory shares
 

@@ -45,9 +45,13 @@ try {
   created = true
   await network.ensure({ tap, guest })
   desk = await host.start({
-    deskId: 'integration-check', baseImage, overlayPath: join(directory, 'disk.img'), network: { tapDevice: tap, guestAddress: guest },
+    deskId: 'integration-check', freePageReporting: process.env.DESK_CHECK_BALLOON === '1', baseImage, overlayPath: join(directory, 'disk.img'), network: { tapDevice: tap, guestAddress: guest },
     ...(virtiofsdPath ? { shares: [{ tag: 'check', path: shareDirectory, readOnly: true }] } : {}),
   })
+  if (process.env.DESK_CHECK_BALLOON === '1') {
+    const balloon = await shell('test -n "$(ls -d /sys/bus/virtio/drivers/virtio_balloon/virtio* 2>/dev/null)"')
+    if (balloon.exitCode !== 0) throw new Error('Guest did not bind a virtio-balloon driver')
+  }
   await network.configureGuest(desk, { tap, guest })
   await syncDeskGuestClock(desk)
   await desk.exec({ command: '/usr/bin/python3', args: ['-m', 'http.server', '14500', '--bind', guest], keepAlive: true })

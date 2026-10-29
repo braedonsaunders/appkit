@@ -418,3 +418,13 @@ test('plans immutable block and pmem attachments and rejects ambiguous paths', (
   assert.throws(() => buildDeskLaunchPlan({ ...options, readOnlyAttachments: [{ path: '/ok', sha256: 'bad', kind: 'block' }] }, { pathExists: allPathsExist, deviceExists: allPathsExist }), DeskError)
   assert.throws(() => buildDeskLaunchPlan({ ...options, hypervisor: 'virtualization' }, { pathExists: allPathsExist }), DeskError)
 })
+
+
+test('free-page reporting configures a zero-size balloon only on cold Cloud Hypervisor boots', () => {
+  const deps = { pathExists: allPathsExist, deviceExists: allPathsExist }
+  const cold = buildDeskLaunchPlan({ ...baseOptions, freePageReporting: true }, deps)
+  assert.equal(cold.vmm.args[cold.vmm.args.indexOf('--balloon') + 1], 'size=0,free_page_reporting=on')
+  const restored = buildDeskLaunchPlan({ ...baseOptions, freePageReporting: true, restore: true, snapshotDir: '/data/agent-disks/overlays/agent-7.snapshot' }, deps)
+  assert.equal(restored.vmm.args.includes('--balloon'), false)
+  assert.throws(() => buildDeskLaunchPlan({ ...baseOptions, hypervisor: 'virtualization', freePageReporting: true }, deps), /requires Cloud Hypervisor/)
+})

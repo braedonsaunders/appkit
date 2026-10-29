@@ -220,6 +220,8 @@ export interface DeskStartOptions {
   /** Absolute path of this desk's copy-on-write overlay. */
   overlayPath: string
   memoryMb?: number
+  /** Enable Cloud Hypervisor free-page reporting on cold boot. */
+  freePageReporting?: boolean
   vcpus?: number
   leaseMs?: number
   network?: { tapDevice?: string; macAddress?: string; guestAddress?: string }
@@ -958,6 +960,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
           baseImagePath: startOptions.baseImage,
           overlayPath: startOptions.overlayPath,
           memoryMb: startOptions.memoryMb,
+          freePageReporting: startOptions.freePageReporting,
           vcpus: startOptions.vcpus,
           vsockCid: cid,
           runtimeDir: options.runtimeDir,
