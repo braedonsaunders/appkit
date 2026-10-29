@@ -257,7 +257,77 @@ DESK_CHECK_IMAGE_ROOT=/data/desk-image DESK_CHECK_BASE_IMAGE=/data/desk-image/ba
 DESK_CHECK_TMPDIR=/data/tmp pnpm --filter @braedonsaunders/appkit-desk exec tsx scripts/check-kvm.mts
 ```
 
-Set `DESK_CHECK_KERNEL_CMDLINE` for images that require a custom root device. The check creates and removes a disposable VM, overlay, snapshot, TAP and firewall rules. It verifies a guest HTTP stream before and after memory restore; it does not verify the proxy or cross-CPU migration. Choose addresses that do not overlap existing routes.
+Set `DESK_CHECK_KERNEL_CMDLINE` for images that require a custom root device. The check creates and removes a disposable VM, overlay, snapshot, TAP and firewall rules. It verifies a guest HTTP stream before and after memory restore; it does not verify the proxy or cross-CPU migration. Choose addresses that do not overlap existing routes. Set `DESK_CHECK_VIRTIOFSD` to a `virtiofsd` binary to also check a read-only share: the guest mounts it, a write fails, and a file held open across the park reads back after the restore.
+
+## Host directory shares
+
+A desk can mount host directories over virtio-fs. Pass `shares` to
+`host.start` (or `buildDeskLaunchPlan`):
+
+```ts
+const desk = await host.start({
+  deskId: 'agent-7',
+  baseImage: '/data/agent-disks/base.img',
+  overlayPath: '/data/agent-disks/overlays/agent-7.img',
+  shares: [
+    { tag: 'tools', path: '/srv/desk-tools', readOnly: true },
+    { tag: 'build', path: '/srv/builds/agent-7', readOnly: false },
+  ],
+})
+await desk.exec({ command: '/bin/sh', args: ['-c', 'mkdir -p /opt/tools && mount -t virtiofs tools /opt/tools'] })
+```
+
+A `tag` is 1–36 lowercase letters, digits or hyphens, starting with a letter or
+digit, and unique within the desk; it is the name the guest mounts. `path` is an
+absolute path to an existing host directory. `readOnly` is required. A read-only
+share is enforced by the host's file server, so remounting it read-write in the
+guest does not make it writable. The guest kernel needs virtio-fs
+(`CONFIG_VIRTIO_FS`; Debian's cloud kernels ship it as the `virtiofs` module).
+
+On Cloud Hypervisor, each share is served by its own `virtiofsd` (the Rust
+implementation, 1.13 or later). `virtiofsdPath` on the host options names the
+binary; without it the first `virtiofsd` on `PATH` is used, then
+`/usr/libexec/virtiofsd`. A desk without shares does not need `virtiofsd`. Each
+daemon runs as the launcher identity with:
+
+```sh
+virtiofsd --socket-path=<runtimeDir>/desk-<deskId>.<tag>.fs.sock --shared-dir=<path> \
+  --sandbox=<namespace|chroot> --cache=auto \
+  --migration-mode=find-paths --migration-on-error=guest-error [--readonly]
+```
+
+and the VMM gets `--fs tag=<tag>,socket=<socket>` with its memory as
+`size=<n>M,shared=on`, which vhost-user devices require; a desk without shares
+keeps private memory. `--cache=auto` lets the guest cache for about a second,
+so files the host changes under a share appear in running guests.
+`virtiofsdSandbox` picks how the daemon confines itself to the directory:
+`namespace` (the default) needs CAP_SYS_ADMIN when the launcher is root and
+unprivileged user namespaces otherwise; `chroot` needs root and suits a
+container that cannot create namespaces. Both prevent symlink escapes. The
+backend starts every daemon and waits for its socket before starting the VMM,
+on a boot and on a restore, and stops the daemons after the VMM. A daemon that
+exits while its VMM runs stops the VMM, so the desk is lost rather than left
+with a share that no longer answers. `virtiofsd` also exits when its VMM
+disconnects. The share socket path must fit in 107 bytes.
+
+On Virtualization.framework, each share is a
+`VZVirtioFileSystemDeviceConfiguration` with a `VZSingleDirectoryShare`, and the
+framework enforces `readOnly`. `virtiofsdPath` and `virtiofsdSandbox` are
+refused there. When Virtualization.framework reports that a configuration
+cannot be saved, the desk parks by shutting down, as for any other device.
+
+Parking keeps a desk's shares with its memory. The backend records them in
+`shares.json` beside the snapshot, and a restore uses that record instead of the
+start options: a snapshot holds its devices, so a share added since joins the
+desk at its next cold boot (`host.shutdown` forces one), and a backend refuses a
+restore plan whose shares differ from the record. A recorded share whose
+directory no longer exists fails the restore; the host discards the snapshot,
+cold boots with the current shares, and reports it in `lastError`. A snapshot
+holds no share contents. On Cloud Hypervisor it carries each daemon's state,
+which the new daemon loads on restore by reopening every file and directory the
+guest held by its path, so open files survive. Paths are the link: a file the
+host unlinks or moves while the desk is parked returns errors to the guest for
+that file only, and a file the host puts at its path is the one the guest gets.
 
 ## macOS Virtualization.framework backend
 

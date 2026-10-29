@@ -9,6 +9,7 @@ import {
   createDeskHost,
   verifyDeskHost,
   verifyOverlayReflink,
+  type DeskHostOptions,
   type DeskStartOptions,
 } from './host'
 import type { DeskBackend, DeskConnectionChange, DeskMachine } from './backend'
@@ -1247,7 +1248,13 @@ test('trimming can be turned off for a guest that has no fstrim', async () => {
 // handling of that hazard rather than the happy path.
 
 /** A host with snapshot parking on, and full visibility of the snapshot files. */
-function makeParkingHost(options: { snapshotExists?: boolean; park?: () => Promise<void> } = {}) {
+function makeParkingHost(
+  options: {
+    snapshotExists?: boolean
+    park?: () => Promise<void>
+    host?: Pick<DeskHostOptions, 'readSnapshotShares' | 'isDirectory'>
+  } = {},
+) {
   let shutdowns = 0
   const made: string[] = []
   const removedSnapshots: string[] = []
@@ -1305,6 +1312,7 @@ function makeParkingHost(options: { snapshotExists?: boolean; park?: () => Promi
       snapshotExists = false
     },
     trimOnSuspend: false,
+    ...options.host,
   })
   return {
     host,
@@ -1511,4 +1519,41 @@ test('guest TCP streams use the assigned address and close on suspend', async ()
   await assert.rejects(desk.connect(65536), /port/)
   await host.suspend('relay')
   assert.equal(stream.destroyed, true)
+})
+
+test('a parked desk is restored with the shares it was parked with, and cold boots with new ones', async () => {
+  const parked = [{ tag: 'store', path: '/srv/store', readOnly: true }]
+  const now = [...parked, { tag: 'depot', path: '/srv/depot', readOnly: false }]
+  const context = makeParkingHost({
+    snapshotExists: true,
+    host: { readSnapshotShares: async () => parked, isDirectory: () => true },
+  })
+  await context.host.start({ ...startOptions('agent-shares'), shares: now })
+  assert.equal(context.plans[0]?.snapshot.restoring, true)
+  // The snapshot holds its devices: the share added since cannot join it.
+  assert.deepEqual(context.plans[0]?.shares.map((share) => share.tag), ['store'])
+
+  await context.host.shutdown('agent-shares')
+  await context.host.resume('agent-shares')
+  assert.equal(context.plans[1]?.snapshot.restoring, false)
+  assert.deepEqual(context.plans[1]?.shares.map((share) => share.tag), ['store', 'depot'])
+})
+
+test('a parked share whose directory is gone fails the restore clearly, and the desk cold boots', async () => {
+  const context = makeParkingHost({
+    snapshotExists: true,
+    host: {
+      readSnapshotShares: async () => [{ tag: 'old', path: '/srv/removed', readOnly: true }],
+      isDirectory: (path) => path !== '/srv/removed',
+    },
+  })
+  await context.host.start({ ...startOptions('agent-gone'), shares: [{ tag: 'store', path: '/srv/store', readOnly: true }] })
+  assert.equal(context.plans.length, 1, 'no restore was attempted')
+  assert.equal(context.plans[0]?.snapshot.restoring, false)
+  assert.deepEqual(context.plans[0]?.shares.map((share) => share.tag), ['store'])
+  assert.deepEqual(context.removedSnapshots, ['/images/overlays/agent-gone.snapshot'])
+  assert.match(
+    context.host.stats().lastError ?? '',
+    /could not resume from its snapshot and was cold booted: its restore, with the shares it was parked with, could not be planned: shares\[0\]\.path is not an existing directory: \/srv\/removed/,
+  )
 })

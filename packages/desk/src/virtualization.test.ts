@@ -98,3 +98,85 @@ test('backend drives helper, guest channel and snapshot lifecycle', async () => 
     await restored.shutdown()
   } finally { await rm(directory, { recursive: true, force: true }) }
 })
+
+test('virtualization shares are validated, carried in the plan, and refuse virtiofsd settings', () => {
+  const withDirectories = { ...exists, isDirectory: (path: string) => path.startsWith('/srv/') }
+  const shares = [{ tag: 'depot', path: '/srv/depot', readOnly: false }]
+  assert.deepEqual(buildDeskLaunchPlan({ ...base, shares }, withDirectories).shares, shares)
+  assert.deepEqual(buildDeskLaunchPlan(base, withDirectories).shares, [])
+  assert.throws(() => buildDeskLaunchPlan({ ...base, shares: [{ ...shares[0]!, path: '/missing' }] }, withDirectories), /not an existing directory/)
+  assert.throws(() => buildDeskLaunchPlan({ ...base, shares: [{ ...shares[0]!, tag: 'Depot' }] }, withDirectories), /tag must be/)
+  assert.throws(() => buildDeskLaunchPlan({ ...base, virtiofsdPath: '/usr/libexec/virtiofsd' }, withDirectories), /virtiofsdPath/)
+  assert.throws(() => buildDeskLaunchPlan({ ...base, virtiofsdSandbox: 'chroot' }, withDirectories), /virtiofsdSandbox/)
+})
+
+test('backend sends shares to the helper, records them on park, and refuses a restore with others', async () => {
+  const { EventEmitter } = await import('node:events')
+  const { PassThrough, Writable, Duplex } = await import('node:stream')
+  const { mkdtemp, readFile, rm } = await import('node:fs/promises')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  const directory = await mkdtemp(join(tmpdir(), 'desk-vz-shares-'))
+  const boots: Record<string, unknown>[] = []
+  let spawned = 0
+  try {
+    const launcher: NonNullable<import('./virtualization').VirtualizationBackendOptions['launcher']> = () => {
+      spawned += 1
+      const child = new EventEmitter() as import('node:child_process').ChildProcess
+      const stdout = new PassThrough()
+      Object.defineProperty(child, 'stdout', { value: stdout })
+      Object.defineProperty(child, 'stderr', { value: new PassThrough() })
+      Object.defineProperty(child, 'stdin', { value: new Writable({
+        write(chunk, _encoding, callback) {
+          const message = JSON.parse(String(chunk)) as { id: string; op: string }
+          if (message.op === 'boot') boots.push(message)
+          stdout.write(`${JSON.stringify({ id: message.id, ok: true, result: message.op === 'boot' ? { machineIdentifier: 'test-id', saveRestore: true } : {} })}\n`)
+          callback()
+          if (message.op === 'stop') setImmediate(() => child.emit('exit', 0, null))
+        },
+      }) })
+      child.kill = (() => { setImmediate(() => child.emit('exit', 0, null)); return true }) as typeof child.kill
+      return child
+    }
+    const { encodeFrame, FrameDecoder } = await import('./protocol')
+    const connect = () => {
+      let connected = false
+      const decoder = new FrameDecoder()
+      const stream = new Duplex({
+        read() {},
+        write(chunk: Buffer, _encoding, callback) {
+          if (!connected) { connected = true; stream.push('OK 1\n') }
+          else for (const frame of decoder.push(chunk)) {
+            stream.push(encodeFrame({ id: (frame as { id: string }).id, ok: true, result: 'pong' }))
+          }
+          callback()
+        },
+      })
+      return stream
+    }
+    const backend = createVirtualizationBackend({ helperPath: '/helper', platform: 'darwin', launcher, connect })
+    const shares = [
+      { tag: 'store', path: '/srv/store', readOnly: true },
+      { tag: 'depot', path: '/srv/depot', readOnly: false },
+    ]
+    const plan = buildDeskLaunchPlan(
+      { ...base, runtimeDir: directory, snapshotDir: directory, shares },
+      { ...exists, isDirectory: () => true },
+    )
+    const machine = await backend.boot(plan)
+    assert.deepEqual(boots[0]?.shares, shares)
+    await machine.park!(directory)
+    assert.deepEqual(JSON.parse(await readFile(join(directory, 'shares.json'), 'utf8')), shares)
+
+    const before = spawned
+    await assert.rejects(
+      backend.boot({ ...plan, shares: shares.slice(0, 1), snapshot: { dir: directory, restoring: true } }, { onRestored: async () => undefined }),
+      /cannot be restored: the snapshot was taken with shares/,
+    )
+    assert.equal(spawned, before, 'refused before a helper was started')
+
+    const restored = await backend.boot({ ...plan, snapshot: { dir: directory, restoring: true } }, { onRestored: async () => undefined })
+    assert.deepEqual(boots.at(-1)?.shares, shares)
+    await restored.shutdown()
+  } finally { await rm(directory, { recursive: true, force: true }) }
+})

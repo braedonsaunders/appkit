@@ -4,6 +4,7 @@ import {
   buildDeskLaunchPlan,
   cleanDeskId,
   DEFAULT_KVM_PATH,
+  DEFAULT_VIRTIOFSD_PATH,
   DEFAULT_VMM_PATH,
   DeskError,
   isDeskSupported,
@@ -240,5 +241,166 @@ test('restoring without a snapshot is refused rather than quietly cold booted', 
         { pathExists: (path: string) => !path.endsWith('.snapshot'), deviceExists: () => true },
       ),
     /no snapshot to restore/,
+  )
+})
+
+// --- host directory shares ---------------------------------------------------
+const shareDependencies = {
+  pathExists: () => true,
+  deviceExists: () => true,
+  isDirectory: (path: string) => path.startsWith('/srv/'),
+  searchPath: '',
+}
+const storeShare = { tag: 'flatpak', path: '/srv/flatpak', readOnly: true }
+const buildShare = { tag: 'build-out', path: '/srv/build/', readOnly: false }
+
+test('a plan without shares keeps private memory, adds no file system, and needs no virtiofsd', () => {
+  const plan = buildDeskLaunchPlan(baseOptions, { ...shareDependencies, pathExists: (path) => !path.includes('virtiofsd') })
+  const args = plan.vmm.args
+  assert.deepEqual(plan.shares, [])
+  assert.equal(args[args.indexOf('--memory') + 1], 'size=384M')
+  assert.equal(args.includes('--fs'), false)
+})
+
+test('each share gets a virtiofsd on its own socket, and the VMM shared memory and a --fs device', () => {
+  const plan = buildDeskLaunchPlan(
+    { ...baseOptions, shares: [storeShare, buildShare], virtiofsdPath: '/opt/bin/virtiofsd' },
+    shareDependencies,
+  )
+  const args = plan.vmm.args
+  assert.equal(args[args.indexOf('--memory') + 1], 'size=384M,shared=on')
+  const fs = args.indexOf('--fs')
+  assert.deepEqual(args.slice(fs + 1, fs + 3), [
+    'tag=flatpak,socket=/run/appkit-desk/desk-agent-7.flatpak.fs.sock',
+    'tag=build-out,socket=/run/appkit-desk/desk-agent-7.build-out.fs.sock',
+  ])
+  assert.deepEqual(plan.shares, [
+    {
+      tag: 'flatpak',
+      path: '/srv/flatpak',
+      readOnly: true,
+      socketPath: '/run/appkit-desk/desk-agent-7.flatpak.fs.sock',
+      daemon: {
+        command: '/opt/bin/virtiofsd',
+        args: [
+          '--socket-path=/run/appkit-desk/desk-agent-7.flatpak.fs.sock',
+          '--shared-dir=/srv/flatpak',
+          '--sandbox=namespace',
+          '--cache=auto',
+          '--migration-mode=find-paths',
+          '--migration-on-error=guest-error',
+          '--readonly',
+        ],
+      },
+    },
+    {
+      tag: 'build-out',
+      // Normalised, as every other path in the plan is.
+      path: '/srv/build',
+      readOnly: false,
+      socketPath: '/run/appkit-desk/desk-agent-7.build-out.fs.sock',
+      daemon: {
+        command: '/opt/bin/virtiofsd',
+        args: [
+          '--socket-path=/run/appkit-desk/desk-agent-7.build-out.fs.sock',
+          '--shared-dir=/srv/build',
+          '--sandbox=namespace',
+          '--cache=auto',
+          '--migration-mode=find-paths',
+          '--migration-on-error=guest-error',
+        ],
+      },
+    },
+  ])
+})
+
+test('the virtiofsd sandbox is configurable to chroot and never to none', () => {
+  const plan = buildDeskLaunchPlan(
+    { ...baseOptions, shares: [storeShare], virtiofsdPath: '/opt/bin/virtiofsd', virtiofsdSandbox: 'chroot' },
+    shareDependencies,
+  )
+  assert.ok(plan.shares[0]?.daemon.args.includes('--sandbox=chroot'))
+  assert.throws(
+    () =>
+      buildDeskLaunchPlan(
+        // @ts-expect-error -- an unconfined daemon is deliberately not a choice.
+        { ...baseOptions, shares: [storeShare], virtiofsdPath: '/opt/bin/virtiofsd', virtiofsdSandbox: 'none' },
+        shareDependencies,
+      ),
+    /virtiofsdSandbox/,
+  )
+})
+
+test('a restoring plan still starts every share daemon, because the snapshot holds only their state', () => {
+  const plan = buildDeskLaunchPlan(
+    { ...baseOptions, shares: [storeShare], virtiofsdPath: '/opt/bin/virtiofsd', restore: true },
+    shareDependencies,
+  )
+  assert.equal(plan.snapshot.restoring, true)
+  assert.equal(plan.vmm.args.includes('--fs'), false, 'the snapshot names its file systems itself')
+  assert.equal(plan.shares[0]?.socketPath, '/run/appkit-desk/desk-agent-7.flatpak.fs.sock')
+  assert.equal(plan.shares[0]?.daemon.command, '/opt/bin/virtiofsd')
+})
+
+test('virtiofsd is found on PATH first, then in /usr/libexec, and an explicit path must exist', () => {
+  const withShare = { ...baseOptions, shares: [storeShare] }
+  const found = (present: string[], searchPath: string) =>
+    buildDeskLaunchPlan(withShare, {
+      ...shareDependencies,
+      searchPath,
+      pathExists: (path) => !path.includes('virtiofsd') || present.includes(path),
+    }).shares[0]?.daemon.command
+  assert.equal(
+    found(['/usr/bin/virtiofsd', DEFAULT_VIRTIOFSD_PATH], 'relative:/usr/local/bin:/usr/bin'),
+    '/usr/bin/virtiofsd',
+  )
+  assert.equal(found([DEFAULT_VIRTIOFSD_PATH], '/usr/bin'), DEFAULT_VIRTIOFSD_PATH)
+  assert.throws(() => found([], '/usr/bin'), /virtiofsd was not found on PATH/)
+  assert.throws(
+    () =>
+      buildDeskLaunchPlan(
+        { ...withShare, virtiofsdPath: '/opt/virtiofsd' },
+        { ...shareDependencies, pathExists: (path) => path !== '/opt/virtiofsd' },
+      ),
+    /virtiofsd was not found at \/opt\/virtiofsd/,
+  )
+  assert.throws(
+    () => buildDeskLaunchPlan({ ...withShare, virtiofsdPath: 'virtiofsd' }, shareDependencies),
+    /virtiofsdPath must be an absolute path/,
+  )
+})
+
+test('shares are refused with bad tags, duplicate tags, missing directories, or no explicit access', () => {
+  const plan = (shares: unknown) =>
+    buildDeskLaunchPlan(
+      { ...baseOptions, virtiofsdPath: '/opt/bin/virtiofsd', shares: shares as DeskLaunchPlanOptions['shares'] },
+      shareDependencies,
+    )
+  for (const tag of ['', 'Flatpak', '-store', 'store_1', 'a.b', 'x'.repeat(37)]) {
+    assert.throws(() => plan([{ ...storeShare, tag }]), /shares\[0\]\.tag must be/, tag)
+  }
+  assert.doesNotThrow(() => plan([{ ...storeShare, tag: 'x'.repeat(36) }]))
+  assert.throws(() => plan([storeShare, { ...buildShare, tag: 'flatpak' }]), /shares\[1\]\.tag flatpak is already used/)
+  assert.throws(() => plan([{ ...storeShare, path: 'srv/flatpak' }]), /shares\[0\]\.path must be an absolute path/)
+  assert.throws(() => plan([{ ...storeShare, path: '/data/missing' }]), /not an existing directory/)
+  assert.throws(() => plan([{ tag: 'flatpak', path: '/srv/flatpak' }]), /shares\[0\]\.readOnly must be a boolean/)
+  assert.throws(() => plan([null]), /shares\[0\] must be an object/)
+  assert.throws(() => plan({ tag: 'flatpak' }), /shares must be an array/)
+})
+
+test('a share socket path longer than Linux allows is refused', () => {
+  assert.throws(
+    () =>
+      buildDeskLaunchPlan(
+        {
+          ...baseOptions,
+          deskId: 'd'.repeat(64),
+          runtimeDir: '/var/lib/caboose/images/runtime',
+          virtiofsdPath: '/opt/bin/virtiofsd',
+          shares: [{ ...storeShare, tag: 's'.repeat(20) }],
+        },
+        shareDependencies,
+      ),
+    /longer than the 107 bytes Linux allows/,
   )
 })

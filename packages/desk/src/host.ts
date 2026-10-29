@@ -25,6 +25,8 @@ import {
   DeskError,
   type DeskLauncherIdentity,
   type DeskGuestNetworkOptions,
+  type DeskShare,
+  type DeskVirtiofsdSandbox,
 } from './plan'
 import {
   cloudHypervisorBackend,
@@ -32,6 +34,7 @@ import {
   type DeskConnectionChange,
   type DeskMachine,
 } from './backend'
+import { readShareManifest } from './machine'
 import {
   parseCapabilities,
   parseClipboardText,
@@ -113,6 +116,13 @@ export interface DeskHostOptions {
   launcherIdentity?: DeskLauncherIdentity
   backend?: DeskBackend
   guestNetwork?: DeskGuestNetworkOptions
+  /**
+   * Cloud Hypervisor only: the `virtiofsd` (1.13 or later) behind each share.
+   * Defaults to the first on `PATH`, then `/usr/libexec/virtiofsd`.
+   */
+  virtiofsdPath?: string
+  /** Cloud Hypervisor only: how `virtiofsd` confines itself; defaults to `namespace`. */
+  virtiofsdSandbox?: DeskVirtiofsdSandbox
   ports: DeskPorts
   /** Override TCP dialing for tests or a host-specific transport. */
   connectGuest?: (address: string, port: number) => Promise<Duplex>
@@ -125,6 +135,8 @@ export interface DeskHostOptions {
   now?: () => number
   pathExists?: (path: string) => boolean
   deviceExists?: (path: string) => boolean
+  /** Whether a share's path is an existing directory; injectable for tests. */
+  isDirectory?: (path: string) => boolean
   /**
    * Delete a destroyed desk's overlay. Injectable so the destroy path is
    * testable without a filesystem; defaults to `rm(path, { force: true })`.
@@ -150,6 +162,12 @@ export interface DeskHostOptions {
   cpuSignature?: () => Promise<string>
   readSnapshotSignature?: (directory: string) => Promise<string | null>
   writeSnapshotSignature?: (directory: string, signature: string) => Promise<void>
+  /**
+   * The shares a parked desk was snapshotted with, which its restore uses in
+   * place of the start options' shares. Defaults to the record the backend
+   * writes beside the snapshot; a snapshot without one had no shares.
+   */
+  readSnapshotShares?: (directory: string) => Promise<readonly DeskShare[]>
   /** Create a snapshot directory; defaults to `mkdir(path, { recursive: true })`. */
   makeSnapshotDir?: (path: string) => Promise<void>
   /**
@@ -197,6 +215,14 @@ export interface DeskStartOptions {
   vcpus?: number
   leaseMs?: number
   network?: { tapDevice?: string; macAddress?: string; guestAddress?: string }
+  /**
+   * Host directories shared into the guest over virtio-fs. A desk parked with
+   * memory is restored with the shares it was parked with, because a snapshot
+   * holds its devices; these take effect on its next cold boot (see
+   * `shutdown`). A parked share whose directory is gone makes the restore fail,
+   * and the desk cold boots with these instead.
+   */
+  shares?: readonly DeskShare[]
 }
 
 export interface DeskExecOptions {
@@ -859,12 +885,14 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     // come up on a different tap than the one the egress rules were put on.
     const cid = nextCid++
     const initramfsPath = resolveInitramfsPath()
-    const planFor = (restore: boolean) =>
+    const planFor = (restore: boolean, shares = startOptions.shares) =>
       buildDeskLaunchPlan(
         {
           deskId,
           hypervisor: backend.hypervisor ?? 'cloud-hypervisor',
-          ...(backend.hypervisor === 'virtualization' ? { guestNetwork: options.guestNetwork } : {}),
+          ...(backend.hypervisor === 'virtualization'
+            ? { guestNetwork: options.guestNetwork }
+            : { virtiofsdPath: options.virtiofsdPath, virtiofsdSandbox: options.virtiofsdSandbox }),
           vmmPath: options.vmmPath,
           kvmPath: options.kvmPath,
           kernelPath,
@@ -877,6 +905,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
           runtimeDir: options.runtimeDir,
           tapDevice: startOptions.network?.tapDevice,
           macAddress: startOptions.network?.macAddress,
+          shares,
           // Forward the host's cmdline only when set; otherwise the plan falls
           // back to DEFAULT_KERNEL_CMDLINE.
           ...(kernelCmdline === undefined ? {} : { kernelCmdline }),
@@ -884,8 +913,16 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
           snapshotDir,
           ...(restore ? { restore: true as const } : {}),
         },
-        { pathExists, deviceExists },
+        { pathExists, deviceExists, ...(options.isDirectory ? { isDirectory: options.isDirectory } : {}) },
       )
+    const restorePlan = async () => {
+      const parked = await (options.readSnapshotShares ?? readShareManifest)(snapshotDir)
+      try {
+        return planFor(true, parked)
+      } catch (error) {
+        throw new DeskError(`its restore, with the shares it was parked with, could not be planned: ${errorMessage(error)}`)
+      }
+    }
 
     let resuming = parkWithMemory && pathExists(snapshotDir)
     if (resuming) {
@@ -899,7 +936,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     let machine: DeskMachine
     try {
       machine = resuming
-        ? await backend.boot(planFor(true), {
+        ? await backend.boot(await restorePlan(), {
             // The guest is restored and PAUSED here. Destroying the snapshot in
             // this window is what stops a memory image ever outliving the disk
             // state it belongs to. If it fails the restore is abandoned rather

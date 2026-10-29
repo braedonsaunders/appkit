@@ -7,11 +7,13 @@
  * socket inwards is one implementation. Internal to the package.
  */
 import { spawn, type ChildProcess } from 'node:child_process'
+import { readFile, writeFile } from 'node:fs/promises'
 import { createConnection } from 'node:net'
+import { join } from 'node:path'
 import { Buffer } from 'node:buffer'
 import type { Duplex } from 'node:stream'
 import { DeskRequestFateUnknownError, type DeskConnectionChange, type DeskMachine } from './backend'
-import { DeskError, type DeskLauncherIdentity } from './plan'
+import { DeskError, type DeskLauncherIdentity, type DeskShare } from './plan'
 import {
   encodeFrame,
   FrameDecoder,
@@ -573,6 +575,60 @@ export function attemptHandshake(
     stream.once('close', () => fail(new DeskError('vsock handshake closed before a reply.')))
     stream.write(`CONNECT ${port}\n`)
   })
+}
+
+/**
+ * The shares a snapshot was taken with, kept beside it.
+ *
+ * A snapshot holds the machine's devices, shares among them, so it can only
+ * come back with the shares it was parked with: Cloud Hypervisor would resume
+ * without a share that was added since, and Virtualization.framework refuses a
+ * changed device list. The host restores with this list rather than the one it
+ * was given, and a backend refuses a plan that disagrees with it.
+ */
+const SHARE_MANIFEST = 'shares.json'
+
+export async function writeShareManifest(snapshotDir: string, shares: readonly DeskShare[]): Promise<void> {
+  await writeFile(join(snapshotDir, SHARE_MANIFEST), `${shareManifest(shares)}\n`, { mode: 0o600 })
+}
+
+/**
+ * The shares recorded beside a snapshot. A snapshot with no record predates
+ * shares, so it was taken with none. Paths are returned as recorded; whether
+ * they still exist is the launch plan's to check.
+ */
+export async function readShareManifest(snapshotDir: string): Promise<DeskShare[]> {
+  let text: string
+  try {
+    text = await readFile(join(snapshotDir, SHARE_MANIFEST), 'utf8')
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []
+    throw error
+  }
+  let value: unknown
+  try {
+    value = JSON.parse(text)
+  } catch {
+    throw new DeskError(`${join(snapshotDir, SHARE_MANIFEST)} is not valid JSON.`)
+  }
+  const valid = Array.isArray(value) && value.every((entry: unknown) =>
+    typeof entry === 'object' && entry !== null
+    && typeof (entry as DeskShare).tag === 'string'
+    && typeof (entry as DeskShare).path === 'string'
+    && typeof (entry as DeskShare).readOnly === 'boolean')
+  if (!valid) throw new DeskError(`${join(snapshotDir, SHARE_MANIFEST)} is not a list of shares.`)
+  return (value as DeskShare[]).map(({ tag, path, readOnly }) => ({ tag, path, readOnly }))
+}
+
+/** Throws unless the snapshot was parked with exactly `shares`, in order. */
+export async function assertShareManifest(snapshotDir: string, shares: readonly DeskShare[]): Promise<void> {
+  const saved = shareManifest(await readShareManifest(snapshotDir))
+  const wanted = shareManifest(shares)
+  if (saved !== wanted) throw new DeskError(`the snapshot was taken with shares ${saved}, not ${wanted}`)
+}
+
+function shareManifest(shares: readonly DeskShare[]): string {
+  return JSON.stringify(shares.map(({ tag, path, readOnly }) => ({ tag, path, readOnly })))
 }
 
 export function defaultLauncher(
