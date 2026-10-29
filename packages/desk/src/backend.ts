@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { assertPrivateMemoryMapping } from './template-mapping'
 import { existsSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { request as httpRequest } from 'node:http'
@@ -354,6 +355,7 @@ export function createCloudHypervisorBackend(
     if (plan.snapshot.restoring) {
       try {
         await waitForVmm(api, plan.api.socketPath, { now, exited: exit, timeoutMs: connectTimeoutMs })
+        if (plan.snapshot.requirePrivateMemoryMapping) await assertPrivateMemoryMapping(child.pid, plan.snapshot.dir)
         await hooks?.onRestored?.()
         await api(plan.api.socketPath, '/api/v1/vm.resume')
       } catch (error) {

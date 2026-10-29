@@ -220,7 +220,7 @@ export interface DeskLaunchPlanBase {
    */
   vsock: { cid: number; socketPath: string }
   /** Where a memory snapshot of this desk is written, and read back from. */
-  snapshot: { dir: string; restoring: boolean }
+  snapshot: { dir: string; restoring: boolean; requirePrivateMemoryMapping?: boolean }
   /** Host directories shared into the guest, in the order they were given. */
   shares: readonly DeskShare[]
   memoryMb: number

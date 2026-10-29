@@ -31,7 +31,7 @@ export function planTemplateConfig(input: unknown, child: DeskTemplateChildIdent
   }
   const config = structuredClone(object(input, 'config'))
   const memory = object(config.memory, 'memory')
-  if (memory.shared || memory.hugepages || memory.mergeable || memory.hotplug_size || memory.hotplugged_size || memory.prefault || memory.zones) {
+  if (memory.shared || memory.hugepages || memory.mergeable || memory.hotplug_size || memory.hotplugged_size || memory.prefault || memory.zones || memory.file || memory.host_numa_node != null || memory.reserve || memory.hotplug_method === 'VirtioMem') {
     throw new Error('Template memory cannot use a copy-on-write restore')
   }
   for (const name of ['fs', 'pmem', 'devices', 'user_devices', 'vdpa', 'gpu', 'tpm', 'pvmemcontrol']) {

@@ -16,6 +16,8 @@ test('plans independent device endpoints without altering the template', () => {
 
 test('fails closed on shared memory, unsupported devices and reused identities', () => {
   assert.throws(() => planTemplateConfig({ ...input(), memory: { shared: true } }, child), /memory/)
+  assert.throws(() => planTemplateConfig({ ...input(), memory: { file: '/ram' } }, child), /memory/)
+  assert.throws(() => planTemplateConfig({ ...input(), memory: { hotplug_method: 'VirtioMem' } }, child), /memory/)
   assert.throws(() => planTemplateConfig({ ...input(), fs: [{}] }, child), /device/)
   assert.throws(() => planTemplateConfig(input(), { ...child, diskPath: '/source.raw' }), /differ/)
   assert.throws(() => planTemplateConfig(input(), { ...child, mac: '01:00:00:00:00:02' }), /identity/)
