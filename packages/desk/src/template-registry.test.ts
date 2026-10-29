@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { forkDeskTemplate, registerDeskTemplate, verifyDeskTemplateFork } from './template-registry'
+import { forkDeskTemplate, registerDeskTemplate, verifyDeskTemplateFork, verifyDeskTemplateCompatibility } from './template-registry'
 
 test('registration binds image identities and forks independent disk with shared memory inode', async () => {
   const root = await mkdtemp(join(tmpdir(), 'desk-register-'))
@@ -26,6 +26,7 @@ test('registration binds image identities and forks independent disk with shared
     assert.equal((await stat(join(root, 'child1', '.template-memory'))).ino, (await stat(join(snapshot, 'memory-ranges'))).ino)
     assert.notEqual((await stat(first.diskPath)).ino, (await stat(second.diskPath)).ino)
     await writeFile(first.diskPath, 'child data')
+    await verifyDeskTemplateCompatibility(join(root, 'child1'), compatibility)
     await assert.rejects(verifyDeskTemplateFork(join(root, 'child1'), identity, compatibility), /disk changed/)
     assert.equal(await readFile(second.diskPath, 'utf8'), disk)
     await assert.rejects(forkDeskTemplate(snapshot, join(root, 'badcpu'), identity, { ...compatibility, cpuSignature: 'other' }), /compatibility/)
@@ -33,6 +34,7 @@ test('registration binds image identities and forks independent disk with shared
     await assert.rejects(forkDeskTemplate(snapshot, join(root, 'badvmm'), identity, compatibility), /changed since registration/)
     await writeFile(vmm, vmm)
     await writeFile(golden, 'changed')
+    await assert.rejects(verifyDeskTemplateCompatibility(join(root, 'child1'), compatibility), /changed since registration/)
     await assert.rejects(forkDeskTemplate(snapshot, join(root, 'badimage'), identity, compatibility), /changed since registration/)
     await writeFile(golden, golden)
     await writeFile(kernel, 'changed')

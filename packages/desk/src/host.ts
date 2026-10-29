@@ -62,7 +62,7 @@ import type {
 } from './events'
 
 /** Capability marker for the fenced template lifecycle and mapping proof. */
-export const DESK_TEMPLATE_VERSION = 2
+export const DESK_TEMPLATE_VERSION = 3
 export const DEFAULT_CAPACITY = 4
 export const DEFAULT_IDLE_SUSPEND_MS = 5 * 60_000
 export const DEFAULT_LEASE_MS = 15 * 60_000
@@ -224,6 +224,8 @@ export interface DeskStartOptions {
     prepare: (plan: ReturnType<typeof buildDeskLaunchPlan>) => Promise<void>
     /** Revalidate a prepared child before any VMM maps it. */
     verifyPrepared: (plan: ReturnType<typeof buildDeskLaunchPlan>) => Promise<void>
+    /** Revalidate the registered image identities for a parked descendant. */
+    verifyResume: (plan: ReturnType<typeof buildDeskLaunchPlan>) => Promise<void>
     initialize: (machine: DeskMachine, plan: ReturnType<typeof buildDeskLaunchPlan>) => Promise<void>
     releaseFence: () => Promise<void>
   }
@@ -1087,6 +1089,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       const prepared = join(childDir, '.prepared')
       const initialized = join(childDir, '.initialized')
       if (existsSync(initialized) && !existsSync(snapshotDir)) throw new DeskError('Template descendant has no saved memory; recovery is required.')
+      if (existsSync(initialized)) await startOptions.template.verifyResume(planFor(true))
       if (!existsSync(initialized)) {
         await startOptions.template.holdFence()
         if (!existsSync(prepared)) {

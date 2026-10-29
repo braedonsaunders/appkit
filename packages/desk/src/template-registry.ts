@@ -107,19 +107,30 @@ export async function forkDeskTemplate(snapshot: string, childDirectory: string,
   return { diskPath, snapshotPath }
 }
 
-/** Revalidate an unconsumed prepared child after an interrupted host start. */
-export async function verifyDeskTemplateFork(childDirectory: string, child: Omit<DeskTemplateChildIdentity, 'diskPath'> & { deskId: string }, compatibility: DeskTemplateCompatibility): Promise<void> {
-  if (await readFile(join(childDirectory, '.prepared'), 'utf8') !== '1\n') throw new Error('Incomplete template fork')
+async function validatedBinding(childDirectory: string, compatibility: DeskTemplateCompatibility): Promise<{ snapshot: string; registered: Registration }> {
   const binding = JSON.parse(await readFile(join(childDirectory, '.template-binding.json'), 'utf8')) as { version?: unknown; snapshot?: unknown; compatibility?: unknown }
   if (binding.version !== 1 || typeof binding.snapshot !== 'string' || !isAbsolute(binding.snapshot) || JSON.stringify(binding.compatibility) !== JSON.stringify(compatibility)) throw new Error('Template fork compatibility does not match')
   const registered = JSON.parse(await readFile(join(binding.snapshot, 'appkit-template.json'), 'utf8')) as Registration
   if (registered.version !== 1 || typeof registered.diskPath !== 'string' || JSON.stringify(registered.compatibility) !== JSON.stringify(compatibility)) throw new Error('Template registration does not match')
   if (JSON.stringify(await measure(binding.snapshot, registered.diskPath, compatibility)) !== JSON.stringify(registered)) throw new Error('Template source changed since registration')
+  const [source, pin] = await Promise.all([stat(join(binding.snapshot, 'memory-ranges')), stat(join(childDirectory, '.template-memory'))])
+  if (source.dev !== pin.dev || source.ino !== pin.ino) throw new Error('Template lifetime pin does not match')
+  return { snapshot: binding.snapshot, registered }
+}
+
+/** Revalidate the registered source and lifetime pin for a parked descendant. */
+export async function verifyDeskTemplateCompatibility(childDirectory: string, compatibility: DeskTemplateCompatibility): Promise<void> {
+  await validatedBinding(childDirectory, compatibility)
+}
+
+/** Revalidate an unconsumed prepared child after an interrupted host start. */
+export async function verifyDeskTemplateFork(childDirectory: string, child: Omit<DeskTemplateChildIdentity, 'diskPath'> & { deskId: string }, compatibility: DeskTemplateCompatibility): Promise<void> {
+  if (await readFile(join(childDirectory, '.prepared'), 'utf8') !== '1\n') throw new Error('Incomplete template fork')
+  const binding = await validatedBinding(childDirectory, compatibility)
+  const registered = binding.registered
   const diskPath = join(childDirectory, 'disk.raw')
   const snapshotPath = join(childDirectory, `${cleanDeskId(child.deskId)}.snapshot`)
   await assertPinnedTemplateMemory(binding.snapshot, snapshotPath)
-  const [source, pin] = await Promise.all([stat(join(binding.snapshot, 'memory-ranges')), stat(join(childDirectory, '.template-memory'))])
-  if (source.dev !== pin.dev || source.ino !== pin.ino) throw new Error('Template lifetime pin does not match')
   if (await digest(diskPath, false) !== registered.files[registered.diskPath]) throw new Error('Prepared child disk changed')
   if (await digest(join(snapshotPath, 'state.json'), false) !== registered.files[join(binding.snapshot, 'state.json')]) throw new Error('Prepared child device state changed')
   const expectedConfig = planTemplateConfig(JSON.parse(await readFile(join(binding.snapshot, 'config.json'), 'utf8')), { ...child, diskPath })

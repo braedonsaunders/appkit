@@ -1930,6 +1930,7 @@ test('template initializes before exposure and releases the fence after durable 
     await host.start({ deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: disk, template: {
       async holdFence() { events.push('fenced') },
       async verifyPrepared() { events.push('verify') },
+      async verifyResume() {},
       async prepare(plan) {
         assert.equal(plan.hypervisor, 'cloud-hypervisor')
         await import('node:fs/promises').then(fs => fs.mkdir(snapshot, { recursive: true }))
@@ -1957,6 +1958,7 @@ test('template initialization failure stops the guest and keeps the fence', asyn
     await assert.rejects(host.start({ deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: disk, template: {
       async holdFence() {},
       async verifyPrepared() {},
+      async verifyResume() {},
       async prepare(plan) {
         assert.equal(plan.hypervisor, 'cloud-hypervisor')
         await import('node:fs/promises').then(fs => fs.mkdir(snapshot, { recursive: true }))
@@ -2043,3 +2045,19 @@ for (const failure of ['none', 'park', 'signature', 'sidecar', 'publication'] as
     } finally { await host.destroy('child'); await rm(root, { recursive: true, force: true }) }
   })
 }
+test('a parked template descendant rejects changed image identity before VMM launch', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'desk-template-resume-'))
+  try {
+    const child = join(root, 'child')
+    await import('node:fs/promises').then(fs => fs.mkdir(join(child, 'child.snapshot'), { recursive: true }))
+    await writeFile(join(child, '.initialized'), '1\n')
+    let boots = 0
+    const host = createDeskHost({ imageRoot: root, parkWithMemory: true, backend: { async boot() { boots++; throw new Error('must not boot') } },
+      pathExists: () => true, deviceExists: () => true, ports: { onEvent: () => {}, audit: () => {} }, trimOnSuspend: false })
+    await assert.rejects(host.start({ deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: join(child, 'disk.raw'), template: {
+      async holdFence() {}, async prepare() {}, async verifyPrepared() {},
+      async verifyResume() { throw new Error('image changed') }, async initialize() {}, async releaseFence() {},
+    } }), /image changed/)
+    assert.equal(boots, 0)
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
