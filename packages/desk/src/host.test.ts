@@ -1922,8 +1922,8 @@ test('template initializes before exposure and releases the fence after durable 
       ports: { onEvent: () => {}, audit: () => {} }, pathExists: path => path === child || path === snapshot || path === disk ? existsSync(path) : true,
       deviceExists: () => true, trimOnSuspend: false, cpuSignature: async () => 'cpu', runtimeDir: root })
     await host.start({ deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: disk, template: {
+      async holdFence() { events.push('fenced') },
       async prepare(plan) {
-        events.push('fenced')
         assert.equal(plan.hypervisor, 'cloud-hypervisor')
         await import('node:fs/promises').then(fs => fs.mkdir(snapshot, { recursive: true }))
         await writeFile(disk, 'disk')
@@ -1948,6 +1948,7 @@ test('template initialization failure stops the guest and keeps the fence', asyn
       ports: { onEvent: () => {}, audit: () => {} }, pathExists: path => path === child || path === snapshot || path === disk ? existsSync(path) : true,
       deviceExists: () => true, trimOnSuspend: false, cpuSignature: async () => 'cpu', runtimeDir: root })
     await assert.rejects(host.start({ deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: disk, template: {
+      async holdFence() {},
       async prepare(plan) {
         assert.equal(plan.hypervisor, 'cloud-hypervisor')
         await import('node:fs/promises').then(fs => fs.mkdir(snapshot, { recursive: true }))

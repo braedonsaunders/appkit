@@ -217,6 +217,8 @@ export interface DeskStartOptions {
   deskId: string
   /** Prepare and initialize a sterile template under an external network fence. */
   template?: {
+    /** Install the external fence even when a prior preparation was interrupted. */
+    holdFence: () => Promise<void>
     prepare: (plan: ReturnType<typeof buildDeskLaunchPlan>) => Promise<void>
     initialize: (machine: DeskMachine) => Promise<void>
     releaseFence: () => Promise<void>
@@ -1060,6 +1062,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       const initialized = join(childDir, '.initialized')
       if (existsSync(initialized) && !existsSync(snapshotDir)) throw new DeskError('Template descendant has no saved memory; recovery is required.')
       if (!existsSync(initialized)) {
+        await startOptions.template.holdFence()
         if (!existsSync(prepared)) {
           if (existsSync(startOptions.overlayPath) || existsSync(snapshotDir)) throw new DeskError('Incomplete template fork needs recovery.')
           await startOptions.template.prepare(planFor(false))

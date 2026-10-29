@@ -500,9 +500,9 @@ restored. Retain and inspect it before cleanup.
 
 A caller can pass `template` in `DeskStartOptions` on a Cloud Hypervisor host
 with memory parking enabled. This opts that desk into strict copy-on-write restore
-without changing the restore mode of other desks. Its `prepare` callback receives the assigned launch plan;
-it must establish the external network fence before preparing the disk and
-snapshot. AppKit verifies their device and resource identities against that
+without changing the restore mode of other desks. Its `holdFence` callback establishes the external network fence before
+preparation or restore, including when preparation was interrupted. Its `prepare`
+callback receives the assigned launch plan and creates the disk and snapshot. AppKit verifies their device and resource identities against that
 plan. After restore, `initialize` runs before the desk handle is exposed;
 only after it succeeds and the initialization marker is durable does
 `releaseFence` run. If initialization fails, AppKit stops the guest, preserves
