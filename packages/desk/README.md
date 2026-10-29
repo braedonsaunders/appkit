@@ -274,8 +274,9 @@ the VMM starts, so it cannot be replayed after the disk changes. The source is
 kept unchanged until the VMM exits, then removed. A host crash or failed stop can
 leave a `*.snapshot.source-*` directory; only remove it after verifying that no
 VMM maps it. Restore failures can leave one too. The source contains guest RAM
-and needs the same protection as a parked snapshot. Cloud Hypervisor can fall
-back to eager copying for incompatible memory or devices. Separate reflinked
+and needs the same protection as a parked snapshot. Copy-on-write restore refuses virtio-fs shares, including shares recorded in
+a parked snapshot. Cloud Hypervisor can fall back to eager copying for other
+incompatible memory or devices. Separate reflinked
 files do not share page-cache identity, and this option does not create cloned
 template guests or promise incremental snapshots.
 

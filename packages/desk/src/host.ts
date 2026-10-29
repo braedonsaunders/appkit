@@ -993,6 +993,14 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       if (hash.digest('hex') !== image.sha256) throw new DeskError(`Read-only attachment digest mismatch: ${image.path}`)
     }
     let resuming = parkWithMemory && pathExists(snapshotDir)
+    // Shared guest memory, required by virtio-fs, makes Cloud Hypervisor fall
+    // back to eager restore. Reject before retiring the snapshot or cold booting.
+    if (options.memoryRestoreMode === 'copyonwrite') {
+      if (startOptions.shares?.length) throw new DeskError('Copy-on-write restore cannot be combined with virtio-fs shares.')
+      if (resuming && (await (options.readSnapshotShares ?? readShareManifest)(snapshotDir)).length) {
+        throw new DeskError('The parked snapshot has virtio-fs shares and cannot use copy-on-write restore.')
+      }
+    }
     if (resuming) {
       let savedAttachments: unknown
       try { savedAttachments = JSON.parse(await readFile(join(snapshotDir, 'attachments.json'), 'utf8')) }
