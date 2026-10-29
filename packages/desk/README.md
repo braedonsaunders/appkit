@@ -33,6 +33,11 @@ before its memory snapshot. The caller must undo partial preparation on failure,
 bound hook duration, and provide durable recovery across crashes. A hook failure
 is reported to `onPausedError` and ordinary memory parking continues. Backends
 without the paused hook report it unavailable and park normally.
+`onParked(snapshotDir)` runs only after a successful memory snapshot, CPU identity
+write, and file/directory sync, and only if preparation and paused hooks reported
+no failure. Use that positive completion signal to publish a sidecar; `suspend`
+returning or a snapshot directory existing alone does not prove a successful park.
+A publication callback failure is reported without discarding the memory snapshot.
 
 ## Booting a desk
 

@@ -1999,3 +1999,45 @@ test('explicit shutdown clears a strict desk fence only after stopping the VM', 
     assert.equal(existsSync(marker), false)
   } finally { await rm(root, { recursive: true, force: true }) }
 })
+
+for (const failure of ['none', 'park', 'signature', 'sidecar', 'publication'] as const) {
+  test(`park completion is authoritative and preserves memory on ${failure} failure`, async () => {
+    const root = await mkdtemp(join(tmpdir(), 'desk-park-proof-'))
+    const snapshot = join(root, 'child.snapshot')
+    let completed = 0
+    const errors: string[] = []
+    const backend: DeskBackend = { async boot() {
+      const machine = fakeMachine('child').machine
+      machine.supportsPausedParkHook = true
+      machine.park = async (directory, hooks) => {
+        if (failure === 'park') throw new Error('snapshot failed')
+        if (failure === 'sidecar') hooks?.onPausedError?.(new Error('clone failed'))
+        for (const name of ['config.json', 'state.json', 'memory-ranges']) await writeFile(join(directory, name), name)
+      }
+      return machine
+    } }
+    const host = createDeskHost({ imageRoot: root, backend, parkWithMemory: true,
+      ports: { onEvent: () => {}, audit: () => {} }, deviceExists: () => true,
+      pathExists: path => path === snapshot ? existsSync(path) : true, trimOnSuspend: false,
+      cpuSignature: async () => { if (failure === 'signature') throw new Error('CPU identity failed'); return 'cpu' },
+    })
+    try {
+      await host.start({ deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: join(root, 'child.raw') })
+      await host.suspend('child', {
+        onPausedError: error => { errors.push(String(error)) },
+        async onParked(directory) {
+          assert.equal(directory, snapshot)
+          assert.equal(await readFile(join(directory, 'appkit-cpu-signature'), 'utf8'), 'cpu')
+          assert.equal(await readFile(join(directory, 'memory-ranges'), 'utf8'), 'memory-ranges')
+          completed++
+          if (failure === 'publication') throw new Error('cache publication failed')
+        },
+      })
+      assert.equal(completed, failure === 'none' || failure === 'publication' ? 1 : 0)
+      if (failure === 'publication' || failure === 'sidecar') {
+        assert.equal(errors.length, 1)
+        assert.equal(await readFile(join(snapshot, 'memory-ranges'), 'utf8'), 'memory-ranges')
+      }
+    } finally { await host.destroy('child'); await rm(root, { recursive: true, force: true }) }
+  })
+}

@@ -472,6 +472,8 @@ export interface DeskHostStats {
 export interface DeskSuspendHooks extends DeskParkHooks {
   /** Undo partial preparation before rejecting; crash recovery belongs to the caller. */
   beforePark?: (machine: DeskMachine) => Promise<void>
+  /** Called only after a successful, durable memory park without a sidecar error. */
+  onParked?: (snapshotDir: string) => Promise<void>
 }
 
 export interface DeskHost {
@@ -809,6 +811,11 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
   }
 
   async function teardown(record: DeskRecord, keepMemory = true, hooks?: DeskSuspendHooks): Promise<boolean> {
+    let sidecarFailed = false
+    if (hooks) {
+      const supplied = hooks
+      hooks = { ...supplied, onPausedError: error => { sidecarFailed = true; supplied.onPausedError?.(error) } }
+    }
     if (record.status === 'suspending' && record.machine) {
       // A previous stop failed. Keep the overlay fenced until a retry confirms
       // the VMM has exited; never boot another VM or delete it underneath one.
@@ -897,14 +904,20 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
           await machine.park!(snapshotDir, hooks)
           const signature = await (options.cpuSignature ?? hostCpuSignature)()
           await (options.writeSnapshotSignature ?? writeSnapshotSignature)(snapshotDir, signature)
-          if (strictMemory(record.startOptions)) {
+          if (strictMemory(record.startOptions) || (hooks?.onParked && !sidecarFailed)) {
             for (const name of ['config.json', 'state.json', 'memory-ranges', 'appkit-cpu-signature']) {
               const file = await open(join(snapshotDir, name), 'r')
               try { await file.sync() } finally { await file.close() }
             }
             const directory = await open(snapshotDir, 'r')
             try { await directory.sync() } finally { await directory.close() }
-            await clearRestoreMarker(snapshotDir)
+            const parent = await open(dirname(snapshotDir), 'r')
+            try { await parent.sync() } finally { await parent.close() }
+            if (strictMemory(record.startOptions)) await clearRestoreMarker(snapshotDir)
+          }
+          if (hooks?.onParked && !sidecarFailed) {
+            try { await hooks.onParked(snapshotDir) }
+            catch (error) { try { hooks.onPausedError?.(error) } catch { /* preserve memory */ } }
           }
         } else {
           await machine.shutdown()
