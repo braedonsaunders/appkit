@@ -1977,3 +1977,19 @@ test('explicit guest CIDs do not collide within a host', async () => {
   assert.equal(factory.plans[0]?.vsock.cid, 100)
   assert.equal(factory.plans[1]?.vsock.cid, 101)
 })
+
+test('explicit shutdown clears a strict desk fence only after stopping the VM', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'desk-strict-shutdown-'))
+  try {
+    const marker = join(root, 'child.snapshot.restore-pending')
+    let stopped = false
+    const backend: DeskBackend = { async boot() { return fakeMachine('child', async () => { stopped = true }).machine } }
+    const host = createDeskHost({ imageRoot: root, backend, parkWithMemory: true, ports: { onEvent: () => {}, audit: () => {} },
+      pathExists: path => path.endsWith('child.snapshot') ? false : true, deviceExists: () => true, trimOnSuspend: false })
+    await host.start({ deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: join(root, 'child.raw'), strictMemoryRestore: true })
+    assert.equal(existsSync(marker), true)
+    await host.shutdown('child')
+    assert.equal(stopped, true)
+    assert.equal(existsSync(marker), false)
+  } finally { await rm(root, { recursive: true, force: true }) }
+})

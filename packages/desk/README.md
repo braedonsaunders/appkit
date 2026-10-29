@@ -513,3 +513,8 @@ and for resetting guest entropy and identity in `initialize`.
 A caller may supply `vsockCid` on a start to use a stable guest CID. AppKit
 rejects collisions among CIDs allocated by the same host instance; the caller
 must also keep that allocation unique across host instances and restarts.
+
+A descendant may select strict memory handling and copy-on-write restore per
+start without requesting template initialization again. Explicit `shutdown`
+stops that known VM, discards its memory and clears its interruption marker;
+this permits an intentional cold restart of its existing disk.

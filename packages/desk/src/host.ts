@@ -235,6 +235,10 @@ export interface DeskStartOptions {
   freePageReporting?: boolean
   vcpus?: number
   leaseMs?: number
+  /** Preserve memory state on failures or interruption for this desk. */
+  strictMemoryRestore?: boolean
+  /** Select copy-on-write restore for this desk. */
+  memoryRestoreMode?: 'copyonwrite'
   /** Stable guest CID; callers must allocate it uniquely across host restarts. */
   vsockCid?: number
   network?: { tapDevice?: string; macAddress?: string; guestAddress?: string }
@@ -888,7 +892,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
           await machine.park!(snapshotDir, hooks)
           const signature = await (options.cpuSignature ?? hostCpuSignature)()
           await (options.writeSnapshotSignature ?? writeSnapshotSignature)(snapshotDir, signature)
-          if (options.strictMemoryRestore || record.startOptions.template) {
+          if (options.strictMemoryRestore || record.startOptions.strictMemoryRestore || record.startOptions.template) {
             for (const name of ['config.json', 'state.json', 'memory-ranges', 'appkit-cpu-signature']) {
               const file = await open(join(snapshotDir, name), 'r')
               try { await file.sync() } finally { await file.close() }
@@ -908,7 +912,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
           record.machine = machine
           throw new DeskError(`Desk ${record.deskId} could not stop after teardown failed: ${errorMessage(stopError)}`)
         }
-        if (parking && !options.strictMemoryRestore && !record.startOptions.template) {
+        if (parking && !options.strictMemoryRestore && !record.startOptions.strictMemoryRestore && !record.startOptions.template) {
           await removeSnapshot(snapshotDirFor(record.startOptions.overlayPath, record.deskId)).catch(
             () => undefined,
           )
@@ -982,9 +986,9 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     // as whatever the overlay copy fails with.
     await admitDisk(startOptions.overlayPath)
     const snapshotDir = snapshotDirFor(startOptions.overlayPath, deskId)
-    const strictRestore = Boolean(options.strictMemoryRestore || startOptions.template)
-    const restoreMode = startOptions.template ? 'copyonwrite' : options.memoryRestoreMode
-    if (startOptions.template && (!parkWithMemory || backend.hypervisor === 'virtualization')) throw new DeskError('Template forks require Cloud Hypervisor and parkWithMemory.')
+    const strictRestore = Boolean(options.strictMemoryRestore || startOptions.strictMemoryRestore || startOptions.template)
+    const restoreMode = startOptions.template ? 'copyonwrite' : startOptions.memoryRestoreMode ?? options.memoryRestoreMode
+    if ((strictRestore || restoreMode) && (!parkWithMemory || backend.hypervisor === 'virtualization')) throw new DeskError('Strict or copy-on-write restore requires Cloud Hypervisor and parkWithMemory.')
     if (strictRestore && existsSync(`${snapshotDir}.restore-pending`)) {
       throw new DeskError(`Desk ${deskId} has an interrupted memory restore; operator recovery is required.`)
     }
@@ -1898,7 +1902,9 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       // A desk parked earlier still has its memory image on disk; dropping it is
       // what makes the next boot cold. The overlay is untouched — only `destroy`
       // may remove it.
-      await removeSnapshot(snapshotDirFor(record.startOptions.overlayPath, record.deskId))
+      const snapshot = snapshotDirFor(record.startOptions.overlayPath, record.deskId)
+      await removeSnapshot(snapshot)
+      if (options.strictMemoryRestore || record.startOptions.strictMemoryRestore || record.startOptions.template) await clearRestoreMarker(snapshot)
     })
   }
 
