@@ -1829,7 +1829,7 @@ test('copy-on-write refuses parked virtio-fs shares before snapshot retirement o
     backend: { async boot(plan) { boots++; return fakeMachine(plan.deskId).machine } },
     ports: { onEvent: () => {}, audit: () => {} }, pathExists: () => true, deviceExists: () => true,
     readSnapshotShares: async () => [{ tag: 'depot', path: '/depot', readOnly: true }],
-    readSnapshotSignature: async () => null,
+    readSnapshotSignature: async () => 'old-cpu', cpuSignature: async () => 'new-cpu',
     retireSnapshot: async () => { retired++ }, removeSnapshot: async () => { removed++ },
   })
   await assert.rejects(host.start(startOptions('share-cow')), /parked snapshot has virtio-fs shares/)
