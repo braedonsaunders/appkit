@@ -66,6 +66,108 @@ const PDF_COPY: Record<
     complianceScore: 'Puntuación de cumplimiento',
     details: 'Detalles',
   },
+  cs: {
+    recordReport: 'Zpráva o záznamu',
+    complianceStatus: 'Stav souladu',
+    complianceScore: 'Skóre souladu',
+    details: 'Podrobnosti',
+  },
+  da: {
+    recordReport: 'Rapport over post',
+    complianceStatus: 'Overholdelsesstatus',
+    complianceScore: 'Overholdelsesscore',
+    details: 'Detaljer',
+  },
+  de: {
+    recordReport: 'Datensatzbericht',
+    complianceStatus: 'Konformitätsstatus',
+    complianceScore: 'Konformitätswert',
+    details: 'Details',
+  },
+  fi: {
+    recordReport: 'Tietueraportti',
+    complianceStatus: 'Vaatimustenmukaisuuden tila',
+    complianceScore: 'Vaatimustenmukaisuuden pisteet',
+    details: 'Tiedot',
+  },
+  it: {
+    recordReport: 'Report del record',
+    complianceStatus: 'Stato di conformità',
+    complianceScore: 'Punteggio di conformità',
+    details: 'Dettagli',
+  },
+  ja: {
+    recordReport: 'レコードレポート',
+    complianceStatus: 'コンプライアンス状況',
+    complianceScore: 'コンプライアンススコア',
+    details: '詳細',
+  },
+  ko: {
+    recordReport: '레코드 보고서',
+    complianceStatus: '규정 준수 상태',
+    complianceScore: '규정 준수 점수',
+    details: '세부 정보',
+  },
+  nb: {
+    recordReport: 'Postrapport',
+    complianceStatus: 'Samsvarsstatus',
+    complianceScore: 'Samsvarspoeng',
+    details: 'Detaljer',
+  },
+  nl: {
+    recordReport: 'Recordrapport',
+    complianceStatus: 'Nalevingsstatus',
+    complianceScore: 'Nalevingsscore',
+    details: 'Details',
+  },
+  pl: {
+    recordReport: 'Raport rekordu',
+    complianceStatus: 'Status zgodności',
+    complianceScore: 'Wynik zgodności',
+    details: 'Szczegóły',
+  },
+  'pt-BR': {
+    recordReport: 'Relatório do registro',
+    complianceStatus: 'Status de conformidade',
+    complianceScore: 'Pontuação de conformidade',
+    details: 'Detalhes',
+  },
+  ru: {
+    recordReport: 'Отчёт по записи',
+    complianceStatus: 'Статус соответствия',
+    complianceScore: 'Оценка соответствия',
+    details: 'Подробности',
+  },
+  sv: {
+    recordReport: 'Postrapport',
+    complianceStatus: 'Efterlevnadsstatus',
+    complianceScore: 'Efterlevnadspoäng',
+    details: 'Detaljer',
+  },
+  tr: {
+    recordReport: 'Kayıt raporu',
+    complianceStatus: 'Uyumluluk durumu',
+    complianceScore: 'Uyumluluk puanı',
+    details: 'Ayrıntılar',
+  },
+  uk: {
+    recordReport: 'Звіт про запис',
+    complianceStatus: 'Статус відповідності',
+    complianceScore: 'Оцінка відповідності',
+    details: 'Подробиці',
+  },
+  'zh-CN': {
+    recordReport: '记录报告',
+    complianceStatus: '合规状态',
+    complianceScore: '合规评分',
+    details: '详细信息',
+  },
+  'zh-TW': {
+    recordReport: '記錄報告',
+    complianceStatus: '合規狀態',
+    complianceScore: '合規分數',
+    details: '詳細資料',
+  },
 }
 
 function esc(s: string): string {

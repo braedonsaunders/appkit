@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { LocalizationDemo } from './localization-demo'
 import {
   Bell,
   Check,
@@ -636,6 +637,14 @@ export default function ComponentGallery() {
           <Button onClick={() => setOpen(true)}>
             <PanelRightOpen className="size-4" /> Open panel
           </Button>
+        </Section>
+
+        <Section
+          title="Localization"
+          description="Exact-copy translation from @braedonsaunders/appkit-i18n: catalogues keyed by the English source, CLDR plural forms, and UiTextProvider handing the translator to every primitive."
+          i={7}
+        >
+          <LocalizationDemo />
         </Section>
 
         <Separator />

@@ -265,7 +265,8 @@ const GROUPS: AdminHubGroup[] = [
         description: 'Apply one tenant-aware locale policy to application copy and user-authored multilingual content.',
         icon: <Languages />,
         features: [
-          'Supported-locale parsing, Accept-Language negotiation, and stable policy normalization',
+          'Twenty supported locales with Accept-Language and browser negotiation, region and script fallback, and stable policy normalization',
+          'Exact-copy translator over systemMessageKey catalogues with placeholders, CLDR plural forms, and English fallback',
           'Tenant default and per-user override resolution with disabled-locale rejection',
           'Localized authoring-copy fallback that preserves older English and plain-string records',
         ],
