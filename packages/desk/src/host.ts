@@ -62,7 +62,7 @@ import type {
 } from './events'
 
 /** Capability marker for the fenced template lifecycle and mapping proof. */
-export const DESK_TEMPLATE_VERSION = 1
+export const DESK_TEMPLATE_VERSION = 2
 export const DEFAULT_CAPACITY = 4
 export const DEFAULT_IDLE_SUSPEND_MS = 5 * 60_000
 export const DEFAULT_LEASE_MS = 15 * 60_000
@@ -222,6 +222,8 @@ export interface DeskStartOptions {
     /** Install the external fence even when a prior preparation was interrupted. */
     holdFence: () => Promise<void>
     prepare: (plan: ReturnType<typeof buildDeskLaunchPlan>) => Promise<void>
+    /** Revalidate a prepared child before any VMM maps it. */
+    verifyPrepared: (plan: ReturnType<typeof buildDeskLaunchPlan>) => Promise<void>
     initialize: (machine: DeskMachine, plan: ReturnType<typeof buildDeskLaunchPlan>) => Promise<void>
     releaseFence: () => Promise<void>
   }
@@ -1104,6 +1106,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
           || savedConfig.memory?.size !== planned.memoryMb * 1024 * 1024 || savedConfig.cpus?.boot_vcpus !== planned.vcpus) {
           throw new DeskError('Prepared template device or resource identity does not match its launch plan.')
         }
+        await startOptions.template.verifyPrepared(planned)
         initializeTemplate = true
       }
     }

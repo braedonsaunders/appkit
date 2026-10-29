@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { forkDeskTemplate, registerDeskTemplate } from './template-registry'
+import { forkDeskTemplate, registerDeskTemplate, verifyDeskTemplateFork } from './template-registry'
 
 test('registration binds image identities and forks independent disk with shared memory inode', async () => {
   const root = await mkdtemp(join(tmpdir(), 'desk-register-'))
@@ -21,10 +21,12 @@ test('registration binds image identities and forks independent disk with shared
     const identity = { deskId: 'child', tap: 'tap1', mac: '02:00:00:00:00:02', vsockCid: 5, vsockSocket: '/new.sock' }
     const first = await forkDeskTemplate(snapshot, join(root, 'child1'), identity, compatibility)
     const second = await forkDeskTemplate(snapshot, join(root, 'child2'), { ...identity, tap: 'tap2', vsockCid: 6, vsockSocket: '/other.sock', mac: '02:00:00:00:00:03' }, compatibility)
+    await verifyDeskTemplateFork(join(root, 'child1'), identity, compatibility)
     assert.equal((await stat(join(first.snapshotPath, 'memory-ranges'))).ino, (await stat(join(second.snapshotPath, 'memory-ranges'))).ino)
     assert.equal((await stat(join(root, 'child1', '.template-memory'))).ino, (await stat(join(snapshot, 'memory-ranges'))).ino)
     assert.notEqual((await stat(first.diskPath)).ino, (await stat(second.diskPath)).ino)
     await writeFile(first.diskPath, 'child data')
+    await assert.rejects(verifyDeskTemplateFork(join(root, 'child1'), identity, compatibility), /disk changed/)
     assert.equal(await readFile(second.diskPath, 'utf8'), disk)
     await assert.rejects(forkDeskTemplate(snapshot, join(root, 'badcpu'), identity, { ...compatibility, cpuSignature: 'other' }), /compatibility/)
     await writeFile(vmm, 'changed')

@@ -98,9 +98,33 @@ export async function forkDeskTemplate(snapshot: string, childDirectory: string,
   }
   const snapshotDir = await open(snapshotPath, 'r')
   try { await snapshotDir.sync() } finally { await snapshotDir.close() }
+  const binding = await open(join(childDirectory, '.template-binding.json'), 'wx', 0o600)
+  try { await binding.writeFile(JSON.stringify({ version: 1, snapshot, compatibility })); await binding.sync() } finally { await binding.close() }
   const marker = await open(join(childDirectory, '.prepared'), 'wx', 0o600)
   try { await marker.writeFile('1\n'); await marker.sync() } finally { await marker.close() }
   const directory = await open(childDirectory, 'r')
   try { await directory.sync() } finally { await directory.close() }
   return { diskPath, snapshotPath }
+}
+
+/** Revalidate an unconsumed prepared child after an interrupted host start. */
+export async function verifyDeskTemplateFork(childDirectory: string, child: Omit<DeskTemplateChildIdentity, 'diskPath'> & { deskId: string }, compatibility: DeskTemplateCompatibility): Promise<void> {
+  if (await readFile(join(childDirectory, '.prepared'), 'utf8') !== '1\n') throw new Error('Incomplete template fork')
+  const binding = JSON.parse(await readFile(join(childDirectory, '.template-binding.json'), 'utf8')) as { version?: unknown; snapshot?: unknown; compatibility?: unknown }
+  if (binding.version !== 1 || typeof binding.snapshot !== 'string' || !isAbsolute(binding.snapshot) || JSON.stringify(binding.compatibility) !== JSON.stringify(compatibility)) throw new Error('Template fork compatibility does not match')
+  const registered = JSON.parse(await readFile(join(binding.snapshot, 'appkit-template.json'), 'utf8')) as Registration
+  if (registered.version !== 1 || typeof registered.diskPath !== 'string' || JSON.stringify(registered.compatibility) !== JSON.stringify(compatibility)) throw new Error('Template registration does not match')
+  if (JSON.stringify(await measure(binding.snapshot, registered.diskPath, compatibility)) !== JSON.stringify(registered)) throw new Error('Template source changed since registration')
+  const diskPath = join(childDirectory, 'disk.raw')
+  const snapshotPath = join(childDirectory, `${cleanDeskId(child.deskId)}.snapshot`)
+  await assertPinnedTemplateMemory(binding.snapshot, snapshotPath)
+  const [source, pin] = await Promise.all([stat(join(binding.snapshot, 'memory-ranges')), stat(join(childDirectory, '.template-memory'))])
+  if (source.dev !== pin.dev || source.ino !== pin.ino) throw new Error('Template lifetime pin does not match')
+  if (await digest(diskPath, false) !== registered.files[registered.diskPath]) throw new Error('Prepared child disk changed')
+  if (await digest(join(snapshotPath, 'state.json'), false) !== registered.files[join(binding.snapshot, 'state.json')]) throw new Error('Prepared child device state changed')
+  const expectedConfig = planTemplateConfig(JSON.parse(await readFile(join(binding.snapshot, 'config.json'), 'utf8')), { ...child, diskPath })
+  if (JSON.stringify(JSON.parse(await readFile(join(snapshotPath, 'config.json'), 'utf8'))) !== JSON.stringify(expectedConfig)) throw new Error('Prepared child configuration changed')
+  if ((await readFile(join(snapshotPath, 'appkit-cpu-signature'), 'utf8')).trim() !== compatibility.cpuSignature) throw new Error('Prepared child CPU identity changed')
+  const attachments = compatibility.attachmentPaths.map(path => ({ path, sha256: registered.files[path], kind: 'block' }))
+  if (await readFile(join(snapshotPath, 'attachments.json'), 'utf8') !== JSON.stringify(attachments)) throw new Error('Prepared child attachments changed')
 }

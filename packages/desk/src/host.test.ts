@@ -1929,6 +1929,7 @@ test('template initializes before exposure and releases the fence after durable 
       deviceExists: () => true, trimOnSuspend: false, cpuSignature: async () => 'cpu', runtimeDir: root })
     await host.start({ deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: disk, template: {
       async holdFence() { events.push('fenced') },
+      async verifyPrepared() { events.push('verify') },
       async prepare(plan) {
         assert.equal(plan.hypervisor, 'cloud-hypervisor')
         await import('node:fs/promises').then(fs => fs.mkdir(snapshot, { recursive: true }))
@@ -1940,7 +1941,7 @@ test('template initializes before exposure and releases the fence after durable 
       async initialize() { events.push('initialize'); assert.equal(existsSync(join(child, '.initialized')), false) },
       async releaseFence() { events.push('release'); assert.equal(await readFile(join(child, '.initialized'), 'utf8'), '1\n') },
     } })
-    assert.deepEqual(events, ['fenced', 'restore', 'initialize', 'release'])
+    assert.deepEqual(events, ['fenced', 'verify', 'restore', 'initialize', 'release'])
   } finally { await rm(root, { recursive: true, force: true }) }
 })
 
@@ -1955,6 +1956,7 @@ test('template initialization failure stops the guest and keeps the fence', asyn
       deviceExists: () => true, trimOnSuspend: false, cpuSignature: async () => 'cpu', runtimeDir: root })
     await assert.rejects(host.start({ deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: disk, template: {
       async holdFence() {},
+      async verifyPrepared() {},
       async prepare(plan) {
         assert.equal(plan.hypervisor, 'cloud-hypervisor')
         await import('node:fs/promises').then(fs => fs.mkdir(snapshot, { recursive: true }))
