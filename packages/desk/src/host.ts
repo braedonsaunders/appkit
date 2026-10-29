@@ -232,6 +232,8 @@ export interface DeskStartOptions {
   freePageReporting?: boolean
   vcpus?: number
   leaseMs?: number
+  /** Stable guest CID; callers must allocate it uniquely across host restarts. */
+  vsockCid?: number
   network?: { tapDevice?: string; macAddress?: string; guestAddress?: string }
   /**
    * Host directories shared into the guest over virtio-fs. A desk parked with
@@ -583,6 +585,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
   const queue: QueueEntry[] = []
   let occupied = 0
   let nextCid = positiveInteger(options.cidBase ?? DEFAULT_CID_BASE, 'cidBase')
+  const cidOwners = new Map<number, string>()
   let lastStartedAt: string | null = null
   let lastSuspendedAt: string | null = null
   let lastError: string | null = null
@@ -969,7 +972,18 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     // The SAME cid for both attempts below. A restored VM's snapshotted config
     // names its vsock and tap, and a cold-boot retry that renumbered them would
     // come up on a different tap than the one the egress rules were put on.
-    const cid = nextCid++
+    let cid: number
+    if (startOptions.vsockCid !== undefined) {
+      cid = startOptions.vsockCid
+      if (!Number.isSafeInteger(cid) || cid < 3 || cid > 0xfffffffe) throw new DeskError('Invalid guest vsock CID.')
+      const owner = cidOwners.get(cid)
+      if (owner !== undefined && owner !== deskId) throw new DeskError('Guest vsock CID is already assigned.')
+    } else {
+      while (cidOwners.has(nextCid)) nextCid++
+      cid = nextCid++
+      if (cid > 0xfffffffe) throw new DeskError('Guest vsock CID space exhausted.')
+    }
+    cidOwners.set(cid, deskId)
     const initramfsPath = startOptions.initramfsPath ?? resolveInitramfsPath()
     let restoreDir = snapshotDir
     const planFor = (restore: boolean, shares = startOptions.shares) =>

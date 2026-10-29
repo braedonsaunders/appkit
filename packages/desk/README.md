@@ -501,3 +501,7 @@ only after it succeeds and the initialization marker is durable does
 the interruption marker and does not release the fence. The caller is
 responsible for ensuring the source has no running user workloads at capture
 and for resetting guest entropy and identity in `initialize`.
+
+A caller may supply `vsockCid` on a start to use a stable guest CID. AppKit
+rejects collisions among CIDs allocated by the same host instance; the caller
+must also keep that allocation unique across host instances and restarts.

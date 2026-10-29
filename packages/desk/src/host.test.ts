@@ -1936,3 +1936,14 @@ test('template initialization failure stops the guest and keeps the fence', asyn
     assert.equal(existsSync(`${snapshot}.restore-pending`), true)
   } finally { await rm(root, { recursive: true, force: true }) }
 })
+
+test('explicit guest CIDs do not collide within a host', async () => {
+  const factory = fakeBackendFactory()
+  const host = createDeskHost({ imageRoot: '/images', backend: factory.backend, pathExists: () => true, deviceExists: () => true,
+    ports: { onEvent: () => {}, audit: () => {} }, trimOnSuspend: false })
+  await host.start({ ...startOptions('one'), vsockCid: 100 })
+  await assert.rejects(host.start({ ...startOptions('two'), vsockCid: 100 }), /already assigned/)
+  await host.start(startOptions('three'))
+  assert.equal(factory.plans[0]?.vsock.cid, 100)
+  assert.equal(factory.plans[1]?.vsock.cid, 101)
+})
