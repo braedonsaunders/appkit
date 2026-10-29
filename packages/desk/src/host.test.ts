@@ -1633,3 +1633,24 @@ test('a paused resident desk can renew its lease', async () => {
   await context.host.suspend('paused-lease')
   assert.throws(() => handle.renewLease(1000), /not resident/)
 })
+
+test('a desk can select TCP or vsock for each service connection', async () => {
+  const { PassThrough } = await import('node:stream')
+  const paths: string[] = []
+  const backend: DeskBackend = { async boot(plan) {
+    const machine = fakeMachine(plan.deskId).machine
+    machine.connect = async () => { paths.push('vsock'); return new PassThrough() }
+    return machine
+  } }
+  const host = createDeskHost({ imageRoot: '/images', backend, ports: { onEvent: () => {}, audit: () => {} },
+    pathExists: () => true, deviceExists: () => true, trimOnSuspend: false,
+    connectGuest: async () => { paths.push('tcp'); return new PassThrough() },
+  })
+  const desk = await host.start({ ...startOptions('choice'), network: { guestAddress: '192.0.2.2' } })
+  const tcp = await desk.connect(14700, { transport: 'tcp' })
+  const vsock = await desk.connect(14700, { transport: 'vsock' })
+  assert.deepEqual(paths, ['tcp', 'vsock'])
+  await host.suspend('choice')
+  assert.equal(tcp.destroyed, true)
+  assert.equal(vsock.destroyed, true)
+})

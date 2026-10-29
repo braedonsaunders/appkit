@@ -408,7 +408,7 @@ export interface DeskHandle {
   readonly deskId: string
   renewLease(ms: number): void
   /** Open a host-to-guest TCP stream; the caller owns and closes it. */
-  connect(port: number): Promise<Duplex>
+  connect(port: number, options?: { transport?: 'tcp' | 'vsock' }): Promise<Duplex>
   exec(options: DeskExecOptions & { keepAlive: true }): Promise<DeskJob>
   exec(options: DeskExecOptions): Promise<DeskExecSnapshot>
   /** The keepAlive processes still running on this desk. */
@@ -1260,15 +1260,17 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
         touch(record)
         armTimer(record)
       },
-      async connect(port: number): Promise<Duplex> {
+      async connect(port: number, choice?: { transport?: 'tcp' | 'vsock' }): Promise<Duplex> {
         requireMachine(record, epoch)
         if (!Number.isInteger(port) || port < 1 || port > 65535) throw new DeskError('Guest TCP port must be between 1 and 65535.')
         const machine = requireMachine(record, epoch)
         const address = record.startOptions.network?.guestAddress
-        if (!machine.connect && (!address || isIP(address) !== 4)) throw new DeskError('A guest IPv4 address is required to connect to a desk port.')
+        const useVsock = choice?.transport === 'vsock' || (choice?.transport !== 'tcp' && !!machine.connect)
+        if (useVsock && !machine.connect) throw new DeskError('This backend has no service vsock connector.')
+        if (!useVsock && (!address || isIP(address) !== 4)) throw new DeskError('A guest IPv4 address is required to connect to a desk port.')
         touch(record)
         try {
-          const stream = machine.connect ? await machine.connect(port) : await (options.connectGuest ?? connectGuestTcp)(address!, port)
+          const stream = useVsock ? await machine.connect!(port) : await (options.connectGuest ?? connectGuestTcp)(address!, port)
           try { requireMachine(record, epoch) } catch (error) { stream.destroy(); throw error }
           const stop = () => stream.destroy()
           record.relayStops.add(stop)
