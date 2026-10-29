@@ -27,7 +27,7 @@
     "zod": "^4.4.3"
   },
   "peerDependencies": {
-    "@braedonsaunders/appkit-db": "^0.2.0",
+    "@braedonsaunders/appkit-db": "^0.2.1",
     "drizzle-orm": "^0.45.2"
   },
   "peerDependenciesMeta": {
