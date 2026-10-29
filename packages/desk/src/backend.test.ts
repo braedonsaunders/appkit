@@ -565,3 +565,176 @@ test('a failing overlay creation step fails the boot with its stderr', async () 
   queueMicrotask(() => failing.emit('exit', 1, null))
   await assert.rejects(pending, /overlay creation for desk agent-1 exited with code 1/)
 })
+
+// --- virtio-fs shares --------------------------------------------------------
+function sharePlan(overrides: { restore?: boolean; snapshotDir?: string } = {}) {
+  return buildDeskLaunchPlan(
+    {
+      deskId: 'agent-1',
+      kernelPath: '/images/vmlinux',
+      baseImagePath: '/images/base.raw',
+      overlayPath: '/images/overlays/agent-1.raw',
+      vsockCid: 42,
+      virtiofsdPath: '/usr/libexec/virtiofsd',
+      shares: [
+        { tag: 'store', path: '/srv/store', readOnly: true },
+        { tag: 'build', path: '/srv/build', readOnly: false },
+      ],
+      ...(overrides.snapshotDir ? { snapshotDir: overrides.snapshotDir } : {}),
+      ...(overrides.restore ? { restore: true } : {}),
+    },
+    { pathExists: allPathsExist, deviceExists: allPathsExist, isDirectory: allPathsExist },
+  )
+}
+
+const storeSocket = '/run/appkit-desk/desk-agent-1.store.fs.sock'
+const buildSocket = '/run/appkit-desk/desk-agent-1.build.fs.sock'
+
+function shareHarness(options: { daemons?: FakeChild[]; vmm?: FakeChild; listening?: (path: string) => boolean } = {}) {
+  const spawned: string[] = []
+  const removed: string[] = []
+  const daemons = options.daemons ?? [fakeChild({ exitOnKill: true }), fakeChild({ exitOnKill: true })]
+  const vmm = options.vmm ?? fakeChild({ exitOnKill: true })
+  const queue = [...daemons]
+  const vsock = fakeVsock(guestHandlers)
+  const backend = createCloudHypervisorBackend({
+    platform: 'linux',
+    launcher: (command, args) => {
+      spawned.push(command === '/usr/libexec/virtiofsd' ? `virtiofsd ${args[0]}` : command)
+      if (command !== '/usr/libexec/virtiofsd') return vmm
+      const child = queue.shift()
+      assert.ok(child)
+      return child
+    },
+    connect: vsock.connect,
+    connectTimeoutMs: 200,
+    connectRetryDelayMs: 1,
+    killGraceMs: 10,
+    pathExists: options.listening ?? (() => true),
+    removeFile: async (path) => {
+      removed.push(path)
+    },
+  })
+  return { backend, spawned, removed, daemons, vmm }
+}
+
+test('every share daemon is listening before the VMM starts, and stops after it', async () => {
+  let polls = 0
+  const harness = shareHarness({ listening: () => ++polls > 2 })
+  const machine = await harness.backend.boot(sharePlan())
+  assert.deepEqual(harness.removed, [storeSocket, buildSocket], 'stale sockets cleared first')
+  assert.deepEqual(harness.spawned, [
+    `virtiofsd --socket-path=${storeSocket}`,
+    `virtiofsd --socket-path=${buildSocket}`,
+    '/usr/bin/cloud-hypervisor',
+  ])
+  assert.ok(polls > 2, 'the VMM waited for the sockets')
+  await machine.shutdown()
+  assert.deepEqual(harness.vmm.killedWith, ['SIGTERM'])
+  for (const daemon of harness.daemons) assert.deepEqual(daemon.killedWith, ['SIGTERM'])
+})
+
+test('a share daemon that exits before it listens fails the boot without starting the VMM', async () => {
+  const daemons = [fakeChild({ exitOnKill: true }), fakeChild()]
+  // The second daemon exits once both are up, as one refusing its flags would.
+  const harness = shareHarness({
+    daemons,
+    listening: () => {
+      daemons[1]?.emit('exit', 1, null)
+      return false
+    },
+  })
+  await assert.rejects(
+    harness.backend.boot(sharePlan()),
+    /Desk agent-1 could not start its shares: virtiofsd for share build exited before it listened/,
+  )
+  assert.equal(harness.spawned.includes('/usr/bin/cloud-hypervisor'), false)
+  assert.deepEqual(harness.daemons[0]?.killedWith, ['SIGTERM'], 'the other daemon is stopped too')
+})
+
+test('a share daemon that never creates its socket fails the boot at the deadline', async () => {
+  const harness = shareHarness({ listening: (path) => path === storeSocket })
+  await assert.rejects(harness.backend.boot(sharePlan()), new RegExp(`did not create ${buildSocket}`))
+  assert.equal(harness.spawned.includes('/usr/bin/cloud-hypervisor'), false)
+})
+
+test('a share daemon that dies under a running desk stops the VMM, so the desk is lost', async () => {
+  const harness = shareHarness()
+  const machine = await harness.backend.boot(sharePlan())
+  harness.daemons[0]?.emit('exit', 1, null)
+  await new Promise((resolvePromise) => setImmediate(resolvePromise))
+  assert.deepEqual(harness.vmm.killedWith, ['SIGTERM'])
+  await machine.shutdown()
+})
+
+test('a restore starts the same share daemons before the VMM', async () => {
+  const { mkdtemp, rm, writeFile } = await import('node:fs/promises')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  const directory = await mkdtemp(join(tmpdir(), 'desk-ch-shares-'))
+  try {
+    await writeFile(
+      join(directory, 'shares.json'),
+      JSON.stringify([
+        { tag: 'store', path: '/srv/store', readOnly: true },
+        { tag: 'build', path: '/srv/build', readOnly: false },
+      ]),
+    )
+    // Nothing serves the VMM's control socket, so the restore fails once the
+    // ordering is known.
+    const harness = shareHarness()
+    await assert.rejects(
+      harness.backend.boot(sharePlan({ restore: true, snapshotDir: directory })),
+      /could not be restored/,
+    )
+    assert.deepEqual(harness.spawned, [
+      `virtiofsd --socket-path=${storeSocket}`,
+      `virtiofsd --socket-path=${buildSocket}`,
+      '/usr/bin/cloud-hypervisor',
+    ])
+    for (const daemon of harness.daemons) assert.deepEqual(daemon.killedWith, ['SIGTERM'], 'and stops them on failure')
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test('a restore whose shares differ from the snapshot is refused before anything starts', async () => {
+  const { mkdtemp, rm, writeFile } = await import('node:fs/promises')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  const directory = await mkdtemp(join(tmpdir(), 'desk-ch-shares-'))
+  try {
+    await writeFile(join(directory, 'shares.json'), JSON.stringify([{ tag: 'store', path: '/srv/store', readOnly: true }]))
+    const harness = shareHarness()
+    await assert.rejects(
+      harness.backend.boot(sharePlan({ restore: true, snapshotDir: directory })),
+      /could not be restored .*: the snapshot was taken with shares/,
+    )
+    assert.deepEqual(harness.spawned, [])
+    // No record at all is a snapshot from before shares, so it had none.
+    await rm(join(directory, 'shares.json'))
+    await assert.rejects(harness.backend.boot(sharePlan({ restore: true, snapshotDir: directory })), /taken with shares \[\]/)
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test('the share record beside a snapshot round-trips, and a damaged one is refused', async () => {
+  const { mkdtemp, rm, writeFile } = await import('node:fs/promises')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  const { readShareManifest, writeShareManifest } = await import('./machine')
+  const directory = await mkdtemp(join(tmpdir(), 'desk-share-record-'))
+  try {
+    assert.deepEqual(await readShareManifest(directory), [], 'no record: parked before shares existed')
+    const shares = [{ tag: 'store', path: '/srv/store', readOnly: true }]
+    await writeShareManifest(directory, shares)
+    assert.deepEqual(await readShareManifest(directory), shares)
+    await writeFile(join(directory, 'shares.json'), '{not json')
+    await assert.rejects(readShareManifest(directory), /is not valid JSON/)
+    await writeFile(join(directory, 'shares.json'), JSON.stringify([{ tag: 'store', path: '/srv/store' }]))
+    await assert.rejects(readShareManifest(directory), /is not a list of shares/)
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
