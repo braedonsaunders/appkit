@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto'
+import { existsSync } from 'node:fs'
+import { rm } from 'node:fs/promises'
 import { request as httpRequest } from 'node:http'
 import { GUEST_AGENT_VSOCK_PORT } from './protocol'
 import {
@@ -6,7 +8,7 @@ import {
   DEFAULT_HANDSHAKE_TIMEOUT_MS, DEFAULT_RECONNECT_WINDOW_MS, DEFAULT_RECONNECT_RETRY_DELAY_MS,
   DEFAULT_KILL_GRACE_MS, RECONNECT_BACKOFF_CEILING, connectWithRetry, createGuestMachine,
   defaultLauncher, defaultConnect, drainOutput, watchExit, terminate, runToCompletion, errorMessage,
-  type ExitWatcher,
+  assertShareManifest, writeShareManifest, delay, type ExitWatcher,
 } from './machine'
 /**
  * The backend port.
@@ -22,7 +24,9 @@ import {
  */
 import type { ChildProcess } from 'node:child_process'
 import type { Duplex } from 'node:stream'
-import { DeskError, type DeskHypervisor, type DeskLaunchPlan, type DeskLauncherIdentity } from './plan'
+import {
+  DeskError, type CloudHypervisorLaunchPlan, type DeskHypervisor, type DeskLaunchPlan, type DeskLauncherIdentity,
+} from './plan'
 import type { GuestCommand, GuestEventMessage } from './protocol'
 
 /**
@@ -203,6 +207,10 @@ export interface CloudHypervisorBackendOptions {
   reconnectRetryDelayMs?: number
   killGraceMs?: number
   guestAgentPort?: number
+  /** Whether a share daemon's socket exists yet; injectable for tests. */
+  pathExists?: (path: string) => boolean
+  /** Removes a stale share socket before its daemon starts; injectable for tests. */
+  removeFile?: (path: string) => Promise<void>
 }
 
 export function createCloudHypervisorBackend(
@@ -221,6 +229,62 @@ export function createCloudHypervisorBackend(
   const reconnectRetryDelayMs = options.reconnectRetryDelayMs ?? DEFAULT_RECONNECT_RETRY_DELAY_MS
   const killGraceMs = options.killGraceMs ?? DEFAULT_KILL_GRACE_MS
   const guestAgentPort = options.guestAgentPort ?? GUEST_AGENT_VSOCK_PORT
+  const pathExists = options.pathExists ?? existsSync
+  const removeFile = options.removeFile ?? ((path: string) => rm(path, { force: true }))
+
+  /**
+   * Start one `virtiofsd` per share and wait until every socket exists.
+   *
+   * The VMM connects to these at boot and at restore alike, so they come up
+   * first. A stale socket is removed beforehand, or its presence would read as
+   * a daemon that is listening. Existence is the readiness signal rather than
+   * a probe connection, because `virtiofsd` serves exactly one connection and
+   * exits when it closes; the moment between bind and listen is covered by
+   * Cloud Hypervisor retrying a refused vhost-user connect.
+   */
+  async function startShareDaemons(plan: CloudHypervisorLaunchPlan): Promise<ShareDaemons> {
+    const daemons: { tag: string; child: ChildProcess; exit: ExitWatcher; log: { tail: () => string } }[] = []
+    const stop = async () => {
+      await Promise.all(daemons.map((daemon) => terminate(daemon.child, daemon.exit, killGraceMs)))
+    }
+    try {
+      for (const share of plan.shares) {
+        await removeFile(share.socketPath)
+        const child = launcher(share.daemon.command, share.daemon.args, { identity: plan.launcherIdentity })
+        daemons.push({ tag: share.tag, child, exit: watchExit(child), log: drainOutput(child) })
+      }
+      const deadline = now() + connectTimeoutMs
+      for (;;) {
+        const exited = daemons.find((daemon) => daemon.exit.done)
+        if (exited) {
+          const said = exited.log.tail()
+          throw new DeskError(`virtiofsd for share ${exited.tag} exited before it listened${said === '' ? '.' : `: ${said}`}`)
+        }
+        const waiting = plan.shares.filter((share) => !pathExists(share.socketPath))
+        if (waiting.length === 0) break
+        if (now() >= deadline) {
+          throw new DeskError(
+            `virtiofsd did not create ${waiting.map((share) => share.socketPath).join(', ')} in ${connectTimeoutMs}ms.`,
+          )
+        }
+        await delay(connectRetryDelayMs)
+      }
+    } catch (error) {
+      await stop()
+      throw error
+    }
+    return {
+      stop,
+      // The VMM cannot serve a share whose daemon is gone; neither can it be
+      // handed a new one mid-run. So a daemon that dies stops the VMM, and the
+      // desk is lost loudly instead of hanging every guest access to the share.
+      supervise: (vmm, vmmExit) => {
+        for (const daemon of daemons) {
+          void daemon.exit.promise.then(() => terminate(vmm, vmmExit, killGraceMs))
+        }
+      },
+    }
+  }
 
   async function boot(plan: DeskLaunchPlan, hooks?: DeskBootHooks): Promise<DeskMachine> {
     if (plan.hypervisor !== 'cloud-hypervisor') throw new DeskError('Cloud Hypervisor requires a cloud-hypervisor plan.')
@@ -235,10 +299,33 @@ export function createCloudHypervisorBackend(
         `overlay creation for desk ${plan.deskId}`,
       )
     }
+    if (plan.snapshot.restoring) {
+      try {
+        await assertShareManifest(plan.snapshot.dir, plan.shares)
+      } catch (error) {
+        throw new DeskError(`Desk ${plan.deskId} could not be restored from ${plan.snapshot.dir}: ${errorMessage(error)}`)
+      }
+    }
 
+    let shares: ShareDaemons
+    try {
+      shares = await startShareDaemons(plan)
+    } catch (error) {
+      throw new DeskError(`Desk ${plan.deskId} could not start its shares: ${errorMessage(error)}`)
+    }
     const child = launcher(plan.vmm.command, plan.vmm.args, { identity: plan.launcherIdentity })
     const log = drainOutput(child)
     const exit = watchExit(child)
+    shares.supervise(child, exit)
+    // The VMM first: a daemon outliving it is harmless, while a daemon stopped
+    // under a running VMM is a share failing in the guest.
+    const stop = async () => {
+      try {
+        await terminate(child, exit, killGraceMs)
+      } finally {
+        await shares.stop()
+      }
+    }
 
     // A restored guest comes back PAUSED (see the `resume=false` reasoning in
     // the plan). Three things have to happen in this order and nowhere else:
@@ -250,7 +337,7 @@ export function createCloudHypervisorBackend(
         await hooks?.onRestored?.()
         await vmmApi(plan.api.socketPath, '/api/v1/vm.resume')
       } catch (error) {
-        await terminate(child, exit, killGraceMs)
+        await stop()
         const said = log.tail()
         const detail = said === '' ? '' : ` The VMM said: ${said}`
         throw new DeskError(
@@ -272,7 +359,7 @@ export function createCloudHypervisorBackend(
         exited: exit,
       })
     } catch (error) {
-      await terminate(child, exit, killGraceMs)
+      await stop()
       const said = log.tail()
       const detail = said === '' ? '' : ` The VMM said: ${said}`
       throw error instanceof DeskError
@@ -306,19 +393,27 @@ export function createCloudHypervisorBackend(
       now,
       idFactory,
       requestTimeoutMs,
-      stop: () => terminate(child, exit, killGraceMs),
+      stop,
       park: async (snapshotDir) => {
         try {
           await vmmApi(plan.api.socketPath, '/api/v1/vm.pause')
           await vmmApi(plan.api.socketPath, '/api/v1/vm.snapshot', { destination_url: `file://${snapshotDir}` })
+          await writeShareManifest(snapshotDir, plan.shares)
         } finally {
-          await terminate(child, exit, killGraceMs)
+          await stop()
         }
       },
     })
   }
 
   return { boot }
+}
+
+interface ShareDaemons {
+  /** Stop every daemon; resolves once all have exited. */
+  stop: () => Promise<void>
+  /** Stop the VMM if any daemon exits while it runs. */
+  supervise: (vmm: ChildProcess, vmmExit: ExitWatcher) => void
 }
 
 /**

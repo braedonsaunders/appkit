@@ -7,11 +7,13 @@
  * socket inwards is one implementation. Internal to the package.
  */
 import { spawn, type ChildProcess } from 'node:child_process'
+import { readFile, writeFile } from 'node:fs/promises'
 import { createConnection } from 'node:net'
+import { join } from 'node:path'
 import { Buffer } from 'node:buffer'
 import type { Duplex } from 'node:stream'
 import { DeskRequestFateUnknownError, type DeskConnectionChange, type DeskMachine } from './backend'
-import { DeskError, type DeskLauncherIdentity } from './plan'
+import { DeskError, type DeskLauncherIdentity, type DeskShare } from './plan'
 import {
   encodeFrame,
   FrameDecoder,
@@ -573,6 +575,37 @@ export function attemptHandshake(
     stream.once('close', () => fail(new DeskError('vsock handshake closed before a reply.')))
     stream.write(`CONNECT ${port}\n`)
   })
+}
+
+/**
+ * The shares a snapshot was taken with, kept beside it.
+ *
+ * A snapshot holds the machine's devices, shares among them, so it can only
+ * come back with the shares it was parked with: Cloud Hypervisor would resume
+ * without a share that was added since, and Virtualization.framework refuses a
+ * changed device list. Recording them lets a backend refuse a mismatched
+ * restore up front, which the host answers with a cold boot.
+ */
+const SHARE_MANIFEST = 'shares.json'
+
+export async function writeShareManifest(snapshotDir: string, shares: readonly DeskShare[]): Promise<void> {
+  const manifest = shares.map(({ tag, path, readOnly }) => ({ tag, path, readOnly }))
+  await writeFile(join(snapshotDir, SHARE_MANIFEST), `${JSON.stringify(manifest)}\n`, { mode: 0o600 })
+}
+
+/** Throws unless the snapshot was parked with exactly `shares`, in order. No manifest means none. */
+export async function assertShareManifest(snapshotDir: string, shares: readonly DeskShare[]): Promise<void> {
+  let saved: string
+  try {
+    saved = (await readFile(join(snapshotDir, SHARE_MANIFEST), 'utf8')).trim()
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+    saved = '[]'
+  }
+  const wanted = JSON.stringify(shares.map(({ tag, path, readOnly }) => ({ tag, path, readOnly })))
+  if (saved !== wanted) {
+    throw new DeskError(`the snapshot was taken with shares ${saved}, not ${wanted}`)
+  }
 }
 
 export function defaultLauncher(
