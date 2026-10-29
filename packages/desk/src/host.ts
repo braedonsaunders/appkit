@@ -378,8 +378,17 @@ export interface DeskScreenService {
  * handle goes dead and `resume()` boots a fresh one — rather than the handle
  * answering "no longer connected" for the rest of the lease.
  */
+/** How a residency began: resumed from its parked memory snapshot, or booted from disk. */
+export type DeskBoot = 'cold' | 'restored'
+
 export interface DeskHandle {
   readonly deskId: string
+  /**
+   * `restored` when this residency resumed from a parked memory snapshot, `cold`
+   * when it booted from disk: a first start, a shutdown, or a snapshot that could
+   * not be restored and was discarded (the reason is in `stats().lastError`).
+   */
+  readonly boot: DeskBoot
   renewLease(ms: number): void
   /** Open a host-to-guest TCP stream; the caller owns and closes it. */
   connect(port: number): Promise<Duplex>
@@ -457,6 +466,7 @@ interface ScreenState {
 interface DeskRecord {
   deskId: string
   startOptions: DeskStartOptions
+  boot: DeskBoot
   status: 'resident' | 'suspending' | 'suspended'
   machine: DeskMachine | null
   epoch: number
@@ -897,6 +907,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       }
     }
     let machine: DeskMachine
+    let boot: DeskBoot = 'cold'
     try {
       machine = resuming
         ? await backend.boot(planFor(true), {
@@ -907,6 +918,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
             onRestored: () => removeSnapshot(snapshotDir),
           })
         : await backend.boot(planFor(false))
+      if (resuming) boot = 'restored'
     } catch (error) {
       if (resuming) {
         // A snapshot that will not come back is worse than no snapshot: it makes
@@ -932,6 +944,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       record = {
         deskId,
         startOptions,
+        boot,
         status: 'resident',
         machine,
         epoch: 1,
@@ -949,6 +962,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       records.set(deskId, record)
     } else {
       record.startOptions = startOptions
+      record.boot = boot
       record.status = 'resident'
       record.machine = machine
       record.epoch += 1
@@ -1200,6 +1214,7 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
 
     return {
       deskId: record.deskId,
+      boot: record.boot,
       renewLease(ms: number): void {
         requireMachine(record, epoch)
         record.leaseDeadline = now() + positiveInteger(ms, 'ms')
