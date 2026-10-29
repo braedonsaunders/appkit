@@ -220,7 +220,7 @@ export interface DeskStartOptions {
     /** Install the external fence even when a prior preparation was interrupted. */
     holdFence: () => Promise<void>
     prepare: (plan: ReturnType<typeof buildDeskLaunchPlan>) => Promise<void>
-    initialize: (machine: DeskMachine) => Promise<void>
+    initialize: (machine: DeskMachine, plan: ReturnType<typeof buildDeskLaunchPlan>) => Promise<void>
     releaseFence: () => Promise<void>
   }
   /** Absolute path of the golden base image this desk boots from. */
@@ -1127,16 +1127,17 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
     }
     let machine: DeskMachine
     try {
+      const launchPlan = resuming ? await restorePlan() : planFor(false)
       machine = resuming
-        ? await backend.boot(await restorePlan(), {
+        ? await backend.boot(launchPlan, {
             // Eager restore removes the parked snapshot before resume. A CoW
             // source was already retired durably before the VMM started.
             onRestored: restoreMode === 'copyonwrite' ? async () => {} : () => removeSnapshot(snapshotDir),
           })
-        : await backend.boot(planFor(false))
+        : await backend.boot(launchPlan)
       if (initializeTemplate && startOptions.template) {
         try {
-          await startOptions.template.initialize(machine)
+          await startOptions.template.initialize(machine, launchPlan)
           const initialized = await open(join(dirname(startOptions.overlayPath), '.initialized'), 'wx', 0o600)
           try { await initialized.writeFile('1\n'); await initialized.sync() } finally { await initialized.close() }
           const directory = await open(dirname(startOptions.overlayPath), 'r')
