@@ -214,6 +214,12 @@ export interface DeskHostOptions {
 
 export interface DeskStartOptions {
   deskId: string
+  /** Prepare and initialize a sterile template under an external network fence. */
+  template?: {
+    prepare: (plan: ReturnType<typeof buildDeskLaunchPlan>) => Promise<void>
+    initialize: (machine: DeskMachine) => Promise<void>
+    releaseFence: () => Promise<void>
+  }
   /** Absolute path of the golden base image this desk boots from. */
   baseImage: string
   /** Optional kernel and initramfs for this desk; retain them with its disk. */
@@ -1013,7 +1019,38 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
       for await (const chunk of createReadStream(image.path)) hash.update(chunk as Buffer)
       if (hash.digest('hex') !== image.sha256) throw new DeskError(`Read-only attachment digest mismatch: ${image.path}`)
     }
+    let initializeTemplate = false
+    if (startOptions.template) {
+      if (!options.strictMemoryRestore || options.memoryRestoreMode !== 'copyonwrite' || backend.hypervisor === 'virtualization') {
+        throw new DeskError('Template forks require strict Cloud Hypervisor copy-on-write restore.')
+      }
+      const childDir = dirname(startOptions.overlayPath)
+      const prepared = join(childDir, '.prepared')
+      const initialized = join(childDir, '.initialized')
+      if (existsSync(initialized) && !existsSync(snapshotDir)) throw new DeskError('Template descendant has no saved memory; recovery is required.')
+      if (!existsSync(initialized)) {
+        if (!existsSync(prepared)) {
+          if (existsSync(startOptions.overlayPath) || existsSync(snapshotDir)) throw new DeskError('Incomplete template fork needs recovery.')
+          await startOptions.template.prepare(planFor(false))
+        }
+        if (await readFile(prepared, 'utf8') !== '1\n' || !existsSync(startOptions.overlayPath) || !existsSync(snapshotDir)) throw new DeskError('Template fork was not prepared completely.')
+        const planned = planFor(true)
+        if (planned.hypervisor !== 'cloud-hypervisor') throw new DeskError('Template fork requires Cloud Hypervisor.')
+        const savedConfig = JSON.parse(await readFile(join(snapshotDir, 'config.json'), 'utf8')) as {
+          disks?: { path?: string }[]; net?: { tap?: string; mac?: string }[]; vsock?: { cid?: number; socket?: string };
+          memory?: { size?: number }; cpus?: { boot_vcpus?: number }
+        }
+        if (savedConfig.disks?.[0]?.path !== startOptions.overlayPath || savedConfig.net?.[0]?.tap !== planned.tap.device
+          || savedConfig.net?.[0]?.mac?.toLowerCase() !== planned.tap.mac.toLowerCase()
+          || savedConfig.vsock?.cid !== planned.vsock.cid || savedConfig.vsock.socket !== planned.vsock.socketPath
+          || savedConfig.memory?.size !== planned.memoryMb * 1024 * 1024 || savedConfig.cpus?.boot_vcpus !== planned.vcpus) {
+          throw new DeskError('Prepared template device or resource identity does not match its launch plan.')
+        }
+        initializeTemplate = true
+      }
+    }
     let resuming = parkWithMemory && pathExists(snapshotDir)
+    if (initializeTemplate && !resuming) throw new DeskError('A template fork requires its prepared snapshot.')
     // Shared guest memory, required by virtio-fs, makes Cloud Hypervisor fall
     // back to eager restore. Reject before retiring the snapshot or cold booting.
     if (options.memoryRestoreMode === 'copyonwrite') {
@@ -1063,6 +1100,19 @@ export function createDeskHost(options: DeskHostOptions): DeskHost {
             onRestored: options.memoryRestoreMode === 'copyonwrite' ? async () => {} : () => removeSnapshot(snapshotDir),
           })
         : await backend.boot(planFor(false))
+      if (initializeTemplate && startOptions.template) {
+        try {
+          await startOptions.template.initialize(machine)
+          const initialized = await open(join(dirname(startOptions.overlayPath), '.initialized'), 'wx', 0o600)
+          try { await initialized.writeFile('1\n'); await initialized.sync() } finally { await initialized.close() }
+          const directory = await open(dirname(startOptions.overlayPath), 'r')
+          try { await directory.sync() } finally { await directory.close() }
+          await startOptions.template.releaseFence()
+        } catch (error) {
+          await machine.shutdown()
+          throw error
+        }
+      }
     } catch (error) {
       if (resuming) {
         if (options.strictMemoryRestore) {

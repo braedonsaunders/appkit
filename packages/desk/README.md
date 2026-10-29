@@ -490,3 +490,14 @@ an external network and workload fence before restore, reinitialize the guest's
 identity and entropy, and only then allow traffic or guest workloads. An
 interrupted preparation leaves a directory without `.prepared`; it must not be
 restored. Retain and inspect it before cleanup.
+
+A caller can pass `template` in `DeskStartOptions` when strict copy-on-write
+restore is enabled. Its `prepare` callback receives the assigned launch plan;
+it must establish the external network fence before preparing the disk and
+snapshot. AppKit verifies their device and resource identities against that
+plan. After restore, `initialize` runs before the desk handle is exposed;
+only after it succeeds and the initialization marker is durable does
+`releaseFence` run. If initialization fails, AppKit stops the guest, preserves
+the interruption marker and does not release the fence. The caller is
+responsible for ensuring the source has no running user workloads at capture
+and for resetting guest entropy and identity in `initialize`.

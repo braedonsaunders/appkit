@@ -1882,3 +1882,57 @@ test('strict lifecycle retains its fence until the parked snapshot is durable', 
     assert.equal(await readFile(join(snapshot, 'appkit-cpu-signature'), 'utf8'), 'cpu')
   } finally { await rm(root, { recursive: true, force: true }) }
 })
+
+test('template initializes before exposure and releases the fence after durable completion', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'desk-template-host-'))
+  try {
+    const child = join(root, 'child'), disk = join(child, 'disk.raw'), snapshot = join(child, 'child.snapshot')
+    const events: string[] = []
+    const backend: DeskBackend = { async boot(plan) { assert.equal(plan.snapshot.restoring, true); events.push('restore'); return fakeMachine('child').machine } }
+    const host = createDeskHost({ imageRoot: root, backend, parkWithMemory: true, strictMemoryRestore: true, memoryRestoreMode: 'copyonwrite',
+      ports: { onEvent: () => {}, audit: () => {} }, pathExists: path => path === snapshot || path === disk ? existsSync(path) : true,
+      deviceExists: () => true, trimOnSuspend: false, cpuSignature: async () => 'cpu', runtimeDir: root })
+    await host.start({ deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: disk, template: {
+      async prepare(plan) {
+        events.push('fenced')
+        assert.equal(plan.hypervisor, 'cloud-hypervisor')
+        await import('node:fs/promises').then(fs => fs.mkdir(snapshot, { recursive: true }))
+        await writeFile(disk, 'disk')
+        await writeFile(join(child, '.prepared'), '1\n')
+        await writeFile(join(snapshot, 'appkit-cpu-signature'), 'cpu')
+        await writeFile(join(snapshot, 'config.json'), JSON.stringify({ disks: [{ path: disk }], net: [{ tap: plan.tap.device, mac: plan.tap.mac }], vsock: { cid: plan.vsock.cid, socket: plan.vsock.socketPath }, memory: { size: plan.memoryMb * 1024 * 1024 }, cpus: { boot_vcpus: plan.vcpus } }))
+      },
+      async initialize() { events.push('initialize'); assert.equal(existsSync(join(child, '.initialized')), false) },
+      async releaseFence() { events.push('release'); assert.equal(await readFile(join(child, '.initialized'), 'utf8'), '1\n') },
+    } })
+    assert.deepEqual(events, ['fenced', 'restore', 'initialize', 'release'])
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
+
+test('template initialization failure stops the guest and keeps the fence', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'desk-template-failure-'))
+  try {
+    const child = join(root, 'child'), disk = join(child, 'disk.raw'), snapshot = join(child, 'child.snapshot')
+    let stopped = 0, released = false
+    const backend: DeskBackend = { async boot() { return fakeMachine('child', async () => { stopped++ }).machine } }
+    const host = createDeskHost({ imageRoot: root, backend, parkWithMemory: true, strictMemoryRestore: true, memoryRestoreMode: 'copyonwrite',
+      ports: { onEvent: () => {}, audit: () => {} }, pathExists: path => path === snapshot || path === disk ? existsSync(path) : true,
+      deviceExists: () => true, trimOnSuspend: false, cpuSignature: async () => 'cpu', runtimeDir: root })
+    await assert.rejects(host.start({ deskId: 'child', baseImage: join(root, 'base.raw'), overlayPath: disk, template: {
+      async prepare(plan) {
+        assert.equal(plan.hypervisor, 'cloud-hypervisor')
+        await import('node:fs/promises').then(fs => fs.mkdir(snapshot, { recursive: true }))
+        await writeFile(disk, 'disk')
+        await writeFile(join(child, '.prepared'), '1\n')
+        await writeFile(join(snapshot, 'appkit-cpu-signature'), 'cpu')
+        await writeFile(join(snapshot, 'config.json'), JSON.stringify({ disks: [{ path: disk }], net: [{ tap: plan.tap.device, mac: plan.tap.mac }], vsock: { cid: plan.vsock.cid, socket: plan.vsock.socketPath }, memory: { size: plan.memoryMb * 1024 * 1024 }, cpus: { boot_vcpus: plan.vcpus } }))
+      },
+      async initialize() { throw new Error('reset failed') },
+      async releaseFence() { released = true },
+    } }), /reset failed/)
+    assert.equal(stopped, 1)
+    assert.equal(released, false)
+    assert.equal(existsSync(join(child, '.initialized')), false)
+    assert.equal(existsSync(`${snapshot}.restore-pending`), true)
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
