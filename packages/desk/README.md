@@ -106,6 +106,10 @@ than producing a plan that cannot boot.
 
 ## Leases, idle suspend, and the queue
 
+`start` resolves to a handle whose `boot` is `restored` when the desk resumed from
+its parked memory and `cold` when it booted from disk, so a caller that needs the
+resume (not merely a running desk) checks the handle rather than parsing `lastError`.
+
 A desk is resident under a lease. `renewLease(ms)` extends it; activity defers
 the idle timer; a desk past its lease or idle deadline is suspended — the VM
 stops, the disk persists, applications cold-start on `resume`. Keep-alive jobs
@@ -247,7 +251,7 @@ The default iptables chain prefix is `desk`. Existing deployments using the `bh`
 
 Supply `network: { tapDevice, macAddress, guestAddress }` to `host.start`, then `await desk.connect(port)` returns a Node `Duplex` TCP stream to the guest. The caller owns the stream; suspension closes it. A service must listen on the guest interface, and its protocol and authentication remain the application's responsibility. `connectGuest` on host options injects a dialer for testing.
 
-With `parkWithMemory`, new snapshots carry a host CPU signature. A changed signature skips restore and cold boots; Cloud Hypervisor's specific incompatible-CPUID restore error also triggers a cold boot. These outcomes increment `stats().snapshotCpuFallbacks`, set `lastSnapshotCpuFallback`, and emit `snapshot_cpu_fallback`, rather than setting `lastError`. Existing snapshots without a signature are attempted normally. Signatures are conservative CPU identity and feature fingerprints, not a guarantee of CPUID compatibility; a cold boot loses the parked process state. Keep snapshots and their overlays together.
+With `parkWithMemory`, new snapshots carry a host CPU signature. A changed signature skips restore and cold boots; Cloud Hypervisor's specific incompatible-CPUID restore error also triggers a cold boot. These outcomes increment `stats().snapshotCpuFallbacks`, set `lastSnapshotCpuFallback`, and emit `snapshot_cpu_fallback`, rather than setting `lastError`. Any other restore failure discards the snapshot, cold boots, and sets `lastError`; in every case the handle's `boot` is `cold`. Existing snapshots without a signature are attempted normally. Signatures are conservative CPU identity and feature fingerprints, not a guarantee of CPUID compatibility; a cold boot loses the parked process state. Keep snapshots and their overlays together.
 
 For a disposable real-host check, provide a guest image with the desk agent and Python 3, Cloud Hypervisor, KVM, and a free TAP name and IP pair. Run from the repository root in the target network namespace with privileges to manage TAP and iptables:
 

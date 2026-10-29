@@ -1322,7 +1322,8 @@ function makeParkingHost(options: { snapshotExists?: boolean; park?: () => Promi
 
 test('parking a desk keeps its memory, and syncs the guest first', async () => {
   const context = makeParkingHost()
-  await context.host.start(startOptions('agent-park'))
+  const handle = await context.host.start(startOptions('agent-park'))
+  assert.equal(handle.boot, 'cold', 'a first start boots from disk')
   await context.host.suspend('agent-park')
 
   assert.deepEqual(context.parked, ['/images/overlays/agent-park.snapshot'], 'the VM was parked, not shut down')
@@ -1334,7 +1335,8 @@ test('parking a desk keeps its memory, and syncs the guest first', async () => {
 
 test('resuming restores the snapshot and destroys it before the guest can write', async () => {
   const context = makeParkingHost({ snapshotExists: true })
-  await context.host.start(startOptions('agent-resume'))
+  const handle = await context.host.start(startOptions('agent-resume'))
+  assert.equal(handle.boot, 'restored', 'the handle reports the resume')
 
   const plan = context.plans[0]
   assert.ok(plan)
@@ -1386,6 +1388,7 @@ test('a snapshot that will not restore is discarded and the desk cold boots', as
 
   const handle = await host.start(startOptions('agent-bad-snap'))
   assert.equal(attempt, 2, 'the restore was tried, then a cold boot')
+  assert.equal(handle.boot, 'cold', 'and the handle says so, without anyone parsing lastError')
   assert.ok(
     context.removedSnapshots.includes('/images/overlays/agent-bad-snap.snapshot'),
     'the unusable snapshot was removed rather than left to fail again',
