@@ -468,9 +468,10 @@ function buildCloudHypervisorPlan(
   // producing one from Node would mean an ioctl(TUNSETIFF) it cannot make.
   // Because `deskPlan` configures `--net tap=<name>`, there is nothing to pass.
   //
-  // Shares are in the snapshotted config too, by socket path. What the
-  // snapshot cannot hold is a running `virtiofsd`, so the backend starts the
-  // same daemons on the same sockets before this VMM either way.
+  // Shares are in the snapshotted config too, by socket path, with each
+  // daemon's state. What the snapshot cannot hold is a running `virtiofsd`, so
+  // the backend starts the same daemons on the same sockets before this VMM
+  // either way, and the VMM loads their state back into them.
   const args = restoring
     ? [
         '--api-socket', apiSocketPath,
@@ -630,6 +631,13 @@ function cleanShares(
  * `always` would let a guest keep serving a file the host has replaced.
  * `--readonly` is the enforcement for a read-only share — the guest is never
  * trusted to honour a read-only mount.
+ *
+ * The migration flags are for parking. Cloud Hypervisor carries the daemon's
+ * state — the files and directories the guest holds — inside a snapshot, and
+ * hands it to the fresh daemon on restore, which reopens each by path. A file
+ * that has no path by then (unlinked on the host, or by the guest while held
+ * open) becomes an error for the guest to see on that file alone, rather than
+ * a restore that fails and costs the whole desk its memory.
  */
 function cloudHypervisorShares(
   shares: readonly DeskShare[],
@@ -667,6 +675,8 @@ function cloudHypervisorShares(
           `--shared-dir=${share.path}`,
           `--sandbox=${context.sandbox}`,
           '--cache=auto',
+          '--migration-mode=find-paths',
+          '--migration-on-error=guest-error',
           ...(share.readOnly ? ['--readonly'] : []),
         ],
       },

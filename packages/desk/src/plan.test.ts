@@ -287,6 +287,8 @@ test('each share gets a virtiofsd on its own socket, and the VMM shared memory a
           '--shared-dir=/srv/flatpak',
           '--sandbox=namespace',
           '--cache=auto',
+          '--migration-mode=find-paths',
+          '--migration-on-error=guest-error',
           '--readonly',
         ],
       },
@@ -304,6 +306,8 @@ test('each share gets a virtiofsd on its own socket, and the VMM shared memory a
           '--shared-dir=/srv/build',
           '--sandbox=namespace',
           '--cache=auto',
+          '--migration-mode=find-paths',
+          '--migration-on-error=guest-error',
         ],
       },
     },
@@ -327,7 +331,7 @@ test('the virtiofsd sandbox is configurable to chroot and never to none', () => 
   )
 })
 
-test('a restoring plan still starts every share daemon, because the snapshot cannot hold one', () => {
+test('a restoring plan still starts every share daemon, because the snapshot holds only their state', () => {
   const plan = buildDeskLaunchPlan(
     { ...baseOptions, shares: [storeShare], virtiofsdPath: '/opt/bin/virtiofsd', restore: true },
     shareDependencies,
