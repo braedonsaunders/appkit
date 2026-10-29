@@ -299,6 +299,20 @@ DESK_CHECK_TMPDIR=/data/tmp pnpm --filter @braedonsaunders/appkit-desk exec tsx 
 
 Set `DESK_CHECK_COW=1` to exercise copy-on-write snapshot restore and `DESK_CHECK_BALLOON=1` to check the guest virtio-balloon driver. Set `DESK_CHECK_KERNEL_CMDLINE` for images that require a custom root device. The check creates and removes a disposable VM, overlay, snapshot, TAP and firewall rules. It verifies resident pause and resume, and a guest HTTP stream before and after memory restore; it does not verify the proxy or cross-CPU migration. Choose addresses that do not overlap existing routes. Set `DESK_CHECK_VIRTIOFSD` to a `virtiofsd` binary to also check a read-only share: the guest mounts it, a write fails, and a file held open across the park reads back after the restore.
 
+The check uses a unique desk ID and private runtime directory. Set `DESK_CHECK_CID`
+to a free guest CID when testing alongside other hosts. Put `DESK_CHECK_TMPDIR` on
+the same reflink-capable filesystem as the base image to avoid a full disk copy.
+Run inside a disposable network namespace when testing on a machine with an active
+host. `DESK_CHECK_VMM` selects a test binary without changing the system VMM.
+
+With the [pinned incremental build](vmm/README.md), set `DESK_CHECK_INCREMENTAL=1`
+and `DESK_CHECK_COW=1` on XFS or Btrfs. This retains a hard link to the original
+memory file, verifies its digest after another park, checks shared filesystem
+extents, and confirms the guest HTTP process survives a second restore. It uses
+`filefrag` from e2fsprogs. A failed VMM stop leaves the test files in place for
+recovery instead of deleting backing files from a live process. The check does
+not measure latency or memory savings.
+
 ## Host directory shares
 
 A desk can mount host directories over virtio-fs. Pass `shares` to
