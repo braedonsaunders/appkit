@@ -1,5 +1,15 @@
 # @braedonsaunders/appkit-storage
 
+## 3.1.0
+
+### Minor Changes
+
+- 137640a: Add bounded-memory streaming multipart uploads with cancellation and cleanup.
+
+### Patch Changes
+
+- b85ecc9: Allow callers to cancel object deletion requests.
+
 ## 3.0.0
 
 ### Patch Changes
