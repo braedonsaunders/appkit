@@ -491,8 +491,9 @@ identity and entropy, and only then allow traffic or guest workloads. An
 interrupted preparation leaves a directory without `.prepared`; it must not be
 restored. Retain and inspect it before cleanup.
 
-A caller can pass `template` in `DeskStartOptions` when strict copy-on-write
-restore is enabled. Its `prepare` callback receives the assigned launch plan;
+A caller can pass `template` in `DeskStartOptions` on a Cloud Hypervisor host
+with memory parking enabled. This opts that desk into strict copy-on-write restore
+without changing the restore mode of other desks. Its `prepare` callback receives the assigned launch plan;
 it must establish the external network fence before preparing the disk and
 snapshot. AppKit verifies their device and resource identities against that
 plan. After restore, `initialize` runs before the desk handle is exposed;
