@@ -40,9 +40,8 @@ async function measure(snapshot: string, diskPath: string, compatibility: DeskTe
   const boundFiles = [compatibility.baseImagePath, compatibility.kernelPath, compatibility.initramfsPath, ...compatibility.attachmentPaths]
   const all = [...diskFiles, ...boundFiles]
   if (new Set(all).size !== all.length) throw new Error('Template file identities must be distinct')
-  const values = await Promise.all(all.map((path, index) => digest(path, index < diskFiles.length)))
   const files: Record<string, string> = {}
-  all.forEach((path, index) => { files[path] = values[index]! })
+  for (const [index, path] of all.entries()) files[path] = await digest(path, index < diskFiles.length)
   return { version: 1, diskPath, compatibility, files }
 }
 
