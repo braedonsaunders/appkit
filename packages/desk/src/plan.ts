@@ -188,6 +188,8 @@ export interface DeskLaunchPlanOptions {
    * was promised to have kept.
    */
   restore?: boolean
+  /** Cloud Hypervisor copy-on-write restore; the source must remain unchanged while resident. */
+  memoryRestoreMode?: 'copyonwrite'
 }
 
 /** What every plan carries, whichever hypervisor runs it. */
@@ -347,6 +349,9 @@ export function buildDeskLaunchPlan(
   dependencies: DeskLaunchPlanDependencies = {},
 ): DeskLaunchPlan {
   const hypervisor = options.hypervisor ?? 'cloud-hypervisor'
+  if (options.memoryRestoreMode !== undefined && (options.memoryRestoreMode !== 'copyonwrite' || hypervisor !== 'cloud-hypervisor')) {
+    throw new DeskError('Copy-on-write restore requires Cloud Hypervisor.')
+  }
   if (hypervisor === 'virtualization') return buildVirtualizationPlan(options, dependencies)
   if (hypervisor !== 'cloud-hypervisor') {
     throw new DeskError(`Unknown hypervisor: ${String(hypervisor)}`)
@@ -459,8 +464,9 @@ function buildCloudHypervisorPlan(
   // that died in that window would, on the next start, replay this memory
   // against a disk that had moved on. That is corruption, not a stale cache.
   //
-  // So the guest comes back PAUSED, the caller destroys the snapshot while
-  // nothing can write, and only then is the VM resumed.
+  // The guest comes back PAUSED; before it runs, the caller must make the
+  // snapshot unavailable for replay. File-backed restores keep their retired
+  // source unchanged until the VMM exits.
   //
   // The tap is reopened BY NAME from the snapshotted config. That is the detail
   // that makes this possible at all: Cloud Hypervisor's `net_fds` restore
@@ -475,7 +481,7 @@ function buildCloudHypervisorPlan(
   const args = restoring
     ? [
         '--api-socket', apiSocketPath,
-        '--restore', `source_url=file://${snapshotDir},resume=false`,
+        '--restore', `source_url=file://${snapshotDir},resume=false${options.memoryRestoreMode === 'copyonwrite' ? ',memory_restore_mode=copyonwrite' : ''}`,
       ]
     : [
         '--api-socket', apiSocketPath,

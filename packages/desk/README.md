@@ -260,6 +260,18 @@ The default iptables chain prefix is `desk`. Existing deployments using the `bh`
 
 Supply `network: { tapDevice, macAddress, guestAddress }` to `host.start`, then `await desk.connect(port)` returns a Node `Duplex` TCP stream to the guest. The caller owns the stream; suspension closes it. A service must listen on the guest interface, and its protocol and authentication remain the application's responsibility. `connectGuest` on host options injects a dialer for testing.
 
+With Cloud Hypervisor v54 or later, `memoryRestoreMode: 'copyonwrite'` opts in
+to file-backed restore alongside `parkWithMemory: true`. The parked snapshot is
+atomically renamed to a unique source and its parent directory synced before
+the VMM starts, so it cannot be replayed after the disk changes. The source is
+kept unchanged until the VMM exits, then removed. A host crash or failed stop can
+leave a `*.snapshot.source-*` directory; only remove it after verifying that no
+VMM maps it. Restore failures can leave one too. The source contains guest RAM
+and needs the same protection as a parked snapshot. Cloud Hypervisor can fall
+back to eager copying for incompatible memory or devices. Separate reflinked
+files do not share page-cache identity, and this option does not create cloned
+template guests or promise incremental snapshots.
+
 With `parkWithMemory`, new snapshots carry a host CPU signature. A changed signature skips restore and cold boots; Cloud Hypervisor's specific incompatible-CPUID restore error also triggers a cold boot. These outcomes increment `stats().snapshotCpuFallbacks`, set `lastSnapshotCpuFallback`, and emit `snapshot_cpu_fallback`, rather than setting `lastError`. Existing snapshots without a signature are attempted normally. Signatures are conservative CPU identity and feature fingerprints, not a guarantee of CPUID compatibility; a cold boot loses the parked process state. Keep snapshots and their overlays together.
 
 For a disposable real-host check, provide a guest image with the desk agent and Python 3, Cloud Hypervisor, KVM, and a free TAP name and IP pair. Run from the repository root in the target network namespace with privileges to manage TAP and iptables:
@@ -270,7 +282,7 @@ DESK_CHECK_IMAGE_ROOT=/data/desk-image DESK_CHECK_BASE_IMAGE=/data/desk-image/ba
 DESK_CHECK_TMPDIR=/data/tmp pnpm --filter @braedonsaunders/appkit-desk exec tsx scripts/check-kvm.mts
 ```
 
-Set `DESK_CHECK_KERNEL_CMDLINE` for images that require a custom root device. The check creates and removes a disposable VM, overlay, snapshot, TAP and firewall rules. It verifies resident pause and resume, and a guest HTTP stream before and after memory restore; it does not verify the proxy or cross-CPU migration. Choose addresses that do not overlap existing routes. Set `DESK_CHECK_VIRTIOFSD` to a `virtiofsd` binary to also check a read-only share: the guest mounts it, a write fails, and a file held open across the park reads back after the restore.
+Set `DESK_CHECK_COW=1` to exercise copy-on-write snapshot restore. Set `DESK_CHECK_KERNEL_CMDLINE` for images that require a custom root device. The check creates and removes a disposable VM, overlay, snapshot, TAP and firewall rules. It verifies resident pause and resume, and a guest HTTP stream before and after memory restore; it does not verify the proxy or cross-CPU migration. Choose addresses that do not overlap existing routes. Set `DESK_CHECK_VIRTIOFSD` to a `virtiofsd` binary to also check a read-only share: the guest mounts it, a write fails, and a file held open across the park reads back after the restore.
 
 ## Host directory shares
 

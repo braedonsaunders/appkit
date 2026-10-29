@@ -33,6 +33,7 @@ if (virtiofsdPath) {
 }
 const network = createDeskNetwork({ gateway, dns: '1.1.1.1', egress: { mode: 'open' } })
 const host = createDeskHost({ imageRoot, parkWithMemory: true, trimOnSuspend: false,
+  ...(process.env.DESK_CHECK_COW === '1' ? { memoryRestoreMode: 'copyonwrite' as const } : {}),
   ports: { onEvent: (event) => console.log(event.kind), audit: () => {} },
   ...(process.env.DESK_CHECK_KERNEL_CMDLINE ? { kernelCmdline: process.env.DESK_CHECK_KERNEL_CMDLINE } : {}),
   ...(virtiofsdPath ? { virtiofsdPath } : {}),

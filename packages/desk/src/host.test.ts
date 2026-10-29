@@ -1654,3 +1654,101 @@ test('a desk can select TCP or vsock for each service connection', async () => {
   assert.equal(tcp.destroyed, true)
   assert.equal(vsock.destroyed, true)
 })
+
+test('copy-on-write restore retires the snapshot before boot and retains its source until the VMM stops', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'desk-cow-'))
+  const snapshot = join(directory, 'cow.snapshot')
+  await import('node:fs/promises').then(({ mkdir }) => mkdir(snapshot))
+  await writeFile(join(snapshot, 'memory-ranges'), 'memory')
+  let source = ''
+  const stopped = deferred<void>()
+  const backend: DeskBackend = {
+    async boot(plan, hooks) {
+      source = plan.snapshot.dir
+      assert.notEqual(source, snapshot)
+      assert.match(source, /\.snapshot\.source-/)
+      assert.equal(await readFile(join(source, 'memory-ranges'), 'utf8'), 'memory')
+      await assert.rejects(readFile(join(snapshot, 'memory-ranges')), /ENOENT/)
+      assert.equal(plan.hypervisor, 'cloud-hypervisor')
+      assert.ok(plan.vmm.args.some((arg) => arg.includes('memory_restore_mode=copyonwrite')))
+      await hooks?.onRestored?.()
+      return fakeMachine(plan.deskId, () => stopped.promise).machine
+    },
+  }
+  const host = createDeskHost({ imageRoot: directory, parkWithMemory: true, memoryRestoreMode: 'copyonwrite', backend,
+    ports: { onEvent: () => {}, audit: () => {} }, pathExists: (path) => path === snapshot || !path.endsWith('.snapshot'),
+    deviceExists: () => true, readSnapshotShares: async () => [], readSnapshotSignature: async () => null,
+    trimOnSuspend: false,
+  })
+  try {
+    await host.start({ deskId: 'cow', baseImage: join(directory, 'base'), overlayPath: join(directory, 'cow.raw') })
+    const suspending = host.suspend('cow')
+    await nextTurn()
+    assert.equal(await readFile(join(source, 'memory-ranges'), 'utf8'), 'memory')
+    stopped.resolve()
+    await suspending
+    await assert.rejects(readFile(join(source, 'memory-ranges')), /ENOENT/)
+  } finally { stopped.resolve(); await rm(directory, { recursive: true, force: true }) }
+})
+
+test('failed copy-on-write restore never replays or deletes the retired source', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'desk-cow-fail-'))
+  const snapshot = join(directory, 'cow.snapshot')
+  await import('node:fs/promises').then(({ mkdir }) => mkdir(snapshot))
+  await writeFile(join(snapshot, 'memory-ranges'), 'memory')
+  let source = ''
+  let boots = 0
+  const backend: DeskBackend = { async boot(plan) {
+    boots++
+    if (plan.snapshot.restoring) { source = plan.snapshot.dir; throw new Error('restore failed') }
+    return fakeMachine(plan.deskId).machine
+  } }
+  const host = createDeskHost({ imageRoot: directory, parkWithMemory: true, memoryRestoreMode: 'copyonwrite', backend,
+    ports: { onEvent: () => {}, audit: () => {} }, pathExists: (path) => path === snapshot || !path.endsWith('.snapshot'),
+    deviceExists: () => true, readSnapshotShares: async () => [], readSnapshotSignature: async () => null, trimOnSuspend: false,
+  })
+  try {
+    await host.start({ deskId: 'cow', baseImage: join(directory, 'base'), overlayPath: join(directory, 'cow.raw') })
+    assert.equal(boots, 2)
+    assert.equal(await readFile(join(source, 'memory-ranges'), 'utf8'), 'memory')
+    await assert.rejects(readFile(join(snapshot, 'memory-ranges')), /ENOENT/)
+    await host.suspend('cow')
+    assert.equal(await readFile(join(source, 'memory-ranges'), 'utf8'), 'memory')
+  } finally { await rm(directory, { recursive: true, force: true }) }
+})
+
+test('copy-on-write source is retained until park completes and the new snapshot survives', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'desk-cow-park-'))
+  const snapshot = join(directory, 'cow.snapshot')
+  const fs = await import('node:fs/promises')
+  await fs.mkdir(snapshot)
+  await writeFile(join(snapshot, 'memory-ranges'), 'old')
+  let source = ''
+  const gate = deferred<void>()
+  const backend: DeskBackend = { async boot(plan, hooks) {
+    source = plan.snapshot.dir
+    await hooks?.onRestored?.()
+    const machine = fakeMachine(plan.deskId).machine
+    machine.park = async (dir) => {
+      assert.equal(await readFile(join(source, 'memory-ranges'), 'utf8'), 'old')
+      await writeFile(join(dir, 'memory-ranges'), 'new')
+      await gate.promise
+    }
+    return machine
+  } }
+  const host = createDeskHost({ imageRoot: directory, parkWithMemory: true, memoryRestoreMode: 'copyonwrite', backend,
+    ports: { onEvent: () => {}, audit: () => {} }, pathExists: (path) => path === snapshot || !path.endsWith('.snapshot'),
+    deviceExists: () => true, readSnapshotShares: async () => [], readSnapshotSignature: async () => null,
+    cpuSignature: async () => 'cpu', writeSnapshotSignature: async () => {}, trimOnSuspend: false,
+  })
+  try {
+    await host.start({ deskId: 'cow', baseImage: join(directory, 'base'), overlayPath: join(directory, 'cow.raw') })
+    const park = host.suspend('cow')
+    await nextTurn()
+    assert.equal(await readFile(join(source, 'memory-ranges'), 'utf8'), 'old')
+    gate.resolve()
+    await park
+    assert.equal(await readFile(join(snapshot, 'memory-ranges'), 'utf8'), 'new')
+    await assert.rejects(readFile(join(source, 'memory-ranges')), /ENOENT/)
+  } finally { gate.resolve(); await fs.rm(directory, { recursive: true, force: true }) }
+})
