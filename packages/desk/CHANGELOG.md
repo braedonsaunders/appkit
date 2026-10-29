@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.10.0
+
+### Minor Changes
+
+- d306298: Allow Cloud Hypervisor guests to opt in to vsock service connections.
+- cc5bfe3: Support immutable read-only block and pmem images on Cloud Hypervisor desks and check snapshot attachment identity.
+- 8fad534: Support opt-in Cloud Hypervisor copy-on-write restore with retired snapshot source lifetime management.
+- 8954964: Add resident pause and resume support for Cloud Hypervisor desks, with lifecycle serialization and guest request fencing.
+
+### Patch Changes
+
+- 41f8f00: Reject copy-on-write restore when current or parked virtio-fs shares require shared guest memory, preserving parked snapshots.
+
 ## 0.9.0
 
 ### Minor Changes
