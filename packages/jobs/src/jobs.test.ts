@@ -9,6 +9,8 @@ import {
   assertRelativeAppPath,
   buildNotifyQueueJobs,
   createRateLimiter,
+  DEFAULT_QUEUE_RETENTION,
+  defineQueueJobOptions,
   normalizeNotifyJobData,
 } from './index'
 
@@ -41,4 +43,11 @@ test('production notification queue validation and deterministic batching retain
 test('production push queue contract remains bounded and source-compatible', () => {
   assert.doesNotThrow(() => assertPushJobData({ tenantId: '11111111-1111-4111-8111-111111111111', userId: 'user', subscriptionId: '22222222-2222-4222-8222-222222222222', title: 'Ready', linkPath: '/notifications' }))
   assert.throws(() => assertPushJobData({ tenantId: 'bad', userId: 'user', subscriptionId: 'bad', title: 'Ready' }), /UUID/)
+})
+
+test('defineQueue bounds finished-job history by default and lets callers override it', () => {
+  assert.deepEqual(defineQueueJobOptions(), DEFAULT_QUEUE_RETENTION)
+  assert.deepEqual(defineQueueJobOptions({ attempts: 3 }), { ...DEFAULT_QUEUE_RETENTION, attempts: 3 })
+  assert.deepEqual(defineQueueJobOptions({ removeOnComplete: { age: 3_600 } }).removeOnComplete, { age: 3_600 })
+  assert.equal(defineQueueJobOptions({ removeOnComplete: false, removeOnFail: false }).removeOnComplete, false)
 })

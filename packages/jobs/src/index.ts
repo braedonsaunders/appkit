@@ -1,5 +1,5 @@
 import { Redis } from 'ioredis'
-import { Queue, Worker, type ConnectionOptions, type Processor, type WorkerOptions } from 'bullmq'
+import { Queue, Worker, type ConnectionOptions, type JobsOptions, type Processor, type WorkerOptions } from 'bullmq'
 
 /**
  * A BullMQ + Redis harness generalized behind a factory. Producers and blocking consumers need
@@ -12,13 +12,33 @@ import { Queue, Worker, type ConnectionOptions, type Processor, type WorkerOptio
 export type Jobs = {
   getConnection: () => ConnectionOptions
   getBlockingConnection: () => ConnectionOptions
-  defineQueue: <T = unknown>(name: string) => Queue<T>
+  defineQueue: <T = unknown>(name: string, defaultJobOptions?: JobsOptions) => Queue<T>
   createWorker: <T = unknown, R = unknown>(
     name: string,
     processor: Processor<T, R>,
     options?: Omit<WorkerOptions, 'connection'>,
   ) => Worker<T, R>
   closeJobConnections: () => Promise<void>
+}
+
+/**
+ * Retention every `defineQueue` queue gets unless the caller overrides it.
+ * BullMQ keeps finished jobs forever by default, so a bare queue with a
+ * repeating job grows Redis without bound: a ten-second heartbeat in one app
+ * piled up 1.74 M completed jobs (1.6 GB) before anyone noticed. The bounds
+ * match the profile queues: a week of completed history (capped at 10 000),
+ * a month of failures. Callers that dedupe on `jobId` beyond that window, or
+ * want tighter or looser bounds, pass their own `removeOnComplete` /
+ * `removeOnFail` (`false` keeps everything, as before).
+ */
+export const DEFAULT_QUEUE_RETENTION = {
+  removeOnComplete: { age: 7 * 24 * 3_600, count: 10_000 },
+  removeOnFail: { age: 30 * 24 * 3_600 },
+} satisfies JobsOptions
+
+/** The default job options `defineQueue` applies: retention first, caller options on top. */
+export function defineQueueJobOptions(defaultJobOptions: JobsOptions = {}): JobsOptions {
+  return { ...DEFAULT_QUEUE_RETENTION, ...defaultJobOptions }
 }
 
 export function createJobs(opts: { redisUrl: string }): Jobs {
@@ -35,8 +55,8 @@ export function createJobs(opts: { redisUrl: string }): Jobs {
     return blocking as unknown as ConnectionOptions
   }
 
-  const defineQueue = <T = unknown>(name: string): Queue<T> =>
-    new Queue<T>(name, { connection: getConnection() })
+  const defineQueue = <T = unknown>(name: string, defaultJobOptions?: JobsOptions): Queue<T> =>
+    new Queue<T>(name, { connection: getConnection(), defaultJobOptions: defineQueueJobOptions(defaultJobOptions) })
 
   const createWorker = <T = unknown, R = unknown>(
     name: string,
