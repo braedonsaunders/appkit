@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import Link from 'next/link'
 import {
   Bell,
   Check,
@@ -274,6 +275,9 @@ export default function ComponentGallery() {
         </div>
 
         {/* Foundations */}
+        <Section title="Query chips" description="Controlled editable conditions with group indicators and an inline editor.">
+          <Link href="/query-chips" className="text-primary underline">Explore editable query chips</Link>
+        </Section>
         <Section
           title="Color tokens"
           description="Every component resolves through these semantic tokens — never a raw color. Swap the channel values and the whole system, both modes included, follows."

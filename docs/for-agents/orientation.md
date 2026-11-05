@@ -76,7 +76,7 @@ support full-height embedded workspaces; controlled in-memory
 search/sort/pagination with typed reference/amount/status/custom/actions
 columns) · URL list kit: `parseListParams` /
 `parsePrefixedListParams`, `ListNavProvider`, `SearchInput`, `FilterChips`,
-`SortableTh` / `SortTh`, `Pagination` (shareable server-list state) · `LineGrid`
+`SortableTh` / `SortTh`, `Pagination` (shareable server-list state) · `QueryChips` (controlled editable field/operator/value conditions, nested group indicators, inline editor slot; see `packages/ui/QUERY_CHIPS.md` and `/query-chips`) · `LineGrid`
 (the **spreadsheet line editor**: Enter appends, Alt+↑/↓ moves, ⌘D/⌘⌫, data-driven
 columns) · `OrgChart` (parent-pointer hierarchies: server-rendered border
 connectors, collapsible branches, zoom, optional drag-to-reparent; the pure

@@ -259,3 +259,5 @@ export {
 } from './upload-limits'
 export { SignaturePad, type SignaturePadProps } from './signature-pad'
 export { useElementSize } from './use-element-size'
+
+export { QueryChips, type QueryChip, type QueryChipGroup, type QueryChipNode, type QueryChipsProps } from './query-chips'
