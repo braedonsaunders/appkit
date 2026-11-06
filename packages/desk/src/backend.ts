@@ -3,6 +3,7 @@ import { assertPrivateMemoryMapping } from './template-mapping'
 import { existsSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { request as httpRequest } from 'node:http'
+import { createConnection } from 'node:net'
 import { GUEST_AGENT_VSOCK_PORT } from './protocol'
 import {
   DEFAULT_REQUEST_TIMEOUT_MS, DEFAULT_CONNECT_TIMEOUT_MS, DEFAULT_CONNECT_RETRY_DELAY_MS,
@@ -227,8 +228,26 @@ export interface CloudHypervisorBackendOptions {
   serviceVsock?: boolean
   /** Whether a share daemon's socket exists yet; injectable for tests. */
   pathExists?: (path: string) => boolean
-  /** Removes a stale share socket before its daemon starts; injectable for tests. */
+  /** Removes a stale share or vsock socket before the process that binds it starts; injectable for tests. */
   removeFile?: (path: string) => Promise<void>
+  /** Whether a process listens on a Unix socket (a running VMM on its vsock socket); injectable for tests. */
+  socketListening?: (path: string) => Promise<boolean>
+}
+
+/** Whether something accepts connections on the Unix socket at `path`: false when nothing is there or nothing listens. */
+export function unixSocketListening(path: string): Promise<boolean> {
+  return new Promise((resolvePromise, rejectPromise) => {
+    const socket = createConnection(path)
+    socket.once('connect', () => {
+      socket.destroy()
+      resolvePromise(true)
+    })
+    socket.once('error', (error: NodeJS.ErrnoException) => {
+      socket.destroy()
+      if (error.code === 'ECONNREFUSED' || error.code === 'ENOENT') resolvePromise(false)
+      else rejectPromise(error)
+    })
+  })
 }
 
 export function createCloudHypervisorBackend(
@@ -250,6 +269,7 @@ export function createCloudHypervisorBackend(
   const guestAgentPort = options.guestAgentPort ?? GUEST_AGENT_VSOCK_PORT
   const pathExists = options.pathExists ?? existsSync
   const removeFile = options.removeFile ?? ((path: string) => rm(path, { force: true }))
+  const socketListening = options.socketListening ?? unixSocketListening
 
   /**
    * Start one `virtiofsd` per share and wait until every socket exists.
@@ -327,6 +347,14 @@ export function createCloudHypervisorBackend(
         throw new DeskError(`Desk ${plan.deskId} could not be restored from ${plan.snapshot.dir}: ${errorMessage(error)}`)
       }
     }
+
+    // Cloud Hypervisor binds the vsock's host socket and fails with "Address in use" when a
+    // VMM that did not exit cleanly left it behind. A socket nothing listens on is that
+    // leftover and is removed; one a VMM still serves is this desk running already.
+    if (await socketListening(plan.vsock.socketPath)) {
+      throw new DeskError(`Desk ${plan.deskId} is already running: a VMM is listening on ${plan.vsock.socketPath}.`)
+    }
+    await removeFile(plan.vsock.socketPath)
 
     let shares: ShareDaemons
     try {

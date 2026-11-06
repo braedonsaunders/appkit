@@ -10,6 +10,7 @@ import { join } from 'node:path'
 import {
   createCloudHypervisorBackend,
   setVmmState,
+  unixSocketListening,
   DeskRequestFateUnknownError,
   type DeskConnectionChange,
 } from './backend'
@@ -610,8 +611,9 @@ function sharePlan(overrides: { restore?: boolean; snapshotDir?: string } = {}) 
 
 const storeSocket = '/run/appkit-desk/desk-agent-1.store.fs.sock'
 const buildSocket = '/run/appkit-desk/desk-agent-1.build.fs.sock'
+const vsockSocket = '/run/appkit-desk/desk-agent-1.vsock'
 
-function shareHarness(options: { daemons?: FakeChild[]; vmm?: FakeChild; listening?: (path: string) => boolean } = {}) {
+function shareHarness(options: { daemons?: FakeChild[]; vmm?: FakeChild; listening?: (path: string) => boolean; vmmListening?: boolean } = {}) {
   const spawned: string[] = []
   const removed: string[] = []
   const daemons = options.daemons ?? [fakeChild({ exitOnKill: true }), fakeChild({ exitOnKill: true })]
@@ -635,6 +637,10 @@ function shareHarness(options: { daemons?: FakeChild[]; vmm?: FakeChild; listeni
     removeFile: async (path) => {
       removed.push(path)
     },
+    socketListening: async (path) => {
+      assert.equal(path, vsockSocket)
+      return options.vmmListening ?? false
+    },
   })
   return { backend, spawned, removed, daemons, vmm }
 }
@@ -643,7 +649,7 @@ test('every share daemon is listening before the VMM starts, and stops after it'
   let polls = 0
   const harness = shareHarness({ listening: () => ++polls > 2 })
   const machine = await harness.backend.boot(sharePlan())
-  assert.deepEqual(harness.removed, [storeSocket, buildSocket], 'stale sockets cleared first')
+  assert.deepEqual(harness.removed, [vsockSocket, storeSocket, buildSocket], 'stale sockets cleared first')
   assert.deepEqual(harness.spawned, [
     `virtiofsd --socket-path=${storeSocket}`,
     `virtiofsd --socket-path=${buildSocket}`,
@@ -653,6 +659,33 @@ test('every share daemon is listening before the VMM starts, and stops after it'
   await machine.shutdown()
   assert.deepEqual(harness.vmm.killedWith, ['SIGTERM'])
   for (const daemon of harness.daemons) assert.deepEqual(daemon.killedWith, ['SIGTERM'])
+})
+
+test('a vsock socket a VMM still serves fails the boot, leaving the socket and starting nothing', async () => {
+  const harness = shareHarness({ vmmListening: true })
+  await assert.rejects(harness.backend.boot(sharePlan()), /Desk agent-1 is already running: a VMM is listening on \/run\/appkit-desk\/desk-agent-1\.vsock/)
+  assert.deepEqual(harness.removed, [])
+  assert.deepEqual(harness.spawned, [])
+})
+
+test('unixSocketListening tells a live socket from a leftover and from none', async () => {
+  const { createServer } = await import('node:net')
+  const { spawnSync } = await import('node:child_process')
+  const directory = await mkdtemp(join(tmpdir(), 'desk-vsock-'))
+  try {
+    const live = join(directory, 'live.vsock')
+    const server = createServer((socket) => socket.destroy())
+    await new Promise<void>((resolvePromise) => server.listen(live, resolvePromise))
+    assert.equal(await unixSocketListening(live), true, 'a listener')
+    await new Promise((resolvePromise) => server.close(resolvePromise))
+    // A socket bound by a process that is gone, as a killed VMM leaves it.
+    const leftover = join(directory, 'leftover.vsock')
+    assert.equal(spawnSync('python3', ['-c', 'import socket, sys; socket.socket(socket.AF_UNIX).bind(sys.argv[1])', leftover]).status, 0)
+    assert.equal(await unixSocketListening(leftover), false, 'a leftover nothing listens on')
+    assert.equal(await unixSocketListening(join(directory, 'none.vsock')), false, 'no socket')
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
 })
 
 test('a share daemon that exits before it listens fails the boot without starting the VMM', async () => {
