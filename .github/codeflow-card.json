@@ -2,108 +2,6 @@
   "version": 1,
   "runs": [
     {
-      "at": "2026-10-19T15:23:06.709Z",
-      "sha": "796ccc885ffa79c3b1d6c5918b6df520f0ee0a59",
-      "pr": null,
-      "actor": "braedonsaunders",
-      "files": 1131,
-      "functions": 4037,
-      "loc": 199807,
-      "languages": 13,
-      "topLanguages": [
-        {
-          "ext": "ts",
-          "pct": 48,
-          "lines": 95333
-        },
-        {
-          "ext": "tsx",
-          "pct": 34,
-          "lines": 68146
-        },
-        {
-          "ext": "yaml",
-          "pct": 7,
-          "lines": 14739
-        },
-        {
-          "ext": "json",
-          "pct": 5,
-          "lines": 10942
-        },
-        {
-          "ext": "md",
-          "pct": 3,
-          "lines": 6324
-        }
-      ],
-      "dead": 151,
-      "deadPct": 3.7,
-      "circular": 1,
-      "godObjects": 1,
-      "avgCoupling": 3.8,
-      "securityIssues": 86,
-      "patterns": 8,
-      "duplicates": 24,
-      "layerViolations": 368,
-      "connections": 4316,
-      "avgFnLines": 15,
-      "longestFn": 16,
-      "testFiles": 167,
-      "testRatio": 14.8,
-      "topFolders": [
-        {
-          "name": "packages",
-          "count": 1001
-        },
-        {
-          "name": "apps",
-          "count": 101
-        },
-        {
-          "name": "scripts",
-          "count": 14
-        },
-        {
-          "name": "root",
-          "count": 8
-        },
-        {
-          "name": "docs",
-          "count": 4
-        }
-      ],
-      "folders": 5,
-      "grade": "D",
-      "score": 67,
-      "topBlast": {
-        "path": "packages/viewspec/src/builder.ts",
-        "direct": 181,
-        "transitive": 674,
-        "total": 855
-      },
-      "fragility": [
-        {
-          "path": "packages/viewspec/src/builder.ts",
-          "direct": 181,
-          "transitive": 674,
-          "total": 855
-        },
-        {
-          "path": "packages/apps/src/memory.ts",
-          "direct": 140,
-          "transitive": 670,
-          "total": 810
-        },
-        {
-          "path": "packages/desk/src/host.ts",
-          "direct": 112,
-          "transitive": 557,
-          "total": 669
-        }
-      ]
-    },
-    {
       "at": "2026-10-19T16:21:01.783Z",
       "sha": "f2363e6a465541e7c32acde6ced6bd4bd4840664",
       "pr": null,
@@ -2965,6 +2863,108 @@
       "pr": null,
       "actor": "braedonsaunders",
       "files": 1179,
+      "functions": 4392,
+      "loc": 212041,
+      "languages": 16,
+      "topLanguages": [
+        {
+          "ext": "ts",
+          "pct": 47,
+          "lines": 100239
+        },
+        {
+          "ext": "tsx",
+          "pct": 32,
+          "lines": 68387
+        },
+        {
+          "ext": "yaml",
+          "pct": 7,
+          "lines": 14761
+        },
+        {
+          "ext": "json",
+          "pct": 6,
+          "lines": 13012
+        },
+        {
+          "ext": "md",
+          "pct": 3,
+          "lines": 7368
+        }
+      ],
+      "dead": 158,
+      "deadPct": 3.6,
+      "circular": 1,
+      "godObjects": 1,
+      "avgCoupling": 4.4,
+      "securityIssues": 95,
+      "patterns": 8,
+      "duplicates": 27,
+      "layerViolations": 487,
+      "connections": 5209,
+      "avgFnLines": 15.1,
+      "longestFn": 16,
+      "testFiles": 180,
+      "testRatio": 15.3,
+      "topFolders": [
+        {
+          "name": "packages",
+          "count": 1045
+        },
+        {
+          "name": "apps",
+          "count": 103
+        },
+        {
+          "name": "scripts",
+          "count": 16
+        },
+        {
+          "name": "root",
+          "count": 8
+        },
+        {
+          "name": "docs",
+          "count": 4
+        }
+      ],
+      "folders": 5,
+      "grade": "D",
+      "score": 66,
+      "topBlast": {
+        "path": "packages/desk/vz/Sources/appkit-desk-vz/Control.swift",
+        "direct": 565,
+        "transitive": 889,
+        "total": 1454
+      },
+      "fragility": [
+        {
+          "path": "packages/desk/vz/Sources/appkit-desk-vz/Control.swift",
+          "direct": 565,
+          "transitive": 889,
+          "total": 1454
+        },
+        {
+          "path": "packages/viewspec/src/builder.ts",
+          "direct": 190,
+          "transitive": 845,
+          "total": 1035
+        },
+        {
+          "path": "packages/apps/src/memory.ts",
+          "direct": 146,
+          "transitive": 884,
+          "total": 1030
+        }
+      ]
+    },
+    {
+      "at": "2026-11-06T07:06:37.694Z",
+      "sha": "0027b0260abb3632c2291564c433fbe53f729710",
+      "pr": null,
+      "actor": "braedonsaunders",
+      "files": 1178,
       "functions": 4392,
       "loc": 212041,
       "languages": 16,
