@@ -1,5 +1,13 @@
 # @braedonsaunders/appkit-forms
 
+## 0.2.8
+
+### Patch Changes
+
+- Updated dependencies [25de700]
+  - @braedonsaunders/appkit-ui@0.4.2
+  - @braedonsaunders/appkit-editor@0.2.7
+
 ## 0.2.7
 
 ### Patch Changes

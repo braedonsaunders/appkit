@@ -1,5 +1,12 @@
 # @braedonsaunders/appkit-scene
 
+## 1.0.5
+
+### Patch Changes
+
+- Updated dependencies [25de700]
+  - @braedonsaunders/appkit-ui@0.4.2
+
 ## 1.0.4
 
 ### Patch Changes
