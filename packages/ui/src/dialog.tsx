@@ -142,7 +142,7 @@ export function Dialog({
             className={cn(
               'relative flex w-full flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-lg',
               SIZE[size],
-              fullHeight && 'h-[min(92vh,780px)]',
+              fullHeight && 'h-[min(92vh,780px)] supports-[height:100dvh]:h-[min(92dvh,780px)]',
             )}
           >
             {title || description ? (
