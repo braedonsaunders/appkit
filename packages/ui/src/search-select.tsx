@@ -402,7 +402,7 @@ export function SearchSelect({
                     animate={{ y: 0 }}
                     exit={{ y: '100%' }}
                     transition={{ type: 'spring', damping: 34, stiffness: 340, mass: 0.8 }}
-                    className="absolute inset-x-0 bottom-0 flex max-h-[82vh] flex-col rounded-t-2xl border-t border-border bg-surface shadow-lg"
+                    className="absolute inset-x-0 bottom-0 flex max-h-[82vh] flex-col rounded-t-2xl border-t border-border bg-surface shadow-lg supports-[height:100dvh]:max-h-[82dvh]"
                   >
                     <div className="flex items-center justify-center pt-2.5">
                       <span className="h-1.5 w-10 rounded-full bg-border-strong" />

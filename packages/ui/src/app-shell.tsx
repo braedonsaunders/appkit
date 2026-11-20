@@ -73,7 +73,7 @@ export function AppShell({
   const topbar = navigationMode === 'topbar'
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden supports-[height:100dvh]:h-dvh">
       {topbar ? null : (
         <AppSidebar
           groups={groups}
