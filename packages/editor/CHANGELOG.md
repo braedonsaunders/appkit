@@ -1,5 +1,12 @@
 # @braedonsaunders/appkit-editor
 
+## 0.2.7
+
+### Patch Changes
+
+- Updated dependencies [25de700]
+  - @braedonsaunders/appkit-ui@0.4.2
+
 ## 0.2.6
 
 ### Patch Changes
